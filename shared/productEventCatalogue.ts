@@ -91,7 +91,7 @@ import { BUG_REPORT_CATEGORIES } from "./bugReportVocabulary";
  * own naming convention and, more to the point, readable by somebody who has
  * never seen this file.
  */
-export const GENERATION_EVENTS = [
+const GENERATION_EVENTS = [
   "generation started",
   "generation delivered",
   "generation failed",

@@ -65,7 +65,7 @@ export const DEVICE_COOKIE_NAME = "drape_device";
  * what we get. The grant window is a week; this only has to outlive it by
  * enough that a returning customer is still the same device.
  */
-export const DEVICE_COOKIE_MAX_AGE_MS = 400 * 24 * 60 * 60 * 1000;
+const DEVICE_COOKIE_MAX_AGE_MS = 400 * 24 * 60 * 60 * 1000;
 
 /** The shape `randomUUID` produces, and the only shape accepted back. */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

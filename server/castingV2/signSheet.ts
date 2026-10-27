@@ -199,7 +199,7 @@ const BODY_SHEET_ANGLES: ReadonlySet<CastViewAngle> = new Set<CastViewAngle>([
 
 export type SignSheetKind = "head" | "body";
 
-export const SIGN_SHEET_KINDS: readonly SignSheetKind[] = ["head", "body"];
+const SIGN_SHEET_KINDS: readonly SignSheetKind[] = ["head", "body"];
 
 /**
  * THE PIXELS EACH SHEET IS ASKED FOR — his two numbers, measured on the frames

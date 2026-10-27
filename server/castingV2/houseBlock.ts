@@ -560,7 +560,7 @@ const bodySentences: readonly string[] = [
 ];
 
 /** The same thing sentence by sentence — what the lane composers and the guards read. */
-export const HOUSE_PHOTOGRAPH_SENTENCES: readonly string[] = [
+const HOUSE_PHOTOGRAPH_SENTENCES: readonly string[] = [
   ...bodySentences,
   ...PHOTOREAL_PRESET,
   AUTHORITY_LINE,

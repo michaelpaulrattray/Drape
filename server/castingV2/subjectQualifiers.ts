@@ -40,6 +40,62 @@
  *
  * An `exempt` entry must say WHY. A shortcut that is declared is engineering; a
  * shortcut that falls through a default is the thing this module exists to end.
+ *
+ * # ⚠ NONE OF THIS REACHES AN ENGINE, AND SINCE #2596 THAT IS A MEASURED
+ * DECISION RATHER THAN AN OVERSIGHT
+ *
+ * Everything above is written as though these clauses are what the painter is
+ * sent. **They are not, and they have not been for about two months.**
+ * `qualifierFor` has exactly one caller — `composeEditPrompt`
+ * (`refineDelta.ts`) — and that composition is RECORDED on the variant row
+ * (`refineService.ts`, `landVariant`'s `internalPrompt.prompt`) and dispatched
+ * nowhere. What the engine is handed is `assembleRecipe`'s own `prompt`, and
+ * neither `repaintAsks.ts` nor `recipeAssembler.ts` mentions this table.
+ *
+ * **Path three, and the commit is readable**: `2f4d02e8f` (#1577 slice 4b)
+ * removed the two dispatch sites that sent the composed string. It went dark
+ * earlier than that, though — those sites sat below `if (repaintEnabled)
+ * return repaintOnce()` and `CASTING_REPAINT_SCOPE` stood at `all` on
+ * production well before, so slice 4b deleted a road already serving nobody.
+ *
+ * ## It was courted on the road that renders, and the floor buys nothing
+ *
+ * Measured twice, both through the real `repaintAsksFor` -> `assembleRecipe`,
+ * both on the repaint engine, each arm differing by exactly `qualifierFor`:
+ *
+ * ```
+ * wardrobe  11 cells x 2 arms, 3 masters   no cell changed verdict, ratios
+ *           (#2544 slice 0, $0.57)         moved within noise
+ * marks     3 masters x 3 takes x 2 arms   gap 0.017 against a within-arm
+ *           (#2596, 21 renders, ~$0.32-   spread of 0.158 — NO EFFECT
+ *           $0.63 at the band below)
+ * ```
+ *
+ * **`marks` is the case that matters, because `marks` is what bought this
+ * table** — the 33%-against-100% in the defect note above. On the repaint road
+ * the bare clause delivered freckles in **18 of 18 frames across both arms**,
+ * read at the frames and not off a ratio (law 9). The eye-colour control added
+ * no freckles on any master and read 0.89-0.91 against the marks arms'
+ * 0.93-1.03, so the statistic was not blind to the difference — there was no
+ * difference to see. **The 33% was a PASTE-ROAD number**: that road rendered,
+ * harvested a region and pasted it back, and a painter putting too few freckles
+ * there lost them in the harvest. A repaint restates the whole stack against
+ * the master and does not.
+ *
+ * ## So why is the table still here
+ *
+ * Because `composeEditPrompt`'s output still has two live readers and they are
+ * not renders: the pre-claim completeness check and the filed-row contradiction
+ * check. Both read the composition ON PURPOSE. Deleting the table to tidy up a
+ * clause nothing dispatches would change what those two verify and what the
+ * variant row records, which is a second decision and nobody has asked for it.
+ *
+ * **What this note forbids is the quiet version of that decision**: tuning a
+ * `describe` line in the belief that a painter will read it. None will. If the
+ * floor is ever wanted on the road that renders, it belongs in `repaintAsks.ts`
+ * derived from THIS table and never copied beside it (working law 4) — and
+ * #2596's court is the evidence that it would buy nothing, so it needs a reason
+ * of its own first.
  */
 import { FREE_SUBJECT_KEYS, type FreeSubject } from "./refineSubjects";
 import { tableOf } from "./subjectCards";

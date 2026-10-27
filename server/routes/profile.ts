@@ -74,7 +74,7 @@ function refuse(message: string): never {
  * Decode, size and identify an uploaded profile picture. Returns the bytes
  * that will be stored, so the size the meter is charged IS the size stored.
  */
-export function decodeProfilePicture(input: {
+function decodeProfilePicture(input: {
   base64Data: string;
   declaredMime: ProfilePictureType;
   maxBytes: number;

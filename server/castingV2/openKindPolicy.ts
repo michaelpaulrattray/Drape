@@ -436,6 +436,26 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
     },
     standing: "silence",
   },
+  SERVED_SUBJECTS_WITH_WARDROBE: {
+    file: "refineSubjects.ts",
+    asks: "which subjects the interpreter prompt names for an account inside "
+      + "`CASTING_OUTFIT_EDIT_SCOPE`",
+    answer: "none of them, for exactly the reason its parent list answers none — and the "
+      + "ONE subject this list adds is a closed one with a full card",
+    basis: {
+      derived: "it is the constant above plus `wardrobe`, which is a catalogued subject with "
+        + "nouns, a qualifier and an amplitude of its own (#2544 slice 1) — so this table "
+        + "cannot name an open kind by construction twice over: it is derived from a list "
+        + "derived from the subject cards, and the single member it appends is named. The "
+        + "stronger reason is unchanged and is its parent's: an ask the catalogue has no "
+        + "word for travels on the open lane and is named in its own clause, never as a "
+        + "free subject. ⚠ **And the flag does not change that for a garment either** — an "
+        + "unlisted garment noun served under this flag is a wardrobe ask the interpreter "
+        + "should have routed, which the open lane's collision door now says in as many "
+        + "words; it is never an open kind called `coat`",
+    },
+    standing: "silence",
+  },
   PRESENTATION_SUBJECTS: {
     file: "refineSubjects.ts",
     asks: "does this file as presentation instead of identity",

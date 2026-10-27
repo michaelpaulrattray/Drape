@@ -90,7 +90,10 @@ describe("the arithmetic", () => {
 
       #2206 is that card. His word, verbatim (terminal, 2026-10-10): "yes to
       turn the sp[eed up." — resting on #2189's measurement that the pool at 5
-      added a median ~6 s to a real 21–27-read face scan. So the defaults sum to
+      added a median ~6 s to a real 21–27-read face scan, which is the road that
+      reading was taken on; the live road is cheaper still since 2026-10-16
+      (14–17 reads, `faceScanSam3Reads()`), which only widens the margin his
+      word rests on. So the defaults sum to
       20 of 20 again, and every per-path default is pinned BY NAME: a future
       path that quietly takes its slot from `roll images` or `region reads` would
       still satisfy the sum check and still boot, and these are the assertions
