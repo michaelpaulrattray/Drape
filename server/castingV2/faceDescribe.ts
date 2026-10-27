@@ -47,9 +47,17 @@
  *
  * The frame is waist-up by construction (`castingFrame.ts`: every roll is asked
  * for *"from mid-torso up in a 2:3 portrait"*, and the delivered masters were
- * opened and looked at). A description that mentions a waist, hips, legs or
- * height is describing a photograph that does not exist — the same law that
- * made the waist leave the recipe, applied to the words that describe her.
+ * opened and looked at). A description that mentions hips, legs or height is
+ * describing a photograph that does not exist: those are `belowWaist` and
+ * `feet` in `shared/bodyAnchorRegions.ts`, and `PRESENTS_IN.master` shows
+ * neither. `faceDescribe.test.ts` holds the RULES frame sentence to that table
+ * and to `castingFrame.ts`, so the two cannot drift apart unseen again.
+ *
+ * ⚠ **The waist was on that list until #2674 (2026-10-27).** It came off on
+ * the founder's #2671 ruling (*"I like B."*): a mid-torso-up frame shows the
+ * waist's two side contours, so a waist change is served, described and kept,
+ * and `castingFrame.ts`'s out-of-frame table is empty. A describer told never
+ * to mention the waist could not describe one the product had just changed.
  */
 import { createModuleLogger } from "../logging/logger";
 import { catalogueSlots, isAskable } from "./referenceSlotCatalogue";
@@ -82,11 +90,18 @@ export type TwoQuestionDescriptions = Omit<FaceDescriptions, "teeth">;
  * A bench whose arms differ in their prompts as well as their call count cannot
  * attribute what it measures — the reason the mirror experiment kept its
  * phrasings identical across sides.
+ *
+ * ⚠ **One clause has moved since the benches recorded on {@link describeFace}
+ * were run (#2674)**: the frame sentence no longer names the waist. Both arms
+ * still read the same RULES, so they still differ in ONE thing; what changed is
+ * that a re-run is measured under this sentence, not the one those numbers were.
+ * Both bench scripts' bar 3 (`BELOW_THE_CROP`) still counts a waist as below the
+ * crop, so a re-run must take the waist out of that bar first.
  */
 const RULES = [
   "You are looking at a casting portrait. Describe ONLY what this photograph shows.",
   "",
-  "THE FRAME: the picture is cropped at roughly the lower ribs. Her waist, hips, legs",
+  "THE FRAME: the picture is cropped at roughly the lower ribs. Hips, legs",
   "and height are NOT in it. Never mention them — describing what the camera did not",
   "take is describing a different photograph.",
   "",
