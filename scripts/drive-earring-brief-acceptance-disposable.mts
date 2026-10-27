@@ -107,7 +107,12 @@ if (!candidatePublicId) throw new Error("pass a candidate public id, or `cast`")
    4b and the reference library at slice D5 — so the only position that still
    decides anything here is the casting scope. */
 const library = process.env.CASTING_V2_SCOPE ?? "(unset)";
-const repaint = process.env.CASTING_REPAINT_SCOPE ?? "(unset)";
+/* ⚠ This read `CASTING_REPAINT_SCOPE`, retired at #1577 slice 4b — every refine
+   repaints, so the variable answered "(unset)" whatever the service held. The
+   casting scope is the only position left that decides anything here, and the
+   line above already reads it; this keeps the second name so the printed line and
+   any gate below it stay the shape a re-run expects. */
+const repaint = process.env.CASTING_V2_SCOPE ?? "(unset)";
 console.log(`FLAGS: library ${library} · repaint ${repaint}`);
 if (!/^(all|users:.*\b1\b.*)$/.test(repaint) || !/^(all|users:.*\b1\b.*)$/.test(library)) {
   throw new Error("the repaint road is not open for this user — set both scopes to users:1");
