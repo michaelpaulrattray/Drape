@@ -122,7 +122,7 @@ export function personaKeyAction(key: string): "escape" | null {
  * keyboard focus, and on a tap — a phone has no hover, so the press toggles it
  * (Radix closes a tooltip on click by default; `preventDefault` stops that).
  */
-export function PersonaExplainer({ line, name }: { line: CastPersonaFieldName; name?: string | null }) {
+function PersonaExplainer({ line, name }: { line: CastPersonaFieldName; name?: string | null }) {
   const [open, setOpen] = useState(false);
   const words = personaExplainer(line, name);
   return (

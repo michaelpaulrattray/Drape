@@ -28,7 +28,7 @@ import { resolve } from "node:path";
 import { currentLadderRung } from "../../shared/crewPipelineGroups.js";
 
 /** Where the ladder lives, so no caller types the path. */
-export const LADDER_BRIEFING_PATH = "server/crew/crew-briefing.json";
+const LADDER_BRIEFING_PATH = "server/crew/crew-briefing.json";
 
 export type LadderFocusRung = {
   /** The rung marked `current`, or `null` when nothing names one or the file could not be read. */

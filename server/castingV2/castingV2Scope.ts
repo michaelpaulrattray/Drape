@@ -2534,7 +2534,7 @@ export class CastingCreationRecordCoverageError extends Error {
   }
 }
 
-export function parseCastingCreationRecordScope(raw: string | undefined): CastingV2Scope {
+function parseCastingCreationRecordScope(raw: string | undefined): CastingV2Scope {
   return parseScopeGrammar(raw, () => {
     throw new CastingCreationRecordScopeConfigurationError();
   });

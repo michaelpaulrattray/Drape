@@ -41,7 +41,7 @@ import { pictureHalfPhrase } from "./sidePhrasing";
 const log = createModuleLogger("castingV2/currentDescription");
 
 /** A description longer than this is not a description, it is a runaway. */
-export const CURRENT_DESCRIPTION_MAX_LENGTH = 2400;
+const CURRENT_DESCRIPTION_MAX_LENGTH = 2400;
 
 /**
  * THE WRITER'S OWN DEADLINE AND RETRY BUDGET — a paid render waits on both, so
@@ -771,7 +771,7 @@ function normaliseForClauses(text: string): string {
  * and the existing arm pins its survival); a fragment under three characters is
  * punctuation noise rather than a clause.
  */
-export function briefClauses(text: string): readonly string[] {
+function briefClauses(text: string): readonly string[] {
   return normaliseForClauses(text)
     .split(/[,;.!?\n\r]+/)
     .map((clause) => clause.trim())

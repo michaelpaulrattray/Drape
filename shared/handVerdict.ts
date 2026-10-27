@@ -221,7 +221,7 @@ export type HandVerdictFreshness = "fresh" | "finding" | "stale" | "none";
  * parent a tick after the comment; it is deliberately not larger, because the
  * next event on a busy pull request is minutes away, never seconds.
  */
-export const VERDICT_ACTIVITY_SLACK_MS = 2_000;
+const VERDICT_ACTIVITY_SLACK_MS = 2_000;
 
 /**
  * DOES THE VERDICT STILL STAND? — one rule, and the evidence a caller has

@@ -26,7 +26,7 @@ import { Button } from "@/foundation";
  * mirror it: the server is the only reader of the scope.
  */
 
-export const CERTIFICATE_LABEL = "CERTIFICATE OF CREATION";
+const CERTIFICATE_LABEL = "CERTIFICATE OF CREATION";
 export const CERTIFICATE_BUTTON = "Download certificate";
 export const CERTIFICATE_BODY =
   "Evidence of when and by whom this character was made, independently timestamped.";

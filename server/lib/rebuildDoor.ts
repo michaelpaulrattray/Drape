@@ -25,7 +25,7 @@ import {
   REBUILD_DOOR_OPEN,
 } from "@shared/rebuildDoor";
 
-export function rebuildDoorClosed(): TRPCError {
+function rebuildDoorClosed(): TRPCError {
   return new TRPCError({
     code: "PRECONDITION_FAILED",
     message: REBUILD_DOOR_CLOSED,
