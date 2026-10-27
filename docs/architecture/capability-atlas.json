@@ -198,8 +198,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:632",
           "server/castingV2/refineDelta.ts:632",
-          "server/castingV2/refineDelta.ts:1765",
-          "server/castingV2/refineDelta.ts:1765",
+          "server/castingV2/refineDelta.ts:1809",
+          "server/castingV2/refineDelta.ts:1809",
           "server/castingV2/refineService.ts:2534"
         ]
       },
@@ -214,8 +214,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:598",
           "server/castingV2/refineDelta.ts:598",
-          "server/castingV2/refineDelta.ts:1774",
-          "server/castingV2/refineDelta.ts:1774",
+          "server/castingV2/refineDelta.ts:1818",
+          "server/castingV2/refineDelta.ts:1818",
           "server/castingV2/refineDelta.ts:598"
         ]
       },
@@ -230,8 +230,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:605",
           "server/castingV2/refineDelta.ts:605",
-          "server/castingV2/refineDelta.ts:1742",
-          "server/castingV2/refineDelta.ts:1742",
+          "server/castingV2/refineDelta.ts:1786",
+          "server/castingV2/refineDelta.ts:1786",
           "server/castingV2/refineService.ts:2533",
           "server/castingV2/refineService.ts:2545"
         ]
@@ -245,8 +245,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:624",
           "server/castingV2/refineDelta.ts:624",
-          "server/castingV2/refineDelta.ts:1757",
-          "server/castingV2/refineDelta.ts:1757",
+          "server/castingV2/refineDelta.ts:1801",
+          "server/castingV2/refineDelta.ts:1801",
           "server/castingV2/refineDelta.ts:624"
         ]
       },
@@ -784,7 +784,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:499",
-          "server/castingV2/refineDelta.ts:1793",
+          "server/castingV2/refineDelta.ts:1837",
           "server/castingV2/refineInterpreter.ts:1786",
           "server/castingV2/refineDelta.ts:499"
         ]
@@ -806,7 +806,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:533",
-          "server/castingV2/refineDelta.ts:1817",
+          "server/castingV2/refineDelta.ts:1861",
           "server/castingV2/refineInterpreter.ts:1891",
           "server/castingV2/refineDelta.ts:533"
         ]
@@ -840,8 +840,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:569",
-          "server/castingV2/refineDelta.ts:1518",
-          "server/castingV2/refineDelta.ts:1874",
+          "server/castingV2/refineDelta.ts:1562",
+          "server/castingV2/refineDelta.ts:1918",
           "server/castingV2/refineDelta.ts:569"
         ]
       },

@@ -1075,9 +1075,53 @@ export const MAX_FREE_LENGTH = 120;
  * **And it is sized for the observed head, not for infinity** (bound (b)): the
  * composer still drops and still RETURNS what it dropped, so an eight-tone
  * monster is handled honestly rather than promised silently.
+ *
+ * # wardrobe - 245, and here is where it comes from (#2552)
+ *
+ * This subject is not a facet, and the product's own interpreter prompt is
+ * what says so: *"ONE entry holding the whole outfit as they have just asked
+ * for it - swapping a piece, adding a layer, taking a layer off, and changing
+ * a colour or a fabric are all that same one edit"* (`refineInterpreter.ts`,
+ * site 2 of #2544 slice 1). **A cap sized for "fox eyes" was being asked to
+ * hold a dressed figure.**
+ *
+ * Measured at the artifact rather than reasoned about, by composing the
+ * product's own four wardrobe sentences and reading their lengths:
+ *
+ * ```
+ *   basicsWardrobeLine("male")     52   3 clauses  12/28/8     fits at 120
+ *   HOUSE_WARDROBE_LINE           132   3 clauses  47/52/29    OVER at 120
+ *   basicsWardrobeLine("female")  149   3 clauses  112/25/8    OVER at 120
+ *   basicsWardrobeLine(null)      149   3 clauses  112/25/8    OVER at 120
+ * ```
+ *
+ * **Three of the four sentences the product writes for this subject could not
+ * be stored under it** - which is the shape of the finding, and is why the
+ * number is derived from the longest of them rather than from a feeling.
+ *
+ * **245 is 149 plus two more garment clauses at the richest observed clause
+ * mean.** The longest whole outfit the product itself composes is 149, in
+ * THREE clauses; the richest per-clause mean across those sentences is 48
+ * (the female line; the house line's is 43). A customer's outfit may carry
+ * more parts than the product's own three - the prompt above invites "adding
+ * a layer" in as many words - so two further clauses covers a five-part
+ * dressed figure: outerwear, top, bottoms, footwear, headwear. 149 + 2 x 48 =
+ * 245.
+ *
+ * **And it is sized for the observed outfit, not for infinity** (bound (b),
+ * exactly as hairShade's is): a longer value still refuses, and that refusal
+ * is #2714's subject rather than this entry's.
+ *
+ * ⚠ **THE CAP IS A STORAGE BUDGET AND WAS NEVER THE THING THAT BOUNDS
+ * INVENTION - read at the code before widening it.** Source containment
+ * (D-79, below) already requires every content word to come from the
+ * customer's own sentence, and the stage wall is checked per value
+ * independently of its length. So a longer cap lets a customer say more about
+ * their own outfit; it does not let the model say more.
  */
 const FREE_SUBJECT_MAX_LENGTH: Readonly<Partial<Record<FreeSubject, number>>> = Object.freeze({
   hairShade: 220,
+  wardrobe: 245,
 });
 
 /** The cap this subject's values are judged by. */
