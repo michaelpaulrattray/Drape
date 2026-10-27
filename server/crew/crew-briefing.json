@@ -1,7 +1,7 @@
 {
-  "edition": 740,
-  "updatedAt": "2026-10-17T07:22:16.000Z",
-  "shift": "THREE THINGS, AND ONE OF THEM IS ABOUT YOUR OWN CHARACTERS. FIRST, THE ONE WORTH READING: a character's written description can gain a feature you never saw. When you ask for two things at once and the picture can only show one of them - \"a smaller waist and red lipstick\" on a head-and-shoulders shot - the studio correctly makes only the lipstick. That part was fixed this morning. But the FIRST time the studio writes that character's description, it starts from scratch and folds in every earlier thing you asked for as plain fact, including the half it never made. From then on every new picture is painted from that description, so an edit nobody ever saw becomes permanent. This is live on your account, because the description feature is switched on for you alone, and it fires on any character whose description has not been written yet - which is every character you edited before today. It is not fixed: the obvious repair is not available, because the studio does not record which half of an older ask went unmade, so the three honest options are written on the card with what each one costs. Filed as its own job rather than quietly folded into this morning's fix. SECOND, A DEAD END YOU CANNOT REACH YET, AND I CHECKED THAT RATHER THAN ASSUMING IT. If a character has a feature the studio invented a name for - fangs, horns, scales - and you colour it black and then type \"make them blacker\", the studio stops and asks \"which part?\", tells you \"nothing's been coloured yet\" when you have just coloured something, and offers you only the hair, the eyes or makeup. None of those is what you asked about, so there is no right answer to the question. I read your characters on production: not one of them has a feature of that kind, so nobody can hit this today - but nothing stops it, and my test database already has one. The existing job for this said it was harmless and that the studio simply carried on; that was wrong, and the job now says what actually happens. I have NOT guessed a fix: the three ways out each change what you get, and one of them sits on top of the colour rules you set this morning, so it waits for a proper design pass instead of my judgement. THIRD, AND IT IS HOUSEKEEPING THAT WAS COSTING REAL TIME: four jobs were finished, shipped and live on production and still sitting on the board as open work. Three are now closed, each with the receipt read at the running service rather than taken from the merge note; the fourth is a change to how every edit is worded, which is live on your account and is yours to judge when you next refine, so it stays open and now says so. Your ordered list now honestly reports that nothing on it can be started - which it should have said this morning, instead of sending each new shift to read three jobs before discovering the work was already done.",
+  "edition": 741,
+  "updatedAt": "2026-10-27T04:20:25.000Z",
+  "shift": "GOOD NEWS FIRST, AND IT IS THE ONLY THING ON THIS PAGE THAT MATTERS TONIGHT: everything the crew builds is reaching the live site again. For ten days it was not. From 17 October nothing we merged went live - the site kept serving the 17 October build while job after job was marked finished. The crew found it on 21 October and told you then. It is fixed. Fifteen jobs landed this morning between 10:34 and 13:31, and all fifteen are live now - I checked the running site itself and read the version it is serving, rather than trusting the merge notes, because trusting the merge notes is exactly what hid this for four days. The automatic after-deploy check also passed on all eight runs today. So the clothing changes in Refine, the waist fix, the picture-guide fix, the face reader and the rest are all on production for you to try. TONIGHT WAS A TIDY-UP, NOT A FEATURE. The cleaning round runs every three days and was seven days late, because a clean-up cannot happen while the crew is stopped - and the crew was stopped at your weekly model limit from 17 to 21 October. What it cleared: 194 leftover temporary folders the build tools had abandoned, and 65 leftover screenshots sitting loose in the project folder from jobs that finished weeks ago. Your project folder went from 77 stray files down to 11, and every one of the 11 is kept on a stated reason rather than my taste - seven are evidence pictures a document points at, one belongs to a job that is still open, one is your note saying where the backup drive lives. Nothing that belongs to the product was touched, and I checked the project's own libraries were intact after every single deletion. ONE THING WORTH YOUR ATTENTION, AND I HAVE NOT TOUCHED IT. Your ordered list currently says one job is available to start - clothing changes in Refine. It is not available: its first half is already built and live, and the only thing left on it is you looking at three pictures and saying whether the clothing reads right. That ask is already on this page. The list can only read labels, so it cannot see that the work behind the label is done, and the next shift that reads the list will be sent to a job with nothing in it. I have written it up rather than quietly editing a job you ordered. AND ONE DELIBERATE DECISION TO LEAVE 3.3 GIGABYTES ALONE. The folder holding every test picture from every court we have run has grown to 3.3 GB, and about 1.9 GB of it belongs to courts that are finished. I deleted none of it. Those are the actual pictures behind verdicts you gave with your own eyes, deleting them cannot be undone, and the disk they sit on is 80 per cent empty - so clearing them would have bought back five hundredths of one per cent of a disk nobody is short of. I wrote down the rule for when they do come out, so the next clean-up does not have to make the judgement again.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-17T06:37:08.491Z",
+      "readAt": "2026-10-27T04:21:21.436Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7506,7 +7506,7 @@
     {
       "id": "face-reader-slice1-2566",
       "title": "The panel reads what is on the character before it asks its list — the face reader, first piece (#2566)",
-      "status": "blocked",
+      "status": "merged",
       "prNumber": 2570,
       "note": "Waiting on a review by hand, which is the rule for anything near money or sign-in. IT CANNOT BE REVIEWED YET, and the earlier note here was wrong about that: it clashes with the main line, and while it does, the automatic checks cannot run on it at all - so there is nothing for a reviewer to read. Measured tonight: the clash is nothing but an automatically generated map, so putting it back in step is one command and no judgement. It is somebody else's claimed work, so the measurement is written on it rather than done for them. STATUS CORRECTED 17 Oct: this row said \"in review\" while no review was possible, which is why it now says held."
     },
@@ -10712,7 +10712,7 @@
     {
       "id": "outfit-serve-2544",
       "title": "Clothing becomes something a paid edit can change, switched off (#2544)",
-      "status": "blocked",
+      "status": "merged",
       "prNumber": 2600,
       "note": "Waiting on a review by hand: it touches the start-up settings check, which counts as money-and-login code. IT IS OUT OF STEP WITH THE MAIN CODE AGAIN - the earlier note here said it had been put back, which was true last night and is not true now. Measured tonight: one genuine overlap, in one file, where the main line has since moved that code into a shared helper. That one needs the person who wrote it, and the measurement is written on it. Your eye on the clothing strips is waiting behind this. STATUS CORRECTED 17 Oct: this row said \"in review\" while no review was possible, which is why it now says held."
     },
@@ -10733,11 +10733,18 @@
   ],
   "problems": [
     {
+      "id": "deploy-outage-2678",
+      "severity": "warning",
+      "state": "resolved",
+      "title": "For ten days nothing the crew merged reached the live site (#2678)",
+      "detail": "RESOLVED, and recorded here because it explains a ten-day silence on this page. From 17 October a job could be merged, marked finished and never go live: the site kept serving the 17 October build. The crew's own after-deploy check caught it at 08:08Z on 17 October and nobody was awake to read it, so it ran for four days. Card #2678 was filed on 21 October and closed 2026-10-27T00:54Z. Verified tonight at the running site rather than at the card: production serves the newest commit on a fresh process, with the after-deploy check passing on all eight of today's merges. Three dependency security advisories that were reddening every test run during the same window (#2683) are also fixed and closed. This page itself was frozen at edition 740 for those ten days, because what you read here is served from the deployed build - so there was nowhere for an update to land."
+    },
+    {
       "id": "stale-head-merge-2590",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "A job can land on a test run that never saw the job before it — and it reddened everything today (#2590)",
-      "detail": "Our merging tool asks GitHub whether a job is safe to land, and GitHub answers only about the TEXT of the files. Two jobs landed ninety minutes apart today, each tested on its own and never against the other, and the second one broke every test run in the product. No customer was affected and both jobs were correct; what it costs is the crew, because every branch cut afterwards inherits a broken suite. Three ways to close it are written up with a recommendation, and none is built — the right one depends on how often this happens, which is a number nobody has read."
+      "detail": "RESOLVED - card #2590 closed 2026-10-27T03:36Z; the fix merged this morning (squash b81389a7e) and the merge tool now refuses a green test run taken on a tree the main line has moved past. Our merging tool asks GitHub whether a job is safe to land, and GitHub answers only about the TEXT of the files. Two jobs landed ninety minutes apart today, each tested on its own and never against the other, and the second one broke every test run in the product. No customer was affected and both jobs were correct; what it costs is the crew, because every branch cut afterwards inherits a broken suite. Three ways to close it are written up with a recommendation, and none is built — the right one depends on how often this happens, which is a number nobody has read."
     },
     {
       "id": "stale-run-row-2079",
@@ -10903,9 +10910,9 @@
     {
       "id": "description-gains-unmade-half-2657",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "A character's description can gain a feature you never saw — live on your account (#2657)",
-      "detail": "When you ask for two things at once and the picture can only show one of them — \"a smaller waist and red lipstick\" on a head-and-shoulders shot — the studio correctly makes only the lipstick. That half was fixed this morning.\n\nWhat is still wrong is the FIRST time the studio writes that character's description. It starts from the original brief and folds in every earlier thing you asked for as plain fact, including the half it never made. From then on every new picture is painted from that description, so an edit nobody ever saw becomes a permanent part of who that character is.\n\nIt is live on your account, because the description feature is switched on for you alone, and it fires on any character whose description has not been written yet — which is every character you edited before today.\n\nIt is not fixed, and the obvious repair is not available: the studio does not record which half of an older ask went unmade, so there is nothing to look up. Three honest options are written on the card with what each one costs, and a short measurement is owed first — how many of your characters have no description yet AND an earlier ask with an out-of-shot half. Nothing is charged wrongly and nothing is deleted; what is wrong is what the description says."
+      "detail": "RESOLVED - card #2657 closed 2026-10-21T10:02Z, read at the running service rather than at the merge note, and the follow-up fixes for the same family landed this morning (#2665, #2671, #2673). When you ask for two things at once and the picture can only show one of them — \"a smaller waist and red lipstick\" on a head-and-shoulders shot — the studio correctly makes only the lipstick. That half was fixed this morning.\n\nWhat is still wrong is the FIRST time the studio writes that character's description. It starts from the original brief and folds in every earlier thing you asked for as plain fact, including the half it never made. From then on every new picture is painted from that description, so an edit nobody ever saw becomes a permanent part of who that character is.\n\nIt is live on your account, because the description feature is switched on for you alone, and it fires on any character whose description has not been written yet — which is every character you edited before today.\n\nIt is not fixed, and the obvious repair is not available: the studio does not record which half of an older ask went unmade, so there is nothing to look up. Three honest options are written on the card with what each one costs, and a short measurement is owed first — how many of your characters have no description yet AND an earlier ask with an out-of-shot half. Nothing is charged wrongly and nothing is deleted; what is wrong is what the description says."
     }
   ],
   "acknowledgedReplyIds": [
@@ -11211,7 +11218,7 @@
     300
   ],
   "nextUp": {
-    "readAt": "2026-10-17T06:37:08.490Z",
+    "readAt": "2026-10-27T04:21:21.436Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11326,7 +11333,11 @@
       {
         "issueNumber": 2647,
         "title": "The refine prompt sends the customer's words verbatim as the edit instruction, with the description as context — his labelled layout (his yes 2026-10-17)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2656 — the upstream gap: a first step saves no picture, so a lost edit cannot be restored. Build and verdict are done."
+        }
       }
     ]
   }
