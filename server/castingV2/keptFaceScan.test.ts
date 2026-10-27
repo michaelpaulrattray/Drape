@@ -412,3 +412,161 @@ describe("the full cycle — a kept scan survives the cleanup worker", () => {
     expect(it_.rows.at(-1).cleanupBatchId).toBe(it_.manifestIds.at(-1));
   });
 });
+
+/**
+ * THE FOUND ROWS, KEPT AND HANDED BACK (#2566 slice 2).
+ *
+ * ⚠ **THIS IS THE ARM THE WHOLE STORAGE HALF OF THE SLICE EXISTS FOR**, and it
+ * is not about tidiness. `CASTING_SCAN_TABLE_SCOPE` stands at `all`, so the
+ * FIRST look at a frame is kept and every later look on the same frame is
+ * served from the row. A row that held the catalogue's rows and not the pointer
+ * road's would put a jacket on the panel once and never again on that version —
+ * *"the same frame gave a different panel on different readings"*, which is the
+ * finding PR #2570 was held on, arriving by the storage road instead of the
+ * reader's.
+ */
+describe("the rows the reading found that nobody catalogued", () => {
+  const foundRow = (slot: string, noun: string, instance: number) => ({
+    slot: slot as FeatureSlot,
+    noun,
+    instance,
+    box: box(instance * 100),
+    maskUrl: dataUrl,
+  });
+
+  it("keeps them beside the catalogue's rows, in ONE manifest and ONE transaction", async () => {
+    const it_ = bench();
+    const kept = await keepScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      scan: {
+        ...shape(["hair"] as FeatureSlot[]),
+        discovered: [foundRow("discovered:jacket#1", "jacket", 1)],
+      },
+      dependencies: it_.dependencies,
+    });
+
+    expect(kept).toEqual({ kept: true, objects: 2 });
+    /* ⚠ ONE manifest, discharged by the one row — a second manifest is a second
+       promise to delete, and this file's own scar is a promise nobody kept. */
+    expect(it_.manifested).toHaveLength(1);
+    expect(it_.manifested[0]).toHaveLength(2);
+    expect(it_.held.size).toBe(0);
+    expect(it_.sweep()).toBe(0);
+  });
+
+  it("hands them back with their noun, their instance and their picture", async () => {
+    const it_ = bench();
+    await keepScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      scan: {
+        ...shape(["hair"] as FeatureSlot[]),
+        discovered: [
+          foundRow("discovered:strap#1", "strap", 1),
+          foundRow("discovered:strap#2", "strap", 2),
+        ],
+      },
+      dependencies: it_.dependencies,
+    });
+
+    const served = await serveKeptScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      dependencies: it_.dependencies,
+    });
+
+    expect(served?.discovered).toHaveLength(2);
+    expect(served!.discovered!.map((one) => [one.noun, one.instance, one.slot])).toEqual([
+      ["strap", 1, "discovered:strap#1"],
+      ["strap", 2, "discovered:strap#2"],
+    ]);
+    /* The picture comes back as a data URL off the stored object, exactly as a
+       catalogue row's stencil does. */
+    expect(served!.discovered![0]!.maskUrl.startsWith("data:image/png;base64,")).toBe(true);
+    /* And the catalogue rows are untouched beside them. */
+    expect(Array.from(served!.slots.keys())).toEqual(["hair"]);
+  });
+
+  /*
+    ⚠ THE NOUN IS STORED AND NOT RECONSTRUCTED, which is the one property a
+    key-derived label would silently break: `cat ears` and `cat-ears` slug the
+    same, so the row has to carry the word the reading wrote.
+  */
+  it("brings back a noun no key could have said", async () => {
+    const it_ = bench();
+    await keepScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      scan: {
+        ...shape(["hair"] as FeatureSlot[]),
+        discovered: [foundRow("discovered:cat-ears#1", "cat ears", 1)],
+      },
+      dependencies: it_.dependencies,
+    });
+
+    const served = await serveKeptScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      dependencies: it_.dependencies,
+    });
+    expect(served!.discovered![0]!.noun).toBe("cat ears");
+  });
+
+  it("writes NO field at all when the reading found none — the row is what it was before", async () => {
+    const it_ = bench();
+    await keepScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      scan: shape(["hair"] as FeatureSlot[]),
+      dependencies: it_.dependencies,
+    });
+
+    expect("discovered" in it_.rows[0]!.geometry).toBe(false);
+    const served = await serveKeptScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      dependencies: it_.dependencies,
+    });
+    expect("discovered" in served!).toBe(false);
+  });
+
+  it("serves a row written before this field existed exactly as it always did", async () => {
+    const it_ = bench();
+    await keepScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      scan: shape(["hair"] as FeatureSlot[]),
+      dependencies: it_.dependencies,
+    });
+    /* A pre-#2566 row, built by deleting the field the way the old writer never
+       wrote it. */
+    delete it_.rows[0]!.geometry.discovered;
+
+    const served = await serveKeptScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      dependencies: it_.dependencies,
+    });
+    expect(served).not.toBeNull();
+    expect(Array.from(served!.slots.keys())).toEqual(["hair"]);
+  });
+
+  /*
+    AND A FOUND STENCIL THAT WILL NOT FETCH CONDEMNS THE WHOLE READING, exactly
+    as a catalogue one does. The alternative — drop that row and serve the rest
+    — looks gentler and is worse: the reading would be served as COMPLETE, so
+    the jacket would never come back without the frame changing.
+  */
+  it("condemns the reading when a found stencil has gone", async () => {
+    const it_ = bench();
+    await keepScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      scan: {
+        ...shape(["hair"] as FeatureSlot[]),
+        discovered: [foundRow("discovered:jacket#1", "jacket", 1)],
+      },
+      dependencies: it_.dependencies,
+    });
+    /* The found row's object is the second one written. */
+    const key = it_.rows[0]!.geometry.discovered[0]!.maskKey;
+    it_.objects.delete(key);
+
+    const served = await serveKeptScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      dependencies: it_.dependencies,
+    });
+    expect(served).toBeNull();
+  });
+});

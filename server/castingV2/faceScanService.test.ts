@@ -1103,3 +1103,151 @@ describe("whether a discovery is bought", () => {
     expect(defaultDiscoverer(1)).toBeNull();
   });
 });
+
+/**
+ * THE POINTER ROAD REACHING THE PANEL (#2566 slice 2).
+ *
+ * Slice 1's own closing note said the discovery's names were logged and
+ * discarded — *"a discovery's names change nothing on the panel"* — and that is
+ * the sentence these arms exist to have stopped being true. What is on trial is
+ * the SEAM: the discovery is bought, its off-list names reach the pointer road,
+ * the road's rows reach the settled reading, and the settled reading is what
+ * gets kept.
+ *
+ * ⚠ **The reader here answers the pointer road's two calls and counts them**,
+ * so *"the panel drew a jacket"* is a measurement of two provider calls having
+ * been made rather than of a fixture having been plumbed through.
+ */
+describe("what a discovery's names become", () => {
+  /** The counting reader, plus the pointer road's two halves. */
+  function pointingReader(detects: Record<string, Array<{ x: number; y: number; width: number; height: number }>>) {
+    const base = countingReader() as any;
+    const asked: string[] = [];
+    base.pointer = async ({ name }: { name: string }) => {
+      asked.push(name);
+      return detects[name] ?? [];
+    };
+    base.regionInBox = async ({ box }: { box: { x: number; y: number; width: number; height: number } }) =>
+      maskOf(box);
+    base.pointed = () => asked;
+    return base as RegionReader & { calls: () => number; pointed: () => string[] };
+  }
+
+  const discoveryOf = (features: Array<{ name: string; count: number }>): FaceDiscovery => ({
+    ok: true,
+    features: features.map((one) => ({ ...one, about: "" })),
+    cannotSee: [],
+    unusable: [],
+    crops: ["head", "full"],
+  });
+
+  it("cuts the off-list ones and puts them on the panel under the reading's own noun", async () => {
+    const reader = pointingReader({ jacket: [{ x: 100, y: 200, width: 300, height: 400 }] });
+    const { deps } = await dependencies(reader);
+
+    const reading = await scannedFace({
+      ...FACE,
+      dependencies: {
+        ...deps,
+        discover: async () => discoveryOf([{ name: "hair", count: 1 }, { name: "jacket", count: 1 }]),
+      },
+    });
+
+    /* The catalogue's own name never reached the detector — the scan already
+       bought it, and asking again is the same feature paid for twice. */
+    expect(reader.pointed()).toEqual(["jacket"]);
+    expect(reading.discovered).toHaveLength(1);
+    expect(reading.discovered[0]!.noun).toBe("jacket");
+    expect(reading.discovered[0]!.box).toEqual({ x: 100, y: 200, width: 300, height: 400, frame: FRAME });
+    /* And it arrives as a stencil, the way every other row's picture does. */
+    expect(reading.discovered[0]!.maskUrl.startsWith("data:image/png;base64,")).toBe(true);
+    expect(reading.stencilBytes).toBeGreaterThan(0);
+
+    /* The panel's own channel carries it through untouched. */
+    expect(panelScanOf(reading).discovered).toEqual(reading.discovered);
+  });
+
+  it("CONTROL — the same reader with no discovery finds nothing off the list", async () => {
+    const reader = pointingReader({ jacket: [{ x: 100, y: 200, width: 300, height: 400 }] });
+    const { deps } = await dependencies(reader);
+
+    const reading = await scannedFace({ ...FACE, dependencies: { ...deps, discover: null } });
+
+    expect(reader.pointed()).toEqual([]);
+    expect(reading.discovered).toEqual([]);
+    expect(panelScanOf(reading).discovered).toEqual([]);
+  });
+
+  it("the catalogue's own rows are byte for byte what they were beside it", async () => {
+    const reader = pointingReader({ sash: [{ x: 10, y: 10, width: 20, height: 20 }] });
+    const { deps } = await dependencies(reader);
+
+    const without = await scannedFace({ ...FACE, dependencies: { ...deps, discover: null } });
+    resetFaceScanCache();
+    const with_ = await scannedFace({
+      ...FACE,
+      dependencies: { ...deps, discover: async () => discoveryOf([{ name: "sash", count: 1 }]) },
+    });
+
+    expect(Array.from(with_.slots.keys())).toEqual(Array.from(without.slots.keys()));
+    expect(with_.asked).toBe(without.asked);
+    /* `found` is still the CATALOGUE's count: a dressed cast reporting more
+       found than asked reads as an instrument fault. */
+    expect(with_.found).toBe(without.found);
+    expect(with_.discovered).toHaveLength(1);
+  });
+
+  it("a reading whose pointer road fails is the reading it would have been anyway", async () => {
+    const reader = pointingReader({});
+    (reader as any).pointer = async () => { throw new MaskError("429 concurrent_requests_limit"); };
+    const { deps } = await dependencies(reader);
+
+    const reading = await scannedFace({
+      ...FACE,
+      dependencies: { ...deps, discover: async () => discoveryOf([{ name: "jacket", count: 1 }]) },
+    });
+
+    expect(reading.discovered).toEqual([]);
+    expect(reading.slots.size).toBeGreaterThan(0);
+    /* And the pointer road's failure is NOT recorded as a failed region: the
+       `failed` list is what decides whether a reading is damaged and therefore
+       not kept, so a detector's bad minute would otherwise condemn the whole
+       catalogue reading and re-buy it on the next look. */
+    expect(reading.failed.map((one) => one.question)).not.toContain("jacket");
+  });
+
+  it("a discovery that fails buys no pointer call and changes nothing", async () => {
+    const reader = pointingReader({ jacket: [{ x: 10, y: 10, width: 20, height: 20 }] });
+    const { deps } = await dependencies(reader);
+
+    const reading = await scannedFace({
+      ...FACE,
+      dependencies: { ...deps, discover: async () => ({ ok: false, why: "no crop produced a usable reading" }) },
+    });
+
+    expect(reader.pointed()).toEqual([]);
+    expect(reading.discovered).toEqual([]);
+    expect(reading.slots.size).toBeGreaterThan(0);
+  });
+
+  /*
+    ⚠ THE SETTLED READING IS WHAT GETS KEPT, so it has to WAIT for the pointer
+    road. This arm is the one that reddens if `discovering` goes back to being
+    fired and forgotten: a settled answer that omitted the jacket would be
+    written down as complete and the jacket would never arrive on that frame.
+  */
+  it("the settled reading waits for the found rows rather than resolving without them", async () => {
+    const reader = pointingReader({ jacket: [{ x: 10, y: 10, width: 20, height: 20 }] });
+    (reader as any).pointer = async ({ name }: { name: string }) => {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      return name === "jacket" ? [{ x: 10, y: 10, width: 20, height: 20 }] : [];
+    };
+    const { deps } = await dependencies(reader);
+
+    const reading = await scannedFace({
+      ...FACE,
+      dependencies: { ...deps, discover: async () => discoveryOf([{ name: "jacket", count: 1 }]) },
+    });
+    expect(reading.discovered).toHaveLength(1);
+  });
+});

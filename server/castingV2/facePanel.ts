@@ -198,6 +198,28 @@ export type PanelScan = {
    * "nobody looked" cannot be read as "nothing is there".
    */
   absent?: ReadonlySet<FeatureSlot>;
+  /**
+   * WHAT THE READING FOUND THAT NO CATALOGUE QUESTION COVERS — a jacket, a
+   * sash, a third eye, a mole (#2566 slice 2's pointer road).
+   *
+   * A FOURTH channel, and a LIST rather than a map, for the one reason this
+   * could not be folded into `slots`: **the noun is the customer's own and
+   * arrives as data.** Every other row on this panel gets its name from the
+   * catalogue, and nobody catalogued these — so the geometry cannot travel
+   * keyed by slot with the word left to be reconstructed. `found:`-style keys
+   * cannot say whether the reading wrote *cat ears* or *cat-ears*, which is the
+   * open lane's own binding condition arriving again.
+   *
+   * Absent on a panel built without a scan and empty on a reading that found
+   * nothing off the list; both draw no such rows, which is today's panel.
+   */
+  discovered?: readonly {
+    slot: FeatureSlot;
+    noun: string;
+    instance: number;
+    box: PanelBox;
+    maskUrl: string;
+  }[];
 };
 
 /**
@@ -1457,6 +1479,94 @@ export function facePanel(input: {
         .map((side) => openRegion(side.slot, side.state.box!)),
       /* No children — see the block comment: the product has no word for one of
          her wings and will not compose one. */
+      instances: [],
+    });
+  }
+
+  /*
+    ---- WHAT THE READING FOUND THAT NOBODY CATALOGUED (#2566 slice 2's pointer
+    road, under the design he approved on #2532) ----
+
+    ⚠ **A THIRD SOURCE OF ROWS, BESIDE THE CATALOGUE AND THE LIBRARY, and it is
+    the first one that is a READING.** Every loop above this walks either
+    `catalogueSlots()` — a closed, hand-authored vocabulary — or `bySlot`, which
+    is what the customer's own edits filed. Neither can hold a jacket, a sash or
+    a third eye, and that is #30's whole complaint and his own: *"n3 is meant to
+    be bringing in the ability to detect all/any features right rather than from
+    a list?"*
+
+    # Why it lands in the OPEN section rather than a new one
+
+    `open` already means *also on this character* and already carries rows
+    nobody catalogued. A fourth section would be a second heading for one idea,
+    and a customer looking at their cast has no use for the distinction between
+    *a thing you introduced by editing* and *a thing we found by looking* — that
+    is our bookkeeping, which is the disappearing-technology law's clause 6.
+
+    # The rules it inherits rather than restates
+
+    **His picture rule** (*"no features should ride in the image analyzer on the
+    right panel unless it has an image to go with it"*): `hasContent` below
+    already drops a row with no rectangle, and the reader upstream already
+    refuses a cut with no pixels — so a name that could not be cut has no row
+    here, with nothing to add. **The scan's pending grace is not extended to
+    these** for the same reason it is not extended to an open kind: the grace
+    keeps a place for an answer the catalogue walk is certainly going to give,
+    and there is no catalogue walk behind a found row (`keep`'s own clause,
+    `row.group !== "open"`).
+
+    **A found rectangle is never scopable**, exactly as an open one is not: the
+    scope door admits a catalogued instance and nothing else, so offering a
+    narrow edit on *the jacket* would be an affordance the server refuses.
+
+    # And the noun comes from the reading, never from the key
+
+    `openNounOf` reads the library's recorded noun for the same reason, in the
+    same words: `cat ears` and `cat-ears` slug alike, so a key cannot say which
+    was written. These rows carry theirs as data.
+
+    Rows of ONE noun stay distinct rather than merging into a pair: two straps
+    are two items (#2565 §6), the reading counted them, and composing a singular
+    of somebody's word to label one of them is the invention the distributed-kind
+    row above refuses by name. So each instance is its own row, and its label is
+    the noun it was found under.
+  */
+  for (const found of input.scan?.discovered ?? []) {
+    const noun = found.noun.trim();
+    /* An unusable noun is SKIPPED rather than drawn under a made-up name — the
+       same refusal the ink loop makes for an unreadable slot, for the same
+       reason: a row is a promise that tapping it edits that thing. */
+    if (noun === "") continue;
+    const spokenName = `${input.pronouns.possessive} ${noun}`;
+    push({
+      state: "settled",
+      slots: [found.slot],
+      group: "open",
+      name: capitalize(noun),
+      spoken: spokenName,
+      /*
+        NO WORDS, and that is the honest answer rather than a gap. What the
+        reading said ABOUT this thing is prose for the current description
+        (#2565 §2), not a line under its own picture: the row's name is the
+        reading's own noun already, so a description beside it would be the
+        reader talking about its own answer.
+      */
+      words: [],
+      /* A stated absence is `whenAbsent`'s, authored per catalogued slot beside
+         the argument that an empty read there cannot mean hidden. Nobody has
+         catalogued this thing, so nobody has made that argument about it. */
+      absent: null,
+      /* Neither "they came with it" nor "from an edit": this is what the
+         photograph shows, which is what a described row answers too. */
+      from: null,
+      prefill: prefillFor(spokenName),
+      cutouts: [{
+        contentUrl: input.scan?.frameUrl ?? "",
+        maskUrl: found.maskUrl,
+        crop: found.box,
+      }],
+      regions: [openRegion(found.slot, found.box)],
+      /* One cut instance, so there is nothing to open. */
       instances: [],
     });
   }
