@@ -1,7 +1,7 @@
 {
-  "edition": 740,
-  "updatedAt": "2026-10-17T07:22:16.000Z",
-  "shift": "THREE THINGS, AND ONE OF THEM IS ABOUT YOUR OWN CHARACTERS. FIRST, THE ONE WORTH READING: a character's written description can gain a feature you never saw. When you ask for two things at once and the picture can only show one of them - \"a smaller waist and red lipstick\" on a head-and-shoulders shot - the studio correctly makes only the lipstick. That part was fixed this morning. But the FIRST time the studio writes that character's description, it starts from scratch and folds in every earlier thing you asked for as plain fact, including the half it never made. From then on every new picture is painted from that description, so an edit nobody ever saw becomes permanent. This is live on your account, because the description feature is switched on for you alone, and it fires on any character whose description has not been written yet - which is every character you edited before today. It is not fixed: the obvious repair is not available, because the studio does not record which half of an older ask went unmade, so the three honest options are written on the card with what each one costs. Filed as its own job rather than quietly folded into this morning's fix. SECOND, A DEAD END YOU CANNOT REACH YET, AND I CHECKED THAT RATHER THAN ASSUMING IT. If a character has a feature the studio invented a name for - fangs, horns, scales - and you colour it black and then type \"make them blacker\", the studio stops and asks \"which part?\", tells you \"nothing's been coloured yet\" when you have just coloured something, and offers you only the hair, the eyes or makeup. None of those is what you asked about, so there is no right answer to the question. I read your characters on production: not one of them has a feature of that kind, so nobody can hit this today - but nothing stops it, and my test database already has one. The existing job for this said it was harmless and that the studio simply carried on; that was wrong, and the job now says what actually happens. I have NOT guessed a fix: the three ways out each change what you get, and one of them sits on top of the colour rules you set this morning, so it waits for a proper design pass instead of my judgement. THIRD, AND IT IS HOUSEKEEPING THAT WAS COSTING REAL TIME: four jobs were finished, shipped and live on production and still sitting on the board as open work. Three are now closed, each with the receipt read at the running service rather than taken from the merge note; the fourth is a change to how every edit is worded, which is live on your account and is yours to judge when you next refine, so it stays open and now says so. Your ordered list now honestly reports that nothing on it can be started - which it should have said this morning, instead of sending each new shift to read three jobs before discovering the work was already done.",
+  "edition": 748,
+  "updatedAt": "2026-10-27T13:30:00Z",
+  "shift": "A LONG OUTFIT SENTENCE WAS LOSING THE WHOLE EDIT ON YOUR ACCOUNT. Fixed and live tonight.\n\nWHAT WAS WRONG. Clothing edits went on for your account this morning. From that moment, if you typed a full outfit — \"a heavy oiled canvas workcoat over a grey marl hoodie and faded indigo jeans, with tan leather boots and a knitted watch cap\" — the product answered \"That one didn't come through clearly. Try naming what you want changed about them.\" Your sentence was perfectly clear. There was a limit on how much the product could remember about one thing, it was set years ago for short notes like \"fox eyes\", and a whole outfit did not fit in it. Worse: anything else you asked for in the same breath died with it, silently. You would have retyped the same sentence and got the same answer.\n\nHOW BAD IT WAS. The product writes four outfit sentences of its own — the plain grey tee, and three Basics lines. THREE OF THE FOUR were too long for its own limit. It could not store the outfits it writes itself.\n\nWHAT I DID. Clothing now gets its own, larger limit — sized by measuring the longest outfit the product actually writes and leaving room for two more garments, so a five-part outfit fits: coat, top, trousers, shoes, hat. Nothing else changed. Every other kind of edit keeps the old limit, which is right — teeth do not need a paragraph. Nothing new on screen, nothing to learn, same price.\n\nONE HONEST LIMIT, WRITTEN DOWN RATHER THAN GLOSSED. Go far enough past the new limit and the old behaviour returns: the edit is dropped and you get that same untrue sentence. That is a separate fault about what the product SAYS when something does not fit, rather than about how much fits, and it is filed on its own card with the full reading. You are much less likely to meet it now, but I am not telling you it is gone.\n\nSOMETHING YOUR PAGE WAS NOT TELLING YOU. The clothing card was marked as waiting on you and was asking you for nothing — every question on it had been answered and struck out, so the page had nothing left to show and quietly showed nothing. It asks properly now: try a clothing edit on a signed cast and say whether the outfits look right. That is the only thing standing between clothing edits and everyone having them.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-17T06:37:08.491Z",
+      "readAt": "2026-10-27T13:21:55.785Z",
       "items": [
         {
           "issueNumber": 14,
@@ -327,9 +327,53 @@
   },
   "needsYou": [
     {
+      "id": "outfit-eye-2544",
+      "title": "Try a clothing edit and say whether the outfits look right",
+      "productImpact": "Clothing edits have been on for your account since this morning, and tonight's fix means a full outfit sentence now works rather than being thrown away. Nobody has typed a real one yet, so the only thing left on this is your eye.\n\nIf the clothes look right, clothing goes on for everyone next. If they do not, what is wrong with them becomes the next card. Nothing else is waiting on this and nothing is being built on it meanwhile.",
+      "workedExample": "Open any signed character and type into the box you always type in. Try an ordinary one — \"put him in a long black coat\" — and a long one — \"a charcoal three-piece suit with a navy tie, brown brogues and a pocket square\". Both cost the same as any other refine and there is no new button. The long one is the interesting test: before tonight it came back \"that one didn't come through clearly\" and your whole edit was thrown away. One thing is still refused on purpose: the backdrop and the set. \"A red studio background\" is not part of this and will say so.",
+      "options": [
+        {
+          "key": "right",
+          "label": "The outfits look right",
+          "consequence": "Clothing edits widen past your account on your word, and the flag retires."
+        },
+        {
+          "key": "wrong",
+          "label": "Something is wrong with them",
+          "consequence": "Say what is wrong and it becomes the next card on this rung. The switch stays on your account only until it is fixed."
+        }
+      ],
+      "recommendation": "Try it. There is nothing more to measure from this side — the wall rate was measured flat either way, and the sentence-length fault that would have spoiled the test is fixed and live. What is left is whether the clothes look good, and that is your eye and not a number.",
+      "state": "open",
+      "filedAt": "2026-10-27T13:05:00.000Z",
+      "issueNumber": 2544
+    },
+    {
+      "id": "outfit-flip-2544",
+      "title": "Switch clothing changes on for your own account — or leave it off",
+      "productImpact": "Today nobody can change what a character is wearing in Refine. \"Put him in a long black coat\" is refused. You said this morning that the three clothing pictures read right, and that was the last thing holding this.\n\nWhat switching it on does: on YOUR account only, clothing becomes something you can edit in the same box you already type in. Change a garment, add a layer, change its colour or fabric, add a hat or a scarf. Same price as any other refine, nothing new on screen, no new button and no setting to learn — the words are the control, as they are for everything else there.\n\nBefore asking you I measured the one thing that could have made this a bad idea. Teaching the studio about clothing means adding to the instructions it reads before EVERY edit, and this program has already measured that adding to those instructions can make unrelated edits start refusing. So 46 ordinary customer sentences went through the real studio twice, once each way, back to back on the same character. Seven of the 46 refuse today. With clothing taught, the same seven refuse for the same seven reasons and nothing else moved.\n\nThe clothing asks themselves: six of seven work where none of seven worked before. The seventh is \"take the jacket off him\", and it does not fail as clothing — it says there is nothing recorded to take off, which is already its own job on the board.\n\nAnd the thing we were most afraid of cannot happen: a clothing edit quietly repainting the room behind the character. I asked for a jacket alongside every scenery word the studio knows, fifty-five times. Not once did any of them reach the picture instruction.\n\nOne thing you WILL meet, and it is not new and not about clothing: ask for two things at once and the studio does one and says nothing about the other. \"Give her a white coat and make the background black\" gives you the coat in silence. That happens right now, on your account, on hair and eyes and beards — it needs no settings. It is written up separately. Switching clothing on gives it one more place to show.",
+      "workedExample": "Open a signed character, type \"put him in a long black wool coat\" and press the button. Today it refuses. With this on, it comes back wearing the coat, for the same credits any other refine costs. If you then type \"put him in a red jacket against a studio backdrop\", you will get the jacket and nothing will mention the backdrop — that is the separate thing above, and it is what the measurement found.",
+      "options": [
+        {
+          "key": "yes",
+          "label": "Switch it on for my account",
+          "consequence": "Clothing becomes editable in Refine on your account only. Nobody else's account changes. The next step after that is your eye on real edits, and then your word on everyone."
+        },
+        {
+          "key": "no",
+          "label": "Leave it off",
+          "consequence": "Nothing changes. Clothing stays refused for every account including yours, and the work sits built and dark until you say otherwise."
+        }
+      ],
+      "recommendation": "Yes. The one measurement that could have stopped it came back flat — the same seven sentences refuse either way — and the thing it could have broken, a refine quietly repainting the set, cannot happen in any of the fifty-five ways I tried it. Your account is the right and only place to try it next, which is what the plan said from the start.",
+      "state": "answered",
+      "filedAt": "2026-10-27T06:30:03.000Z",
+      "issueNumber": 2544
+    },
+    {
       "id": "outfit-court-2544",
-      "title": "Clothing changes in Refine — look at three pictures and tell me if they read right",
-      "productImpact": "⚠ **#2544 keeps building while this sits here.** This question gates switching clothing edits ON, not the build — the build ships switched off and needs nothing from you. That is why it is its own card (#2597) rather than a hold on #2544.\n\nYou said on the 15th that outfit changes should work in Refine: type “put them in a long black coat” and get it, the same way you already change eyes or hair. The design is written and you said GO.\n\nIts first step is not code. Before building the door, the question is whether the picture engine can dress somebody well at all — same person, same pose, same light, same room. I ran that tonight on three of your characters, four kinds of clothing change each: swap the outfit, add a jacket over what is there, take the outer layer off, change one garment's colour and cloth.\n\nTwenty-four pictures, about 57 cents of our own money. No credits of yours, nothing touched in the product, nothing switched on.\n\nIt works. And the thing I was most worried about — asking for a coat and getting a new room with it — did not happen once: the backdrop held on all twenty-one pictures that came back.\n\nTwo things worth knowing. One ask came back REFUSED by the picture service: taking the fisherman's overalls off read to them as undressing, even though the ask named the sweater that stays. That tells the build to word a removal as what the person IS wearing afterwards, and it costs nothing. And my own measurement called three pictures “nothing changed” when all three are correct — it was built for a whole-outfit swap and under-reads a colour change. Which is exactly why you are being shown pictures and not a score.",
+      "title": "Done — you said the clothing reads right, and that released the next half",
+      "productImpact": "Your word, 2026-10-27: “They read right — carry on”. That was the one thing the second half of this job was waiting for, so it is released and a seat can start it. Nothing changed for you tonight: clothing editing is still switched off for every account, including yours. Turning it on for your account is the next piece of work, and it comes with two measurements beside it — how often the studio refuses a clothing ask, and how often the picture comes back right. You will not need to answer anything for that; it either works and widens, or it comes back to you with a number. ⚠ **#2544 keeps building while this sits here.** This question gates switching clothing edits ON, not the build — the build ships switched off and needs nothing from you. That is why it is its own card (#2597) rather than a hold on #2544.\n\nYou said on the 15th that outfit changes should work in Refine: type “put them in a long black coat” and get it, the same way you already change eyes or hair. The design is written and you said GO.\n\nIts first step is not code. Before building the door, the question is whether the picture engine can dress somebody well at all — same person, same pose, same light, same room. I ran that tonight on three of your characters, four kinds of clothing change each: swap the outfit, add a jacket over what is there, take the outer layer off, change one garment's colour and cloth.\n\nTwenty-four pictures, about 57 cents of our own money. No credits of yours, nothing touched in the product, nothing switched on.\n\nIt works. And the thing I was most worried about — asking for a coat and getting a new room with it — did not happen once: the backdrop held on all twenty-one pictures that came back.\n\nTwo things worth knowing. One ask came back REFUSED by the picture service: taking the fisherman's overalls off read to them as undressing, even though the ask named the sweater that stays. That tells the build to word a removal as what the person IS wearing afterwards, and it costs nothing. And my own measurement called three pictures “nothing changed” when all three are correct — it was built for a whole-outfit swap and under-reads a colour change. Which is exactly why you are being shown pictures and not a score.",
       "workedExample": "The lizard is the hardest of the three and the clearest result. Ask to take his leather jerkin off and the jerkin and its chest strap both go, leaving the shirt underneath — still clothed, still him, scales and ridges and tail untouched, the same grey backdrop behind him. Ask instead for a denim jacket over it and the jerkin stays visible under the open jacket. Same character, four different outfits, one studio.",
       "options": [
         {
@@ -344,7 +388,7 @@
         }
       ],
       "recommendation": "Carry on. I looked at every picture at full size before writing this, including the faces side by side at full resolution, and I could not find a drift — but your eye is the one that decides, and the pictures are in Pictures for your eye.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-16T17:30:00.000Z",
       "issueNumber": 2597
     },
@@ -4105,6 +4149,33 @@
       "state": "done",
       "filedAt": "2026-10-16T04:05:00.000Z",
       "issueNumber": 2532
+    },
+    {
+      "id": "dev-scope-advisories-2703",
+      "title": "Our build tools had eleven known holes for three days — fixed. Should the merge check read them too?",
+      "productImpact": "No customer was ever exposed and that is measured, not assumed. The check that reads what actually ships read\nzero before this and zero after. The eleven holes were all in the tools we build and test WITH — the dev server,\nthe test runner, and a small address parser they bring with them.\n\nOne of the eleven is serious, and it is worth knowing what it is because it is close to home: a Windows-only\nhole in the dev server's \"open this file in my editor\" button. That is the machine you and the crew work on\nevery day, not production.\n\nIt is already fixed, tonight, and the fix was three one-line changes — every one of the three packages already\nhad a safe patched version inside the ranges we had written down. Eleven holes became \"no known vulnerabilities\nfound\", with the full 21,000-check suite green on the new versions.\n\nSo why ask you anything? Because of how long they sat. Our merge check deliberately reads only what ships, and\nsays so in its own output. Nothing watches the build tools except this weekly security pass. These eleven\narrived on the 24th, 25th and 27th, and the first thing to notice them was tonight.\n\nThere is a second reason they sat, and it is not laziness: the robot that offers us updates had already proposed\na whole major version jump for two of these packages on the 19th, both of which fail their tests, and it will\nnot offer a smaller safe update for a package it already has an open proposal for. So the cheap fix was never\nshown to anyone. I confirmed that rather than guessing: the update bundle it opened this morning moves neither\npackage.",
+      "workedExample": "Concretely: on the 24th a serious hole was published in a piece of the dev server. Every pull request the crew\nopened after that passed every check green, including both of our security scanners, because none of them looks\nat the build tools. On the 27th, three days later, the weekly security pass read it and it was fixed within the\nhour. If the merge check had been reading the build tools too, it would have said so on the 24th.",
+      "options": [
+        {
+          "key": "warn",
+          "label": "WARN — tell us, never block us",
+          "consequence": "A pull request shows a note naming any known hole in the build tools, and merges exactly as it does today. We would have known on the 24th. Nothing can ever be stopped by a hole that cannot reach a customer."
+        },
+        {
+          "key": "refuse",
+          "label": "REFUSE — treat them like the real thing",
+          "consequence": "Nothing merges while a known hole is open in a build tool. Safest, and it has a real cost: a hole in the test runner with no fix published yet would stop all work until somebody silenced it by hand. That has happened to us before, on the production side."
+        },
+        {
+          "key": "leave",
+          "label": "LEAVE IT — the weekly pass is enough",
+          "consequence": "Nothing changes. Build-tool holes keep being caught by the weekly security pass, so the worst case stays about seven days. Tonight's were caught in three."
+        }
+      ],
+      "recommendation": "WARN. It would have caught these on the 24th instead of the 27th, it costs nothing, and it cannot ever stand\nbetween you and a merge. REFUSE is the one I would not take: a hole with no published fix would stop the crew\ndead over something a customer cannot reach, and we have been bitten by exactly that on the production side\nalready.",
+      "state": "answered",
+      "filedAt": "2026-10-27T09:10:09.227Z",
+      "issueNumber": 2703
     }
   ],
   "eyeItems": [
@@ -7464,8 +7535,8 @@
     {
       "id": "outfit-court-eye-2544",
       "title": "Clothing changes in Refine — three characters, four kinds of change, your eye on the pictures",
-      "question": "WHAT YOU ARE LOOKING AT — the measurement that comes before any of this gets built, on three of your own characters.\n\nYou said outfit changes should work in Refine. Before building the door, the question was whether the picture engine can dress somebody well at all: does the person stay the same person, does the pose hold, does the light hold, and does the room stay where it was.\n\nEach strip is one character: as they are, then each kind of clothing change. Nothing here is live and nothing of yours was spent — these are house-money test pictures.\n\nWHAT I AM ASKING: do these read right to you? If they do, the build carries on and the switch comes to you later. If any of them reads wrong — a face that drifted, a light that changed, a garment that looks pasted on — say which on the card and that becomes the thing the build has to solve first.",
-      "state": "open",
+      "question": "ANSWERED 2026-10-27 — your word: “They read right — carry on”. WHAT YOU ARE LOOKING AT — the measurement that comes before any of this gets built, on three of your own characters.\n\nYou said outfit changes should work in Refine. Before building the door, the question was whether the picture engine can dress somebody well at all: does the person stay the same person, does the pose hold, does the light hold, and does the room stay where it was.\n\nEach strip is one character: as they are, then each kind of clothing change. Nothing here is live and nothing of yours was spent — these are house-money test pictures.\n\nWHAT I AM ASKING: do these read right to you? If they do, the build carries on and the switch comes to you later. If any of them reads wrong — a face that drifted, a light that changed, a garment that looks pasted on — say which on the card and that becomes the thing the build has to solve first.",
+      "state": "done",
       "filedAt": "2026-10-16T17:30:00.000Z",
       "issueNumber": 2597,
       "cardId": "outfit-court-2544",
@@ -7490,6 +7561,20 @@
   ],
   "pipeline": [
     {
+      "id": "wardrobe-cap-2552",
+      "title": "A whole outfit fits in the box that holds a whole outfit (#2552)",
+      "status": "merged",
+      "prNumber": 2715,
+      "note": "Gate green; ordinary PR by both triage halves, merged on the gate."
+    },
+    {
+      "id": "scenery-note-2695",
+      "title": "Refine says which half of your sentence named the shoot and was dropped (#2695)",
+      "status": "in-review",
+      "prNumber": 2712,
+      "note": "Customer-visible, so it waits on the relay's hand verdict; gate green, frames posted in both themes."
+    },
+    {
       "id": "open-kind-removal-2638",
       "title": "A feature the studio invented a name for can be taken back by name - \"remove her fangs\" works (#2638)",
       "status": "merged",
@@ -7506,7 +7591,7 @@
     {
       "id": "face-reader-slice1-2566",
       "title": "The panel reads what is on the character before it asks its list — the face reader, first piece (#2566)",
-      "status": "blocked",
+      "status": "merged",
       "prNumber": 2570,
       "note": "Waiting on a review by hand, which is the rule for anything near money or sign-in. IT CANNOT BE REVIEWED YET, and the earlier note here was wrong about that: it clashes with the main line, and while it does, the automatic checks cannot run on it at all - so there is nothing for a reviewer to read. Measured tonight: the clash is nothing but an automatically generated map, so putting it back in step is one command and no judgement. It is somebody else's claimed work, so the measurement is written on it rather than done for them. STATUS CORRECTED 17 Oct: this row said \"in review\" while no review was possible, which is why it now says held."
     },
@@ -10712,7 +10797,7 @@
     {
       "id": "outfit-serve-2544",
       "title": "Clothing becomes something a paid edit can change, switched off (#2544)",
-      "status": "blocked",
+      "status": "merged",
       "prNumber": 2600,
       "note": "Waiting on a review by hand: it touches the start-up settings check, which counts as money-and-login code. IT IS OUT OF STEP WITH THE MAIN CODE AGAIN - the earlier note here said it had been put back, which was true last night and is not true now. Measured tonight: one genuine overlap, in one file, where the main line has since moved that code into a shared helper. That one needs the person who wrote it, and the measurement is written on it. Your eye on the clothing strips is waiting behind this. STATUS CORRECTED 17 Oct: this row said \"in review\" while no review was possible, which is why it now says held."
     },
@@ -10729,15 +10814,36 @@
       "status": "merged",
       "prNumber": 2654,
       "note": "Tidy-up with no change you can see: the two layers now ask one shared question instead of each answering it their own way."
+    },
+    {
+      "id": "dev-advisory-floors-2703",
+      "title": "Eleven known holes in the build tools closed, one of them serious (#2703)",
+      "status": "merged",
+      "prNumber": 2706,
+      "note": "Three one-line floor raises inside ranges we already declared; squash 3360592f. Nothing a customer can reach was affected — the production check read zero before and after."
+    },
+    {
+      "id": "script-await-seam-2560",
+      "title": "A measuring script can now say \"finish the picture before you answer me\", instead of flipping one of your settings (#2560)",
+      "status": "in-review",
+      "prNumber": 2709,
+      "note": "Held for review on purpose — the refine charge and its refund sit inside the function it changes. No customer-visible change by construction. Gate green in 4 minutes; the sabotage check proves the new behaviour is what the tests are actually reading."
     }
   ],
   "problems": [
     {
+      "id": "deploy-outage-2678",
+      "severity": "warning",
+      "state": "resolved",
+      "title": "For ten days nothing the crew merged reached the live site (#2678)",
+      "detail": "RESOLVED, and recorded here because it explains a ten-day silence on this page. From 17 October a job could be merged, marked finished and never go live: the site kept serving the 17 October build. The crew's own after-deploy check caught it at 08:08Z on 17 October and nobody was awake to read it, so it ran for four days. Card #2678 was filed on 21 October and closed 2026-10-27T00:54Z. Verified tonight at the running site rather than at the card: production serves the newest commit on a fresh process, with the after-deploy check passing on all eight of today's merges. Three dependency security advisories that were reddening every test run during the same window (#2683) are also fixed and closed. This page itself was frozen at edition 740 for those ten days, because what you read here is served from the deployed build - so there was nowhere for an update to land."
+    },
+    {
       "id": "stale-head-merge-2590",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "A job can land on a test run that never saw the job before it — and it reddened everything today (#2590)",
-      "detail": "Our merging tool asks GitHub whether a job is safe to land, and GitHub answers only about the TEXT of the files. Two jobs landed ninety minutes apart today, each tested on its own and never against the other, and the second one broke every test run in the product. No customer was affected and both jobs were correct; what it costs is the crew, because every branch cut afterwards inherits a broken suite. Three ways to close it are written up with a recommendation, and none is built — the right one depends on how often this happens, which is a number nobody has read."
+      "detail": "RESOLVED - card #2590 closed 2026-10-27T03:36Z; the fix merged this morning (squash b81389a7e) and the merge tool now refuses a green test run taken on a tree the main line has moved past. Our merging tool asks GitHub whether a job is safe to land, and GitHub answers only about the TEXT of the files. Two jobs landed ninety minutes apart today, each tested on its own and never against the other, and the second one broke every test run in the product. No customer was affected and both jobs were correct; what it costs is the crew, because every branch cut afterwards inherits a broken suite. Three ways to close it are written up with a recommendation, and none is built — the right one depends on how often this happens, which is a number nobody has read."
     },
     {
       "id": "stale-run-row-2079",
@@ -10903,9 +11009,16 @@
     {
       "id": "description-gains-unmade-half-2657",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "A character's description can gain a feature you never saw — live on your account (#2657)",
-      "detail": "When you ask for two things at once and the picture can only show one of them — \"a smaller waist and red lipstick\" on a head-and-shoulders shot — the studio correctly makes only the lipstick. That half was fixed this morning.\n\nWhat is still wrong is the FIRST time the studio writes that character's description. It starts from the original brief and folds in every earlier thing you asked for as plain fact, including the half it never made. From then on every new picture is painted from that description, so an edit nobody ever saw becomes a permanent part of who that character is.\n\nIt is live on your account, because the description feature is switched on for you alone, and it fires on any character whose description has not been written yet — which is every character you edited before today.\n\nIt is not fixed, and the obvious repair is not available: the studio does not record which half of an older ask went unmade, so there is nothing to look up. Three honest options are written on the card with what each one costs, and a short measurement is owed first — how many of your characters have no description yet AND an earlier ask with an out-of-shot half. Nothing is charged wrongly and nothing is deleted; what is wrong is what the description says."
+      "detail": "RESOLVED - card #2657 closed 2026-10-21T10:02Z, read at the running service rather than at the merge note, and the follow-up fixes for the same family landed this morning (#2665, #2671, #2673). When you ask for two things at once and the picture can only show one of them — \"a smaller waist and red lipstick\" on a head-and-shoulders shot — the studio correctly makes only the lipstick. That half was fixed this morning.\n\nWhat is still wrong is the FIRST time the studio writes that character's description. It starts from the original brief and folds in every earlier thing you asked for as plain fact, including the half it never made. From then on every new picture is painted from that description, so an edit nobody ever saw becomes a permanent part of who that character is.\n\nIt is live on your account, because the description feature is switched on for you alone, and it fires on any character whose description has not been written yet — which is every character you edited before today.\n\nIt is not fixed, and the obvious repair is not available: the studio does not record which half of an older ask went unmade, so there is nothing to look up. Three honest options are written on the card with what each one costs, and a short measurement is owed first — how many of your characters have no description yet AND an earlier ask with an out-of-shot half. Nothing is charged wrongly and nothing is deleted; what is wrong is what the description says."
+    },
+    {
+      "id": "atlas-ratelimit-column-2704",
+      "severity": "warning",
+      "state": "open",
+      "title": "Our own map of the product says seventeen doors have no speed limit when they do — one of them public (#2704)",
+      "detail": "Not a hole, and worth saying that first: every one of those seventeen doors really does have its speed limit,\nand the thing that proves it is a test that drives all thirteen public doors until they refuse and then checks a\nsecond visitor still gets in. That test is green, and its list of doors is taken from the map rather than typed\nout, so a new public door cannot slip past it.\n\nWhat is broken is the map's own column. It decides whether a door is speed-limited by looking for three\nparticular spellings in that door's code — and fifteen of our files reach the limiter through a wrapper with a\ndifferent name, so every door behind one reads \"no limit\". Seventeen of 293 are wrong, all in the same\ndirection, including the public page that lets anyone check a Klieg ID.\n\nWhy it has never gone red: nothing in the product reads the column. It exists in the file, it is drawn on the\nmap's own web page, and no test or check consumes it — so it has been wrong for as long as those wrappers have\nexisted with nothing able to notice.\n\nIt matters because the map is what somebody opens to answer \"is every public door protected?\", and today it\ngives the wrong answer about a public door. The fix is either to make the column read what the code states, or\nto delete it — an unread column that is wrong is worse than no column at all."
     }
   ],
   "acknowledgedReplyIds": [
@@ -11208,10 +11321,13 @@
     297,
     298,
     299,
-    300
+    300,
+    301,
+    302,
+    303
   ],
   "nextUp": {
-    "readAt": "2026-10-17T06:37:08.490Z",
+    "readAt": "2026-10-27T13:21:55.785Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11266,7 +11382,11 @@
       {
         "issueNumber": 2544,
         "title": "N3: outfit changes work in Refine — the stage wall stops refusing clothing (his word 2026-10-15)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — clothing edits are live on your account. Try one on a signed cast and tell us if the outfits look right. Recommend: try it, then we widen."
+        }
       },
       {
         "issueNumber": 2545,
@@ -11306,15 +11426,6 @@
         "urgent": false
       },
       {
-        "issueNumber": 2597,
-        "title": "Your eye on the outfit court — three strips, and whether clothing changes read right",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — look at three strips and say whether they read right. RECOMMENDATION: they do; carry on."
-        }
-      },
-      {
         "issueNumber": 2626,
         "title": "Every edit must fit the cast — an added feature belongs to that cast's own colouring, anatomy, light and style, never pasted on (his rule 2026-10-17)",
         "urgent": false,
@@ -11326,7 +11437,11 @@
       {
         "issueNumber": 2647,
         "title": "The refine prompt sends the customer's words verbatim as the edit instruction, with the description as context — his labelled layout (his yes 2026-10-17)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2656 — the upstream gap: a first step saves no picture, so a lost edit cannot be restored. Build and verdict are done."
+        }
       }
     ]
   }

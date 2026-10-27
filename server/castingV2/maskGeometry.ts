@@ -84,9 +84,33 @@ export class MaskError extends Error {
    */
   readonly retryable: boolean;
 
-  constructor(message: string, options: { retryable?: boolean } = {}) {
+  /**
+   * WAS IT **OUR ACCOUNT** THAT WAS REFUSED, RATHER THAN THE PICTURE (#2688)?
+   *
+   * A 401 or a 403 from the segmenter is our key, our balance or our access —
+   * nothing about the bytes that were sent and nothing a retry reaches. The two
+   * reference cutters read this to choose between *"I couldn't read that
+   * picture just now — try again in a moment"* and a sentence that names the
+   * studio and does not promise a retry (`readerDown.ts`).
+   *
+   * **It is narrower than `!retryable` and that is the whole point.** A 400, a
+   * 404 and a 422 are non-retryable too, and each of those IS plausibly about
+   * the request — so a cutter keying on `retryable` would tell a customer the
+   * studio was down when we had in fact sent something malformed. This field
+   * answers only the question the sentence turns on.
+   *
+   * A boolean rather than the provider layer's `ProviderFailureClass`, for the
+   * reason `retryable` is one: this module is pure geometry and imports nothing
+   * from the transport. `falRegionReader.ts` sets it from `classifyFalHttp` —
+   * the product's own fal classifier, not a second opinion about what a 401
+   * means (working law 4).
+   */
+  readonly accountRefused: boolean;
+
+  constructor(message: string, options: { retryable?: boolean; accountRefused?: boolean } = {}) {
     super(message);
     this.retryable = options.retryable === true;
+    this.accountRefused = options.accountRefused === true;
   }
 }
 

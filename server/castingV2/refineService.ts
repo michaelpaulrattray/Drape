@@ -879,6 +879,44 @@ export type RefineServiceDependencies = {
    * money to prove that nothing is spent.
    */
   upscaleInkCarry?: InkFloorUpscale | null;
+  /**
+   * THE CALLER CANNOT TAKE A RECEIPT — FINISH THE WORK BEFORE ANSWERING (#2560).
+   *
+   * # What it is, and what it deliberately is not
+   *
+   * Landing C hands a browser a receipt the moment the row is genuinely out,
+   * and the picture arrives on the surface afterwards. That is right for a
+   * person at a screen and nothing here changes it. **A script cannot work that
+   * way**: handed a receipt it reaches the end of its work and exits, and the
+   * render it paid for is abandoned half-finished. Our own measuring tools need
+   * the other road — start the edit and do not come back until the picture is
+   * terminal.
+   *
+   * ⚠ **IT BELONGS ON THE CALL BECAUSE IT IS A PROPERTY OF THE CALLER, NOT OF
+   * THE CUSTOMER.** Until this field existed the only way to get the awaited
+   * road was to set `CASTING_REFINE_DISPATCH_SCOPE = "off"` inside the script's
+   * own process — borrowing a CUSTOMER feature switch to describe a fact about
+   * the caller, and a switch that is being retired (#1577 slice D4, which waits
+   * on this). A browser can take a receipt and a script cannot; that is a
+   * difference between callers, so it is stated by the caller.
+   *
+   * ⚠ **AND IT LIVES IN THE DEPENDENCIES AND NEVER IN `RefineInput`, WHICH IS
+   * THE WHOLE OF ITS SAFETY.** `RefineInput` is built from procedure input at
+   * `server/routes/castingV2.ts`; this bag is the caller's own and reaches that
+   * site as `{}`. A field on the input would be one a customer could send,
+   * which is a customer choosing how long the server holds a socket open on a
+   * paid path. Nothing on the wire can reach this.
+   *
+   * # What it does NOT touch, and the card is explicit about it
+   *
+   * The claim, the charge, the refund pair, the census and every row write are
+   * the SAME on both roads and must stay so — this is about *when the function
+   * answers*, never about what it does. It is read at exactly one line, beside
+   * the flag, and the only consequence is that `attempt.dispatched` is never
+   * set: the announce site is already a no-op when it is unset, which is the
+   * entire difference between the two roads.
+   */
+  cannotTakeAReceipt?: boolean;
 };
 
 /**
@@ -1039,7 +1077,27 @@ export async function refineCandidate(
   /* Nothing is ever awaited on this promise when the flag is off, so it is
      never settled and never observed — an ordinary unresolved promise, not a
      leak. */
-  if (captureCastingRefineDispatchEnabled(input.userId)) {
+  /*
+    AND A CALLER THAT CANNOT TAKE A RECEIPT TAKES THE HELD ROAD WHATEVER THE
+    FLAG SAYS (#2560).
+
+    Read here and nowhere else, beside the flag, because the two questions meet
+    in exactly one place: the flag asks whether THIS CUSTOMER's refine may
+    answer early, and this asks whether THIS CALLER is able to receive that
+    answer at all. A script that is handed a receipt exits with the render it
+    paid for still running — so where it says it cannot take one, `dispatched`
+    stays unset and the two lines below are the two lines that shipped before
+    Landing C existed: one attempt, awaited whole, priced and answered on the
+    request.
+
+    ⚠ The flag is still READ when the caller can take a receipt, so a customer
+    outside the scope is unaffected by this field existing, and a caller that
+    says nothing is today's behaviour byte for byte.
+  */
+  if (
+    dependencies.cannotTakeAReceipt !== true
+    && captureCastingRefineDispatchEnabled(input.userId)
+  ) {
     attempt.dispatched = (given) => announce?.(given);
   }
 

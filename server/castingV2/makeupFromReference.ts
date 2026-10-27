@@ -68,6 +68,7 @@ import { interpreterEngine } from "./interpreter";
 import { scrubBrands } from "./brandScrub";
 import { readReferenceClass, referenceClassAskLines } from "./referenceClassGate";
 import { namesHairColour } from "./refineDelta";
+import { PICTURE_READER_DOWN_MESSAGE, readerAccountRefused } from "./readerDown";
 import {
   MAKEUP_SLOTS,
   MAKEUP_SLOT_MAX_LENGTH,
@@ -378,6 +379,24 @@ export async function readMakeupFromReference(
       Its words are the hair/ink cutters' `couldNotRead`, which already say this
       honestly on the sibling picture roads, rather than a new sentence.
     */
+    /*
+      ⚠ AND WHICH OF THOSE THREE IT WAS DECIDES THE SENTENCE (#2688) — the
+      sibling road's clause, for the sibling reason. The paragraph above lumps
+      "the transport throwing, the deadline passing, or the text account being
+      overdrawn" into one answer; the first two are weather and the third is
+      not. A disabled key invites a retry that fails identically, and says
+      "that picture" about bytes the provider refused us before it read them.
+
+      The code stays `unreadable` for the reason stated in full on
+      `hairColourFromReference`'s matching branch: it snake-cases into a MySQL
+      enum, so a new one needs a migration the deploy rite refuses to apply
+      unattended. The sentence splits; the tally bucket does not, and that is
+      carried on #2688 rather than done quietly.
+    */
+    if (readerAccountRefused(error)) {
+      log.warn({ err: error }, "[makeupFromReference] the reader refused US — our account, not her picture");
+      return { ok: false, refusal: { code: "unreadable", message: PICTURE_READER_DOWN_MESSAGE } };
+    }
     log.warn({ err: error }, "[makeupFromReference] the reader did not answer");
     return {
       ok: false,

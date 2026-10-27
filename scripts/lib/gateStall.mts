@@ -70,6 +70,14 @@
  * estimating how often stalls happen, and it is written down here so the
  * second question is never answered off the first one's number.
  *
+ * ──────────────────────────────────────────────────────────────────────────
+ * ⚠ AND THE CLOCK A RUN IS MEASURED ON IS THE ATTEMPT'S, NOT THE RUN'S
+ * (#2702, the law-7 sibling of #2698). GitHub keeps a re-run's `created_at`
+ * at the FIRST attempt's, so it is not the clock for anything about THIS
+ * attempt — and both of the things this module says about a run's clock were
+ * taken off it. `attemptStartedMs` beside `decideStall` carries the
+ * measurement and the two readings it moves.
+ *
  * GATE DURATION was measured in the same sitting, off 278 completed runs:
  * p50 7.3m · p95 14.0m · p99 15.1m · p100 15.4m. It sets no threshold here —
  * it is reported by the CLI so a shift watching a live run can see whether it
@@ -113,6 +121,12 @@ export type GateRun = {
    * minutes. Nothing in the source looked wrong; only driving it showed it.
    */
   updatedAt: string;
+  /**
+   * ISO. GitHub's `run_started_at` — when the attempt THIS record describes
+   * began. Optional because an old record may not carry it and because a
+   * caller written before #2702 does not map it; see `attemptStartedMs`.
+   */
+  runStartedAt?: string | null;
 };
 
 export type StallInput = {
@@ -149,6 +163,42 @@ export type StallVerdict =
 const ms = (a: string, b: string) => new Date(b).getTime() - new Date(a).getTime();
 
 /**
+ * WHEN THE ATTEMPT THIS RECORD DESCRIBES BEGAN.
+ *
+ * ⚠ **`created_at` IS NOT THE START OF A RE-RUN, AND THIS MODULE READ IT AS
+ * ONE IN BOTH OF THE PLACES IT CONSULTS A RUN'S CLOCK (#2702).** GitHub keeps
+ * a re-run's `created_at` at the FIRST attempt's, so a run re-fired days later
+ * spans the whole gap. What that cost here, in the module's own words:
+ *
+ *   • the `running` branch returned `beyondP99: ageMs > p99`, so a re-run was
+ *     past the measured p99 the second it started — a shift watching a gate it
+ *     had just re-fired was told it was days old and beyond the spread. The
+ *     header's own named positive control (*a run at p99 must not alarm*) was
+ *     being failed in the other direction by the clock rather than the rule.
+ *   • the `complete` branch prints `the run took ageMs - finishedMsAgo`, which
+ *     is `updated_at - created_at` — #2698's defect exactly. Measured at the
+ *     live API 2026-10-27 on `team/relay-2672` attempt 2: created
+ *     `2026-10-21T09:48:44Z`, started `2026-10-27T00:32:27Z`, finished
+ *     `2026-10-27T00:36:21Z`. It printed **8,147.6m**; it executed **3.9m**,
+ *     which is #2698's own measured median for this gate.
+ *
+ * ⚠ **THE FALLBACK IS A DATE CHECK, NOT `??`** — the field is optional, and
+ * `??` passes an EMPTY STRING to `Date.parse`, which yields `NaN` and poisons
+ * every comparison silently: the sort would become unordered and `ageMs` would
+ * print `NaN`. Anything unparseable falls back to `created_at`, which is the
+ * pre-#2702 behaviour and is right for a first attempt.
+ *
+ * ⚠ **IT IS A NO-OP ON A FIRST ATTEMPT, read rather than assumed**: over the
+ * gate's last 100 runs, 0 of the 95 first attempts had `created_at` differing
+ * from `run_started_at`, and 0 of 100 records were missing the field. Only the
+ * five `run_attempt > 1` records move.
+ */
+export function attemptStartedMs(run: GateRun): number {
+  const started = Date.parse(run.runStartedAt ?? "");
+  return Number.isNaN(started) ? new Date(run.createdAt).getTime() : started;
+}
+
+/**
  * The whole decision, as a pure function, because a polling loop is the
  * hardest thing in this repository to drive by hand (law 3).
  *
@@ -163,11 +213,30 @@ export function decideStall(input: StallInput): StallVerdict {
   // 1. A run exists. Whatever the clock says, this is not a stall — the suite
   //    arrived, which is the only thing this alarm is about.
   if (runs.length > 0) {
-    // Newest first: a re-run supersedes the run it replaced.
-    const newest = [...runs].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )[0]!;
-    const ageMs = ms(newest.createdAt, now);
+    /*
+      Newest first: a re-run supersedes the run it replaced.
+
+      ⚠ THE SORT IS ON THE ATTEMPT'S START, AND THAT IS A DELIBERATE CHANGE
+      FROM `created_at` RATHER THAN A CONSEQUENCE OF THE ONE BELOW (#2702).
+      The two order by different questions: `created_at` picks the run RECORD
+      created most recently, `run_started_at` picks the attempt that most
+      recently began. On a re-run those disagree, and the sentence above this
+      block — *a re-run supersedes the run it replaced* — is the second
+      question, which is why it moves.
+
+      It only ever decides anything when one head carries two run records, and
+      it does: a `pull_request` run plus a `workflow run gate.yml` dispatch
+      (the standing orders prescribe that dispatch on a MERGEABLE head with no
+      run), or a close/reopen. The shape it gets wrong: run A re-fired and
+      running NOW keeps its old `created_at`, run B created later and already
+      finished sorts above it, and the reader answers COMPLETE over a gate
+      that is at that moment running — which is the same wrong answer the
+      existing re-run arm below was written to prevent, reached by the clock
+      instead of by the row order.
+    */
+    const newest = [...runs].sort((a, b) => attemptStartedMs(b) - attemptStartedMs(a))[0]!;
+    /* How long THIS ATTEMPT has been going — never the run record's age. */
+    const ageMs = new Date(now).getTime() - attemptStartedMs(newest);
     if (newest.status === "completed") {
       return {
         kind: "complete",

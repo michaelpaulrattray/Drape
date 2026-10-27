@@ -23,7 +23,7 @@ import {
   summarise,
 } from "../scripts/lib/shiftLedger.mts";
 import { SEARCH_RESULT_CEILING } from "../scripts/lib/crewNamingWindow.mts";
-import { type GhRunner, readMergedPrs } from "../scripts/lib/mergedPrGateTime.mts";
+import { executionMinutes, type GhRunner, readMergedPrs } from "../scripts/lib/mergedPrGateTime.mts";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 /* This suite drives a real child process, so it declares the class's timeout
@@ -379,6 +379,121 @@ describe("the GitHub half refuses rather than reporting a short list", () => {
     expect(result.ok && result.prs[0]).toMatchObject({ gateRuns: 1, gateMinutes: 7 });
     /* #2097: the head branch rides along to the join, which anchors on it. */
     expect(result.ok && result.prs[0]!.headRefName).toBe("team/x0");
+  });
+
+  /*
+    ⚠ **#2698 — A RE-RUN'S CLOCK STARTS AT THE FIRST ATTEMPT, AND READING IT AS
+    THE START REPORTED A 31× REGRESSION THAT NEVER HAPPENED.** GitHub keeps a
+    re-run's `created_at` at attempt 1's, so a run re-fired days later spans the
+    whole gap: five such runs were 97.0% of the ledger's 25,181.8 minutes, and
+    the figure printed 184.37 gate minutes per card against a target of 10 while
+    the gate's own wall never left 3.6–4.1 minutes a day.
+
+    The re-run row below is the real one, read at the API on 2026-10-27
+    (`team/unused-export-sweep-2605`, attempt 2): created 2026-10-21T08:25:09Z,
+    started 2026-10-27T00:32:09Z. Under the old arithmetic it alone contributes
+    8,167.3 minutes. The first-attempt row beside it is the CONTROL — the two
+    fields carry the same value there, so it must read identically either way,
+    which is what proves the change is about re-runs and not a blanket shift.
+  */
+  it("measures a re-run's EXECUTION, not the gap since its first attempt (#2698)", () => {
+    const runs = JSON.stringify({
+      workflow_runs: [
+        // A re-run: `created_at` is attempt 1's, days before the attempt that
+        // actually ran. Execution is 00:32:09 → 00:36:21 = 4.2 minutes.
+        {
+          created_at: "2026-10-21T08:25:09Z",
+          run_started_at: "2026-10-27T00:32:09Z",
+          updated_at: "2026-10-27T00:36:21Z",
+          status: "completed",
+          run_attempt: 2,
+        },
+        // The control: a first attempt, where the two fields agree. 3 minutes.
+        {
+          created_at: "2026-10-27T01:00:00Z",
+          run_started_at: "2026-10-27T01:00:00Z",
+          updated_at: "2026-10-27T01:03:00Z",
+          status: "completed",
+          run_attempt: 1,
+        },
+      ],
+    });
+    const result = readMergedPrs("2026-10-01T00:00:00Z", {
+      limit: 50,
+      gh: fakeGh({
+        prList: JSON.stringify([
+          {
+            number: 2607,
+            mergedAt: "2026-10-27T02:00:00Z",
+            createdAt: "2026-10-21T08:00:00Z",
+            headRefName: "team/unused-export-sweep-2605",
+          },
+        ]),
+        runs,
+      }),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.prs[0]!.gateRuns).toBe(2);
+    // 4.2 + 3 = 7.2, not 8,167.3 + 3.
+    expect(result.ok && result.prs[0]!.gateMinutes).toBeCloseTo(7.2, 5);
+  });
+
+  /*
+    ⚠ **THE RE-RUN IS STILL COUNTED, AND THAT IS #2698'S OWN RULE** — *"Do not
+    just filter re-runs out. A re-run's execution is real gate time a card paid
+    for."* Dropping the row would under-count where the old reading over-counted,
+    so this arm pins the count at 2 above and the presence of its minutes here:
+    with the re-run alone the reading is its execution, never zero and never the
+    gap. It is the arm that fails if a later hand "fixes" this by skipping
+    `run_attempt > 1`.
+  */
+  it("counts a re-run's execution rather than discarding the row (#2698)", () => {
+    const result = readMergedPrs("2026-10-01T00:00:00Z", {
+      limit: 50,
+      gh: fakeGh({
+        prList: JSON.stringify([
+          {
+            number: 2604,
+            mergedAt: "2026-10-27T02:00:00Z",
+            createdAt: "2026-10-21T08:00:00Z",
+            headRefName: "team/ink-empty-coverage-claim-2601",
+          },
+        ]),
+        runs: JSON.stringify({
+          workflow_runs: [
+            {
+              created_at: "2026-10-21T08:29:52Z",
+              run_started_at: "2026-10-27T00:32:07Z",
+              updated_at: "2026-10-27T00:35:07Z",
+              status: "completed",
+              run_attempt: 2,
+            },
+          ],
+        }),
+      }),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.prs[0]).toMatchObject({ gateRuns: 1, gateMinutes: 3 });
+  });
+
+  /*
+    ⚠ **THE FALLBACK IS A DATE CHECK AND NOT `??`, AND THIS IS THE ARM THAT SAYS
+    SO.** `run_started_at` is optional on old records; `??` would pass an EMPTY
+    STRING to `Date.parse`, yield `NaN`, and poison the whole sum into `NaN` —
+    which the ledger prints as an absence with no reason to go on. Absent, null
+    and empty all fall back to `created_at`, which is the pre-#2698 behaviour and
+    is correct for a first attempt. A garbage string is the fourth arm, because
+    `Date.parse` is lenient and "unparseable" is the only safe test for it.
+  */
+  it("falls back to created_at for every unusable run_started_at (#2698)", () => {
+    const base = { created_at: "2026-10-27T01:00:00Z", updated_at: "2026-10-27T01:05:00Z", status: "completed" };
+    expect(executionMinutes(base)).toBe(5);
+    expect(executionMinutes({ ...base, run_started_at: null })).toBe(5);
+    expect(executionMinutes({ ...base, run_started_at: "" })).toBe(5);
+    expect(executionMinutes({ ...base, run_started_at: "not a date" })).toBe(5);
+    // And the positive control: a usable value IS used, or the three above pass
+    // for the wrong reason.
+    expect(executionMinutes({ ...base, run_started_at: "2026-10-27T01:02:00Z" })).toBe(3);
   });
 
   /*

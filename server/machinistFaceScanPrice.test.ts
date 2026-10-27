@@ -23,16 +23,21 @@ import {
 
 const LEDGER = resolve(__dirname, "../scripts/machinist-ledger-read.mts");
 
-/** Section E of the ledger reader, sliced out so a sibling section cannot satisfy an arm. */
-function sectionE(): string {
+const RITE = resolve(__dirname, "../scripts/deploy-rite.mts");
+
+/** One lettered section of the ledger reader, sliced so a sibling cannot satisfy an arm. */
+function ledgerSection(from: string, to: string): string {
   const source = readFileSync(LEDGER, "utf8");
-  const start = source.indexOf("// ── E. face scans");
-  const end = source.indexOf("// ── F. provider books");
-  expect(start, "the section E marker is gone — re-anchor this slice").toBeGreaterThan(-1);
-  expect(end, "the section F marker is gone — re-anchor this slice").toBeGreaterThan(start);
-  expect(source.indexOf("// ── E. face scans", start + 1), "the section E marker is not unique").toBe(-1);
+  const start = source.indexOf(from);
+  const end = source.indexOf(to);
+  expect(start, `the ${from} marker is gone — re-anchor this slice`).toBeGreaterThan(-1);
+  expect(end, `the ${to} marker is gone — re-anchor this slice`).toBeGreaterThan(start);
+  expect(source.indexOf(from, start + 1), `the ${from} marker is not unique`).toBe(-1);
   return source.slice(start, end);
 }
+
+const sectionE = () => ledgerSection("// ── E. face scans", "// ── F. provider books");
+const sectionF = () => ledgerSection("// ── F. provider books", "// ── G. the shift process");
 
 describe("faceScanSpendWords — the scan's price, read off the measured constants", () => {
   it("prints the measured read range and every part of a scan", () => {
@@ -98,5 +103,51 @@ describe("machinist-ledger-read section E — the reader is held to the derived 
     expect(section).not.toMatch(/\b20 reads\b/);
     expect(section).not.toMatch(/\$0\.10\b/);
     expect(section).not.toMatch(/\*\s*0\.1\b/);
+  });
+});
+
+/**
+ * SECTION F AND THE DEPLOY RITE TAKE THE FALLBACK FROM ONE FUNCTION (#2699).
+ *
+ * ⚠ **THE LEDGER WENT BLIND AND THE RITE DID NOT, ON THE SAME DEAD KEY, IN THE
+ * SAME HOUR.** Section F printed `openrouter activity UNREAD — HTTP 401` and
+ * nothing else; the rite's receipt the same hour kept today, this week and this
+ * month, losing only the per-day and per-model breakdown. The rite had a
+ * fallback this reader never got — working law 4, two readers of one source
+ * with different coverage — and fixing it by writing a THIRD copy would have
+ * been the same mistake.
+ *
+ * `keySpendLine` itself is driven directly in `server/openrouterBalance.test.ts`.
+ * These arms are the other half and are the ones invariant 7 asks for: **a
+ * control that is not invoked does not exist**, and a reader that opens a
+ * production database at import cannot be run here, so its CALL is held at the
+ * source. The last arm is the anti-drift one: neither call site may compose
+ * that sentence itself again.
+ */
+describe("machinist-ledger-read section F — the provider books keep their fallback", () => {
+  it("falls back to the key's own windows when the account's books refuse", () => {
+    expect(sectionF()).toContain("keySpendLine(await readOpenRouterUsage(), activity)");
+  });
+
+  it("still says the activity read was UNREAD, so the fallback cannot pass as the table", () => {
+    expect(sectionF()).toContain("openrouter activity UNREAD");
+  });
+
+  it("the deploy rite takes the same line from the same function", () => {
+    expect(readFileSync(RITE, "utf8")).toContain("keySpendLine(await readOpenRouterUsage(), books)");
+  });
+
+  /*
+    ⚠ **THE ARM THAT MATTERS.** The defect was a second reader with different
+    coverage, so the thing to forbid is a second COMPOSER. `openrouterBalance.mts`
+    is the only file in the tree that may hold this sentence; a call site that
+    grows its own copy is how the two drift apart again, and it would pass every
+    arm above.
+  */
+  it("neither call site composes the spend sentence itself", () => {
+    for (const path of [LEDGER, RITE]) {
+      expect(readFileSync(path, "utf8"), `${path} composes its own openrouter spend line`)
+        .not.toContain("openrouter spend");
+    }
   });
 });

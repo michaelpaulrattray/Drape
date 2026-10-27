@@ -51,6 +51,15 @@
  * the rows rather than silence re-read as death. It is a citation, not an
  * instruction — the close stays the shift's own act.
  *
+ * ⚠ **AND SINCE #2679 IT HAS A SECOND ROAD, FOR THE ONE CASE THE FIRST CANNOT
+ * SEE: A PARK.** During a park no lane-mate completes, because nothing launches
+ * at all — so the reading above answers *not readable* exactly when death is
+ * most certain, and row #798 sat on his Working-now table for **97 hours**
+ * claiming to be a working shift. The second road reads the table-wide
+ * absence instead: *no run of ANY seat opened and closed in this row's
+ * silence*, over a stretch longer than `CREW_RUNNER_STOPPED_MIN_MS`. The
+ * printed line says which road it took, and both mean a dead process.
+ *
  * Then the last few closed runs, newest first, so "what happened last night" is
  * one command rather than a page.
  *

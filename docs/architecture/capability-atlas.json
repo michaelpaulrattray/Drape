@@ -32,7 +32,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2672"
+          "server/castingV2/refineService.ts:2730"
         ]
       },
       {
@@ -42,7 +42,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1283"
+          "server/castingV2/refineService.ts:1341"
         ]
       },
       {
@@ -66,7 +66,7 @@
           "server/castingV2/voiceCache.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:5067",
+          "server/castingV2/refineService.ts:5125",
           "server/castingV2/rollEngine.ts:122",
           "server/castingV2/rollEngine.ts:134"
         ]
@@ -78,7 +78,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1265"
+          "server/castingV2/refineService.ts:1323"
         ]
       },
       {
@@ -88,8 +88,8 @@
           "server/castingV2/conceptDescribe.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1280",
-          "server/castingV2/conceptDescribeCopy.ts:79"
+          "server/castingV2/conceptDescribe.ts:1313",
+          "server/castingV2/conceptDescribeCopy.ts:97"
         ]
       },
       {
@@ -102,8 +102,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1208",
-          "server/castingV2/conceptDescribeCopy.ts:114"
+          "server/castingV2/conceptDescribe.ts:1235",
+          "server/castingV2/conceptDescribeCopy.ts:173"
         ]
       },
       {
@@ -114,7 +114,7 @@
           "server/castingV2/conceptDescribeCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribeCopy.ts:87"
+          "server/castingV2/conceptDescribeCopy.ts:105"
         ]
       },
       {
@@ -124,7 +124,7 @@
           "server/castingV2/conceptDescribe.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribeCopy.ts:82"
+          "server/castingV2/conceptDescribeCopy.ts:100"
         ]
       },
       {
@@ -135,7 +135,18 @@
           "server/castingV2/conceptDescribeCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribeCopy.ts:111"
+          "server/castingV2/conceptDescribeCopy.ts:129"
+        ]
+      },
+      {
+        "id": "concept.reader_outage",
+        "kind": "concept-refusal",
+        "pinnedBy": [
+          "server/castingV2/conceptDescribe.test.ts",
+          "server/castingV2/conceptDescribeCopy.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/conceptDescribeCopy.ts:174"
         ]
       },
       {
@@ -146,9 +157,8 @@
           "server/castingV2/conceptDescribeCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1272",
-          "server/castingV2/conceptDescribe.ts:1309",
-          "server/castingV2/conceptDescribeCopy.ts:113"
+          "server/castingV2/conceptDescribe.ts:1342",
+          "server/castingV2/conceptDescribeCopy.ts:135"
         ]
       },
       {
@@ -188,9 +198,9 @@
         "sites": [
           "server/castingV2/refineDelta.ts:632",
           "server/castingV2/refineDelta.ts:632",
-          "server/castingV2/refineDelta.ts:1688",
-          "server/castingV2/refineDelta.ts:1688",
-          "server/castingV2/refineService.ts:2521"
+          "server/castingV2/refineDelta.ts:1732",
+          "server/castingV2/refineDelta.ts:1732",
+          "server/castingV2/refineService.ts:2579"
         ]
       },
       {
@@ -204,8 +214,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:598",
           "server/castingV2/refineDelta.ts:598",
-          "server/castingV2/refineDelta.ts:1697",
-          "server/castingV2/refineDelta.ts:1697",
+          "server/castingV2/refineDelta.ts:1741",
+          "server/castingV2/refineDelta.ts:1741",
           "server/castingV2/refineDelta.ts:598"
         ]
       },
@@ -220,10 +230,10 @@
         "sites": [
           "server/castingV2/refineDelta.ts:605",
           "server/castingV2/refineDelta.ts:605",
-          "server/castingV2/refineDelta.ts:1665",
-          "server/castingV2/refineDelta.ts:1665",
-          "server/castingV2/refineService.ts:2520",
-          "server/castingV2/refineService.ts:2532"
+          "server/castingV2/refineDelta.ts:1709",
+          "server/castingV2/refineDelta.ts:1709",
+          "server/castingV2/refineService.ts:2578",
+          "server/castingV2/refineService.ts:2590"
         ]
       },
       {
@@ -235,8 +245,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:624",
           "server/castingV2/refineDelta.ts:624",
-          "server/castingV2/refineDelta.ts:1680",
-          "server/castingV2/refineDelta.ts:1680",
+          "server/castingV2/refineDelta.ts:1724",
+          "server/castingV2/refineDelta.ts:1724",
           "server/castingV2/refineDelta.ts:624"
         ]
       },
@@ -247,7 +257,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3030"
+          "server/castingV2/refineService.ts:3088"
         ]
       },
       {
@@ -257,7 +267,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3804"
+          "server/castingV2/refineService.ts:3862"
         ]
       },
       {
@@ -302,7 +312,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1272"
+          "server/castingV2/refineService.ts:1330"
         ]
       },
       {
@@ -402,7 +412,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4544"
+          "server/castingV2/refineService.ts:4602"
         ]
       },
       {
@@ -425,7 +435,7 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3501"
+          "server/castingV2/refineService.ts:3559"
         ]
       },
       {
@@ -435,7 +445,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3482"
+          "server/castingV2/refineService.ts:3540"
         ]
       },
       {
@@ -445,7 +455,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3639"
+          "server/castingV2/refineService.ts:3697"
         ]
       },
       {
@@ -455,8 +465,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3259",
-          "server/castingV2/refineService.ts:3276"
+          "server/castingV2/refineService.ts:3317",
+          "server/castingV2/refineService.ts:3334"
         ]
       },
       {
@@ -466,7 +476,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4514"
+          "server/castingV2/refineService.ts:4572"
         ]
       },
       {
@@ -476,7 +486,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3073"
+          "server/castingV2/refineService.ts:3131"
         ]
       },
       {
@@ -515,6 +525,7 @@
         "pinnedBy": [
           "server/castingV2/briefCompiler.test.ts",
           "server/castingV2/briefRefusalCopy.test.ts",
+          "server/castingV2/conceptDescribeCopy.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/styleRefusal.test.ts"
         ],
@@ -542,7 +553,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:5040"
+          "server/castingV2/refineService.ts:5098"
         ]
       },
       {
@@ -552,8 +563,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1353",
-          "server/castingV2/refineService.ts:1391"
+          "server/castingV2/refineService.ts:1411",
+          "server/castingV2/refineService.ts:1449"
         ]
       },
       {
@@ -605,7 +616,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2718"
+          "server/castingV2/refineService.ts:2776"
         ]
       },
       {
@@ -739,8 +750,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1259",
-          "server/castingV2/refineService.ts:2644"
+          "server/castingV2/refineService.ts:1317",
+          "server/castingV2/refineService.ts:2702"
         ]
       },
       {
@@ -773,7 +784,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:499",
-          "server/castingV2/refineDelta.ts:1716",
+          "server/castingV2/refineDelta.ts:1760",
           "server/castingV2/refineInterpreter.ts:1786",
           "server/castingV2/refineDelta.ts:499"
         ]
@@ -795,7 +806,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:533",
-          "server/castingV2/refineDelta.ts:1740",
+          "server/castingV2/refineDelta.ts:1784",
           "server/castingV2/refineInterpreter.ts:1891",
           "server/castingV2/refineDelta.ts:533"
         ]
@@ -829,8 +840,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:569",
-          "server/castingV2/refineDelta.ts:1441",
-          "server/castingV2/refineDelta.ts:1797",
+          "server/castingV2/refineDelta.ts:1485",
+          "server/castingV2/refineDelta.ts:1841",
           "server/castingV2/refineDelta.ts:569"
         ]
       },
@@ -1949,9 +1960,10 @@
           "concept.not_a_casting_note",
           "concept.ran_long",
           "concept.unreadable",
-          "concept.no_transport"
+          "concept.no_transport",
+          "concept.reader_outage"
         ],
-        "doorsNote": "⚠ THIS ROAD'S DOORS REACHED THE MAP BEFORE THE ROAD DID — the six were declared with #192 and every one of them is documented-unreachable (the corpus sends sentences, not pictures), while the ENTRANCE they belong to had no road until #1203. That is the forward/backward asymmetry in one specimen: the map could prove every door it named was real and could not notice it had never named the road. The FLAG and the two byte doors above the six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared `referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences reused rather than restated.",
+        "doorsNote": "⚠ THIS ROAD'S DOORS REACHED THE MAP BEFORE THE ROAD DID — the six were declared with #192 and every one of them is documented-unreachable (the corpus sends sentences, not pictures), while the ENTRANCE they belong to had no road until #1203. That is the forward/backward asymmetry in one specimen: the map could prove every door it named was real and could not notice it had never named the road. The FLAG and the two byte doors above the six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared `referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences reused rather than restated. ⚠ A SEVENTH ARRIVED WITH #2686 AND THE SIX ABOVE ARE WHY IT COULD: `concept.reader_outage` splits the case where the text provider refuses OUR account (401/402/403) out of `concept.unreadable`, which had been telling a customer to try again in a moment while our key was disabled. The arm that holds this list equal to the copy table is what caught the omission the same minute the door was declared.",
         "flags": [
           "CASTING_V2_SCOPE",
           "CASTING_CONCEPT_UPLOAD_SCOPE"
@@ -1960,7 +1972,8 @@
           "His own order, 2026-08-28 (#185): 'if you have a model already or concept or image you can upload it the image analyzer will analyze and describe it to the authour and cast it with the description ... that way its easy for someone to upload an image and get a prompt to create someone similar without having to type it all out.' Production holds `CASTING_CONCEPT_UPLOAD_SCOPE` at `all` since 2026-09-24 on his Crew reply #202 ('yes, turn it on').",
           "THE FORMAT IS WHAT THE BYTES ARE, never what the payload claimed — the ink door's rule reused. It matters twice here: the picture rides to the describer as a `data:<mime>;base64,` URI, so a JPEG announced as a PNG is a malformed request to the vendor rather than a bad row in our database.",
           "EVERY REFUSAL IS A DIFFERENT SENTENCE ON PURPOSE: 'there is nobody in this picture' and 'the reader did not answer' ask her to do different things, and telling her the wrong one sends her looking for a better photograph of a problem that was ours. They live in `CONCEPT_DESCRIBE_COPY` — exhaustive over the union by type — because composed inline they were invisible to the census: three of this entrance's five refusals could not be seen at all (#192).",
-          "`concept.no_being` is the twin of the roll road's `not_a_being`, and it reached the map FIRST while its sibling stayed invisible — the pair is the reason both entrances' copy tables are now the declared source rather than a grep."
+          "`concept.no_being` is the twin of the roll road's `not_a_being`, and it reached the map FIRST while its sibling stayed invisible — the pair is the reason both entrances' copy tables are now the declared source rather than a grep.",
+          "A READER OUTAGE IS NOT A BAD PICTURE (#2686). Measured on production 2026-10-27: from 03:09Z the text account key was disabled, the provider answered 401 to every call, and every upload met `concept.unreadable` — 'I couldn't read that picture just now. Try again in a moment.' The sentence blamed the picture and asked for a retry no retry could satisfy. `concept.reader_outage` now answers it, sharing `concept.no_transport`'s words because the two are one fact to the customer: the studio cannot read pictures right now, and it is not theirs. Its stated limit is the breaker: after five consecutive failures the queue refuses as `capability` for 30 s, which is also a malformed request and a cancel, so those attempts still get the transient sentence."
         ]
       }
     ],
@@ -2054,6 +2067,13 @@
         "kind": "documented-unreachable",
         "subject": "concept.ran_long",
         "message": "no corpus row reaches it: answers a read that came back OVER the 300-character ceiling twice — prose about the right person, at the wrong length. Split off `concept.not_a_casting_note` by #1067, because that sentence calls the read \"a list of details\" and #185 ruled it about an INVENTORY: measured on his own uploads (production, 2026-09-22), six of seven reads sent back were this fault and every one was 304–350 characters, the shortest overrunning by four. Ours by construction, exactly as its sibling is — the length is judged on our own reply, never on her picture — a row could reach it via: the same picture-carrying corpus row as its four siblings; the fault is in the reply's LENGTH, so reaching it deterministically means driving the describer with a doubled reader rather than a fixture picture"
+      },
+      {
+        "id": "documented:concept.reader_outage",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "concept.reader_outage",
+        "message": "no corpus row reaches it: answers an upload the text provider refused US rather than one it could not read — a 401, 402 or 403 on our own account (`openrouterText.ts`'s `classifyOpenRouterTextHttp` maps all three to `provider_account`). It shares `concept.no_transport`'s sentence because it is the same fact to the customer — the studio cannot read pictures right now and it is not their picture — and it is split from `concept.unreadable` because that one's \"try again in a moment\" is advice no retry can satisfy when our key is disabled. Measured in production on 2026-10-27: from 03:09Z the account key was off, every call answered 401, and every upload met `concept.unreadable` (#2686) — a row could reach it via: deliberately never as a corpus row: manufacturing a disabled account in the census would test the harness and not the product — the discharge `concept.unreadable` and `concept.no_transport` already carry. Its pin is its own driven arm in `conceptDescribe.test.ts`, which throws a real `ProviderError(\"provider_account\")` at all three statuses and asserts the reason, with every other terminal class driven beside it as the negative control"
       },
       {
         "id": "documented:concept.unreadable",
@@ -2256,7 +2276,7 @@
         "severity": "warn",
         "kind": "shared-bare-door-id",
         "subject": "reader_outage",
-        "message": "\"reader_outage\" is the bare id of 2 declared doors (reader_outage, roll.reader_outage) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
+        "message": "\"reader_outage\" is the bare id of 3 declared doors (concept.reader_outage, reader_outage, roll.reader_outage) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
       },
       {
         "id": "shared-bare:unreadable",
@@ -3218,6 +3238,13 @@
       "message": "no corpus row reaches it: answers a read that came back OVER the 300-character ceiling twice — prose about the right person, at the wrong length. Split off `concept.not_a_casting_note` by #1067, because that sentence calls the read \"a list of details\" and #185 ruled it about an INVENTORY: measured on his own uploads (production, 2026-09-22), six of seven reads sent back were this fault and every one was 304–350 characters, the shortest overrunning by four. Ours by construction, exactly as its sibling is — the length is judged on our own reply, never on her picture — a row could reach it via: the same picture-carrying corpus row as its four siblings; the fault is in the reply's LENGTH, so reaching it deterministically means driving the describer with a doubled reader rather than a fixture picture"
     },
     {
+      "id": "documented:concept.reader_outage",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "concept.reader_outage",
+      "message": "no corpus row reaches it: answers an upload the text provider refused US rather than one it could not read — a 401, 402 or 403 on our own account (`openrouterText.ts`'s `classifyOpenRouterTextHttp` maps all three to `provider_account`). It shares `concept.no_transport`'s sentence because it is the same fact to the customer — the studio cannot read pictures right now and it is not their picture — and it is split from `concept.unreadable` because that one's \"try again in a moment\" is advice no retry can satisfy when our key is disabled. Measured in production on 2026-10-27: from 03:09Z the account key was off, every call answered 401, and every upload met `concept.unreadable` (#2686) — a row could reach it via: deliberately never as a corpus row: manufacturing a disabled account in the census would test the harness and not the product — the discharge `concept.unreadable` and `concept.no_transport` already carry. Its pin is its own driven arm in `conceptDescribe.test.ts`, which throws a real `ProviderError(\"provider_account\")` at all three statuses and asserts the reason, with every other terminal class driven beside it as the negative control"
+    },
+    {
       "id": "documented:concept.unreadable",
       "severity": "info",
       "kind": "documented-unreachable",
@@ -3432,7 +3459,7 @@
       "severity": "warn",
       "kind": "shared-bare-door-id",
       "subject": "reader_outage",
-      "message": "\"reader_outage\" is the bare id of 2 declared doors (reader_outage, roll.reader_outage) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
+      "message": "\"reader_outage\" is the bare id of 3 declared doors (concept.reader_outage, reader_outage, roll.reader_outage) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
     },
     {
       "id": "shared-bare:unreadable",
