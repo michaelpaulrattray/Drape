@@ -88,8 +88,8 @@
           "server/castingV2/conceptDescribe.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1280",
-          "server/castingV2/conceptDescribeCopy.ts:79"
+          "server/castingV2/conceptDescribe.ts:1313",
+          "server/castingV2/conceptDescribeCopy.ts:97"
         ]
       },
       {
@@ -102,8 +102,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1208",
-          "server/castingV2/conceptDescribeCopy.ts:114"
+          "server/castingV2/conceptDescribe.ts:1235",
+          "server/castingV2/conceptDescribeCopy.ts:173"
         ]
       },
       {
@@ -114,7 +114,7 @@
           "server/castingV2/conceptDescribeCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribeCopy.ts:87"
+          "server/castingV2/conceptDescribeCopy.ts:105"
         ]
       },
       {
@@ -124,7 +124,7 @@
           "server/castingV2/conceptDescribe.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribeCopy.ts:82"
+          "server/castingV2/conceptDescribeCopy.ts:100"
         ]
       },
       {
@@ -135,7 +135,18 @@
           "server/castingV2/conceptDescribeCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribeCopy.ts:111"
+          "server/castingV2/conceptDescribeCopy.ts:129"
+        ]
+      },
+      {
+        "id": "concept.reader_outage",
+        "kind": "concept-refusal",
+        "pinnedBy": [
+          "server/castingV2/conceptDescribe.test.ts",
+          "server/castingV2/conceptDescribeCopy.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/conceptDescribeCopy.ts:174"
         ]
       },
       {
@@ -146,9 +157,8 @@
           "server/castingV2/conceptDescribeCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1272",
-          "server/castingV2/conceptDescribe.ts:1309",
-          "server/castingV2/conceptDescribeCopy.ts:113"
+          "server/castingV2/conceptDescribe.ts:1342",
+          "server/castingV2/conceptDescribeCopy.ts:135"
         ]
       },
       {
@@ -515,6 +525,7 @@
         "pinnedBy": [
           "server/castingV2/briefCompiler.test.ts",
           "server/castingV2/briefRefusalCopy.test.ts",
+          "server/castingV2/conceptDescribeCopy.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/styleRefusal.test.ts"
         ],
@@ -2056,6 +2067,13 @@
         "message": "no corpus row reaches it: answers a read that came back OVER the 300-character ceiling twice — prose about the right person, at the wrong length. Split off `concept.not_a_casting_note` by #1067, because that sentence calls the read \"a list of details\" and #185 ruled it about an INVENTORY: measured on his own uploads (production, 2026-09-22), six of seven reads sent back were this fault and every one was 304–350 characters, the shortest overrunning by four. Ours by construction, exactly as its sibling is — the length is judged on our own reply, never on her picture — a row could reach it via: the same picture-carrying corpus row as its four siblings; the fault is in the reply's LENGTH, so reaching it deterministically means driving the describer with a doubled reader rather than a fixture picture"
       },
       {
+        "id": "documented:concept.reader_outage",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "concept.reader_outage",
+        "message": "no corpus row reaches it: answers an upload the text provider refused US rather than one it could not read — a 401, 402 or 403 on our own account (`openrouterText.ts`'s `classifyOpenRouterTextHttp` maps all three to `provider_account`). It shares `concept.no_transport`'s sentence because it is the same fact to the customer — the studio cannot read pictures right now and it is not their picture — and it is split from `concept.unreadable` because that one's \"try again in a moment\" is advice no retry can satisfy when our key is disabled. Measured in production on 2026-10-27: from 03:09Z the account key was off, every call answered 401, and every upload met `concept.unreadable` (#2686) — a row could reach it via: deliberately never as a corpus row: manufacturing a disabled account in the census would test the harness and not the product — the discharge `concept.unreadable` and `concept.no_transport` already carry. Its pin is its own driven arm in `conceptDescribe.test.ts`, which throws a real `ProviderError(\"provider_account\")` at all three statuses and asserts the reason, with every other terminal class driven beside it as the negative control"
+      },
+      {
         "id": "documented:concept.unreadable",
         "severity": "info",
         "kind": "documented-unreachable",
@@ -2256,7 +2274,7 @@
         "severity": "warn",
         "kind": "shared-bare-door-id",
         "subject": "reader_outage",
-        "message": "\"reader_outage\" is the bare id of 2 declared doors (reader_outage, roll.reader_outage) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
+        "message": "\"reader_outage\" is the bare id of 3 declared doors (concept.reader_outage, reader_outage, roll.reader_outage) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
       },
       {
         "id": "shared-bare:unreadable",
@@ -3218,6 +3236,13 @@
       "message": "no corpus row reaches it: answers a read that came back OVER the 300-character ceiling twice — prose about the right person, at the wrong length. Split off `concept.not_a_casting_note` by #1067, because that sentence calls the read \"a list of details\" and #185 ruled it about an INVENTORY: measured on his own uploads (production, 2026-09-22), six of seven reads sent back were this fault and every one was 304–350 characters, the shortest overrunning by four. Ours by construction, exactly as its sibling is — the length is judged on our own reply, never on her picture — a row could reach it via: the same picture-carrying corpus row as its four siblings; the fault is in the reply's LENGTH, so reaching it deterministically means driving the describer with a doubled reader rather than a fixture picture"
     },
     {
+      "id": "documented:concept.reader_outage",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "concept.reader_outage",
+      "message": "no corpus row reaches it: answers an upload the text provider refused US rather than one it could not read — a 401, 402 or 403 on our own account (`openrouterText.ts`'s `classifyOpenRouterTextHttp` maps all three to `provider_account`). It shares `concept.no_transport`'s sentence because it is the same fact to the customer — the studio cannot read pictures right now and it is not their picture — and it is split from `concept.unreadable` because that one's \"try again in a moment\" is advice no retry can satisfy when our key is disabled. Measured in production on 2026-10-27: from 03:09Z the account key was off, every call answered 401, and every upload met `concept.unreadable` (#2686) — a row could reach it via: deliberately never as a corpus row: manufacturing a disabled account in the census would test the harness and not the product — the discharge `concept.unreadable` and `concept.no_transport` already carry. Its pin is its own driven arm in `conceptDescribe.test.ts`, which throws a real `ProviderError(\"provider_account\")` at all three statuses and asserts the reason, with every other terminal class driven beside it as the negative control"
+    },
+    {
       "id": "documented:concept.unreadable",
       "severity": "info",
       "kind": "documented-unreachable",
@@ -3432,7 +3457,7 @@
       "severity": "warn",
       "kind": "shared-bare-door-id",
       "subject": "reader_outage",
-      "message": "\"reader_outage\" is the bare id of 2 declared doors (reader_outage, roll.reader_outage) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
+      "message": "\"reader_outage\" is the bare id of 3 declared doors (concept.reader_outage, reader_outage, roll.reader_outage) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
     },
     {
       "id": "shared-bare:unreadable",
