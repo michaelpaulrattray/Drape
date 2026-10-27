@@ -117,7 +117,7 @@
     {
       "id": "domain:settings",
       "name": "settings",
-      "moduleCount": 17
+      "moduleCount": 18
     },
     {
       "id": "domain:shared",
@@ -2187,6 +2187,12 @@
     {
       "id": "module:client/src/features/settings/usageWindow.ts",
       "path": "client/src/features/settings/usageWindow.ts",
+      "domain": "settings",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/settings/useAccountSurfaces.ts",
+      "path": "client/src/features/settings/useAccountSurfaces.ts",
       "domain": "settings",
       "lifecycle": "active"
     },
@@ -11168,6 +11174,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:CASTING_OUTFIT_EDIT_SCOPE",
+      "name": "CASTING_OUTFIT_EDIT_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:CASTING_REFERENCE_ATTACH_SCOPE",
       "name": "CASTING_REFERENCE_ATTACH_SCOPE",
       "valueRecorded": false
@@ -11567,6 +11578,11 @@
     {
       "id": "flag:CASTING_INK_TRANSFORM_SCOPE",
       "name": "CASTING_INK_TRANSFORM_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:CASTING_OUTFIT_EDIT_SCOPE",
+      "name": "CASTING_OUTFIT_EDIT_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -12603,6 +12619,10 @@
     {
       "id": "test:client/src/_core/hooks/useAuth.test.ts",
       "path": "client/src/_core/hooks/useAuth.test.ts"
+    },
+    {
+      "id": "test:client/src/accountSurfacesLazy.test.ts",
+      "path": "client/src/accountSurfacesLazy.test.ts"
     },
     {
       "id": "test:client/src/appRoutes.test.ts",
@@ -14821,12 +14841,20 @@
       "path": "server/castingV2/openLaneAccept.test.ts"
     },
     {
+      "id": "test:server/castingV2/openLaneGarmentMisroute.test.ts",
+      "path": "server/castingV2/openLaneGarmentMisroute.test.ts"
+    },
+    {
       "id": "test:server/castingV2/openLaneKind.test.ts",
       "path": "server/castingV2/openLaneKind.test.ts"
     },
     {
       "id": "test:server/castingV2/openLanePinning.test.ts",
       "path": "server/castingV2/openLanePinning.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/outfitEditServed.test.ts",
+      "path": "server/castingV2/outfitEditServed.test.ts"
     },
     {
       "id": "test:server/castingV2/outfitPlate.test.ts",
@@ -16297,6 +16325,10 @@
       "path": "server/prMergeOrder.test.ts"
     },
     {
+      "id": "test:server/prMergeStaleness.test.ts",
+      "path": "server/prMergeStaleness.test.ts"
+    },
+    {
       "id": "test:server/preCommitGate.test.ts",
       "path": "server/preCommitGate.test.ts"
     },
@@ -17690,7 +17722,12 @@
     },
     {
       "from": "module:client/src/components/AppChrome.tsx",
-      "to": "module:client/src/features/settings/index.ts",
+      "to": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/components/AppChrome.tsx",
+      "to": "module:client/src/features/settings/useAccountSurfaces.ts",
       "kind": "imports"
     },
     {
@@ -22030,6 +22067,11 @@
     },
     {
       "from": "module:client/src/features/settings/AccountSurfaces.tsx",
+      "to": "module:client/src/features/settings/useAccountSurfaces.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/AccountSurfaces.tsx",
       "to": "module:client/src/lib/trpc.ts",
       "kind": "imports"
     },
@@ -22041,6 +22083,11 @@
     {
       "from": "module:client/src/features/settings/index.ts",
       "to": "module:client/src/features/settings/SettingsModal.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/index.ts",
+      "to": "module:client/src/features/settings/useAccountSurfaces.ts",
       "kind": "imports"
     },
     {
@@ -22311,6 +22358,11 @@
     {
       "from": "module:client/src/features/settings/usageWindow.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/settings/useAccountSurfaces.ts",
+      "to": "module:client/src/features/settings/SettingsModal.tsx",
       "kind": "imports"
     },
     {
@@ -28555,6 +28607,11 @@
     },
     {
       "from": "module:server/castingV2/askHeldByWords.ts",
+      "to": "module:server/castingV2/hairStyles.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/askHeldByWords.ts",
       "to": "module:server/castingV2/recipeAssembler.ts",
       "kind": "imports"
     },
@@ -28586,6 +28643,11 @@
     {
       "from": "module:server/castingV2/askHeldByWords.ts",
       "to": "module:server/castingV2/subjectCards.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/askHeldByWords.ts",
+      "to": "module:shared/castingRealization.ts",
       "kind": "imports"
     },
     {
@@ -31901,6 +31963,11 @@
     {
       "from": "module:server/castingV2/refineInterpreter.ts",
       "to": "module:server/castingV2/refineSubjects.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/refineInterpreter.ts",
+      "to": "module:server/castingV2/subjectCards.ts",
       "kind": "imports"
     },
     {
@@ -42604,24 +42671,24 @@
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/referenceWordsLane.ts:175",
+      "id": "finding:redeclared-shape:server/castingV2/referenceWordsLane.ts:183",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/referenceWordsLane.ts:175",
+      "subject": "server/castingV2/referenceWordsLane.ts:183",
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:750",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:753",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:750",
+      "subject": "server/castingV2/refineService.ts:753",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:887",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:898",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:887",
+      "subject": "server/castingV2/refineService.ts:898",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

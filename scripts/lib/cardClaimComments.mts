@@ -425,7 +425,7 @@ export function renderCardClaimNote(
  */
 
 /** Twenty seconds, the same bound the read side sets, and for the same reason. */
-export const CARD_CLAIM_POST_TIMEOUT_MS = 20_000;
+const CARD_CLAIM_POST_TIMEOUT_MS = 20_000;
 
 /** What happened when the claim was posted — never a throw, on any road. */
 export type CardClaimPostOutcome =

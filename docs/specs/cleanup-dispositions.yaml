@@ -1648,3 +1648,15 @@
   why: "lost its only caller to #1577 slice 4b. It mapped a makeup ask to the region a crop should be cut from — a lip gloss to lips, a foundation to the whole complexion — and its one consumer was `regionOverrides`, the facet-to-region map the OLD paste road handed its mask cutter. The cutter, the map and the paste road are retired, so nothing calls this and the sweep lists it. Not TAKEN in that slice on purpose: the reasoning it carries is a measured one (mapping both to `face skin` is what took freckles somebody had paid for), its module has its own suite, and a dead input is not licence to cut a module the slice does not own"
   argued: GHOST_AUDIT_2026-09-23.md, the N3 section's slice 4b
   blocker: "a DECISION rather than a reading: whether makeup is ever placed on the repaint road. `facetCards.ts` decides it is `notASlot` today (worn state on the anatomy slots it sits on), which is why a makeup ask refuses there — so this symbol is either the start of that capability or it goes with the decision not to build it. #2554 is the sibling question for `marks`"
+
+- symbol: SCENERY_WORDS
+  file: server/castingV2/refineDelta.ts
+  verdict: KEEP
+  why: "a derived view the guard asserts the LEXICON through (#2544 slice 1). `STAGE_WORDS` splits in meaning rather than in membership, and the arm the outfit design calls the one that matters most drives every scenery word at all five wall sites with the flag ON. Deleting this pushes that arm onto a hardcoded list — which is working law 4 in the one place it would hurt most, since the scenery half is the only thing standing between an outfit edit and a paid edit that repaints the room. Measured rather than assumed: the first sabotage drive moved `backdrop` into the garment half, and the arms reading this constant alone went green because the word had just left it, so the suite now drives the UNION of this and the design's five named words"
+  argued: "#2544 slice 1"
+
+- symbol: GARMENT_STAGE_WORDS
+  file: server/castingV2/refineDelta.ts
+  verdict: KEEP
+  why: "the other half of the same derived view, and its guard's POSITIVE CONTROL (#2544 slice 1): before any refusal arm is believed, the licence is shown to genuinely stop the garment half firing, over the whole half rather than a sample. Without it every scenery arm would pass against a licence that was never applied at all"
+  argued: "#2544 slice 1"

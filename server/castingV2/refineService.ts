@@ -61,7 +61,9 @@ import {
   recoverCastingV2RefineOperation,
   type RefineRecoveryOutcome,
 } from "./refineRecovery";
-import { captureCastingCurrentDescriptionEnabled } from "./castingV2Scope";
+import {
+  captureCastingCurrentDescriptionEnabled, captureCastingOutfitEditEnabled,
+} from "./castingV2Scope";
 import { writeCurrentDescription } from "./currentDescription";
 import { interpreterEngine } from "./interpreter";
 import type { TextEngine } from "../providers/types";
@@ -202,6 +204,7 @@ import {
   readRemovalSubject,
   reReadNamesAThingToHave,
   sameChain,
+  takenFromKeptSentences,
   textMentions,
   type ChainStep,
 } from "./refineRemoval";
@@ -828,6 +831,14 @@ export type RefineServiceDependencies = {
   hairReferenceEnabled?: (userId: number) => boolean;
   /** `CASTING_INK_REFERENCE_SCOPE`, injectable for the same reason as its siblings. */
   inkReferenceEnabled?: (userId: number) => boolean;
+  /**
+   * `CASTING_OUTFIT_EDIT_SCOPE` — whether clothing is an editable subject for
+   * this account (#2544 slice 1). Injectable for the same reason as its
+   * siblings: the arm that proves the flag OFF leaves today's road untouched,
+   * and the arm that proves a served account reaches a render, both have to be
+   * able to say so without setting a process-wide variable.
+   */
+  outfitEditEnabled?: (userId: number) => boolean;
   /**
    * `CASTING_INK_TRANSFORM_SCOPE` — whether she may change a tattoo she
    * already has. Injectable for the same reason as its siblings: the arm that
@@ -1840,9 +1851,27 @@ async function refineCandidateCounted(
     the two option sets rather than listing them, which is the only arm shape
     neither of those two members would have needed finding by hand.
   */
+  /*
+    IS CLOTHING THIS ACCOUNT'S TO CHANGE — read ONCE, for the same reason
+    `wardrobeNow` is (#2544 slice 1).
+
+    Two `interpretRefinement` call sites in this function read it (the first
+    reading, and rule 3's re-read with the removal vocabulary withheld), and two
+    captures of one flag are two answers waiting to disagree about one request.
+  */
+  const outfitEditServed =
+    (dependencies.outfitEditEnabled ?? captureCastingOutfitEditEnabled)(input.userId);
+
   const readInstruction = (extra: { mode?: "edit"; restated?: boolean } = {}) =>
     (dependencies.interpret ?? interpretRefinement)({
       instruction,
+      /*
+        CLOTHING IS AN EDITABLE SUBJECT FOR THIS ACCOUNT, or it is not (#2544
+        slice 1). Read from the ACCOUNT, like `inkReferenceEnabled` beside it:
+        what a customer may ask for is a property of their account rather than
+        of the sentence they typed.
+      */
+      outfitEditServed,
       /*
         A PICTURE RIDES THIS ASK — the entrance to the reference road
         (fable-1104 §2).
@@ -6278,10 +6307,18 @@ async function refineCandidateCounted(
 
       The only thing this value reaches that leaves the process is `prompt`
       (`composedPrompt.full`, a few lines down), and `prompt` is read in exactly
-      one place: inside `renderOnce` — which dispatched the OLD paste road and
-      dispatches nothing now that #1577 slice 4b has taken it out. The paint's
-      own string is assembled by the repaint from `editDelta`, with its own call
-      to this function, and that is the armed one.
+      one place: `landVariant`'s `internalPrompt.prompt` — so it is RECORDED on
+      the variant row and dispatched nowhere. The paint's own string is
+      assembled by the repaint from `editDelta`, with its own call to this
+      function, and that is the armed one.
+
+      ⚠ THIS USED TO NAME `renderOnce` AS THAT ONE PLACE, and it was already
+      wrong when #1577 slice 4b landed (#2596). `renderOnce` is `announce
+      ("rendering")` then `repaintOnce()` and does not mention `prompt` at all —
+      the sentence survived the road it described by naming the function that
+      had held the dispatch rather than the reader that was left. The
+      consequence is in `subjectQualifiers.ts`'s header: every subject's
+      delivery floor is composed into this string and reaches no engine.
 
       Its other two readers cannot see the strip at all: `regionOverrides` reads
       `askedFiled.makeup`, and the record below reads `facetsAnsweredBy` — this
@@ -6620,6 +6657,26 @@ async function refineCandidateCounted(
             return undefined;
           }
         }
+        /*
+          AND WHAT AN EARLIER PRUNE TOOK OUT OF A SENTENCE THAT STAYED (#2665).
+
+          `earlierAsks` are the customer's sentences, verbatim, and a pruned
+          step keeps its sentence (D-171): after "remove the fangs", the record
+          still reads "add fangs and horns". `edit.takenBack` covers only THIS
+          edit, so a seed written after a prune whose own description was never
+          filed was handed the fangs as a change already made — and every
+          render after it paints from that paragraph. The sentence is never
+          edited; what it no longer asks for rides beside it as taken back, the
+          same lines and the same backstop as this edit's own. Only on the seed
+          road: a previous description already carries the removal.
+        */
+        const takenEarlier = previous === null
+          ? takenFromKeptSentences(
+            predecessorChain ?? [],
+            lineageChainsOf(existing, predecessor),
+            composed,
+          )
+          : [];
         const written = await writeCurrentDescription(
           (dependencies.describeEngine ?? interpreterEngine)(),
           {
@@ -6641,7 +6698,7 @@ async function refineCandidateCounted(
             /* The customer's own sentence, verbatim (#2645) — see the
                paragraph above `describeThisEdit`. */
             change: instruction,
-            takenBack: edit.takenBack,
+            takenBack: Array.from(new Set([...edit.takenBack, ...takenEarlier])),
             absences: edit.absences,
             /* The half of that sentence the photograph does not show was not
                painted, so the writer is told so and its backstop refuses a
@@ -11239,4 +11296,30 @@ export function readStepDeltas(value: unknown): RefineDelta[] {
     steps.push(delta);
   }
   return steps;
+}
+
+/**
+ * THE CHAINS OF A VERSION'S ANCESTORS, walked by `parentVariantId` (#2665).
+ *
+ * The same walk the reference-pointer read makes: a branch the customer is not
+ * on cannot have put anything on this cast, so only the ancestry is read, never
+ * every row. A row whose two lists disagree reads as no chain and is skipped —
+ * `takenFromKeptSentences` then simply sees less, which is a miss and never a
+ * false entry.
+ */
+export function lineageChainsOf(
+  rows: ReadonlyArray<{ id: number; parentVariantId: number | null; instructions: unknown; stepDeltas: unknown }>,
+  from: { parentVariantId: number | null } | null | undefined,
+): ChainStep[][] {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const chains: ChainStep[][] = [];
+  const guard = new Set<number>();
+  let walk = from?.parentVariantId == null ? null : byId.get(from.parentVariantId) ?? null;
+  while (walk && !guard.has(walk.id)) {
+    guard.add(walk.id);
+    const chain = readChain(readInstructions(walk.instructions), readStepDeltas(walk.stepDeltas));
+    if (chain) chains.push(chain);
+    walk = walk.parentVariantId == null ? null : byId.get(walk.parentVariantId) ?? null;
+  }
+  return chains;
 }

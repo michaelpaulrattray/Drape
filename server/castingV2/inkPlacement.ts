@@ -627,21 +627,61 @@ function uncarriedInkPlaces(): readonly string[] {
  *
  * # ⚠ EMPTY IS A REAL ANSWER AND IT GETS A REAL SENTENCE
  *
- * An outfit that covers all three leaves nowhere to name, and the sentence
+ * An outfit that leaves nothing showing leaves nowhere to name, and the sentence
  * above would have read *"Tell me where it goes —  from a description alone"*.
  * `elsewhereClause` already answers that case for the three siblings and its
  * sentence is *"nowhere ELSE"*, which is wrong here: this door is reached by an
  * ask that named no place at all, or one the anchor cannot see, so there is no
  * first place for an "else" to point back at. Its own honest version says what
  * is in the way and the two things that move it.
+ *
+ * # ⚠ AND IT CLAIMED TO HAVE READ THE OUTFIT — FIXED #2601 (#2580's sibling)
+ *
+ * It said *"and this outfit covers every place that works"*, which asserts a
+ * fact this function is not holding. The list it is handed is `servedAndBare`,
+ * and a surface drops out of that for **two different reasons**: the outfit
+ * `covered` it, or the coverage reader did not recognise the outfit line at all
+ * and answered `unknown` (`coverageOfWardrobeLine`). Only `bare` survives the
+ * filter, so the two arrive here indistinguishable — and the sentence picked
+ * one of them and told the customer it was the case.
+ *
+ * ⚠ **MEASURED, AND IT IS THE STRONGER FORM OF THE DEFECT: `covered` CANNOT
+ * EMPTY THIS LIST AT ALL.** Driven over every resolution shape the type can
+ * express against every line the reader recognises, with the controls that the
+ * reader does say `covered` and that `bareSurfaces` is callable: **0 of 18
+ * reached an empty list through `covered`, and 4 of 4 empty lists were
+ * `unknown` on all three surfaces.** It is structural rather than a sample —
+ * the only `covered` answer in either table is `HOUSE_COVERAGE.upperChest`, and
+ * the house table leaves the neck and the upper arm `bare`, so **any line the
+ * reader recognises leaves at least two surfaces showing.** An empty list
+ * therefore means *we could not read what they are wearing*, every time. So the
+ * old sentence was not sometimes wrong; it was wrong whenever it was shown.
+ *
+ * **The repair is to say less, which is what #2580 did one file over**, and the
+ * three sentences it fixed carry the same phrase for the same reason: *there's
+ * nowhere showing* is true whether the surfaces are covered or unreadable, and
+ * the four doors a customer can meet one ask apart now describe one product.
+ * Saying WHICH — distinguishing covered from unreadable, each with its own road
+ * out — is the more honest answer and needs a product decision about what to
+ * say to somebody whose outfit we cannot read; that belongs with the outfit
+ * edit's own copy (#2544) and not here.
+ *
+ * ⚠ **AND THE PRODUCT ALREADY OWNS THAT VOCABULARY, WHICH IS WHY THIS DOOR WAS
+ * THE ODD ONE OUT RATHER THAN THE FIRST TO MEET THE PROBLEM.**
+ * `gate_ink_coverage_unread` — the same unreadable outfit, with a place NAMED —
+ * says *"I can't tell yet whether what they're wearing leaves their [place]
+ * showing, and I won't put a tattoo somewhere I can't see"*. So on one outfit
+ * the product said *I cannot see* when a place was named and *your outfit covers
+ * everything* when none was, and only the second was a guess. A later card doing
+ * (b) starts from that sentence rather than inventing one.
  */
 export function inkNeedsDocumentMessage(placements: readonly string[]): string {
   /* THE LIST IS THE REFUSAL'S, never this function's — see the ⚠ above. A
      default would put the old frozen promise back one forgotten call site
      away, so there is none. */
   if (placements.length === 0) {
-    return "A tattoo from a description alone needs skin that's showing, and this outfit "
-      + "covers every place that works. Change the outfit first, or work from a design "
+    return "A tattoo from a description alone needs skin that's showing, and there's "
+      + "nowhere showing right now. Change the outfit first, or work from a design "
       + "instead. The body-art studio is coming. Nothing was charged.";
   }
   /* "a neck tattoo" · "a neck or an upper arm tattoo" — the article agrees with

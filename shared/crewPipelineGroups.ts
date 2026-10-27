@@ -411,7 +411,7 @@ export const CREW_PIPELINE_GROUPS: readonly CrewPipelineGroup[] = [
  */
 export const PIPELINE_SWITCHED_KEY = "switched";
 /** The ladder group matched on a `rung:` label rather than a queue label (#1199). */
-export const PIPELINE_RUNG_KEY = "rung";
+const PIPELINE_RUNG_KEY = "rung";
 
 /*
  * ⚠ `CREW_PIPELINE_VISIBLE_GROUPS` — "every group except the arithmetic" — was

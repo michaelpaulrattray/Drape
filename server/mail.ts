@@ -32,7 +32,7 @@ import { formatCredits, type DisplayCredits } from "@shared/creditDisplay";
  * The verified Resend sending domain. Every `from` in the product is built on
  * it, so moving the domain is one edit.
  */
-export const MAIL_SENDING_DOMAIN = "mail.klieglabs.com";
+const MAIL_SENDING_DOMAIN = "mail.klieglabs.com";
 
 /** Where a customer's reply goes — declared once in `shared/` (#2456). */
 import { SUPPORT_EMAIL } from "@shared/supportEmail";
@@ -283,7 +283,7 @@ export interface ReferralInviteCopy {
  * Hashed: fixed length (well under Resend's 256), and the address does not sit
  * in a header in plain text. Lowercased, as the duplicate check is.
  */
-export function referralInviteIdempotencyKey(referrerId: number, to: string): string {
+function referralInviteIdempotencyKey(referrerId: number, to: string): string {
   const digest = createHash("sha256").update(`${referrerId}:${to.trim().toLowerCase()}`).digest("hex");
   return `referral-invite/${digest}`;
 }
@@ -360,7 +360,7 @@ export interface AccountFrozenCopy {
  * *"Point it at support@klieglabs.com"*) — the shared support address, as a
  * link, so it works in a mail client that ignores reply-to.
  */
-export const FROZEN_NOTICE_SUPPORT_LINK = `mailto:${SUPPORT_EMAIL}`;
+const FROZEN_NOTICE_SUPPORT_LINK = `mailto:${SUPPORT_EMAIL}`;
 
 export function accountFrozenEmail(copy: AccountFrozenCopy): ProductEmail {
   const firstName = escapeEmailHtml(oneLine(copy.name ?? "").split(" ")[0] || "there");

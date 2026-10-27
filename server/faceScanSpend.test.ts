@@ -41,11 +41,14 @@ import { createFalRegionReader } from "./castingV2/falRegionReader";
 import { catalogueSlots } from "./castingV2/referenceSlotCatalogue";
 import {
   FACE_SCAN_FAL_CALLS,
+  FACE_SCAN_PAIR_ONE_READ_POSITION,
   FACE_SCAN_PART_USD,
   FAL_MEASURED_USD,
   faceScanFalFloorUsd,
+  faceScanSam3Reads,
   faceScanUsd,
 } from "../scripts/lib/falSpend.mts";
+import { PRODUCTION_FLAG_POSITIONS } from "../scripts/lib/productionFlagPositions.mts";
 
 const SAM3 = "fal-ai/sam-3/image";
 const BIREFNET = "fal-ai/birefnet/v2";
@@ -274,8 +277,12 @@ describe("what one scan asks of fal, counted at the wire", () => {
 });
 
 /**
- * THE SAME TWO NUMBERS WITH `ENABLE_CASTING_PAIR_ONE_READ` ON — a road that is built
- * and OFF, so these are not what production does (#2191).
+ * THE SAME TWO NUMBERS WITH `ENABLE_CASTING_PAIR_ONE_READ` ON — which is what
+ * production does for every account since 2026-10-16 (#2191, his *"Yes, Turn it
+ * on"*). ⚠ This block's header read *"a road that is built and OFF, so these
+ * are not what production does"* until #2577; the arms are unchanged, because
+ * they were always a derivation of what the code can do and never a claim about
+ * where the flag stood.
  *
  * Derived by the same drive and the same policies as the two arms above, which
  * is the whole reason they live in this file rather than beside the pair road's
@@ -341,18 +348,76 @@ describe("what one scan asks of fal on the pair-in-one-read road", () => {
   });
 });
 
+/**
+ * WHICH ROAD THE COST READERS PRICE — the guard that makes `falSpend.mts`'s
+ * copy of the production position safe to keep (#2577).
+ *
+ * The flag went to `"true"` for every account on 2026-10-16 and the five cost
+ * readers went on pricing the crop road, over-reporting every scan by about
+ * 4½¢ with nothing anywhere saying so. The repair declares the position ONCE,
+ * in `falSpend.mts`, and this is the arm that holds that declaration equal to
+ * the recorded position the deploy rite compares against the live service — so
+ * a flip in either direction that does not move the declaration reddens here
+ * rather than quietly mis-pricing.
+ *
+ * ⚠ The declaration is a COPY and that is deliberate: importing the recorded
+ * positions into `falSpend.mts` would reach `governedBootSettings.mts`, which
+ * `readFileSync`s three server declarations at import, and this module's own
+ * rule (this suite's header) is that it stays out of the server's import
+ * graph. A test may reach both; the priced module may not.
+ */
+describe("the road the scan's cost readers price", () => {
+  const row = PRODUCTION_FLAG_POSITIONS.ENABLE_CASTING_PAIR_ONE_READ;
+
+  it("is the position recorded for the production service", () => {
+    /* The key's spelling is pinned to the service's own constant by
+       `server/faceScanPairOneRead.test.ts`; what is checked here is the value. */
+    expect(row, "ENABLE_CASTING_PAIR_ONE_READ has no recorded position").toBeTruthy();
+    expect(FACE_SCAN_PAIR_ONE_READ_POSITION).toBe(row.position);
+  });
+
+  it("reads the pair road's figures when that position is on, and the crop road's when it is not", () => {
+    const live = faceScanSam3Reads();
+    const { sam3 } = FACE_SCAN_FAL_CALLS;
+    /* Both answers are asserted, from the one declaration, so the arm proves
+       the switch rather than today's side of it — the negative control a
+       single-position arm cannot carry. */
+    const expected = FACE_SCAN_PAIR_ONE_READ_POSITION === "true"
+      ? { road: "pair-in-one-read", fewest: sam3.pairInOneRead.fewest, most: sam3.pairInOneRead.most }
+      : { road: "crop", fewest: sam3.fewest, most: sam3.most };
+    expect(live.road).toBe(expected.road);
+    expect(live.fewest).toBe(expected.fewest);
+    expect(live.most).toBe(expected.most);
+    /* And the two roads really are different numbers, or this switch would be
+       proving nothing about anything. */
+    expect(sam3.pairInOneRead.fewest).toBeLessThan(sam3.fewest);
+    expect(sam3.pairInOneRead.most).toBeLessThan(sam3.most);
+  });
+
+  it("is compared exactly, never for truthiness", () => {
+    /* A Railway variable created with no value holds the empty string, which is
+       the shape that reads as off while looking set — so the empty string and
+       any other token must land on the crop road, and only the four characters
+       `true` on the pair road. The service reads it the same way
+       (`pairInOneReadEnabled()`). */
+    for (const token of ["", "TRUE", "1", "yes", "true "]) {
+      expect(token === "true", `${JSON.stringify(token)} is not the on token`).toBe(false);
+    }
+  });
+});
+
 describe("the measured band, against what the code can do", () => {
-  it("sits inside the derived floor and ceiling", () => {
-    const { fewest, most, measured } = FACE_SCAN_FAL_CALLS.sam3;
+  it("sits inside the derived floor and ceiling, on the road being priced", () => {
+    const { fewest, most, measured } = faceScanSam3Reads();
     expect(measured.low).toBeGreaterThanOrEqual(fewest);
     expect(measured.high).toBeLessThanOrEqual(most);
     expect(measured.low).toBeLessThanOrEqual(measured.high);
   });
 
-  it("prices a scan from its parts, and the parts bracket the measured totals", () => {
+  it("prices a scan from its parts, and the parts bracket the measured reads", () => {
     const usd = faceScanUsd();
     const sam = FAL_MEASURED_USD[SAM3].usd;
-    const { measured } = FACE_SCAN_FAL_CALLS.sam3;
+    const { measured } = faceScanSam3Reads();
     /* The SAM 3 share is the read count times fal's own price, and nothing
        else: the cutout and the describer are their own terms. */
     expect(usd.sam3.low).toBeCloseTo(measured.low * sam, 6);
@@ -360,22 +425,39 @@ describe("the measured band, against what the code can do", () => {
     expect(usd.cutout.low).toBeGreaterThan(0);
     expect(usd.total.low).toBeCloseTo(usd.sam3.low + usd.cutout.low + usd.describer.low, 6);
     expect(usd.total.high).toBeCloseTo(usd.sam3.high + usd.cutout.high + usd.describer.high, 6);
-    /* #2183's per-cast totals ran $0.121–$0.151. The composed band must hold
-       every one of them; it is wider because it adds independent extremes. */
-    expect(usd.total.low).toBeLessThanOrEqual(0.121);
-    expect(usd.total.high).toBeGreaterThanOrEqual(0.151);
     /* fal's share alone is what a fal balance drop can be charged with. */
     expect(usd.fal.low).toBeCloseTo(usd.sam3.low + usd.cutout.low, 6);
     expect(usd.fal.high).toBeCloseTo(usd.sam3.high + usd.cutout.high, 6);
   });
 
+  it("still holds #2183's measured casts inside the CROP road's own composed band", () => {
+    /* This arm used to be `faceScanUsd()`'s, with the literals $0.121 and
+       $0.151 in it — and it was a check on the crop road wearing the live
+       reader's clothes, so it would have gone red on the flip for the wrong
+       reason (#2577). The bracket is a fact about the crop figures and stays
+       checkable whichever road is live; it is composed here from those figures
+       by name rather than read through the live one. */
+    const sam = FAL_MEASURED_USD[SAM3].usd;
+    const { measured } = FACE_SCAN_FAL_CALLS.sam3;
+    const low = measured.low * sam
+      + FACE_SCAN_FAL_CALLS.cutouts * FACE_SCAN_PART_USD.cutout.low
+      + FACE_SCAN_FAL_CALLS.describer * FACE_SCAN_PART_USD.describer.low;
+    const high = measured.high * sam
+      + FACE_SCAN_FAL_CALLS.cutouts * FACE_SCAN_PART_USD.cutout.high
+      + FACE_SCAN_FAL_CALLS.describer * FACE_SCAN_PART_USD.describer.high;
+    expect(low).toBeLessThanOrEqual(0.121);
+    expect(high).toBeGreaterThanOrEqual(0.151);
+  });
+
   it("gives the balance reader a floor no real scan can go under", () => {
     /* `fal-picture-price.mts` subtracts scans out of a balance drop to bound a
        render's price; charging a scan MORE than it can cost would hide part of
-       the render. So the floor is the derived fewest, never the measured band. */
+       the render. So the floor is the derived fewest of the road production is
+       on — read as the crop road's 18 while production made 13, it was hiding
+       2½¢ of every render it priced beside a scan. */
     const floor = faceScanFalFloorUsd();
     expect(floor).toBeCloseTo(
-      FACE_SCAN_FAL_CALLS.sam3.fewest * FAL_MEASURED_USD[SAM3].usd
+      faceScanSam3Reads().fewest * FAL_MEASURED_USD[SAM3].usd
         + FACE_SCAN_FAL_CALLS.cutouts * FACE_SCAN_PART_USD.cutout.low,
       6,
     );

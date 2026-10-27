@@ -54,7 +54,7 @@ import {
 } from "./openLaneKind";
 import { facetOfSubject } from "./refineFacets";
 import { scrubBrands } from "./brandScrub";
-import { stageWordIn, stemmedContainment, type OpenKindAsk } from "./refineDelta";
+import { GARMENT_STAGE_WORDS, stageWordIn, stemmedContainment, type OpenKindAsk } from "./refineDelta";
 import type { TextEngine } from "../providers/types";
 
 const log = createModuleLogger("castingV2/openLaneAccept");
@@ -146,6 +146,17 @@ export async function acceptOpenKind(input: {
   unowned: ReadonlyArray<{ subject: string; value: unknown }>;
   engine?: TextEngine | null;
   signal?: AbortSignal;
+  /**
+   * WHETHER THIS ACCOUNT IS SERVED THE WARDROBE SUBJECT — #2544 slice 1.
+   *
+   * The same derived bit `readDelta` is given, handed over by the interpreter
+   * from the one place it is read. It licenses the GARMENT half of the stage
+   * lexicon at the two sites below and nothing else; the scenery half refuses
+   * here under every flag.
+   *
+   * Absent means today, which is every caller that has never heard of it.
+   */
+  outfitEditServed?: boolean;
 }): Promise<OpenLaneAcceptance | null> {
   if (input.unowned.length === 0) return null;
   if (input.unowned.length > 1) {
@@ -228,7 +239,24 @@ export async function acceptOpenKind(input: {
         Asked of the noun and of the words, exactly as wall (b) is asked below —
         one question, two call sites, deliberately the same shape.
       */
-      const stage = stageWordIn(reading.noun) ?? stageWordIn(reading.kind);
+      /*
+        ⚠ AND SERVED, A GARMENT COLLISION IS THE COLLISION GUARD'S ANSWER AGAIN
+        — #2544 slice 1, site 4 of the design's five.
+
+        The paragraph above is why a garment collision gets the stage's answer
+        today: with the subject served to nobody, *"put her in a red coat"* is
+        the most ordinary refusal this lane makes, and calling it a routing bug
+        would have fired a `warn` on every account. Once the subject IS served
+        that reasoning inverts exactly: the closed interpreter should have filed
+        it under `wardrobe`, so arriving here IS a routing miss and is worth the
+        `warn` the next guard raises. The outcome is `refused` either way — what
+        moves is the REASON and the log, which is what the design's table says.
+
+        ⚠ The scenery half is outside the licence, so *"against a red backdrop"*
+        keeps the stage's own answer and its own sentence, served or not.
+      */
+      const stage = stageWordIn(reading.noun, { garmentLicensed: input.outfitEditServed === true })
+        ?? stageWordIn(reading.kind, { garmentLicensed: input.outfitEditServed === true });
       if (stage !== null) {
         log.info(
           { kind: reading.kind, word: stage, subject: reading.subject },
@@ -280,12 +308,53 @@ export async function acceptOpenKind(input: {
     key. The accessory carve-out travels with the lexicon, so *"wearing small
     gold hoops"* is unaffected.
   */
+  /*
+    ⚠ SITE 5 TAKES NO LICENCE, AND THE COMMENT THAT USED TO SIT HERE ARGUED
+    FOR THAT WHILE THE CODE DID THE OPPOSITE — the relay's finding on PR #2600,
+    repaired by `foreman-20261017-0728`.
+
+    It read *"the garment half defers to the collision answer above … served,
+    that is a wardrobe ask the interpreter misrouted rather than scenery"* — which
+    is the right reading — and then passed `garmentLicensed` anyway. Licensed, the
+    garment half returns null, `scenery` is null, and the acceptance CONTINUES: so
+    with the flag on, *"put them in a trench coat"* was FILED as `open:trench-coat`
+    rather than refused. It renders as an open-kind feature instead of through the
+    wardrobe subject's qualifier, and it writes open-lane demand rows for clothing.
+
+    ⚠ **THE LICENCE'S OWN CONTRACT IS WHY, AND IT IS NOT A JUDGEMENT CALL.**
+    `stageWordIn`'s docblock says `garmentLicensed` is *"passed by a caller that
+    has already established BOTH halves of the licence: this ask is a wardrobe
+    ask, and this account is served the subject."* A garment reaching THIS line
+    has passed the collision guard, which means its noun is **not** one the closed
+    lane owns — so it is by construction not a wardrobe ask, and the first half of
+    the licence was never established. Site 4 is the opposite case and keeps its
+    licence: there the noun IS owned, and both of its branches return `refused`
+    either way, so what the licence moves there is the reason and the log.
+
+    ⚠ SO THE OUTCOME HERE IS IDENTICAL UNDER EVERY FLAG, AND ONLY THE LOG MOVES.
+    `reason` stays `unfileable`: `collides` would be a lie about a noun the closed
+    lane does not own. Served, a garment word is the routing miss the paragraph
+    above describes, so it earns the `warn` — which is what makes the gap in the
+    wardrobe subject's nouns findable instead of silent. Unserved, and for every
+    scenery word under every flag, the sentence is wall (b)'s own, unchanged.
+
+    ⚠ The scenery half was never in question, which is this block's whole subject:
+    an open lane that accepts *"horns"* must still refuse *"put her in a red coat
+    against a red backdrop"*, and it does — on `backdrop`, under every flag.
+  */
   const scenery = stageWordIn(reading.noun) ?? stageWordIn(scrubbed);
   if (scenery !== null) {
-    log.info(
-      { kind: reading.kind, word: scenery },
-      "[openLaneAccept] an out-of-vocabulary ask names the stage — wall (b) holds, nothing filed",
-    );
+    if (input.outfitEditServed === true && GARMENT_STAGE_WORDS.includes(scenery)) {
+      log.warn(
+        { kind: reading.kind, noun: reading.noun, word: scenery },
+        "[openLaneAccept] a garment names a subject the wardrobe nouns do not list — refused as a routing miss, not filed",
+      );
+    } else {
+      log.info(
+        { kind: reading.kind, word: scenery },
+        "[openLaneAccept] an out-of-vocabulary ask names the stage — wall (b) holds, nothing filed",
+      );
+    }
     return { ok: false, reason: "unfileable", kind: reading.kind, outcome: "refused" };
   }
 

@@ -30,24 +30,67 @@
  * reader's description of the crop. If that reader describes a bun as a short
  * crop, this test cannot know.
  *
- * # Which asks it reads, and the three it leaves alone
+ * # Which asks it reads, and what it leaves alone
  *
- * The chain's composed delta — the customer's asks after every removal — is the
+ * The chain's composed delta (the customer's asks after every removal) is the
  * single source of what a slot is currently asked to be. Never the
  * verification's `asked`: that held the master's pin on the very render this
- * card is about.
+ * card is about. And the test only ever holds a crop to words a caption could
+ * plainly say: never a house name (#2666).
  *
  *   a per-side slot      ruling C (fable-444): the delta says "green eyes" and
  *                        the LIBRARY remembers only the right one is green. The
  *                        left eye's words cannot hold "green", and that is
  *                        correct, so a per-side slot is never judged here.
- *   the accessory family one facet over every kind she wears, so the ask is not
- *                        about one slot.
+ *   the accessory family one facet over every kind the cast wears, so the ask
+ *                        is not about one slot.
  *   a picture-taken ask  its value is a placeholder (*"the hair in the attached
  *                        picture"*); the crop is that ask's only carrier.
+ *   a house cut name     `hairStyle` holds the cut by its HOUSE name: "short
+ *                        crop" files as `hairStyle: "standard crop"`
+ *                        (hairStyles.ts), and a real caption, *"short dark
+ *                        brown hair, closely cropped"*, never says "standard",
+ *                        so every hair crop was refused after any haircut, for
+ *                        good (#2666). So the cut is read as its FAMILY, looked
+ *                        up in the hairStyles.ts table (`hairStyleByName`):
+ *                        "standard crop" asks "cropped", which a short-crop
+ *                        caption holds and a bun caption does not. Dropping the
+ *                        axis outright was the first shape of this repair and
+ *                        brought #2650 back: an ask the test never sees lets
+ *                        the bun ride against "short crop" (the relay's HELD
+ *                        finding on PR #2667).
+ *                        The other axes are read as they are: `hairColour`,
+ *                        `hairTexture` and `eyeColour` hold plain words a
+ *                        caption says ("dark brown", "curly", "green"), and
+ *                        `makeup` is the customer's own free text.
+ *   a trend eye shape    `eyeShape` is read for the anatomical shapes (almond,
+ *                        hooded, deep-set…), which are the words a caption
+ *                        uses. The stated-only shapes (`STATED_ONLY_EYE_SHAPES`,
+ *                        today "fox eyes") are a styled look's NAME, a caption
+ *                        describes the eye rather than naming the trend, and
+ *                        the test would refuse every crop for words nobody
+ *                        reading the picture would write, so they are left
+ *                        out. (Every eye slot is per-side today, so no eye
+ *                        axis reaches this test yet; the rule is set for the
+ *                        day a whole eye slot exists.)
+ *   a comparative ask    "fuller brows", "longer hair", "more freckles". It is
+ *                        measured against the BEFORE, and a caption describes
+ *                        one picture: no crop's words say "fuller", so the test
+ *                        refused every crop forever. Worse, stripped of its
+ *                        comparative, "longer hair" is held by the OLD "long
+ *                        hair" crop, which would ride again against the ask.
+ *                        Neither answer reads the ask, so it is left out.
+ *
+ * What leaving an ask out means, stated (the comparative and the trend shape
+ * only): the slot is judged on its other asks, or, with none left, not judged
+ * here at all, and its newest live crop rides as it did before #2650. That is the road every slot the chain says nothing about
+ * already takes. It invents no verdict and it does not close the slot, and the
+ * reader that wrote the crop's words is trusted no further than it was then.
  */
-import { REFINABLE_AXES, itemsOf, type RefineDelta } from "./refineDelta";
+import { REFINABLE_AXES, itemsOf, type RefinableAxis, type RefineDelta } from "./refineDelta";
 import { facetOfAxis, facetOfSubject, type Facet } from "./refineFacets";
+import { hairStyleByName } from "./hairStyles";
+import { STATED_ONLY_EYE_SHAPES } from "../../shared/castingRealization";
 import type { FeatureSlot } from "./recipeAssembler";
 import { FACET_SLOTS, catalogueSlots } from "./referenceSlotCatalogue";
 import type { FreeSubject } from "./subjectCards";
@@ -106,19 +149,63 @@ export function wordsHoldAsks(
 }
 
 /**
- * What the chain currently asks of each whole (sideless) catalogue slot, in the
- * customer's words. Slots the chain says nothing about are absent.
+ * Comparative words: an ask carrying one is about a CHANGE from the before, and
+ * a caption of one picture cannot hold it (see the header). An explicit list on
+ * purpose. A word it misses stays in the ask, where the caption will not say it
+ * and the crop is refused, which is this test's safe direction; a looser rule
+ * ("ends in -er") would also catch "silver", "copper" and "layer" and leave
+ * ordinary asks unjudged.
+ */
+const COMPARATIVE = new Set([
+  "more", "less", "fewer", "still", "even",
+  "longer", "shorter", "fuller", "thicker", "thinner", "bigger", "smaller",
+  "larger", "wider", "narrower", "higher", "lower", "deeper", "shallower",
+  "darker", "lighter", "brighter", "paler", "duller", "warmer", "cooler",
+  "softer", "harder", "sharper", "stronger", "weaker", "bolder", "fainter",
+  "heavier", "rounder", "flatter", "straighter", "curlier", "wavier",
+  "tighter", "looser", "neater", "messier", "older", "younger", "redder",
+  "pinker", "greener", "bluer", "browner", "greyer", "grayer", "blonder",
+  "whiter", "blacker", "richer", "subtler", "glossier", "shinier",
+  "sleeker", "denser", "sparser", "closer", "further", "farther", "taller",
+]);
+
+/** Is this ask a comparative, about the change rather than the state? */
+export function isComparativeAsk(ask: string): boolean {
+  return ask.toLowerCase().split(/[^a-z]+/).some((word) => COMPARATIVE.has(word));
+}
+
+/**
+ * The words an axis value asks, for a caption to hold — or null when no caption
+ * could be expected to say them. A cut asks its family, never its house name;
+ * a trend eye shape asks nothing; every other axis asks its own plain value.
+ */
+export function axisAskWords(axis: RefinableAxis, value: string): string | null {
+  /* A name the table does not know (unreachable: `readDelta` admits only
+     table names) is tested as written, which refuses; never skipped. */
+  if (axis === "hairStyle") return hairStyleByName(value)?.family ?? value;
+  if (axis === "eyeShape" && (STATED_ONLY_EYE_SHAPES as readonly string[]).includes(value)) return null;
+  return value;
+}
+
+/**
+ * What the chain currently asks of each whole (sideless) catalogue slot, in
+ * words a caption could plainly hold: never a house cut name and never a
+ * comparative (#2666; the header names every exclusion). Slots the chain says
+ * nothing testable about are absent.
  */
 export function chainAsksBySlot(composed: RefineDelta): Map<FeatureSlot, string[]> {
   const byFacet = new Map<Facet, string[]>();
   const add = (facet: Facet, value: string) => {
+    if (isComparativeAsk(value)) return;
     const held = byFacet.get(facet) ?? [];
     held.push(value);
     byFacet.set(facet, held);
   };
   for (const axis of REFINABLE_AXES) {
     const value = composed[axis];
-    if (typeof value === "string" && value.trim()) add(facetOfAxis(axis), value);
+    if (typeof value !== "string" || !value.trim()) continue;
+    const words = axisAskWords(axis, value);
+    if (words !== null) add(facetOfAxis(axis), words);
   }
   const fromPicture = new Set<string>(composed.fromPicture ?? []);
   for (const [subject, value] of Object.entries(composed.free ?? {})) {

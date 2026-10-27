@@ -95,7 +95,7 @@ const FIXTURE_EMAIL = "latency-bot@local.invalid";
  * first. See `censusFixture.mts`'s own note on why this column is the right home
  * and not merely the nearest one (#1364).
  */
-export const LATENCY_FIXTURE_TAG = "latency-fixture-1800";
+const LATENCY_FIXTURE_TAG = "latency-fixture-1800";
 
 /**
  * HOW MANY TILES, and why eight rather than one.
@@ -105,7 +105,7 @@ export const LATENCY_FIXTURE_TAG = "latency-fixture-1800";
  * sample, and a p95 over one sample is not a p95. Eight is the roll's own
  * candidate count, so the grid the drive walks is the shape a real sheet has.
  */
-export const LATENCY_FIXTURE_TILES = 8;
+const LATENCY_FIXTURE_TILES = 8;
 
 export type LatencyFixture = {
   userId: number;
