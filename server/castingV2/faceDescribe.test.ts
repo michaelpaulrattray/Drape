@@ -15,6 +15,8 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
+import { anchorPresentsIn, type BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
+import { everyFeatureOutOfFrame, outOfFrame } from "./castingFrame";
 import type { CastPronouns } from "./castPronouns";
 import {
   assertEveryDescribedFeatureHasAnAsk,
@@ -31,6 +33,7 @@ import { scanFace } from "./faceScan";
 import type { Mask } from "./maskedComposite";
 import type { TextEngine } from "../providers/types";
 import { catalogueSlots, isAskable } from "./referenceSlotCatalogue";
+import { allFacets } from "./refineFacets";
 import type { StoredReference } from "./referenceLibrary";
 
 const FRAME = { bytes: Buffer.from("frame"), contentType: "image/png" };
@@ -89,11 +92,14 @@ describe("the reader", () => {
       ASSERTED ON THE OUTGOING REQUEST, not on the constant beside it (law 5).
       The crop rule is the one instruction that keeps a description honest about
       a photograph nobody took — `castingFrame`'s law, said to the describer.
+      ⚠ This arm used to require "waist" on the wire too, which pinned the
+      contradiction #2674 removes; what the sentence may name is now held to
+      the code's own frame truth in the describe block below.
     */
     const engine = engineSaying('{"build": "slim", "skin": "fair"}');
     await describeTogether({ ...FRAME, engine });
     const system = engine.sent[0].system;
-    for (const word of ["waist", "hips", "legs", "height"]) expect(system).toContain(word);
+    for (const word of ["hips", "legs", "height"]) expect(system.toLowerCase()).toContain(word);
     expect(system).toContain("lower ribs");
   });
 
@@ -102,6 +108,139 @@ describe("the reader", () => {
     await describeTogether({ ...FRAME, engine });
     const request = (engine.complete as unknown as { mock: { calls: [{ images?: unknown[] }][] } }).mock.calls[0][0];
     expect(request.images).toHaveLength(1);
+  });
+});
+
+/**
+ * WHAT THE READER IS TOLD THE FRAME LEAVES OUT IS THE CODE'S OWN FRAME TRUTH
+ * (#2674).
+ *
+ * The RULES sentence still ruled the waist out, beside hips, legs and height,
+ * after the founder ruled the waist in shot (#2671, *"I like B."*), so one
+ * module served, described and kept a waist change while this one told the
+ * describer the waist did not exist. Nothing failed, because nothing compared
+ * the two. These arms do, against both sources of that truth:
+ *
+ *   - `shared/bodyAnchorRegions.ts`, whose `PRESENTS_IN.master` says which body
+ *     regions the master frame shows (`torso`, "shoulders to waist", does);
+ *   - `castingFrame.ts`, whose out-of-frame table says which closed facets the
+ *     product refuses as not in shot (none, since #2671).
+ *
+ * RULES stays a literal, because it is the text both bench arms were measured
+ * on; the agreement is checked rather than composed.
+ */
+describe("the frame the reader is told about agrees with the code's own frame", () => {
+  /*
+    Each word the frame sentence may rule out, placed on the body region it is
+    part of. A word missing from this table is a FAILURE, never a pass: a part
+    has to be placed on the body before the describer may be told it is out of
+    shot. `height` sits on `feet` because a height is read head to feet, and
+    the master shows the head and not the feet.
+  */
+  const REGION_OF: Record<string, BodyAnchorRegion> = {
+    waist: "torso",
+    hips: "belowWaist",
+    legs: "belowWaist",
+    height: "feet",
+  };
+
+  /** The RULES paragraph that starts "THE FRAME:", unwrapped onto one line. */
+  function frameParagraph(system: string): string | null {
+    const paragraph = system.split("\n\n").find((block) => block.startsWith("THE FRAME:"));
+    return paragraph === undefined ? null : paragraph.replace(/\s+/g, " ").trim();
+  }
+
+  /** The parts the paragraph says are NOT in the picture, as bare lowercase nouns. */
+  function partsRuledOut(paragraph: string): string[] {
+    const named = /\.\s+([^.]+?)\s+(?:are|is) NOT in it\./.exec(paragraph)?.[1] ?? "";
+    return named
+      .split(/,|\band\b/)
+      .map((part) => part.trim().toLowerCase().replace(/^(?:the|her|his|their)\s+/, ""))
+      .filter((part) => part !== "");
+  }
+
+  /**
+   * Every claim the frame paragraph makes that the code contradicts; empty when
+   * they agree. A pure function of the system prompt, so the SAME checker runs
+   * on the wire and on the sentence #2674 replaced, which it must fail (law 2).
+   */
+  function frameDisagreements(system: string): string[] {
+    const paragraph = frameParagraph(system);
+    if (paragraph === null) return ["no THE FRAME paragraph reached the reader"];
+    const problems: string[] = [];
+    const ruledOut = partsRuledOut(paragraph);
+    if (ruledOut.length === 0) problems.push("the frame paragraph rules nothing out: the sentence was lost, not corrected");
+
+    /* bodyAnchorRegions' half, in both directions. */
+    for (const part of ruledOut) {
+      const region = REGION_OF[part];
+      if (region === undefined) problems.push(`"${part}" is ruled out and is placed on no body region`);
+      else if (anchorPresentsIn(region, "master")) problems.push(`"${part}" is ruled out, but ${region} presents on master`);
+    }
+    for (const [part, region] of Object.entries(REGION_OF)) {
+      if (!anchorPresentsIn(region, "master") && !ruledOut.includes(part)) {
+        problems.push(`"${part}" (${region}) is not on master, and the frame paragraph no longer says so`);
+      }
+    }
+
+    /* castingFrame's half: a facet it serves is in no negative sentence of the
+       paragraph, and whatever it refuses as not in shot, the describer is told. */
+    const negative = paragraph.split(/(?<=\.)\s+/).filter((sentence) => /\b(?:not|never|no)\b/i.test(sentence));
+    for (const facet of allFacets().filter((one) => /^[a-z]+$/i.test(one) && outOfFrame(one) === null)) {
+      const named = new RegExp(`\\b${facet}\\b`, "i");
+      for (const sentence of negative) {
+        if (named.test(sentence)) problems.push(`"${facet}" is served by castingFrame, and the frame paragraph says: ${sentence}`);
+      }
+    }
+    for (const what of everyFeatureOutOfFrame()) {
+      const bare = what.trim().toLowerCase().replace(/^(?:the|her|his|their)\s+/, "");
+      if (!ruledOut.includes(bare)) problems.push(`castingFrame refuses "${bare}" as not in shot, and the describer is not told`);
+    }
+    return problems;
+  }
+
+  /* The sentence this card replaced, byte for byte as RULES carried it — a
+     quotation of the old prompt, kept so the control below runs on the real
+     thing rather than on a paraphrase of it. */
+  const BEFORE_2674 = [
+    "THE FRAME: the picture is cropped at roughly the lower ribs. Her waist, hips, legs",
+    "and height are NOT in it. Never mention them — describing what the camera did not",
+    "take is describing a different photograph.",
+  ].join("\n");
+
+  it("the shipped reader's frame sentence agrees with both, ON THE WIRE", async () => {
+    const engine = engineSaying('{"build": "slim", "skin": "fair", "teeth": null}');
+    await describeFace({ ...FRAME, engine });
+    expect(frameDisagreements(engine.sent[0].system)).toEqual([]);
+  });
+
+  it("and it no longer rules the waist out, on the founder's #2671 ruling", async () => {
+    const engine = engineSaying('{"build": "slim", "skin": "fair", "teeth": null}');
+    await describeFace({ ...FRAME, engine });
+    const paragraph = frameParagraph(engine.sent[0].system);
+    expect(paragraph).not.toBeNull();
+    expect(partsRuledOut(paragraph!)).not.toContain("waist");
+    /* The premise the ruling rests on, read where it lives. */
+    expect(anchorPresentsIn("torso", "master")).toBe(true);
+    expect(outOfFrame("waist")).toBeNull();
+  });
+
+  it("CONTROL — the checker fails the sentence it replaced, on BOTH halves", () => {
+    const problems = frameDisagreements(`intro\n\n${BEFORE_2674}\n\nafter`);
+    expect(problems.some((one) => one.startsWith('"waist" is ruled out, but torso presents on master'))).toBe(true);
+    expect(problems.some((one) => one.startsWith('"waist" is served by castingFrame'))).toBe(true);
+    /* And it reads the old list whole, so the pass above is not a misparse. */
+    expect(partsRuledOut(frameParagraph(BEFORE_2674)!)).toEqual(["waist", "hips", "legs", "height"]);
+  });
+
+  it("CONTROL — it fails closed on a lost sentence and on a part nobody placed", () => {
+    expect(frameDisagreements("no frame paragraph here")).toEqual(["no THE FRAME paragraph reached the reader"]);
+    const lost = frameDisagreements("THE FRAME: the picture is cropped at roughly the lower ribs.");
+    expect(lost.some((one) => one.includes("rules nothing out"))).toBe(true);
+    const unplaced = frameDisagreements(
+      "THE FRAME: the picture is cropped at roughly the lower ribs. Hips, legs, height and tail are NOT in it.",
+    );
+    expect(unplaced).toEqual(['"tail" is ruled out and is placed on no body region']);
   });
 });
 
