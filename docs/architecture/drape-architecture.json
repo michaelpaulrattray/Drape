@@ -17359,6 +17359,10 @@
       "path": "server/switchedOffButtonDiscipline.test.ts"
     },
     {
+      "id": "test:server/teamSilence.test.ts",
+      "path": "server/teamSilence.test.ts"
+    },
+    {
       "id": "test:server/testing/fetchablePort.test.ts",
       "path": "server/testing/fetchablePort.test.ts"
     },
