@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { inkNeedsDocumentMessage } from "./inkPlacement";
-import { basicsWardrobeLine } from "./wardrobeLine";
+import { HOUSE_WARDROBE_LINE, basicsWardrobeLine } from "./wardrobeLine";
 
 import {
   applyDelta,
@@ -12,6 +12,7 @@ import {
   filedSubjectsOf,
   identityDetailsOf,
   presentationOf,
+  freeSubjectMaxLength,
   readDelta,
   saysNothingNew,
   withoutCarriedInkWords,
@@ -1800,5 +1801,105 @@ describe("a tattoo she already wears is CARRIED, and its words are not said", ()
     const prompt = composeEditPrompt(withoutCarriedInkWords(twoTattoos, ["ink:neck"], both), PROSE);
     expect(prompt).toContain("swallow");
     expect(prompt).toContain("compass rose");
+  });
+});
+
+describe("a whole outfit fits under the subject that holds a whole outfit (#2552)", () => {
+  /*
+    THE FINDING, IN ONE SENTENCE: the interpreter prompt tells the model to put
+    the WHOLE outfit in one `wardrobe` value, and the cap it was stored under
+    was the default 120 — sized for a facet like "fox eyes".
+
+    It was latent while the wardrobe subject was served to nobody. #2544 slice
+    1 served it, and the flag reached his account on 2026-10-27, so these arms
+    are about a road a customer is on rather than one they might reach.
+  */
+
+  /*
+    ⚠ THE POPULATION IS DERIVED, NOT TYPED OUT (working law 4). Every sentence
+    the PRODUCT ITSELF composes for this subject, read from the functions that
+    compose them — so a fifth sentence, or a reworded one, is measured here the
+    day it lands rather than the day somebody remembers this file.
+  */
+  const productsOwnOutfits: ReadonlyArray<readonly [string, string]> = [
+    ["HOUSE_WARDROBE_LINE", HOUSE_WARDROBE_LINE],
+    ['basicsWardrobeLine("male")', basicsWardrobeLine("male")],
+    ['basicsWardrobeLine("female")', basicsWardrobeLine("female")],
+    ["basicsWardrobeLine(null)", basicsWardrobeLine(null)],
+  ];
+
+  it("⚠ THE CLASS — every outfit sentence the product writes can be stored under `wardrobe`", () => {
+    /*
+      THREE OF THESE FOUR COULD NOT BE STORED before this cap existed — 132,
+      149 and 149 against 120 — which is the defect stated as a population
+      rather than as one example. `basicsWardrobeLine("male")` at 52 is the
+      one that always fitted, and it is kept in the list as the arm's own
+      negative control: if the reader broke outright, it would fail too.
+    */
+    for (const [name, line] of productsOwnOutfits) {
+      expect(line.length, `${name} must fit the cap it is stored under`)
+        .toBeLessThanOrEqual(freeSubjectMaxLength("wardrobe"));
+      expect(readDelta({ wardrobe: line }), `${name} must file`)
+        .toEqual({ free: { wardrobe: line } });
+    }
+  });
+
+  it("an ordinary five-part outfit in a customer's own words files", () => {
+    /* The sentence that sent this card: 124 characters, under the old cap by
+       nothing and over it by four. */
+    const asked = "a heavy oiled canvas workcoat over a grey marl hoodie and faded indigo jeans, "
+      + "with tan leather boots and a knitted watch cap";
+    expect(asked.length).toBeGreaterThan(120);
+    expect(readDelta({ wardrobe: asked })).toEqual({ free: { wardrobe: asked } });
+  });
+
+  it("⚠ AND AN UNRELATED CHANGE IN THE SAME SENTENCE SURVIVES IT — the half nobody sees", () => {
+    /*
+      The reason this was worth a card rather than a constant: an over-long
+      value never dropped its own key, it dropped the WHOLE delta. So the mark
+      below — a perfectly ordinary ask, well inside its own cap — died silently
+      beside the outfit. What happens at the NEW cap is #2714 and is not fixed
+      here.
+    */
+    const outfit = "a heavy oiled canvas workcoat over a grey marl hoodie and faded indigo jeans, "
+      + "with tan leather boots and a knitted watch cap";
+    expect(readDelta({ wardrobe: outfit, marks: "a thin scar across one eyebrow" })).toEqual({
+      free: { marks: ["a thin scar across one eyebrow"], wardrobe: outfit },
+    });
+  });
+
+  it("CONTROL — the cap still binds, and it still refuses the whole delta past it", () => {
+    /*
+      THE ARM THAT PROVES THE CAP IS A CAP. Without it, "the outfit files" is
+      satisfied by a reader that stopped checking lengths at all, and every
+      arm above would pass on a broken one.
+
+      ⚠ **THE NUMBER IS WRITTEN OUT, AND THAT IS THE WHOLE POINT OF THIS ARM
+      RATHER THAN UNTIDINESS.** The first version of it probed at
+      `freeSubjectMaxLength("wardrobe") + 1`, which moves WITH the cap — so
+      when the cap was sabotaged to 100000 every arm in this file still passed
+      and the suite reported 111 green. An arm that asks the subject under
+      test for its own answer cannot see that answer change. 245 is derived in
+      the table's own docblock (149 + 2 x 48); a shift that means to move it
+      moves this line too, on purpose, and a shift that moves it by accident
+      is stopped here.
+    */
+    expect(freeSubjectMaxLength("wardrobe")).toBe(245);
+
+    const past = "x".repeat(246);
+    expect(readDelta({ wardrobe: past })).toBeNull();
+    const atTheCap = "x".repeat(245);
+    expect(readDelta({ wardrobe: atTheCap })).toEqual({ free: { wardrobe: atTheCap } });
+  });
+
+  it("CONTROL — the subjects that were never outfits keep the default cap", () => {
+    /*
+      A widening that quietly widened its neighbours would be the thing the
+      table's docblock forbids ("raising the shared cap for one road gives
+      teeth two hundred characters for no reason anybody could state").
+    */
+    expect(freeSubjectMaxLength("teeth")).toBe(120);
+    expect(freeSubjectMaxLength("marks")).toBe(120);
+    expect(readDelta({ teeth: "y".repeat(121) })).toBeNull();
   });
 });

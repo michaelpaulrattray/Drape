@@ -96,6 +96,19 @@
  * **`casting_ink_form_demand` holds zero rows in both worlds, all time**, which
  * is every one of those facts agreeing.
  *
+ * ⚠ **BOTH HALVES OF THAT READING HAVE SINCE MOVED, AND THE PARAGRAPH ABOVE IS
+ * KEPT AS WHAT WAS TRUE ON THE DAY RATHER THAN AS THE STATE.** (1) The
+ * wardrobe subject IS served now — #2544 slice 1 built
+ * `SERVED_SUBJECTS_WITH_WARDROBE` and the flag reached an account on
+ * 2026-10-27, so *"served to nobody"* is false for a served account. (2) The
+ * 132-character house line fits now — #2552 gave `wardrobe` its own cap of
+ * 245, so it stores as an edit and `surfaceCovered` has a road for the first
+ * time. **Neither of those was done to feed this table**, and this docblock is
+ * not a claim that rows have appeared: whether the counter now actually fires,
+ * and whether anybody reads it, is **#2551**, which is still open and still
+ * the place that question is answered. What changed is only that *"no
+ * reachable writer"* has stopped being the reason.
+ *
  * **Nothing here is deleted on that reading** — the vocabulary, the column and
  * the writer all stay, and the deadness is filed as its own finding. A reader
  * who came here to add a kind should know the table is not currently fed.
