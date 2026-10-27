@@ -84,7 +84,13 @@ const PAIR_MAX_MASKS = 4;
  * panel gets nothing. The measurement, and what the provider said, are in
  * `falConcurrency.ts`.
  */
-async function post(apiKey: string, endpoint: string, body: unknown, signal?: AbortSignal): Promise<any> {
+async function post(
+  apiKey: string,
+  endpoint: string,
+  body: unknown,
+  signal: AbortSignal | undefined,
+  label: CensusLabel,
+): Promise<any> {
   /*
     AND EVERY ONE OF THEM IS COUNTED (the call census).
 
@@ -96,7 +102,12 @@ async function post(apiKey: string, endpoint: string, body: unknown, signal?: Ab
     belongs, and it is already there.
   */
   return throughFalGate(async () => throughCensus(
-    { stage: "segment", provider: "fal", model: endpoint, ...aboutOf(body) },
+    {
+      stage: "segment",
+      provider: "fal",
+      model: endpoint,
+      ...(label === "theClosedVocabularyPrompt" ? aboutOf(body) : { about: label.road }),
+    },
     async () => {
     const response = await fetch(`https://fal.run/${endpoint}`, {
       method: "POST",
@@ -142,6 +153,68 @@ async function post(apiKey: string, endpoint: string, body: unknown, signal?: Ab
 }
 
 /**
+ * THE POINTER ROAD'S TWO CALLS, NAMED BY THE ROAD THEY ARE ON (#2566, the
+ * relay's note on PR #2692).
+ *
+ * Exported because the census reader and the suite both name them, and a string
+ * literal in each would be the mirror working law 4 is about.
+ *
+ * `detect` and `box` are kept APART rather than summed under one `pointer`
+ * label, because they are the two halves of the relay's own question and they
+ * scale differently: one `detect` per off-list name, then up to `count` box
+ * calls for each name that answered. A single label would hide exactly the
+ * multiplier the note was written about.
+ */
+export const POINTER_DETECT_ABOUT = "pointer.detect";
+export const POINTER_BOX_ABOUT = "pointer.box";
+
+/**
+ * HOW A CALL IS LABELLED IN THE CALL CENSUS — decided at the CALL SITE and
+ * never inferred from the body. Required, so a new road cannot forget to.
+ *
+ * # Why it is a parameter rather than a rule about bodies
+ *
+ * It used to be inferred: `aboutOf(body)` read the outgoing `prompt` and made
+ * it the label, justified — in the docblock below, in these words — on the
+ * ground that *"the region names come from the closed vocabulary"*. That was
+ * true of every road this reader had.
+ *
+ * ⚠ **SLICE 2 MADE IT FALSE AND NOTHING SAID SO.** The pointer road's detector
+ * call sends the DISCOVERY READING'S OWN NOUN as its prompt — open vocabulary,
+ * the customer's cast described in whatever words the reading chose — so
+ * `about` began carrying prose like *"small mole on left cheek near nose"* into
+ * the census, which the scan logs in full (`byAbout`, `[faceScanService]
+ * scanned a face-version`). The field's own contract is *"a fixed word rather
+ * than a customer's sentence"*, and the only thing holding it was a sentence in
+ * a comment one road away from the caller that broke it.
+ *
+ * ⚠ **AND IT LEAKED SELECTIVELY, WHICH IS WORSE FOR THE MEASUREMENT THAN A
+ * CLEAN LEAK**: `aboutOf` caps at 60 characters, so a short noun was recorded
+ * and a long one silently was not — *"small mole on left cheek near nose"* (33)
+ * landed and *"mechanical/metallic jaw brackets with tube-like extensions along
+ * cheeks and chin"* (76) did not. One road, two behaviours, decided by the
+ * length of a word a model happened to pick.
+ *
+ * Making this a required argument is the CLASS fix rather than the instance
+ * one: the next road that sends an open-vocabulary prompt has to say what its
+ * calls are called, and cannot inherit a justification written for the
+ * catalogue.
+ */
+type CensusLabel =
+  /**
+   * The outgoing prompt IS a closed-vocabulary region word, so it labels the
+   * call — `aboutOf` below, unchanged. A body with no string prompt at all
+   * (the matting road) lands here too and stays deliberately unlabelled: it
+   * contributes to `byStage` and `byModel` and opens no `byAbout` row, exactly
+   * as it did before this type existed, so no figure anybody has already read
+   * moves under them.
+   */
+  | "theClosedVocabularyPrompt"
+  /** This call has no closed-vocabulary word to be named by — the road names
+   *  it instead, as a fixed string that is the same on every cast. */
+  | { road: string };
+
+/**
  * WHAT THIS CALL WAS ABOUT, when that is a fixed word rather than a customer's
  * sentence.
  *
@@ -150,6 +223,13 @@ async function post(apiKey: string, endpoint: string, body: unknown, signal?: Ab
  * "eleven segment calls" and "eleven segment calls, six of them about eyes".
  * Anything that is not a plain string is left out rather than stringified: a
  * telemetry field is not a place to discover what a payload contains.
+ *
+ * ⚠ **THAT FIRST SENTENCE IS NOW GUARANTEED BY {@link CensusLabel} AND NOT BY
+ * THIS COMMENT.** It was a comment alone for as long as every road sent a
+ * catalogue word, and slice 2's pointer road broke it without touching this
+ * file. Only a caller that says `"theClosedVocabularyPrompt"` reaches here, so
+ * the vocabulary claim is a property of the call sites rather than a hope about
+ * them.
  */
 function aboutOf(body: unknown): { about?: string } {
   const prompt = (body as { text_input?: unknown; prompt?: unknown } | null)?.text_input
@@ -777,7 +857,7 @@ export function createFalRegionReader(input: {
       image_url: address ?? dataUri(image), prompt: askedAs(prompt), include_scores: true,
       output_format: "png",
       ...(multiple ? { return_multiple_masks: true, max_masks: PAIR_MAX_MASKS } : {}),
-    }, theirs);
+    }, theirs, "theClosedVocabularyPrompt");
     const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
     return masks
       .map((entry) => (typeof entry === "string" ? entry : entry?.url))
@@ -1200,9 +1280,13 @@ export function createFalRegionReader(input: {
     async subject({ image, signal: callSignal }) {
       assertPicture(image, "the whole subject");
       const theirs = signalFor(callSignal);
+      /* No prompt to be named by, and deliberately not given a road label
+         either: labelling it would open a `byAbout` row the matting road has
+         never had, and move `labelledCalls` under every reader comparing this
+         render to an older one. */
       const json = await post(apiKey, BIREFNET, {
         image_url: dataUri(image), mask_only: true, model: "Matting", output_format: "png",
-      }, theirs);
+      }, theirs, "theClosedVocabularyPrompt");
       const url = json?.mask_image?.url ?? json?.image?.url;
       if (!url) throw new MaskError("the matting model returned no mask");
       return fetchMask(url, theirs);
@@ -1240,10 +1324,12 @@ export function createFalRegionReader(input: {
       const meta = await sharp(image).metadata();
       if (!meta.width || !meta.height) throw new MaskError(`the frame asked about ${name} has no readable size`);
       const { width, height } = meta;
+      /* ⚠ THE ROAD NAMES THIS CALL, NOT ITS PROMPT. `name` is the discovery
+         reading's own open-vocabulary noun — see `CensusLabel`. */
       const json = await post(apiKey, DETECT, {
         image_url: address ?? dataUri(image),
         prompt: name,
-      }, theirs);
+      }, theirs, { road: POINTER_DETECT_ABOUT });
       const objects: any[] = Array.isArray(json.objects) ? json.objects : [];
       const boxes: PointerBox[] = [];
       for (const object of objects) {
@@ -1301,7 +1387,12 @@ export function createFalRegionReader(input: {
         }],
         include_scores: true,
         output_format: "png",
-      }, theirs);
+      /* The prompt goes out EMPTY on this road, so there was never a word here
+         to label the call with — and an empty label opens no `byAbout` row, so
+         these calls were summed into the SAME `byModel` bucket as the
+         catalogue's SAM 3 reads and separable from them by nothing. That is the
+         half of the relay's question that scales with `count`. */
+      }, theirs, { road: POINTER_BOX_ABOUT });
       const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
       const url = masks
         .map((entry) => (typeof entry === "string" ? entry : entry?.url))
@@ -1317,7 +1408,9 @@ export function createFalRegionReader(input: {
        addition and none of them has a deadline. */
     async landmark({ image, name }) {
       assertPicture(image, name);
-      const json = await post(apiKey, POINT, { image_url: dataUri(image), prompt: name }, signal);
+      /* `name` here is `landmarkNameOf`'s / the removal table's own fixed
+         word, not a reading's noun — the closed vocabulary, as before. */
+      const json = await post(apiKey, POINT, { image_url: dataUri(image), prompt: name }, signal, "theClosedVocabularyPrompt");
       const points: any[] = Array.isArray(json.points) ? json.points : [];
       if (points.length === 0) {
         throw new MaskError(`nothing could place a ${name} on this face`);

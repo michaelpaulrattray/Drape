@@ -1,7 +1,7 @@
 {
-  "edition": 750,
-  "updatedAt": "2026-10-27T15:57:58.035Z",
-  "shift": "TONIGHT WAS ABOUT OUR OWN TOOLS, NOT YOUR PRODUCT. Nothing you can see changed, and that is the\nhonest headline. No money was spent and nothing was deleted.\n\nTHE JOB. The first thing on your rung is cleaning out the paid edit road, and the next piece of it\nis taking out an old switch. One real thing stood in the way. When that switch is on, asking for an\nedit answers immediately with a note saying the work has started — and the picture attached to that\nnote is the one the character already had, not the edited one. A person watching a screen waits for\nthe real picture to arrive. A tool does not: it takes the first answer, saves it as the result, and\nexits while the edit we paid for is still being made.\n\nThat has already happened once, in September, on one of our own measurements: three copies of the\nunedited face were saved as finished results, and one render was abandoned halfway. Sixteen more of\nour measuring tools were sitting in exactly that position. The only reason they were fine is a\nsetting on the development machine that happens to be switched off — and that setting is the very\nthing being deleted. All sixteen now say, in their own code, that they cannot take that kind of\nanswer.\n\nWHAT I FOUND ALONG THE WAY. Two corrections, both to our own notes rather than to the product. The\nlist of sixteen had missed two more tools — harmlessly, because those two never ask for a picture at\nall. And the tool the note called the most dangerous turned out not to spend money or make a\npicture: the note's reason was wrong even though its conclusion was right.\n\nWHY IT SHOULD NOT COME BACK. There is now a check that refuses any of our tools that asks for a paid\nedit without saying which kind of answer it can handle. I proved it works by breaking one tool on\npurpose, watching the check catch it by name, and putting it back.\n\nWHERE THAT LEAVES THE RUNG. The next-to-last slice of the cleaning-out job is genuinely clear now\nand is still the first thing to pick up. The last slice is not a simple switch removal — it needs a\ndecision from you about what controls the feature panel — and that is written on the job itself, so\nnothing is waiting here.",
+  "edition": 753,
+  "updatedAt": "2026-10-27T21:15:00.000Z",
+  "shift": "NOTHING WAS TAKEN AWAY TONIGHT AND NOTHING COST ANYTHING. One sentence the product says to customers was wrong, and it is now right.\n\nTHE JOB. Say several things in one go — a new outfit, and a scar on the eyebrow — and if any one of those things was too long for us to write down, the product used to answer: \"That one didn't come through clearly. Try naming what you want changed about them.\" Every word of that was wrong. It HAD come through clearly — we read it, we understood it, and then we threw the whole thing away because one part of it did not fit. So we told somebody their own clear English was the problem, and then advised them to do the exact thing they had just done. They would retype the same sentence and get the same answer, with no way of ever working out why.\n\nAND IT QUIETLY KILLED THE REST. The over-long part did not just drop itself — it took every other change in the same sentence with it. Ask for a coat and a scar, and if the coat is too long to store, the scar dies silently beside it.\n\nWHAT IT SAYS NOW. \"I understood that, but one part of it is longer than I can keep on record — so none of it was applied. Say that part in fewer words and the rest of your sentence will go through with it. Nothing was charged.\" True, and it tells them what to do.\n\nIT ALSO STOPS WASTING OUR MONEY. Because the old road gave no reason, the product assumed it had misheard and asked the reading model the same question three times before giving up. It now answers on the first read.\n\nAND THE SAME MISTAKE WAS SITTING RIGHT NEXT TO IT. The rule here is to fix the kind of mistake and not just the one you found, so I looked for others: the makeup box had the identical problem a hundred lines up in the same file. Fixed in the same go. Two more near-misses turned out to be genuinely different problems needing different words, so each got its own job rather than being quietly folded into this one — asking for more than eight things at once, and naming a fashion label. Both were tested first to be sure they were real.\n\nONE THING I DELIBERATELY DID NOT DO, so it is not a surprise later: the new sentence does not say WHICH part was too long. We have no plain-English name for each thing a character has — the two lists that look like they would do the job are really for other purposes, and one of them would have made the sentence change by accident whenever somebody edited an unrelated instruction. Naming the part is worth doing properly one day and not worth faking now.\n\nWAITING ON NOBODY. Nothing on this needs you. The work is written, tested and waiting on our own review before it goes live.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -14,7 +14,7 @@
       "title": "The refine era completes — the feature panel and the studio surfaces. What a character has is read from the character, never looked up in a fixed list, and every box on the panel is a promise that pressing there edits that thing.",
       "steps": [
         {
-          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire) and NOTHING IS WAITING ANY MORE: every one of the eight pieces of work it had in review has merged and is live, including the old dressing answer and the whole old picture-making road with its switch. The job was then left sitting on a hold that had stopped being true, which was cleared on Monday night. The one real thing the next slice was still waiting on is now done as well: sixteen of our own measuring tools would have started saving the wrong picture the moment that switch came out, and they now say they cannot take that answer (#2710). So the next-to-last slice is genuinely clear, and it is still the first thing a shift should pick up. The last slice is NOT a simple switch removal — it needs a decision from you about what controls the feature panel — and that is written on the job (#1577)",
+          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire) and EVERY SWITCH IN IT IS NOW RETIRED OR BUILT AND WAITING FOR A READ. Tonight took out the last one — the sixth and last of the six settings you approved retiring on 15 October. It decided whether a character's face builds a library of small pictures cut from each edit, so the next edit can see what the character already looks like; it has been on for every account since 24 August, so you will see no difference, and what changes is that it can no longer be switched off. ⚠ LAST NIGHT'S NOTE SAID THIS PIECE WAS A QUESTION FOR YOU AND IT WAS NOT — reading the code showed the answer was already written there two weeks ago, so it was ours, and nothing about it is waiting on you. What IS left is writing the record of the whole clean-out, which is a small job for us (#1577)",
           "state": "waiting"
         },
         {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-27T14:38:58.124Z",
+      "readAt": "2026-10-27T20:59:52.125Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7549,6 +7549,27 @@
   ],
   "pipeline": [
     {
+      "id": "overlong-value-refusal-2714",
+      "title": "An over-long ask says so, instead of telling a customer their clear sentence was unclear (#2714)",
+      "status": "in-review",
+      "prNumber": 2732,
+      "note": "Held for the relay by hand: it changes a sentence a customer reads, but on a server file, which the automatic check cannot see (it only watches screen files). Gate run on the head."
+    },
+    {
+      "id": "refine-dispatch-flag-1577-d4",
+      "title": "Every edit answers straight away, and the switch that could turn that off is gone (#1577 slice D4)",
+      "status": "in-review",
+      "prNumber": 2728,
+      "note": "Gate green (5.2m), CLEAN. Held for the relay: it touches a money/auth file, and triage agreed on its own and said so on the pull request."
+    },
+    {
+      "id": "qs-advisory-pin-2726",
+      "title": "A security warning that blocked every piece of work in the building is cleared (#2726)",
+      "status": "merged",
+      "prNumber": 2727,
+      "note": "Gate green; ordinary change by both triage halves, merged on the gate. Live on production."
+    },
+    {
       "id": "wardrobe-cap-2552",
       "title": "A whole outfit fits in the box that holds a whole outfit (#2552)",
       "status": "merged",
@@ -10816,6 +10837,13 @@
       "status": "merged",
       "prNumber": 2709,
       "note": "Held for review on purpose — the refine charge and its refund sit inside the function it changes. No customer-visible change by construction. Gate green in 4 minutes; the sabotage check proves the new behaviour is what the tests are actually reading."
+    },
+    {
+      "id": "reference-library-flag-1577-d5",
+      "title": "The library that remembers what a character already looks like can no longer be switched off (#1577 slice D5)",
+      "status": "in-review",
+      "prNumber": 2729,
+      "note": "The sixth and last of the six settings he approved retiring. Gate green (4.2m, all eleven checks), CLEAN, held for the relay: it touches a money/auth file and a customer-visible one, and triage agreed on its own reading. The full suite ran because this is a deletion — 1,202 files, 21,118 tests, 0 failures. The one thing lost is declared: the boot refusal over the storage cleaner, which every surviving child still asks for itself."
     }
   ],
   "problems": [
@@ -11322,16 +11350,12 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-27T14:38:58.124Z",
+    "readAt": "2026-10-27T20:59:52.125Z",
     "items": [
       {
         "issueNumber": 1577,
         "title": "N3 opening act: the REFINE-ROAD half of the ghost audit — enumerate every piece of old-lane machinery still running on the refine road (his timing, 2026-08-28)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "#2560 (the seam D4 needs) and PR #2569 in review. The five PRs this line used to name have all merged."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 1598,

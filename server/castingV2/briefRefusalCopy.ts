@@ -87,6 +87,54 @@ export const READER_OUTAGE_MESSAGE =
   "The studio couldn't read your brief just now — the reader that turns your words into a casting call did not answer. "
   + "Nothing was cast and you have not been charged. Try again in a moment.";
 
+/**
+ * THE SAME OUTAGE WHEN NO RETRY REACHES IT — our account, or no reader at all
+ * (#2688, the second half; the sweep of #2686).
+ *
+ * `READER_OUTAGE_MESSAGE` above is honest about WHOSE fault it is and wrong
+ * about what to do. *"Try again in a moment"* is true of a deadline or a dead
+ * transport — the same brief a minute later is a different reading. It is a
+ * **lie** when the provider has refused our own key, or when this deployment
+ * has no reader configured at all: every retry it invites fails identically,
+ * and the customer is left editing a brief that was never the problem.
+ *
+ * Measured rather than supposed: on production from 03:09Z on 2026-10-27 the
+ * text account's key was disabled and every call answered `401`. The compiler
+ * raised `reader_outage` for it, because `interpretBrief` returned one word
+ * (`cause: "thrown"`) for both facts — so for the whole outage the founder's
+ * own rolls were told to keep trying something that could not work.
+ *
+ * Three things it does, and each is the defect it replaces:
+ *
+ *   1. **It says "later", never "in a moment"** — the one thing a retry cannot
+ *      fix must not be answered with an instruction to retry.
+ *   2. **It does not send them back to their words.** The brief was never
+ *      read; there is nothing in it to change. The sentence it replaces named
+ *      the reader correctly and still left editing as the only thing to do,
+ *      and `BRIEF_REFUSAL_FAULT` (`rollService.ts`) files both codes as
+ *      `studio` so the sheet does not offer "Edit the brief" above either.
+ *   3. **It keeps the money sentence**, in this road's own voice — nothing
+ *      about the money moves in this change, and it never did: the compile
+ *      runs before the claim, so every cause here was already free.
+ *
+ * ⚠ **IT IS A SIBLING OF TWO SENTENCES AND A COPY OF NEITHER.** The concept
+ * door says this fact about a PICTURE (`conceptDescribeCopy.ts`'s
+ * `READER_DOWN_MESSAGE`), the four picture roads say it about an attachment
+ * (`readerDown.ts`'s `PICTURE_READER_DOWN_MESSAGE`), and Refine says it about
+ * an edit. Each names its own noun and its own money, and this module may not
+ * import any of them — the capability atlas reads this table and never runs
+ * app code, which is the paragraph at the top of this file. **What must not
+ * drift between them is the attribution and the advice**, and that is held by
+ * arms rather than by this paragraph (`briefRefusalCopy.test.ts`).
+ *
+ * ⚠ **AND IT NAMES NO ENGINE, NO VENDOR AND NO STATUS CODE**, which is the
+ * disappearing-technology law's one hard line (clause 5: no engine name on a
+ * path someone must walk to reach their picture).
+ */
+export const READER_DOWN_MESSAGE =
+  "The studio can't read briefs just now — that's something at our end, not your words. "
+  + "Nothing was cast and you have not been charged. Try again later.";
+
 /*
   ⚠ `UNSUPPORTED_COHORT_MESSAGE` STOOD HERE AND IS GONE (#1495), and with it the
   `unsupported_cohort` member of the table below. It said:
@@ -133,11 +181,23 @@ export const ROLL_REFUSAL_COPY = {
    */
   not_a_being: NOT_A_BEING_MESSAGE,
   /**
-   * The brief reader never read the brief — the call threw (deadline,
-   * transport, provider) or no engine is configured. Free, before the claim,
-   * by founder ruling (#126, Crew reply #7: "refuse-free").
+   * The brief reader never read the brief, and the next try might — the call
+   * threw: a deadline, a dead transport, a provider that was down. Free,
+   * before the claim, by founder ruling (#126, Crew reply #7: "refuse-free").
+   *
+   * ⚠ **IT NO LONGER COVERS "no engine is configured" — THAT IS
+   * `reader_down` BELOW** (#2688). This entry's docblock named both, and the
+   * two were one door while `interpretBrief` returned one word for them.
    */
   reader_outage: READER_OUTAGE_MESSAGE,
+  /**
+   * The brief reader cannot read AT ALL — the provider refused our own key
+   * (`cause: "account"`), or this deployment has no reader
+   * (`cause: "unconfigured"`). Free before the claim exactly as its sibling
+   * is; the only thing that differs is that it does not ask for a retry it
+   * cannot honour. See {@link READER_DOWN_MESSAGE} for the measurement.
+   */
+  reader_down: READER_DOWN_MESSAGE,
 } as const satisfies Readonly<Record<string, string>>;
 
 /**

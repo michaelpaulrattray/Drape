@@ -311,13 +311,30 @@ export async function readMakeupFromReference(
 ): Promise<MakeupReadOutcome> {
   const engine = input.engine === undefined ? interpreterEngine() : input.engine;
   if (!engine) {
-    return {
-      ok: false,
-      refusal: {
-        code: "noTransport",
-        message: "We can't read a reference just now — try again in a moment.",
-      },
-    };
+    /*
+      NO READER IN THIS DEPLOYMENT — and no retry reaches that either (#2688,
+      the law-7 sweep of #2686/#2700).
+
+      ⚠ THIS SAID *"We can't read a reference just now — try again in a
+      moment."* UNTIL #2688, and it is the same defect #2700 fixed one branch
+      down in this very file. That card split the ACCOUNT refusal onto
+      `PICTURE_READER_DOWN_MESSAGE` and left this exit alone, because its
+      subject was the account. But `noTransport` is by its own name a
+      DEPLOYMENT state: there is no reader at all, so every retry it invited
+      failed identically, and the customer was left swapping a photograph that
+      was never looked at.
+
+      The concept entrance already answered this correctly and is the precedent
+      rather than an argument: `conceptDescribeCopy.ts` maps its own
+      `no_transport` to the same sentence as its account refusal, because the
+      two are one fact to the customer. The roll and refine roads moved their
+      `unconfigured` exits in this same commit.
+
+      The CODE does not move — only the sentence. `noTransport` is what the
+      words lane reads to decide whether a second reader is worth asking
+      (`referenceWordsLane.ts`), and that decision is unchanged and correct.
+    */
+    return { ok: false, refusal: { code: "noTransport", message: PICTURE_READER_DOWN_MESSAGE } };
   }
 
   let raw: string;

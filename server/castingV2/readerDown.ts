@@ -77,7 +77,7 @@
  * sit on paid roads. **What must not drift is the attribution**, and that is
  * held by an arm rather than by this paragraph (`readerDown.test.ts`).
  */
-import { ProviderError } from "../providers/types";
+import { providerAccountRefused } from "../providers/types";
 import { MaskError } from "./maskGeometry";
 
 /**
@@ -124,9 +124,19 @@ export const PICTURE_READER_DOWN_MESSAGE =
  * still get the transient sentence. Telling those apart means the breaker
  * carrying the class that opened it, which changes what EVERY provider road
  * sees and is enumerated on #2688 as its own decision rather than taken here.
+ *
+ * ⚠ **THE TEST ITSELF MOVED TO THE TAXONOMY AND THIS IS NOW THIS MODULE'S NAME
+ * FOR IT** (#2688's second half — the roll and refine wordings). The expression
+ * stood here and, written the same day, again at `conceptDescribe.ts`; those
+ * two roads needed it next, which would have made FOUR copies of one
+ * classification. It lives at {@link providerAccountRefused} now, beside
+ * `providerAlreadyBilled`, whose own docblock argues exactly this — *"two
+ * copies of a money decision is the drift working law 4 is about"*. What stays
+ * here is the name and the reasoning above, because the reasoning is about
+ * THESE FOUR ROADS' sentence and the taxonomy has no opinion on sentences.
  */
 export function readerAccountRefused(error: unknown): boolean {
-  return error instanceof ProviderError && error.failureClass === "provider_account";
+  return providerAccountRefused(error);
 }
 
 /**
