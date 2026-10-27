@@ -38,6 +38,7 @@ import { describe, expect, it, vi } from "vitest";
 import sharp from "sharp";
 
 import { ProviderError } from "../providers/types";
+import { ProviderQueue } from "../providers/providerQueue";
 import { classifyFalHttp } from "../providers/falTransport";
 import { classifyOpenRouterTextHttp } from "../providers/openrouterText";
 import { MaskError } from "./maskGeometry";
@@ -431,5 +432,104 @@ describe("the two reference readers — the roads the card did not name", () => 
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
     expect(outcome.refusal.code).toBe("unreadable");
+  });
+});
+
+
+describe("and the breaker used to take the sentence away again (#2733)", () => {
+  /*
+    THE HALF #2688 NAMED AND LEFT, DRIVEN THROUGH A REAL QUEUE.
+
+    Every arm above hands the road an engine that throws directly, which is the
+    right shape for measuring the SENTENCE. It cannot see the door the sentence
+    has to come through: in the product the engine is wrapped in a
+    `ProviderQueue` (`openrouterText.ts`, `failureThreshold: 5`,
+    `cooldownMs: 30_000`), and a 401 is a class that COUNTS toward the breaker.
+
+    So on the fifth consecutive refusal the breaker opened, and from the sixth
+    call on `admit` handed out a synthetic `capability` error. `readerAccountRefused`
+    is `failureClass === "provider_account"`, so it answered false, and the road
+    fell back to the WEATHER sentence — *"try again in a moment"* — which is the
+    exact sentence this card was filed to remove.
+
+    ⚠ **It was the steady state of an outage, not a moment of one.** The breaker
+    lets one probe through per cooldown; during a real account outage that probe
+    fails and re-opens it. The 2026-10-27 incident ran for hours.
+
+    These two arms are the pair: the same queue, the same road, the same number
+    of calls, differing only in whether the provider refused OUR ACCOUNT or the
+    weather.
+  */
+  const PICTURE = { bytes: PNG, contentType: "image/png" };
+  type Engine = Parameters<typeof readHairColourFromReference>[0]["engine"];
+
+  /** The product's own numbers, so the arm measures the shipped door. */
+  function queuedEngine(error: () => Error) {
+    const queue = new ProviderQueue({
+      name: "openrouter-text-under-test",
+      concurrency: 4,
+      maxQueueDepth: 32,
+      failureThreshold: 5,
+      cooldownMs: 30_000,
+    });
+    let dispatched = 0;
+    const engine = {
+      id: "test:queued",
+      complete: async () => queue.run("complete", () => {
+        dispatched += 1;
+        return Promise.reject(error());
+      }),
+    } as Engine;
+    return { engine, queue, calls: () => dispatched };
+  }
+
+  async function readUntilBreakerOpens(error: () => Error) {
+    const { engine, queue, calls } = queuedEngine(error);
+    for (let i = 0; i < 12 && queue.stats().breaker !== "open"; i += 1) {
+      await readHairColourFromReference({ ...PICTURE, engine });
+    }
+    /* The arm's own premise, asserted rather than assumed: without this a
+       change that never opened the breaker would pass both arms below. */
+    expect(queue.stats().breaker, "the breaker must be open before the measured call").toBe("open");
+    const dispatchedBefore = calls();
+
+    const outcome = await readHairColourFromReference({ ...PICTURE, engine });
+
+    /* And the refused call provably cost nothing — it never reached the double. */
+    expect(calls(), "a breaker-refused call must not dispatch").toBe(dispatchedBefore);
+    return outcome;
+  }
+
+  it("the sentence survives the breaker when our account is what refused", async () => {
+    const outcome = await readUntilBreakerOpens(TEXT_401);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.refusal.message).toBe(PICTURE_READER_DOWN_MESSAGE);
+    expect(outcome.refusal.message).not.toMatch(/in a moment/i);
+  });
+
+  it("CONTROL: a breaker opened by weather still gives the transient sentence", async () => {
+    /*
+      The change must not make everything say our account was refused.
+
+      ⚠ **AND THIS ARM DOES NOT CATCH THE CARRY BEING WIDENED — MEASURED, NOT
+      ASSUMED, AND IT SAID OTHERWISE UNTIL IT WAS DRIVEN.** Widening `admit` to
+      `this.openedBy ?? "capability"` hands this road `transport`, which
+      `readerAccountRefused` also answers false for, so the sentence is
+      identical and this arm stays GREEN. The widening is caught in
+      `providers/providerContract.test.ts` — the pre-existing transport arm and
+      *"closing the breaker forgets the cause it was carrying"*, two reds —
+      because the harm there is a RETRYABLE refusal from a door refusing by
+      design, which is a class fact and never a sentence.
+
+      What this arm is for is the other direction: it is the control proving the
+      split is still a split, and that the account sentence has not simply
+      replaced the weather one on the way through the breaker.
+    */
+    const outcome = await readUntilBreakerOpens(TEXT_WEATHER);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.refusal.message).toMatch(/in a moment/i);
+    expect(outcome.refusal.message).not.toBe(PICTURE_READER_DOWN_MESSAGE);
   });
 });

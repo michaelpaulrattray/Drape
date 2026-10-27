@@ -29,9 +29,18 @@ const log = createModuleLogger("providers/providerQueue");
  *   - a circuit breaker per provider, so a provider having a bad day refuses
  *     new rolls instead of burning credits into a wall.
  *
- * Admission refusal is `capability`-classed and non-retryable on purpose: the
- * caller must surface a real `TOO_MANY_REQUESTS` (invariant 6), not silently
- * enqueue spend.
+ * Admission refusal is non-retryable on purpose: the caller must surface a real
+ * `TOO_MANY_REQUESTS` (invariant 6), not silently enqueue spend.
+ *
+ * ⚠ **IT IS `capability`-CLASSED WITH ONE NAMED EXCEPTION, AND THE SENTENCE
+ * ABOVE READ "`capability`-classed" FLATLY UNTIL #2733.** A breaker opened by
+ * `provider_account` refuses as `provider_account`; a full queue, and a breaker
+ * opened by anything else, still refuse as `capability`. Both classes are
+ * non-retryable, so the promise this paragraph makes is unchanged — what
+ * changed is that the door stopped overwriting the one classification the
+ * customer's sentence and the roll's spend fence are both read from. The whole
+ * reasoning, and why it must not be widened to the other classes, is at
+ * {@link ProviderQueue.admit}.
  */
 
 export type ProviderQueueConfig = {
@@ -53,6 +62,14 @@ export class ProviderQueue {
   private breaker: BreakerState = "closed";
   private consecutiveFailures = 0;
   private openedAt = 0;
+  /**
+   * WHICH CLASS OPENED THE BREAKER, kept for the refusal it then hands out
+   * (#2733). `null` whenever the breaker is closed.
+   *
+   * Read by {@link admit} and by nothing else. It is deliberately NOT a fifth
+   * question about the union in `types.ts` — see `admit`'s own note.
+   */
+  private openedBy: ProviderFailureClass | null = null;
 
   constructor(config: ProviderQueueConfig) {
     this.config = {
@@ -89,8 +106,52 @@ export class ProviderQueue {
     if (this.breaker === "open") {
       const elapsed = Date.now() - this.openedAt;
       if (elapsed < this.config.cooldownMs) {
+        /*
+          ⚠ **AN OPEN BREAKER KEEPS `capability` FOR EVERY CAUSE BUT ONE, AND
+          THE ONE IS `provider_account` (#2733, the remainder #2688 named).**
+
+          The synthetic refusal this line hands out used to be `capability`
+          whatever had opened the breaker, and that dropped the single
+          classification three live decisions read:
+
+            - `readerAccountRefused` (`castingV2/readerDown.ts`) is
+              `failureClass === "provider_account"`, so seven roads fell back to
+              their WEATHER sentence — *"try again in a moment"* — which is the
+              exact sentence #2700 and #2716 were filed to remove, and which
+              blames a picture nobody looked at;
+            - `rollService.ts`'s `accountDown.tripped` fence — *"one account
+              refusal condemns the rest of the roll"* — never raised, so a roll
+              begun while the breaker was open spent on candidates already known
+              to fail;
+            - and the customer read the wrong sentence for the whole outage
+              rather than for a moment: the breaker lets ONE probe through per
+              cooldown, a sustained account outage fails that probe, and it
+              re-opens. After the first five calls the wrong sentence is the
+              steady state.
+
+          **It moves no money, and that is read from the contract rather than
+          asserted here**: `provider_account` and `capability` are both outside
+          `RETRYABLE_FAILURES`, both outside `REFUSES_AFTER_RENDER`, and both
+          inside `VIEW_ARRIVAL_TERMINAL` (`types.ts`). So every road that asks
+          those three questions cannot tell the two apart, and only the roads
+          that ask *"was this our account?"* can — which is the whole point.
+
+          ⚠ **AND IT IS NARROW ON PURPOSE: DO NOT WIDEN IT TO "THROW WHATEVER
+          OPENED IT".** `transport`, `rate_limit` and `timeout` are RETRYABLE, so
+          a breaker opened by weather would start handing out refusals that a
+          caller reading `isRetryable` is entitled to retry — against a door
+          refusing by design. `provider_account` is non-retryable, exactly like
+          the `capability` it replaces here, which is why this one class can
+          cross and the others cannot.
+
+          ⚠ **This is not the fourth question `recordFailure` below warns
+          about.** That warning is against DERIVING a new answer from the three
+          sets in `types.ts`. Nothing is derived here: the class is the one the
+          provider itself gave us, carried across a door that was overwriting
+          it, and the three sets are what prove the carry costs nothing.
+        */
         throw new ProviderError(
-          "capability",
+          this.openedBy === "provider_account" ? "provider_account" : "capability",
           `${this.config.name} is temporarily unavailable`,
         );
       }
@@ -114,6 +175,8 @@ export class ProviderQueue {
     }
     this.breaker = "closed";
     this.consecutiveFailures = 0;
+    /* A closed breaker refuses nobody, so there is no cause left to carry. */
+    this.openedBy = null;
   }
 
   private recordFailure(error: unknown): void {
@@ -149,6 +212,10 @@ export class ProviderQueue {
     if (this.breaker === "half-open" || this.consecutiveFailures >= this.config.failureThreshold) {
       this.breaker = "open";
       this.openedAt = Date.now();
+      /* The cause THIS opening carries, read by `admit` for the 30 s it lasts
+         (#2733). Set beside `openedAt` because the two describe one event, and
+         a re-open after a failed probe replaces both. */
+      this.openedBy = failureClass;
       log.error(
         { provider: this.config.name, consecutiveFailures: this.consecutiveFailures, failureClass },
         "[ProviderQueue] breaker opened",
