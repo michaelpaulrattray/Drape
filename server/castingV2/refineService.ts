@@ -3709,6 +3709,14 @@ async function refineCandidateCounted(
     THE OUT-OF-FRAME DOOR — the fifth refuse-before-dispatch door, and its CALL
     SITE (fable-381 §A.1, on the body-row note's §0).
 
+    ⚠ **THE WAIST EXAMPLE BELOW IS HISTORY SINCE #2671 (2026-10-21, his word:
+    "I like B.")** — the relay court measured the painter slimming the visible
+    lower torso 3 of 3, so the waist is served like the arms, and the casting
+    frame's table is EMPTY: no closed facet reaches this door today. It is kept
+    for a facet that genuinely sits below the crop if one is ever added (the
+    table's own comment names `hips`); feet, legs and a tail are open kinds and
+    never reach it.
+
     *"Make her waist smaller"* on a casting portrait is not an edit at all: the
     photograph is framed from the mid-torso up and her waist is not in the file.
     `occluded` is the near neighbour and is NOT the same door — a waist under a

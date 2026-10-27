@@ -96,16 +96,35 @@ import type { FreeSubject } from "./refineSubjects";
  */
 const OUT_OF_FRAME: Partial<Record<Facet, string>> = {
   /*
-    Her waist is below the crop. `hips` is not in the vocabulary at all (founder
-    ruling, fable-382 §3: no piece rows), so it cannot be asked and does not need
-    an entry — if it is ever added, it belongs here beside this one.
+    ⚠ EMPTY SINCE #2671 (2026-10-21), ON THE FOUNDER'S WORD: *"I like B."*
+
+    This table held one entry, `waist: "her waist"`, from fable-381 until that
+    day, and the entry was measured WRONG at the pixels: on a mid-torso-up dev
+    cast (`e71a…744`), *"give them fangs and a smaller waist"* came back with the
+    visible lower torso slimmed 3 of 3 while the customer was told *"her waist is
+    not in it … that part was left out of this take"*, and the description writer
+    was told the waist was not changed — so the slimming the customer could see
+    was lost on the next edit (relay court, `drape-scratch/relay-court-waist/`).
+    The crop is "at mid-torso between the chest and the waist" (`houseBlock.ts`),
+    so the waist's two side contours ARE what the frame shows of it, and
+    `shared/bodyAnchorRegions.ts` already agreed: `torso` — *"shoulders to
+    waist"* — presents on `master`. B is: an ask the visible body CAN show is
+    served, described and kept, like `bust`, `shoulders` and `arms` beside it.
+
+    Every other facet was decided at the code the same day and none belongs
+    here: every closed facet sits on the face or the upper body. What the frame
+    genuinely cannot show — feet, legs, a tail — is not a closed facet at all;
+    it reaches the open lane, whose own frame fact is `bodyAnchorRegions.ts`'s
+    `PRESENTS_IN.master`, and that is untouched. `hips` is not in the vocabulary
+    (founder ruling, fable-382 §3: no piece rows); if it is ever added, it
+    belongs here, as a bare noun — the two sentences below supply the article,
+    so a possessive never has to be chosen for a person (#2671).
   */
-  waist: "her waist",
 };
 
 /** What this facet is about, in the customer's own terms, when it is not in shot. */
-export function outOfFrame(facet: Facet): string | null {
-  return OUT_OF_FRAME[facet] ?? null;
+export function outOfFrame(facet: Facet, table: Partial<Record<Facet, string>> = OUT_OF_FRAME): string | null {
+  return table[facet] ?? null;
 }
 
 /**
@@ -179,7 +198,11 @@ export function everyFeatureOutOfFrame(): string[] {
  * Both lanes are swept, and by FACET rather than by key, so a subject added to
  * either lane inherits the rule instead of needing to be remembered.
  */
-export function withoutWhatIsOutOfFrame(delta: RefineDelta): { delta: RefineDelta; dropped: string[] } {
+export function withoutWhatIsOutOfFrame(
+  delta: RefineDelta,
+  /** The product's own table; a test may hand a fixture one, since the real one is empty (#2671). */
+  table: Partial<Record<Facet, string>> = OUT_OF_FRAME,
+): { delta: RefineDelta; dropped: string[] } {
   const dropped: string[] = [];
   const record = (what: string) => {
     if (!dropped.includes(what)) dropped.push(what);
@@ -188,7 +211,7 @@ export function withoutWhatIsOutOfFrame(delta: RefineDelta): { delta: RefineDelt
 
   for (const axis of REFINABLE_AXES) {
     if (kept[axis] === undefined) continue;
-    const what = outOfFrame(facetOfAxis(axis));
+    const what = outOfFrame(facetOfAxis(axis), table);
     if (what === null) continue;
     record(what);
     delete kept[axis];
@@ -196,7 +219,7 @@ export function withoutWhatIsOutOfFrame(delta: RefineDelta): { delta: RefineDelt
   if (kept.free) {
     kept.free = { ...kept.free };
     for (const subject of Object.keys(kept.free) as FreeSubject[]) {
-      const what = outOfFrame(facetOfSubject(subject));
+      const what = outOfFrame(facetOfSubject(subject), table);
       if (what === null) continue;
       record(what);
       delete kept.free[subject];
@@ -206,7 +229,7 @@ export function withoutWhatIsOutOfFrame(delta: RefineDelta): { delta: RefineDelt
   if (kept.absent) {
     kept.absent = { ...kept.absent };
     for (const subject of Object.keys(kept.absent) as FreeSubject[]) {
-      const what = outOfFrame(facetOfSubject(subject));
+      const what = outOfFrame(facetOfSubject(subject), table);
       if (what === null) continue;
       record(what);
       delete kept.absent[subject];
@@ -226,6 +249,23 @@ export function nameWhatIsMissing(dropped: readonly string[]): string {
 const FRAMED = "This photograph is framed from the mid-torso up, so";
 
 /**
+ * WHAT IS MISSING, SAID WITHOUT A PERSON'S PRONOUN (#2671).
+ *
+ * The table's one entry used to read *"her waist"*, and both sentences below
+ * printed it verbatim — so a customer whose cast is not a woman was told about
+ * "her" waist, and one whose cast is was still gendered by us (founder,
+ * 2026-10-09: no she/he for customers or casts). The table now holds bare
+ * nouns, and this is the one place the article is supplied: a leading "the",
+ * and any gendered possessive or pronoun that reaches it anyway is replaced
+ * rather than printed. It never touches the customer's own typed words — what
+ * it is handed is ours, from the table.
+ */
+function withoutAPronoun(what: string): string {
+  const neutral = what.replace(/\b(?:her|his|hers)\b/gi, "the").replace(/\b(?:she|he|him)\b/gi, "they").trim();
+  return /^(?:the|their|a|an)\b/i.test(neutral) ? neutral : `the ${neutral}`;
+}
+
+/**
  * The one sentence the door says, and it makes no offer.
  *
  * The founder's ruling in fable-382 §3 is that an out-of-frame ask gets *"the
@@ -237,7 +277,7 @@ const FRAMED = "This photograph is framed from the mid-torso up, so";
  * and the one a refusal is least trusted about.
  */
 export function outOfFrameMessage(what: string): string {
-  return `${FRAMED} ${what} is not in it — `
+  return `${FRAMED} ${withoutAPronoun(what)} is not in it — `
     + "that change would need a different photograph rather than an edit. Nothing was charged.";
 }
 
@@ -256,7 +296,7 @@ export function outOfFrameMessage(what: string): string {
  * for a paid outcome would be the exact reverse of the honesty it is here for.
  */
 export function partlyOutOfFrameNote(what: string): string {
-  return `${FRAMED} ${what} is not in it — everything else you asked for was done, `
+  return `${FRAMED} ${withoutAPronoun(what)} is not in it — everything else you asked for was done, `
     + "and that part was left out of this take.";
 }
 
