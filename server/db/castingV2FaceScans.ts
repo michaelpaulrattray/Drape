@@ -99,6 +99,40 @@ export type StoredCarriedSlot = {
  * what tells the two apart. The table's meaning is its shape — *geometry of a
  * version* — and the scan was only ever its first writer (fable-1445 §2).
  */
+/**
+ * ONE THING THE READING FOUND THAT NO CATALOGUE QUESTION COVERS — a jacket, a
+ * sash, a third eye, a mole (#2566 slice 2's pointer road).
+ *
+ * ⚠ **THE NOUN IS STORED AND IS NOT DERIVABLE FROM THE KEY, so this is a third
+ * row shape rather than a slot on the list above.** A catalogued slot's words
+ * come from the catalogue; a found row's noun is **the customer's own**, written
+ * by the reading, and `found:cat-ears#1` cannot say whether the reading wrote
+ * *cat ears* or *cat-ears* (the open lane's own binding condition). A row that
+ * reconstructed it from the key would show somebody a word nothing ever said.
+ *
+ * ⚠ **AND IT IS STORED AT ALL FOR ONE REASON WORTH NAMING: A KEPT READING THAT
+ * DROPPED THESE WOULD BE THE DEFECT SLICE 1 WAS HELD ON.** `CASTING_SCAN_TABLE_SCOPE`
+ * stands at `all`, so the first look is kept and every later look is served
+ * from this column — and a column that holds the catalogue rows and not the
+ * found ones would give the same frame a panel with a jacket on it and then a
+ * panel without, which is *"the same frame gave a different panel on different
+ * readings"* arriving by a different road. It rides INSIDE the existing JSON
+ * for `carried`'s reason: absent on every row written before this landed, which
+ * is why it is optional, and no migration for a field the column can already
+ * hold.
+ */
+export type StoredDiscoveredSlot = {
+  slot: string;
+  /** The reading's own bare noun. Never derived from {@link StoredDiscoveredSlot.slot}. */
+  noun: string;
+  /** Which instance of that noun, from 1. */
+  instance: number;
+  /** The same box-and-its-frame rule {@link StoredScanSlot.box} states. */
+  box: { x: number; y: number; width: number; height: number; frame: { width: number; height: number } };
+  /** The stencil's object key, as {@link StoredScanSlot.maskKey}. */
+  maskKey: string;
+};
+
 export type StoredScanGeometry = {
   slots: readonly StoredScanSlot[];
   words: ReadonlyArray<readonly [string, readonly string[]]>;
@@ -109,6 +143,12 @@ export type StoredScanGeometry = {
   /** Carried features' boxes on THIS version's own frame. Absent on every row
    *  written before the re-mint landed, which is why it is optional. */
   carried?: readonly StoredCarriedSlot[];
+  /** What the reading found that no catalogue question covers — see
+   *  {@link StoredDiscoveredSlot}. Absent on every row written before #2566
+   *  slice 2, and absent on every reading taken with the discovery flag off.
+   *  ⚠ Named for the ROAD and not `found`, which one field up is the catalogue's
+   *  own COUNT — two facts one word apart is the collision this name avoids. */
+  discovered?: readonly StoredDiscoveredSlot[];
   /**
    * WHETHER A SCAN HAS EVER WRITTEN THIS ROW — `false` only on a row the render
    * created for its carried geometry alone.

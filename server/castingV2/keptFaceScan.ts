@@ -56,6 +56,22 @@ import type { PanelBox } from "./facePanel";
 
 const log = createModuleLogger("castingV2/keptFaceScan");
 
+/**
+ * ONE ROW THE READING FOUND THAT NO CATALOGUE QUESTION COVERS, as this module
+ * carries it (#2566 slice 2).
+ *
+ * The noun rides beside the key because nothing may read a customer-facing word
+ * out of a key — see `pointerCut`'s own header — so this cannot be folded into
+ * `slots`, whose words come from the catalogue.
+ */
+export type KeptDiscoveredRow = {
+  slot: FeatureSlot;
+  noun: string;
+  instance: number;
+  box: PanelBox;
+  maskUrl: string;
+};
+
 /** The shape this module keeps and restores — the panel's own reading. */
 export type KeptScanShape = {
   slots: ReadonlyMap<FeatureSlot, { box: PanelBox; maskUrl: string }>;
@@ -64,6 +80,22 @@ export type KeptScanShape = {
   empty: readonly string[];
   stencilBytes: number;
   sides: string;
+  /**
+   * ⚠ **THE ROWS THE POINTER ROAD CUT, AND THEY ARE KEPT FOR THE DEFECT SLICE 1
+   * WAS HELD ON** (#2566 slice 2).
+   *
+   * `CASTING_SCAN_TABLE_SCOPE` stands at `all`, so the FIRST look is kept and
+   * every later look is served from the row. A shape that held the catalogue
+   * rows and not these would show a jacket on the panel once and never again on
+   * the same frame — *"the same frame gave a different panel on different
+   * readings"*, arriving by a different road than the one the relay closed.
+   *
+   * Optional, and absent is the ordinary answer: a reading taken with the
+   * discovery flag off has none, and so has every row written before this
+   * landed. Absent is NOT the same as empty and nothing here needs to tell them
+   * apart — both draw no found rows, which is today's panel.
+   */
+  discovered?: readonly KeptDiscoveredRow[];
 };
 
 export type KeptScanDependencies = {
@@ -147,14 +179,31 @@ export async function keepScan(input: {
       at nothing. `keepFaceScan` releases it in the same transaction that files
       the row, exactly as the ink upload and the plate mint do.
     */
-    const cleanupBatchId = planned.length > 0 ? randomUUID() : undefined;
+    /*
+      THE FOUND ROWS GO INTO THE SAME MANIFEST AND THE SAME TRANSACTION, which
+      is the whole reason they are planned here beside the catalogue's rather
+      than written in a second pass (#2566 slice 2). A second manifest would be
+      a second thing to discharge, and the defect this file already carries a
+      paragraph about is a manifest that was created and never discharged — the
+      worker deleted every stencil six minutes later and the row survived
+      pointing at nothing. One batch, one release.
+    */
+    const plannedFound: Array<KeptDiscoveredRow & { key: string; bytes: Buffer }> = [];
+    for (const row of input.scan.discovered ?? []) {
+      const bytes = bytesOfDataUrl(row.maskUrl);
+      if (!bytes) continue;
+      plannedFound.push({ ...row, key: `casting-v2/scans/${randomUUID()}.png`, bytes });
+    }
+
+    const objects = [...planned, ...plannedFound];
+    const cleanupBatchId = objects.length > 0 ? randomUUID() : undefined;
     if (cleanupBatchId) {
       await manifest({
         id: cleanupBatchId,
         userId: input.userId,
-        storageKeys: planned.map((one) => one.key),
+        storageKeys: objects.map((one) => one.key),
       });
-      for (const one of planned) {
+      for (const one of objects) {
         await store({ key: one.key, bytes: one.bytes, contentType: "image/png" });
       }
     }
@@ -166,6 +215,24 @@ export async function keepScan(input: {
       asked: input.scan.asked,
       found: planned.length,
       empty: input.scan.empty,
+      /*
+        ABSENT RATHER THAN EMPTY when there are none, so a row written by a
+        reading that never ran the pointer road is byte for byte the row this
+        table held before the field existed — which is what makes the field
+        free and what makes `carried`'s own *absent means before this landed*
+        reading hold for this one too.
+      */
+      ...(plannedFound.length > 0
+        ? {
+          discovered: plannedFound.map((one) => ({
+            slot: one.slot,
+            noun: one.noun,
+            instance: one.instance,
+            box: one.box,
+            maskKey: one.key,
+          })),
+        }
+        : {}),
     };
     await write({
       publicId: randomUUID(),
@@ -177,7 +244,7 @@ export async function keepScan(input: {
       stencilBytes: input.scan.stencilBytes,
       cleanupBatchId,
     });
-    return { kept: true, objects: planned.length };
+    return { kept: true, objects: objects.length };
   } catch (error) {
     log.warn(
       { err: String(error).slice(0, 200), candidateId: input.candidateId },
@@ -269,6 +336,37 @@ export async function serveKeptScan(input: {
       });
     }
 
+    /*
+      THE FOUND ROWS, UNDER THE SAME CONDEMNATION RULE AS THE CATALOGUE'S
+      (#2566 slice 2).
+
+      A stencil that will not fetch condemns the WHOLE reading, exactly as it
+      does above, and the reasoning is the same sentence in a wider place: a
+      panel with a hole in it is the founder's own complaint, and a found row
+      without its cutout is a row that promises a picture of his cast's jacket
+      and draws nothing. The alternative — drop just this row and serve the rest
+      — is worse than it looks: the row would be gone and the reading would be
+      KEPT, so the jacket would never come back without the frame changing.
+    */
+    const discovered: KeptDiscoveredRow[] = [];
+    for (const row of kept.geometry.discovered ?? []) {
+      const stencil = await readBytes(row.maskKey);
+      if (!stencil?.bytes) {
+        log.warn(
+          { candidateId: input.candidateId, slot: row.slot },
+          "[keptFaceScan] a kept stencil would not fetch — the reading is condemned and this face re-scans at full price",
+        );
+        return null;
+      }
+      discovered.push({
+        slot: row.slot as FeatureSlot,
+        noun: row.noun,
+        instance: row.instance,
+        box: row.box,
+        maskUrl: `data:image/png;base64,${stencil.bytes.toString("base64")}`,
+      });
+    }
+
     return {
       slots,
       words: new Map(kept.geometry.words.map(([slot, said]) => [slot as FeatureSlot, said])),
@@ -276,6 +374,10 @@ export async function serveKeptScan(input: {
       empty: kept.geometry.empty,
       stencilBytes: kept.stencilBytes,
       sides: kept.geometry.sides,
+      /* Absent rather than empty, for the reason `keepScan` writes it absent:
+         a reading with no found rows is byte for byte the shape this module
+         served before the field existed. */
+      ...(discovered.length > 0 ? { discovered } : {}),
     };
   } catch (error) {
     log.warn(

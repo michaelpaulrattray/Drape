@@ -263,8 +263,14 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "slower for $0.00-0.01 saved, finding nothing new because the off-list "
       + "features are slice 2's -- so slice 1's value only lands with the "
       + "pointer road beside it (the finding on PR #2570). Since the second "
-      + "finding it cancels no question and runs beside the scan, so on it "
-      + "changes nothing the panel draws and costs one text read per reading",
+      + "finding it cancels no question and runs beside the scan. THE POINTER "
+      + "ROAD IS NOW BESIDE IT (#2566 slice 2): the names no catalogue question "
+      + "covers are cut (detect, then ONE box to SAM 3, capped at the count the "
+      + "reading gave) and drawn as rows under 'Also on this character'. So the "
+      + "clause above about not going on alone is DISCHARGED, and the sentence "
+      + "that followed it -- 'on it changes nothing the panel draws' -- is "
+      + "spent: on, this flag now changes what a customer sees, which is "
+      + "exactly why the flip is still HIS EYE and never a shift's",
   },
   ENABLE_CASTING_PAIR_ONE_READ: {
     /*

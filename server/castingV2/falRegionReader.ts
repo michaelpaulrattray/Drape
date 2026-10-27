@@ -28,13 +28,24 @@ import { falHeaders } from "../providers/falTransport";
 import { REGION_CARDS, REGION_CARD_ENTRIES, type AskedAs, type RegionCard } from "./regionCards";
 import { MaskError, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
-import type { RegionReader, SideRegions } from "./maskedRefine";
+import type { PointerBox, RegionReader, SideRegions } from "./maskedRefine";
 
 const log = createModuleLogger("castingV2/falRegionReader");
 
 const SAM3 = "fal-ai/sam-3/image";
 const BIREFNET = "fal-ai/birefnet/v2";
 const POINT = "fal-ai/moondream3-preview/point";
+/**
+ * THE OPEN-VOCABULARY DETECTOR — `detect`, and it is a different endpoint from
+ * `point` above rather than a setting on it.
+ *
+ * Chosen by measurement on #2532 and the two cost the same to the millisecond
+ * (3.63 s against 3.64 s median), so the choice was quality alone: a box
+ * carries EXTENT where a point carries only a location, and the segmenter grows
+ * the smallest plausible object around a point — one tube of a jaw brace, one
+ * tooth of a row, one earring of a pair.
+ */
+const DETECT = "fal-ai/moondream3-preview/detect";
 
 /**
  * HOW MANY INSTANCES ONE WHOLE-FRAME PAIR READ MAY COME BACK WITH — the
@@ -1171,6 +1182,111 @@ export function createFalRegionReader(input: {
       }, theirs);
       const url = json?.mask_image?.url ?? json?.image?.url;
       if (!url) throw new MaskError("the matting model returned no mask");
+      return fetchMask(url, theirs);
+    },
+
+    /**
+     * WHERE A THING THE VOCABULARY HAS NEVER HEARD OF SITS (#2566 slice 2, the
+     * pointer road of the design approved on #2532).
+     *
+     * # The frame's size is read HERE, and that is the whole of the conversion
+     *
+     * The detector answers in FRACTIONS of the picture (`x_min` … `y_max`, each
+     * 0–1) and the segmenter's `box_prompts` take PIXELS. One of those two
+     * spaces has to be converted and the conversion needs the frame's size, so
+     * it happens in this function where the bytes are in hand — never at a
+     * caller, and never half-done. {@link PointerBox} is pixels by declaration
+     * for exactly that reason: a fraction that escaped into the caller's
+     * geometry would be a box 0.3 pixels wide and a correct-looking mask in the
+     * wrong space, which is the wrong-frame class this file already carries two
+     * warnings about.
+     *
+     * # An empty list and a failure are different answers
+     *
+     * It throws what `post` throws, and returns `[]` for *nothing there*. The
+     * caller reads the empty list as the absence answer (see
+     * {@link RegionReader.pointer} for why that is trustworthy here and not on
+     * the text road) — so collapsing a 429 into `[]` would file a provider's bad
+     * minute as a feature the cast has not got.
+     */
+    async pointer({ image, name, imageUrl, signal: callSignal }): Promise<readonly PointerBox[]> {
+      assertPicture(image, name);
+      const theirs = signalFor(callSignal);
+      const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
+      const sharp = (await import("sharp")).default;
+      const meta = await sharp(image).metadata();
+      if (!meta.width || !meta.height) throw new MaskError(`the frame asked about ${name} has no readable size`);
+      const { width, height } = meta;
+      const json = await post(apiKey, DETECT, {
+        image_url: address ?? dataUri(image),
+        prompt: name,
+      }, theirs);
+      const objects: any[] = Array.isArray(json.objects) ? json.objects : [];
+      const boxes: PointerBox[] = [];
+      for (const object of objects) {
+        const left = Number(object?.x_min);
+        const top = Number(object?.y_min);
+        const right = Number(object?.x_max);
+        const bottom = Number(object?.y_max);
+        if (![left, top, right, bottom].every((one) => Number.isFinite(one))) continue;
+        /* Clamped to the picture and ordered, because a rectangle is the
+           QUESTION the segmenter answers: a negative width or an edge past the
+           frame is not a tighter box, it is a prompt the provider has to
+           interpret, and what it interprets it as is nobody's measurement. */
+        const x = Math.round(Math.min(Math.max(Math.min(left, right), 0), 1) * width);
+        const y = Math.round(Math.min(Math.max(Math.min(top, bottom), 0), 1) * height);
+        const far = Math.round(Math.min(Math.max(Math.max(left, right), 0), 1) * width);
+        const low = Math.round(Math.min(Math.max(Math.max(top, bottom), 0), 1) * height);
+        if (far <= x || low <= y) continue;
+        boxes.push({ x, y, width: far - x, height: low - y });
+      }
+      log.debug(
+        { name, objects: objects.length, boxes: boxes.length },
+        boxes.length === 0
+          ? "[falRegionReader] the detector found no such thing, and that is the answer"
+          : "[falRegionReader] the detector put a rectangle round it",
+      );
+      return boxes;
+    },
+
+    /**
+     * THE REGION INSIDE ONE RECTANGLE — the pointer road's second half.
+     *
+     * The prompt goes out EMPTY on purpose: the rectangle is the question, and
+     * a noun beside it is a second question the model would have to reconcile
+     * with the first. #2532's bench sent `prompt: ""` with `box_prompts`, and
+     * every number this road rests on was measured that way, so sending the
+     * noun as well would be a different request than the one that was judged.
+     *
+     * `include_scores` rides along for the reason the text road's call carries
+     * it — the law's clause 4, read what the engine already gives you — and
+     * nothing here reads it yet, which is stated rather than implied: the
+     * presence head is #246's unfinished business and not this slice's.
+     */
+    async regionInBox({ image, name, box, imageUrl, signal: callSignal }): Promise<Mask | null> {
+      assertPicture(image, name);
+      const theirs = signalFor(callSignal);
+      const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
+      const json = await post(apiKey, SAM3, {
+        image_url: address ?? dataUri(image),
+        prompt: "",
+        box_prompts: [{
+          x_min: box.x,
+          y_min: box.y,
+          x_max: box.x + box.width,
+          y_max: box.y + box.height,
+        }],
+        include_scores: true,
+        output_format: "png",
+      }, theirs);
+      const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
+      const url = masks
+        .map((entry) => (typeof entry === "string" ? entry : entry?.url))
+        .find((one): one is string => typeof one === "string" && one.length > 0);
+      if (url === undefined) {
+        log.debug({ name }, "[falRegionReader] the segmenter returned no mask inside that rectangle");
+        return null;
+      }
       return fetchMask(url, theirs);
     },
 

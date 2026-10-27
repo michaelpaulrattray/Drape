@@ -651,7 +651,7 @@ the live service on every push.
 | `CASTING_SIDE_PHRASING_SCOPE` | whether a per-side ask also says where that side is — ✅ RETIRED (#1577 slice D2); every ask says it now |
 | `CASTING_FACE_SCAN_SCOPE` | the face panel's auto-scan |
 | `CASTING_SCAN_TABLE_SCOPE` | whether a finished scan is kept |
-| `CASTING_FACE_DISCOVERY_SCOPE` | whether a first reading also asks the picture what is on this character, beside the catalogue's questions — it cancels none of them (#2570's second finding) |
+| `CASTING_FACE_DISCOVERY_SCOPE` | whether a first reading also asks the picture what is on this character, beside the catalogue's questions — it cancels none of them (#2570's second finding) — and cuts what it finds there into rows (#2566 slice 2's pointer road) |
 | `CASTING_OPEN_LANE_SCOPE` | the open lane — an ask naming its own kind — ✅ RETIRED (#1577 slice D1); the two closed-lane prompts went with it |
 | `CASTING_INK_STUDIO_SCOPE` | the ink studio's door — RETIRED on his *"It retires with N2"*; UNSET on the service since 2026-09-24 (#1158) |
 | `CASTING_INK_CUT_SCOPE` | whether an uploaded design is cut out of its picture before it is stored — RETIRED with the studio; UNSET 2026-09-24 (#1158) |

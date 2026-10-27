@@ -1339,3 +1339,116 @@ describe("the stencil url is same-origin, because a CSS mask is a CORS fetch", (
     expect(url).toContain("/api/image-proxy?url=");
   });
 });
+
+/**
+ * WHAT THE READING FOUND THAT NOBODY CATALOGUED — the pointer road's rows
+ * (#2566 slice 2, the design approved on #2532).
+ *
+ * The panel has had two sources of rows since it was written — the CATALOGUE
+ * and the LIBRARY — and this is the first that is a READING. Everything worth
+ * asserting is about what the row carries from the reading and what it refuses
+ * to compose: the noun is the customer's own, there is no label derived from the
+ * key, and a found rectangle offers no narrow edit the server would refuse.
+ */
+describe("a found row — what the reading saw and the catalogue cannot name", () => {
+  const frame = { width: 1000, height: 1500 };
+  const found = (
+    discovered: Array<{ slot: string; noun: string; instance: number; x: number; y: number }>,
+  ) => facePanel({
+    rows: [],
+    pronouns: SHE,
+    contentUrl: (key) => `https://bucket.example/${key}`,
+    maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+    scan: {
+      frameUrl: "https://bucket.example/casting/master.jpg",
+      slots: new Map(),
+      discovered: discovered.map((one) => ({
+        slot: one.slot,
+        noun: one.noun,
+        instance: one.instance,
+        box: { x: one.x, y: one.y, width: 80, height: 60, frame },
+        maskUrl: `data:image/png;base64,${one.slot}`,
+      })),
+    },
+  });
+
+  it("draws the thing under the reading's own noun, in the open section", () => {
+    const panelOut = found([{ slot: "discovered:jaw-hardware#1", noun: "jaw hardware", instance: 1, x: 300, y: 500 }]);
+    const section = panelOut.groups.find((group) => group.group === "open")!;
+
+    expect(section.heading).toBe("Also on this character");
+    expect(section.rows).toHaveLength(1);
+    const row = section.rows[0]!;
+    expect(row.name).toBe("Jaw hardware");
+    expect(row.spoken).toBe("her jaw hardware");
+    expect(row.slots).toEqual(["discovered:jaw-hardware#1"]);
+    /* A window on the frame the viewer already has — no object was written. */
+    expect(row.cutouts).toEqual([{
+      contentUrl: "https://bucket.example/casting/master.jpg",
+      maskUrl: "data:image/png;base64,discovered:jaw-hardware#1",
+      crop: { x: 300, y: 500, width: 80, height: 60, frame },
+    }]);
+    expect(row.regions).toHaveLength(1);
+    expect(row.regions[0]!.box).toEqual({ x: 300, y: 500, width: 80, height: 60, frame });
+  });
+
+  it("offers no narrow edit on a found rectangle — the scope door admits catalogued instances only", () => {
+    const row = found([{ slot: "discovered:sash#1", noun: "sash", instance: 1, x: 10, y: 20 }])
+      .groups.flatMap((group) => group.rows)[0]!;
+    expect(row.regions[0]!.scopable).toBe(false);
+    /* And no name of its own on the rectangle: naming one of a thing needs a
+       singular of somebody's word, and composing one is the invention the
+       distributed-kind row refuses by name. */
+    expect(row.regions[0]!.name).toBeNull();
+  });
+
+  it("keeps two instances of one noun as two rows", () => {
+    const rows = found([
+      { slot: "discovered:strap#1", noun: "strap", instance: 1, x: 100, y: 100 },
+      { slot: "discovered:strap#2", noun: "strap", instance: 2, x: 500, y: 100 },
+    ]).groups.flatMap((group) => group.rows);
+
+    expect(rows).toHaveLength(2);
+    expect(rows.map((row) => row.slots)).toEqual([["discovered:strap#1"], ["discovered:strap#2"]]);
+  });
+
+  it("says nothing about it in words, and claims no provenance", () => {
+    const row = found([{ slot: "discovered:coat#1", noun: "coat", instance: 1, x: 0, y: 0 }])
+      .groups.flatMap((group) => group.rows)[0]!;
+    /* What the reading SAID about a coat is prose for the current description,
+       not a line under its own picture. */
+    expect(row.words).toEqual([]);
+    expect(row.from).toBeNull();
+    expect(row.absent).toBeNull();
+    expect(row.instances).toEqual([]);
+  });
+
+  it("draws nothing for a noun that is blank", () => {
+    const rows = found([{ slot: "discovered:feature#1", noun: "   ", instance: 1, x: 0, y: 0 }])
+      .groups.flatMap((group) => group.rows);
+    expect(rows).toEqual([]);
+  });
+
+  it("draws nothing at all when the reading found nothing off the list", () => {
+    expect(found([]).groups.flatMap((group) => group.rows)).toEqual([]);
+  });
+
+  /*
+    AND THE SCAN'S PENDING GRACE DOES NOT REACH A FOUND ROW, which is the same
+    clause that keeps it off an open kind: the grace holds a place for an answer
+    the CATALOGUE walk is going to give, and there is no catalogue walk behind a
+    jacket. A placeholder for a read that is not running is a working state that
+    can outlive its work.
+  */
+  it("keeps no empty place for a found row while a reading is in flight", () => {
+    const panelOut = facePanel({
+      rows: [],
+      pronouns: SHE,
+      scanning: true,
+      contentUrl: (key) => `https://bucket.example/${key}`,
+      maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+      scan: { frameUrl: "https://bucket.example/casting/master.jpg", slots: new Map(), discovered: [] },
+    });
+    expect(panelOut.groups.find((group) => group.group === "open")).toBeUndefined();
+  });
+});
