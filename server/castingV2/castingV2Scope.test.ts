@@ -20,6 +20,11 @@ import {
   CastingFaceScanCoverageError,
   CastingFaceScanScopeConfigurationError,
   CASTING_FACE_SCAN_SCOPE_ENV,
+  captureCastingFaceDiscoveryEnabled,
+  CastingFaceDiscoveryCoverageError,
+  CastingFaceDiscoveryScopeConfigurationError,
+  parseCastingFaceDiscoveryScope,
+  validateCastingFaceDiscoveryEnvironment,
   captureCastingFaceScanEnabled,
   parseCastingFaceScanScope,
   validateCastingFaceScanEnvironment,
@@ -614,5 +619,89 @@ describe("CASTING_RETRY_SCOPE — the Retry button (#122 shape 1)", () => {
     process.env[CASTING_V2_SCOPE_ENV] = "all";
     delete process.env[CASTING_RETRY_SCOPE_ENV];
     expect(captureCastingRetryEnabled(1)).toBe(false);
+  });
+});
+
+describe("the discovery sub-flag (#2566)", () => {
+  const previous = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...previous };
+  });
+
+  it("is off by default and refuses anything it cannot read exactly", () => {
+    expect(parseCastingFaceDiscoveryScope(undefined)).toEqual({ kind: "off" });
+    for (const raw of ["ALL", "user:1", "users:", "users:0", "users:1,1", "true"]) {
+      expect(() => parseCastingFaceDiscoveryScope(raw), raw)
+        .toThrow(CastingFaceDiscoveryScopeConfigurationError);
+    }
+  });
+
+  it("asserts nothing while absent", () => {
+    expect(validateCastingFaceDiscoveryEnvironment({
+      scope: undefined,
+      scanScope: undefined,
+    })).toEqual({ kind: "off" });
+  });
+
+  it("refuses to discover for a user who buys no scan", () => {
+    /*
+      A discovery narrows a scan plan and does nothing else. Armed past the
+      scan's own flag it is two text reads whose answer nothing consumes —
+      inert, and inert is indistinguishable from mistaken from outside.
+    */
+    expect(() => validateCastingFaceDiscoveryEnvironment({
+      scope: "users:1",
+      scanScope: undefined,
+    })).toThrow(CastingFaceDiscoveryCoverageError);
+    expect(() => validateCastingFaceDiscoveryEnvironment({
+      scope: "all",
+      scanScope: "users:1",
+    })).toThrow(CastingFaceDiscoveryCoverageError);
+    expect(() => validateCastingFaceDiscoveryEnvironment({
+      scope: "users:1,2",
+      scanScope: "users:1",
+    })).toThrow(/names users outside/);
+  });
+
+  it("accepts a scope its parent already covers", () => {
+    expect(validateCastingFaceDiscoveryEnvironment({
+      scope: "users:1",
+      scanScope: "users:1,2",
+    })).toEqual({ kind: "users", userIds: [1] });
+    expect(validateCastingFaceDiscoveryEnvironment({
+      scope: "users:1",
+      scanScope: "all",
+    })).toEqual({ kind: "users", userIds: [1] });
+  });
+
+  it("is an AND of the whole chain at the point of use, not only at boot", () => {
+    /*
+      The boot check already refuses a scope reaching past its parent, and this
+      is the same rule enforced again where it is read — because a boot check
+      that was never invoked is the second way a flag pair goes wrong.
+    */
+    process.env.CASTING_V2_SCOPE = "users:1";
+    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "users:1";
+    process.env.CASTING_FACE_SCAN_SCOPE = "users:1";
+    process.env.CASTING_FACE_DISCOVERY_SCOPE = "users:1";
+    expect(captureCastingFaceDiscoveryEnabled(1)).toBe(true);
+    /* Another user, same configuration. */
+    expect(captureCastingFaceDiscoveryEnabled(2)).toBe(false);
+
+    /* And every link above it can switch it off on its own. */
+    process.env.CASTING_FACE_SCAN_SCOPE = "off";
+    expect(captureCastingFaceDiscoveryEnabled(1)).toBe(false);
+    process.env.CASTING_FACE_SCAN_SCOPE = "users:1";
+    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "off";
+    expect(captureCastingFaceDiscoveryEnabled(1)).toBe(false);
+  });
+
+  it("is OFF with no variable set — the position every account is in today", () => {
+    delete process.env.CASTING_FACE_DISCOVERY_SCOPE;
+    process.env.CASTING_V2_SCOPE = "all";
+    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "all";
+    process.env.CASTING_FACE_SCAN_SCOPE = "all";
+    expect(captureCastingFaceDiscoveryEnabled(1)).toBe(false);
   });
 });

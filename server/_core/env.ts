@@ -27,6 +27,7 @@ import {
   validateSnapshotRestoreEnvironment,
 } from "../casting/snapshotRestoreScope";
 import {
+  CASTING_FACE_DISCOVERY_SCOPE_ENV,
   CASTING_FACE_SCAN_SCOPE_ENV,
   CASTING_INK_CUT_SCOPE_ENV,
   CASTING_INK_TRANSFORM_SCOPE_ENV,
@@ -39,6 +40,7 @@ import {
   CASTING_ROLL_ENGINE_MODEL_ENV,
   CASTING_SCAN_TABLE_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
+  validateCastingFaceDiscoveryEnvironment,
   validateCastingFaceScanEnvironment,
   validateCastingInkCutEnvironment,
   validateCastingInkTransformEnvironment,
@@ -410,6 +412,17 @@ export function validateEnv(): void {
   validateCastingFaceScanEnvironment({
     scope: process.env[CASTING_FACE_SCAN_SCOPE_ENV],
     libraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
+  });
+  /*
+    And whether that reading starts by asking the PICTURE what is on this
+    character, instead of asking the catalogue about each of its own entries
+    (#2566). Checked against the scan scope, because a discovery narrows a scan
+    plan and does nothing else: a user who buys no scan has no plan for it to
+    narrow, and the read would be money spent into the dark.
+  */
+  validateCastingFaceDiscoveryEnvironment({
+    scope: process.env[CASTING_FACE_DISCOVERY_SCOPE_ENV],
+    scanScope: process.env[CASTING_FACE_SCAN_SCOPE_ENV],
   });
   /*
     And whether a finished scan is KEPT (migration 0032). Checked against the
