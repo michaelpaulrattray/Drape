@@ -421,6 +421,115 @@ export function shiftLaneOf(shift: string): string {
  */
 export const CREW_SHIFT_SUPERSEDING_RUNS_MIN = 2;
 
+/**
+ * HOW LONG THE WHOLE TABLE MUST HAVE BEEN SILENT BEFORE THAT IS A PARK (#2679).
+ *
+ * The floor above counts lane-mates. **During a park there are none, in any
+ * lane, because nothing launched at all** — so the reader below answers
+ * `not readable`, and the standing orders then correctly say leave the row
+ * alone. **The reader is blindest exactly when death is most certain**, which
+ * is the Retro's R22 finding and this constant's reason for existing.
+ *
+ * The second reading needs a length, and it is NOT optional. *"No completed run
+ * of any seat opened since this row went quiet"* is also true of an ordinary
+ * busy minute — the runner launches one pass at a time, so a seat three minutes
+ * old with its pass-mates beside it satisfies that sentence perfectly. Without a
+ * floor this verdict would call a brand-new row dead, which is #288's defect
+ * with a new face.
+ *
+ * # The number is MEASURED, by this file's own methodology
+ *
+ * Read over all **804** recorded rows (production, 2026-10-27). For every
+ * closed row: its silence from `heartbeatAt`, and whether any run of ANY lane
+ * opened AND closed inside that silence — the evidence that the runner was
+ * cycling. **227 rows were quiet inside a stretch that held none.** They split
+ * cleanly, and the splitter is non-circular:
+ *
+ *   - **223 closed `shipped` or `stopped`.** A row that reports its own
+ *     outcome was ALIVE at its close, so each one bounds the floor from below.
+ *     The worst is **0.98 h** (#667, `foreman-20261011-1222`).
+ *   - **4 closed `failed`** — the stamp the orders tell a shift to apply BY HAND
+ *     to a dead row (`--id <n> --outcome failed`). All four are the two parks:
+ *     **#643, #644, #645 at 13.34–13.52 h** (the 2026-10-10 park, #2198) and
+ *     **#798 at 97.54 h** (the four-day park this card was filed about).
+ *
+ * So every floor in **(0.98 h, 13.34 h]** fires on exactly those 4 rows and
+ * **zero** others: no false positive anywhere in the history. 14 h loses the
+ * 10 Oct park's three true verdicts and buys nothing — the same shape the
+ * lane floor's own "floor 3 → 1 hit" clause records one screen up.
+ *
+ * **12 hours is chosen from the TOP of that band rather than the bottom, and
+ * the asymmetry is the reason.** Being wrong toward death costs a live seat's
+ * row; being wrong toward silence costs a wrong page. So the margin belongs
+ * over the population that was ALIVE: 12 h is **12× the longest silence of any
+ * row the record proves was alive**, and still under the shortest park on
+ * record, so both parks are caught. `CREW_SHIFT_STALL_MS` (3 h) sits in the
+ * same band and was rejected for having only 2 h of margin on the dangerous
+ * side.
+ *
+ * ⚠ **A park SHORTER than this reads `not readable`, exactly as today.** That
+ * is the safe direction and it is deliberate: this constant can only ever turn
+ * an unanswerable row into an answered one, never the reverse.
+ *
+ * # ⚠ THE MARGIN ON THE PARK SIDE IS THIN, AND IT IS NAMED RATHER THAN HIDDEN
+ *
+ * The 13.34 h above is #643's silence measured to its CLOSE. The verdict is
+ * read earlier than that — at the un-parking pass's own launch — and at that
+ * instant the three rows of the 10 Oct park stood at **12.89 h, 13.01 h and
+ * 12.82 h**. So the thinnest true positive on record clears this floor by
+ * **49 minutes**: an un-park fifty minutes earlier would have read
+ * `not readable` on #645.
+ *
+ * **That is accepted, because it fails toward today's behaviour**, and the
+ * alternative is worse: the alive population is only 0.98 h at its worst but
+ * the orders themselves permit a shift three hours of quiet
+ * (`CREW_SHIFT_STALL_MS`), so a floor of 6 h — also 0 false positives in this
+ * record — would leave barely 2× over what a live shift is allowed. The
+ * margin belongs on the side where being wrong costs a live seat's row.
+ * **If a park is ever missed, this is the number to re-measure, and the arm
+ * that catches it is the one reading the un-park instant and not the close.**
+ *
+ * # ⚠ THE STRONGER-LOOKING RULE WAS MEASURED AND REJECTED — DO NOT RE-ADD IT
+ *
+ * This reading LAPSES: once the runner has cycled once, *no run opened and
+ * closed inside the silence* stops being true, and the row goes back to
+ * `not readable` until two lane-mates complete and the reading above takes
+ * over. The obvious repair is to make it permanent — *somewhere inside this
+ * row's silence there is a stretch of 12 h in which nothing launched at all*,
+ * which is true forever once it happens.
+ *
+ * **It was built and censused and it is catastrophic.** Its window runs from
+ * the row's last breath to the moment of reading with no upper bound, so for
+ * any row open across a later park it accumulates every quiet stretch that has
+ * happened since: read over the real table it fires on **800 of 800 rows**,
+ * 796 of them rows that reported their own outcome. The bounded rule fires on
+ * **4 of 804**, every one a park death. The lapse is the price of a window
+ * that ends where the row's own claim ends, and it is worth paying — the seam
+ * it leaves is narrow (both recorded parks were met and closed by the
+ * un-parking pass inside thirty minutes) and it leaves `not readable`, which
+ * is what a shift gets today anyway.
+ *
+ * ⚠ **RE-MEASURING IT USES THE OUTCOME SPLIT, NOT THE SILENCE.** The first pass
+ * of this measurement bounded the floor at 97.54 h — because it assumed a
+ * closed row was alive at its close, and #798 is the one row in the table that
+ * was closed by somebody else's hand four days after it died. A row's own
+ * reported outcome is the only non-circular evidence here that it was alive.
+ */
+export const CREW_RUNNER_STOPPED_MIN_MS = 12 * 60 * 60 * 1000;
+
+/**
+ * A STRETCH OF SILENCE, IN WORDS — a duration, where {@link describeShiftAge}
+ * gives an instant ("97.5 h ago"). Both sentences this verdict prints need the
+ * span itself, and a second spelling of it would be two citations of one fact.
+ */
+export function describeQuietStretch(ms: number): string {
+  if (!Number.isFinite(ms)) return "(unreadable)";
+  const hours = ms / 3_600_000;
+  if (hours < 1) return `${Math.max(0, Math.round(ms / 60_000))} min`;
+  if (hours < 48) return `${hours.toFixed(1)} h`;
+  return `${(hours / 24).toFixed(1)} days`;
+}
+
 /** What the reading needs off a lane-mate — nothing it could write with. */
 export type LaneRunForSupersession = {
   readonly id: number;
@@ -529,11 +638,36 @@ export function laneRunLastProofOfLife(run: LaneRunForSupersession): number {
   return heartbeat;
 }
 
+/**
+ * ⚠ **`kind` ANSWERS *IS IT DEAD*; `basis` ANSWERS *HOW DO WE KNOW* — AND THE
+ * SPLIT IS WHY #2679 DID NOT ADD A THIRD `kind`.**
+ *
+ * The park reading is a second road to the same conclusion, so the tempting
+ * shape was `kind: "runner-stopped"`. It was rejected at the consumers: four
+ * places test this discriminator, and `describeShiftCollisions` below asks
+ * `kind === "superseded"` to mean *this row's process is dead and needs
+ * closing*. A third kind would have answered that question **false** on a row
+ * the reader had just proved dead — silently, with nothing to fail — which is
+ * this repository's *consumers keyed on a contract's spelling* class.
+ *
+ * So a consumer asking whether the row is dead needs no edit and cannot
+ * regress; only the two places that print the EVIDENCE branch on `basis`.
+ */
 export type RunSupersession =
   | {
       readonly kind: "superseded";
+      /** Later sessions of this row's own launcher opened and closed (#1863). */
+      readonly basis: "lane-mates";
       readonly lane: string;
       readonly by: readonly LaneRunForSupersession[];
+    }
+  | {
+      readonly kind: "superseded";
+      /** No run of any seat opened AND closed for {@link CREW_RUNNER_STOPPED_MIN_MS} (#2679). */
+      readonly basis: "runner-stopped";
+      readonly lane: string;
+      /** How long the whole table had been silent when this was read. */
+      readonly quietForMs: number;
     }
   | { readonly kind: "unreadable"; readonly lane: string; readonly why: string };
 
@@ -644,13 +778,67 @@ export function readRunSupersession(input: {
     .sort((a, b) => asMillis(a.startedAt) - asMillis(b.startedAt));
 
   if (inWindow.length < CREW_SHIFT_SUPERSEDING_RUNS_MIN) {
+    /*
+      ⚠ THE SECOND ROAD, AND IT IS REACHED ONLY FROM HERE — WHERE TODAY'S
+      ANSWER IS "NOT READABLE" (#2679).
+
+      Its placement IS its safety argument. The lane reading above keeps every
+      verdict it already gives and keeps first refusal on every row; this can
+      only ever turn an unanswerable row into an answered one, which is the
+      card's own bound: *it can only ever add certainty, never remove it.*
+
+      The fact it reads is the one a park leaves behind. A cycling runner
+      leaves CLOSED runs behind it — that is what cycling means — so
+      *no run of any seat opened AND closed inside this row's silence* says
+      the runner was not cycling. During the four-day park it was true for 97
+      hours while his page called the row a working shift.
+
+      ⚠ **IT COUNTS EVERY LANE, WHICH IS THE WHOLE REPAIR, AND THE ROWS WERE
+      ALREADY IN THIS FUNCTION'S HAND.** `readRunSupersessions`' SELECT carries
+      no lane filter (its own ⚠ says why) — so the cross-lane rows have always
+      been passed in here and the lane filter above has always discarded them.
+      No new query, no new signal, no new table: the card is right that the
+      reader was only looking at one lane of what it already had.
+
+      ⚠ **AND A CROSS-LANE RUN IS EVIDENCE OF THE RUNNER, NEVER OF THIS ROW.**
+      That distinction is load-bearing and runs the opposite way to the lane
+      reading: seat2 completing beside seat1 says nothing about seat1 (the
+      suite pins that, and it is why the filter above exists), but it does say
+      the launcher was alive. This asks only the second question.
+
+      ⚠ **`inWindow` CANNOT BE NON-EMPTY HERE WHEN THIS FIRES, BY
+      CONSTRUCTION** — a lane-mate in the window is itself a completed run
+      inside the silence, so it is its own counter-evidence. That is why the
+      check needs no special case for the one-lane-mate reading above, and why
+      the overlap branch below can never reach this.
+    */
+    const quietFor = input.now - silentSince;
+    const runnerCycled = input.runs.some((candidate) => {
+      if (candidate.id === input.run.id) return false;
+      if (candidate.endedAt === null || candidate.endedAt === undefined) return false;
+      const started = asMillis(candidate.startedAt);
+      const ended = asMillis(candidate.endedAt);
+      if (!Number.isFinite(started) || !Number.isFinite(ended)) return false;
+      return started > silentSince;
+    });
+
+    if (!runnerCycled && quietFor >= CREW_RUNNER_STOPPED_MIN_MS) {
+      return { kind: "superseded", basis: "runner-stopped", lane, quietForMs: quietFor };
+    }
+
     return {
       kind: "unreadable",
       lane,
       why:
         `only ${inWindow.length} later \`${lane}\` session${inWindow.length === 1 ? " has" : "s have"}`
         + ` opened and closed since it went quiet, and the floor is ${CREW_SHIFT_SUPERSEDING_RUNS_MIN}`
-        + " — row #360 was alive while exactly one lane-mate ran beside it",
+        + " — row #360 was alive while exactly one lane-mate ran beside it"
+        /* ⚠ The second road says WHICH of its two conditions failed, because
+           "not readable" with no reason is the silence this card is about. */
+        + (runnerCycled
+          ? "; and a run of some seat opened and closed inside that silence, so the runner was cycling"
+          : `; and no run of any seat opened and closed in the ${describeQuietStretch(quietFor)}, which is under the`
+            + ` ${CREW_RUNNER_STOPPED_MIN_MS / 3_600_000} h a park takes to be certain`),
     };
   }
 
@@ -680,7 +868,7 @@ export function readRunSupersession(input: {
     }
   }
 
-  return { kind: "superseded", lane, by: inWindow };
+  return { kind: "superseded", basis: "lane-mates", lane, by: inWindow };
 }
 
 /**
@@ -768,10 +956,19 @@ export function describeCardCollision(runs: readonly CollidingShiftRun[], now: n
     const when = everCheckedIn
       ? `last check-in ${describeShiftAge(run.heartbeatAt, now)}`
       : `no check-in yet, opened ${describeShiftAge(run.startedAt, now)}`;
-    const dead = run.supersession?.kind === "superseded"
-      ? ` — ⚠ its process is DEAD: ${run.supersession.by.length} later \`${run.supersession.lane}\``
-        + " sessions opened AND closed while it sat silent, so this row needs closing"
-      : "";
+    /* ⚠ `kind` decides WHETHER to say it; `basis` decides the evidence named
+       (#2679). The park road carries no `by` rows — there were none, in any
+       lane, which is the whole fact — so a sentence counting them would read
+       "0 later sessions" about a row the reader had just proved dead. */
+    const verdict = run.supersession;
+    const dead = verdict?.kind !== "superseded"
+      ? ""
+      : verdict.basis === "runner-stopped"
+        ? ` — ⚠ its process is DEAD: no run of any seat opened and closed in the`
+          + ` ${describeQuietStretch(verdict.quietForMs)}, so the runner itself was stopped while this row`
+          + " sat silent, and this row needs closing"
+        : ` — ⚠ its process is DEAD: ${verdict.by.length} later \`${verdict.lane}\``
+          + " sessions opened AND closed while it sat silent, so this row needs closing";
     return `${run.shift} (${state}, ${when})${dead}`;
   });
   return `an open shift row names it: ${parts.join("; ")}`;
@@ -784,9 +981,23 @@ export function describeCardCollision(runs: readonly CollidingShiftRun[], now: n
  * the open-run warning inside `crew-shift-start.mts` are the two places a shift
  * MEETS a stale row, and a shift citing this line on a card is quoting it. Two
  * wordings would be two citations of one fact.
+ *
+ * ⚠ **BOTH ROADS OPEN ON THE SAME SIX WORDS, AND THAT IS DELIBERATE (#2679).**
+ * `⚠ SUPERSEDED — its process is dead` is what a shift greps for, pastes onto
+ * a card and closes a row by, and the standing orders name that exact spelling.
+ * The sentence then says which fact it rests on, because the two are read
+ * differently: lane-mates name rows a shift can go and look at, where a park
+ * names an absence and must say how long it was to be worth anything.
  */
 export function describeRunSupersession(verdict: RunSupersession): string {
   if (verdict.kind === "unreadable") return `supersession: not readable — ${verdict.why}.`;
+  if (verdict.basis === "runner-stopped") {
+    return (
+      "⚠ SUPERSEDED — its process is dead. No run of ANY seat opened and closed in the"
+      + ` ${describeQuietStretch(verdict.quietForMs)} this row sat silent, so the runner itself was stopped`
+      + " for the whole of it — a park, a cap or a crash — and nothing was running this row either."
+    );
+  }
   const ids = verdict.by.map((run) => `#${run.id}`).join(", ");
   return (
     `⚠ SUPERSEDED — its process is dead. ${verdict.by.length} later sessions in the \`${verdict.lane}\` lane`

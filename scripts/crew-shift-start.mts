@@ -77,6 +77,7 @@
  */
 import {
   CARD_REF_STORED_LENGTH,
+  CREW_RUNNER_STOPPED_MIN_MS,
   CREW_SHIFT_SEATS,
   CREW_SHIFT_WORK_KINDS,
   cardNumberOf,
@@ -648,6 +649,20 @@ try {
       console.log(
         "   A row marked SUPERSEDED is a dead shift's and may be closed, citing that line:"
         + " scripts/crew-shift-close.mts --id <n> --outcome failed",
+      );
+      /*
+        ⚠ THE SECOND HALF OF THIS ADVICE NAMES THE PARK ROAD NOW (#2679), AND
+        THE ORDER OF THE TWO SENTENCES IS THE POINT. A shift met four days of a
+        wrong page because "not readable" was the only thing the reader could
+        say during a park — the one circumstance in which a quiet row is
+        certainly dead. So the SUPERSEDED line above is now reachable two ways,
+        and the "leave it alone" clause below is narrowed to the rows it was
+        always meant for rather than standing over all of them.
+      */
+      console.log(
+        "   SUPERSEDED comes two ways: later sessions of its own launcher completed, OR no run of"
+        + ` ANY seat opened and closed for ${CREW_RUNNER_STOPPED_MIN_MS / 3_600_000} h`
+        + " (a park, a cap, a crash) — the line says which, and either is a dead process.",
       );
       console.log(
         "   One that is NOT readable is not thereby alive — it is a row nothing can settle,"
