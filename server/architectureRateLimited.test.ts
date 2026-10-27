@@ -1,10 +1,14 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 import { REPO_ROOT, repoPath, sourcesUnder } from "./testing/sourceTree";
 import { withoutComments } from "./testing/withoutComments";
+
+/* This suite reads every source under `server/` off the real tree (#741). */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 /**
  * THE ATLAS'S RATE-LIMIT COLUMN, READ A SECOND TIME BY A READER THAT SHARES NO
