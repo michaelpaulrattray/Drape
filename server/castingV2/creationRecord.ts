@@ -50,7 +50,7 @@
  *   Klieg's own use. A v1 record is SIGNED and is never rewritten, so it keeps
  *   its number and still verifies; every record made from now on has none.
  */
-export const CREATION_RECORD_VERSION = "2";
+const CREATION_RECORD_VERSION = "2";
 
 /**
  * Keys that may never appear anywhere in a record, at any depth. Matched

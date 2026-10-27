@@ -300,6 +300,19 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "own hand set it to users:1 on 2026-10-17 (railway variables set, read back by the relay), "
       + "after the relay recommended switching it on for his account to try; widening past users:1 is his word.",
   },
+  CASTING_OUTFIT_EDIT_SCOPE: {
+    position: UNSET,
+    why:
+      "BUILT DARK 2026-10-17 (#2544 slice 1; his word 2026-10-15 \"yes allow it\", and "
+      + "\"yes refine is all the same price\" on the money question). Clothing becomes an "
+      + "editable Refine subject: the interpreter is served the wardrobe subject, the "
+      + "GARMENT half of the stage lexicon stops refusing a value filed under it, and the "
+      + "backed stage refusal stops saying clothing comes after Sign. The SCENERY half "
+      + "refuses under every subject, served or not. Flag-off is byte-identical by "
+      + "construction and all four interpreter prompts are hashed. Slice 0's court is run "
+      + "($0.57, the backdrop intact 21/21, three strips on his Desk). UNSET until his eye "
+      + "on those strips and the users:1 wall-rate and outfit-pass-rate arms; the flip is his",
+  },
   CASTING_REFINE_DISPATCH_SCOPE: {
     position: "all",
     why:

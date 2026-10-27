@@ -201,7 +201,7 @@ export type ViewRetryResult = {
  * one you can ask for again"*, which was true and left her nowhere to go; the
  * remedy is the whole-set button on the same page, named by its own label.
  */
-export const VIEW_RETRY_NOTHING_TO_ASK_MESSAGE =
+const VIEW_RETRY_NOTHING_TO_ASK_MESSAGE =
   "That view can't be asked for again on its own — Regenerate makes every view again. Nothing was charged.";
 
 /**
