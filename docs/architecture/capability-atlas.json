@@ -10,8 +10,8 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:680",
-          "server/castingV2/refineDelta.ts:680"
+          "server/castingV2/refineDelta.ts:705",
+          "server/castingV2/refineDelta.ts:705"
         ]
       },
       {
@@ -21,8 +21,8 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:694",
-          "server/castingV2/refineDelta.ts:694"
+          "server/castingV2/refineDelta.ts:719",
+          "server/castingV2/refineDelta.ts:719"
         ]
       },
       {
@@ -88,7 +88,7 @@
           "server/castingV2/conceptDescribe.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1313",
+          "server/castingV2/conceptDescribe.ts:1322",
           "server/castingV2/conceptDescribeCopy.ts:97"
         ]
       },
@@ -102,7 +102,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1235",
+          "server/castingV2/conceptDescribe.ts:1244",
           "server/castingV2/conceptDescribeCopy.ts:173"
         ]
       },
@@ -157,7 +157,7 @@
           "server/castingV2/conceptDescribeCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/conceptDescribe.ts:1342",
+          "server/castingV2/conceptDescribe.ts:1351",
           "server/castingV2/conceptDescribeCopy.ts:135"
         ]
       },
@@ -182,9 +182,9 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:662",
+          "server/castingV2/refineDelta.ts:687",
           "server/castingV2/refineInterpreter.ts:1039",
-          "server/castingV2/refineDelta.ts:662"
+          "server/castingV2/refineDelta.ts:687"
         ]
       },
       {
@@ -198,8 +198,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:632",
           "server/castingV2/refineDelta.ts:632",
-          "server/castingV2/refineDelta.ts:1732",
-          "server/castingV2/refineDelta.ts:1732",
+          "server/castingV2/refineDelta.ts:1757",
+          "server/castingV2/refineDelta.ts:1757",
           "server/castingV2/refineService.ts:2579"
         ]
       },
@@ -214,8 +214,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:598",
           "server/castingV2/refineDelta.ts:598",
-          "server/castingV2/refineDelta.ts:1741",
-          "server/castingV2/refineDelta.ts:1741",
+          "server/castingV2/refineDelta.ts:1766",
+          "server/castingV2/refineDelta.ts:1766",
           "server/castingV2/refineDelta.ts:598"
         ]
       },
@@ -230,8 +230,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:605",
           "server/castingV2/refineDelta.ts:605",
-          "server/castingV2/refineDelta.ts:1709",
-          "server/castingV2/refineDelta.ts:1709",
+          "server/castingV2/refineDelta.ts:1734",
+          "server/castingV2/refineDelta.ts:1734",
           "server/castingV2/refineService.ts:2578",
           "server/castingV2/refineService.ts:2590"
         ]
@@ -245,8 +245,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:624",
           "server/castingV2/refineDelta.ts:624",
-          "server/castingV2/refineDelta.ts:1724",
-          "server/castingV2/refineDelta.ts:1724",
+          "server/castingV2/refineDelta.ts:1749",
+          "server/castingV2/refineDelta.ts:1749",
           "server/castingV2/refineDelta.ts:624"
         ]
       },
@@ -382,6 +382,19 @@
         ]
       },
       {
+        "id": "reader_down",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/readerOutageRefusal.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/refineDelta.ts:686",
+          "server/castingV2/refineInterpreter.ts:1060",
+          "server/castingV2/refineInterpreter.ts:1169",
+          "server/castingV2/refineDelta.ts:686"
+        ]
+      },
+      {
         "id": "reader_outage",
         "kind": "interpreter-refusal",
         "pinnedBy": [
@@ -390,8 +403,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:661",
-          "server/castingV2/refineInterpreter.ts:1053",
-          "server/castingV2/refineInterpreter.ts:1149",
+          "server/castingV2/refineInterpreter.ts:1176",
           "server/castingV2/refineDelta.ts:661"
         ]
       },
@@ -503,8 +515,8 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1205",
-          "server/castingV2/briefRefusalCopy.ts:128"
+          "server/castingV2/briefCompiler.ts:1246",
+          "server/castingV2/briefRefusalCopy.ts:176"
         ]
       },
       {
@@ -515,8 +527,21 @@
           "server/castingV2/creativeRegisterScope.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1208",
-          "server/castingV2/briefRefusalCopy.ts:134"
+          "server/castingV2/briefCompiler.ts:1249",
+          "server/castingV2/briefRefusalCopy.ts:182"
+        ]
+      },
+      {
+        "id": "roll.reader_down",
+        "kind": "roll-refusal",
+        "pinnedBy": [
+          "server/castingV2/briefCompiler.test.ts",
+          "server/castingV2/briefRefusalCopy.test.ts",
+          "server/castingV2/readerOutageRefusal.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/briefCompiler.ts:1224",
+          "server/castingV2/briefRefusalCopy.ts:200"
         ]
       },
       {
@@ -530,8 +555,8 @@
           "server/castingV2/styleRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1184",
-          "server/castingV2/briefRefusalCopy.ts:140"
+          "server/castingV2/briefCompiler.ts:1225",
+          "server/castingV2/briefRefusalCopy.ts:192"
         ]
       },
       {
@@ -542,8 +567,8 @@
           "server/castingV2/briefRefusalCopy.test.ts"
         ],
         "sites": [
-          "server/castingV2/briefCompiler.ts:1093",
-          "server/castingV2/briefRefusalCopy.ts:122"
+          "server/castingV2/briefCompiler.ts:1105",
+          "server/castingV2/briefRefusalCopy.ts:170"
         ]
       },
       {
@@ -574,7 +599,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:457"
+          "server/castingV2/rollService.ts:461"
         ]
       },
       {
@@ -584,7 +609,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:451"
+          "server/castingV2/rollService.ts:455"
         ]
       },
       {
@@ -594,7 +619,7 @@
           "server/castingV2/rollService.test.ts"
         ],
         "sites": [
-          "server/castingV2/rollService.ts:445"
+          "server/castingV2/rollService.ts:449"
         ]
       },
       {
@@ -686,7 +711,7 @@
           "server/castingV2/openLaneKind.ts:325",
           "server/castingV2/openLaneKind.ts:326",
           "server/castingV2/refineDelta.ts:638",
-          "server/castingV2/refineInterpreter.ts:1151",
+          "server/castingV2/refineInterpreter.ts:1178",
           "server/castingV2/refineDelta.ts:638"
         ]
       },
@@ -767,7 +792,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:558",
-          "server/castingV2/refineInterpreter.ts:1788",
+          "server/castingV2/refineInterpreter.ts:1833",
           "server/castingV2/refineDelta.ts:558"
         ]
       },
@@ -784,8 +809,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:499",
-          "server/castingV2/refineDelta.ts:1760",
-          "server/castingV2/refineInterpreter.ts:1786",
+          "server/castingV2/refineDelta.ts:1785",
+          "server/castingV2/refineInterpreter.ts:1831",
           "server/castingV2/refineDelta.ts:499"
         ]
       },
@@ -806,8 +831,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:533",
-          "server/castingV2/refineDelta.ts:1784",
-          "server/castingV2/refineInterpreter.ts:1891",
+          "server/castingV2/refineDelta.ts:1809",
+          "server/castingV2/refineInterpreter.ts:1936",
           "server/castingV2/refineDelta.ts:533"
         ]
       },
@@ -821,7 +846,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:557",
-          "server/castingV2/refineInterpreter.ts:1898",
+          "server/castingV2/refineInterpreter.ts:1943",
           "server/castingV2/refineDelta.ts:557"
         ]
       },
@@ -840,8 +865,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:569",
-          "server/castingV2/refineDelta.ts:1485",
-          "server/castingV2/refineDelta.ts:1841",
+          "server/castingV2/refineDelta.ts:1510",
+          "server/castingV2/refineDelta.ts:1866",
           "server/castingV2/refineDelta.ts:569"
         ]
       },
@@ -2125,11 +2150,18 @@
         "message": "no corpus row reaches it: the catalogue's no-picture answer; makeup — its historical population — now renders (measured, drive-4), and no current master-state ask reaches a facet the catalogue refuses a picture for — a row could reach it via: a facet that regains the no-picture classification, or a driven ask found to reach it"
       },
       {
+        "id": "documented:reader_down",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "reader_down",
+        "message": "no corpus row reaches it: REFINE's reader outage THAT NO RETRY REACHES (#2688, the sweep of #2686) — the provider refused OUR key (a 401, 402 or 403, which `classifyOpenRouterTextHttp` maps to `provider_account`), or this deployment has no text reader configured at all. Split out of `reader_outage` above because that door's sentence ends *\"Try again in a moment\"*, which is true of a deadline and is advice a disabled key can never honour: the customer retries, it fails identically, and they conclude their own sentence was the problem. Measured on production, 2026-10-27 from 03:09Z — the account key was disabled, every call answered 401, and this road said \"in a moment\" for the whole outage. Free exactly as its sibling is; the only thing that moved is the sentence, and it is the same fact the roll road's `roll.reader_down` and the four picture roads' `PICTURE_READER_DOWN_MESSAGE` state at their own entrances — a row could reach it via: deliberately never as a corpus row, and MORE firmly than its sibling: manufacturing a disabled account in the census would test the harness and not the product, and it is the same discharge `concept.reader_outage` carries for the identical fact one entrance over. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError an overdrawn key produces, with the timeout double beside it as the control proving the transient sentence still appears"
+      },
+      {
         "id": "documented:reader_outage",
         "severity": "info",
         "kind": "documented-unreachable",
         "subject": "reader_outage",
-        "message": "no corpus row reaches it: REFINE's own reader outage — the sentence was never read because the call threw, the deadline passed, or no engine is configured. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells her to try naming what she wants changed, which is advice she cannot follow when the failure is ours — a row could reach it via: deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError a 402 produces and asserts the classifier's mapping beside it"
+        "message": "no corpus row reaches it: REFINE's own reader outage — the sentence was never read because the call threw or the deadline passed, or because three samplings were all cut off at our token ceiling. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells the customer to try naming what they want changed, which is advice they cannot follow when the failure is ours. ⚠ ITS SCOPE NARROWED AT #2688: it said \"or no engine is configured\" until that card, and both that state and our own account being refused now take `reader_down` below, because this door's sentence asks for a retry and neither of those two is reachable by one — a row could reach it via: deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws a real ProviderError for a timeout as the WEATHER control beside `reader_down`'s account double, and asserts the classifier's 401/402/403 mapping beside both"
       },
       {
         "id": "documented:reference.pictureCap",
@@ -2174,11 +2206,18 @@
         "message": "no corpus row reaches it: answers a brief whose subject is not a being — an object, a vehicle, a place. THE one wall the author road ADDS (founder: 'someone asking for an object should be refused like a car'), and the twin of `concept.no_being`, which #192 put on the map while this half stayed invisible. Also hit in production — a row could reach it via: the same brief-carrying row; its twin's arm already holds the two sentences to one shared boundary clause, so a row would be measuring the road rather than the words"
       },
       {
+        "id": "documented:roll.reader_down",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "roll.reader_down",
+        "message": "no corpus row reaches it: THE ROLL ROAD'S half of the same split (#2688) — a brief whose reader cannot answer at all, because the provider refused OUR key or because no reader is configured in this deployment. Free before the claim exactly as `roll.reader_outage` is, and filed `studio` rather than `brief` by `BRIEF_REFUSAL_FAULT` so the sheet does not offer \"Edit the brief\" above a brief that was never read. The sentence differs from its sibling's in one way and it is the whole card: it does not ask for a retry, because no retry reaches a disabled key. Measured on production, 2026-10-27 from 03:09Z — a row could reach it via: deliberately never as a corpus row, on its sibling's ground and its twin `concept.reader_outage`'s: a manufactured outage measures the harness. Its pin is its own driven arm in `briefCompiler.test.ts`, which throws the ProviderError a disabled key produces and asserts the cause the interpreter reports for it, with the bare-Error double beside it keeping `roll.reader_outage`"
+      },
+      {
         "id": "documented:roll.reader_outage",
         "severity": "info",
         "kind": "documented-unreachable",
         "subject": "roll.reader_outage",
-        "message": "no corpus row reaches it: answers a brief whose reader never answered — the transport threw, the deadline passed, or no engine is configured. Free by founder ruling (#126, 'refuse-free', always). An infrastructure state, not a sentence — a row could reach it via: deliberately never as a corpus row: manufacturing a reader outage in the census would test the harness and not the product — the discharge `removal_uncheckable` and `concept.unreadable` already carry. Its pin is its own driven arm in `briefCompiler.test.ts`"
+        "message": "no corpus row reaches it: answers a brief whose reader never answered and might on the next try — the transport threw or the deadline passed. Free by founder ruling (#126, 'refuse-free', always). An infrastructure state, not a sentence. ⚠ ITS SCOPE NARROWED AT #2688: it said \"or no engine is configured\" until that card, and that state now takes `roll.reader_down` beside it — a row could reach it via: deliberately never as a corpus row: manufacturing a reader outage in the census would test the harness and not the product — the discharge `removal_uncheckable` and `concept.unreadable` already carry. Its pin is its own driven arm in `briefCompiler.test.ts`, now beside the account double as its weather control"
       },
       {
         "id": "documented:roll.uninterpretable",
@@ -2270,6 +2309,13 @@
         "kind": "documented-unreachable",
         "subject": "whichInkToChange",
         "message": "no corpus row reaches it: needs a branch wearing TWO tattoos; no cast in either world has ever worn two at once (opus-966 §1) and the multi-tattoo fixture is §10 item 3b's build — a row could reach it via: item 3b's keying work, which needs two-tattoo state to test itself"
+      },
+      {
+        "id": "shared-bare:reader_down",
+        "severity": "warn",
+        "kind": "shared-bare-door-id",
+        "subject": "reader_down",
+        "message": "\"reader_down\" is the bare id of 2 declared doors (reader_down, roll.reader_down) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
       },
       {
         "id": "shared-bare:reader_outage",
@@ -3294,11 +3340,18 @@
       "message": "no corpus row reaches it: the catalogue's no-picture answer; makeup — its historical population — now renders (measured, drive-4), and no current master-state ask reaches a facet the catalogue refuses a picture for — a row could reach it via: a facet that regains the no-picture classification, or a driven ask found to reach it"
     },
     {
+      "id": "documented:reader_down",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "reader_down",
+      "message": "no corpus row reaches it: REFINE's reader outage THAT NO RETRY REACHES (#2688, the sweep of #2686) — the provider refused OUR key (a 401, 402 or 403, which `classifyOpenRouterTextHttp` maps to `provider_account`), or this deployment has no text reader configured at all. Split out of `reader_outage` above because that door's sentence ends *\"Try again in a moment\"*, which is true of a deadline and is advice a disabled key can never honour: the customer retries, it fails identically, and they conclude their own sentence was the problem. Measured on production, 2026-10-27 from 03:09Z — the account key was disabled, every call answered 401, and this road said \"in a moment\" for the whole outage. Free exactly as its sibling is; the only thing that moved is the sentence, and it is the same fact the roll road's `roll.reader_down` and the four picture roads' `PICTURE_READER_DOWN_MESSAGE` state at their own entrances — a row could reach it via: deliberately never as a corpus row, and MORE firmly than its sibling: manufacturing a disabled account in the census would test the harness and not the product, and it is the same discharge `concept.reader_outage` carries for the identical fact one entrance over. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError an overdrawn key produces, with the timeout double beside it as the control proving the transient sentence still appears"
+    },
+    {
       "id": "documented:reader_outage",
       "severity": "info",
       "kind": "documented-unreachable",
       "subject": "reader_outage",
-      "message": "no corpus row reaches it: REFINE's own reader outage — the sentence was never read because the call threw, the deadline passed, or no engine is configured. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells her to try naming what she wants changed, which is advice she cannot follow when the failure is ours — a row could reach it via: deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError a 402 produces and asserts the classifier's mapping beside it"
+      "message": "no corpus row reaches it: REFINE's own reader outage — the sentence was never read because the call threw or the deadline passed, or because three samplings were all cut off at our token ceiling. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells the customer to try naming what they want changed, which is advice they cannot follow when the failure is ours. ⚠ ITS SCOPE NARROWED AT #2688: it said \"or no engine is configured\" until that card, and both that state and our own account being refused now take `reader_down` below, because this door's sentence asks for a retry and neither of those two is reachable by one — a row could reach it via: deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws a real ProviderError for a timeout as the WEATHER control beside `reader_down`'s account double, and asserts the classifier's 401/402/403 mapping beside both"
     },
     {
       "id": "documented:reference.pictureCap",
@@ -3343,11 +3396,18 @@
       "message": "no corpus row reaches it: answers a brief whose subject is not a being — an object, a vehicle, a place. THE one wall the author road ADDS (founder: 'someone asking for an object should be refused like a car'), and the twin of `concept.no_being`, which #192 put on the map while this half stayed invisible. Also hit in production — a row could reach it via: the same brief-carrying row; its twin's arm already holds the two sentences to one shared boundary clause, so a row would be measuring the road rather than the words"
     },
     {
+      "id": "documented:roll.reader_down",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "roll.reader_down",
+      "message": "no corpus row reaches it: THE ROLL ROAD'S half of the same split (#2688) — a brief whose reader cannot answer at all, because the provider refused OUR key or because no reader is configured in this deployment. Free before the claim exactly as `roll.reader_outage` is, and filed `studio` rather than `brief` by `BRIEF_REFUSAL_FAULT` so the sheet does not offer \"Edit the brief\" above a brief that was never read. The sentence differs from its sibling's in one way and it is the whole card: it does not ask for a retry, because no retry reaches a disabled key. Measured on production, 2026-10-27 from 03:09Z — a row could reach it via: deliberately never as a corpus row, on its sibling's ground and its twin `concept.reader_outage`'s: a manufactured outage measures the harness. Its pin is its own driven arm in `briefCompiler.test.ts`, which throws the ProviderError a disabled key produces and asserts the cause the interpreter reports for it, with the bare-Error double beside it keeping `roll.reader_outage`"
+    },
+    {
       "id": "documented:roll.reader_outage",
       "severity": "info",
       "kind": "documented-unreachable",
       "subject": "roll.reader_outage",
-      "message": "no corpus row reaches it: answers a brief whose reader never answered — the transport threw, the deadline passed, or no engine is configured. Free by founder ruling (#126, 'refuse-free', always). An infrastructure state, not a sentence — a row could reach it via: deliberately never as a corpus row: manufacturing a reader outage in the census would test the harness and not the product — the discharge `removal_uncheckable` and `concept.unreadable` already carry. Its pin is its own driven arm in `briefCompiler.test.ts`"
+      "message": "no corpus row reaches it: answers a brief whose reader never answered and might on the next try — the transport threw or the deadline passed. Free by founder ruling (#126, 'refuse-free', always). An infrastructure state, not a sentence. ⚠ ITS SCOPE NARROWED AT #2688: it said \"or no engine is configured\" until that card, and that state now takes `roll.reader_down` beside it — a row could reach it via: deliberately never as a corpus row: manufacturing a reader outage in the census would test the harness and not the product — the discharge `removal_uncheckable` and `concept.unreadable` already carry. Its pin is its own driven arm in `briefCompiler.test.ts`, now beside the account double as its weather control"
     },
     {
       "id": "documented:roll.uninterpretable",
@@ -3453,6 +3513,13 @@
       "kind": "not-driven",
       "subject": "ref.ink.sleeve",
       "message": "needs state \"reference-attached\", which this fixture cannot supply"
+    },
+    {
+      "id": "shared-bare:reader_down",
+      "severity": "warn",
+      "kind": "shared-bare-door-id",
+      "subject": "reader_down",
+      "message": "\"reader_down\" is the bare id of 2 declared doors (reader_down, roll.reader_down) — a test quotes the bare word, so each door's pins are narrowed to the suites that reach its own raise sites"
     },
     {
       "id": "shared-bare:reader_outage",
