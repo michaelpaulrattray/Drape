@@ -1,7 +1,7 @@
 {
-  "edition": 746,
-  "updatedAt": "2026-10-27T10:43:11.304Z",
-  "shift": "NOTHING TONIGHT NEEDS YOU. One job built and waiting on review, one problem found and written down, and one\nthing deliberately NOT built because it is a design question rather than a fix.\n\nWHAT WAS BUILT, and no customer will see a thing — which is the point of it. When someone presses an edit in\nthe studio, we take the money, start drawing, and hand the screen a note saying \"this is running\"; the picture\nlands a moment later. That is right for a person and it has not changed. But our own measuring scripts cannot\nwork that way: handed that note, a script finishes and shuts down, and the picture it just paid for is\nabandoned half-drawn. That has actually happened to us once — the refine-engine court saved three copies of the\nunedited face as though they were results and left a render stranded.\n\nUntil tonight the only way a script could avoid it was to reach in and flip one of YOUR customer settings off\ninside itself — a setting we are in the middle of retiring. So a script borrowed a customer switch to describe\nsomething about itself, and the day that switch goes, the borrowing stops working. Now the script just says it:\n\"I cannot take a note, finish the picture before you answer me.\" Same render, same money, same records, same\nroad — the only difference is when the answer comes back. It is in review and I have not merged it, because the\ncharge and the refund live inside the function it touches and that is your rule.\n\nWHAT CHECKING IT TURNED UP, and it is the useful part. Sixteen more of our own scripts have the same weakness\nand nobody had noticed, because they are only safe by accident: the setting happens to be off on the machine\nthey run on. The day we retire it, each of those sixteen gets the note instead of the picture and writes the\nwrong face to disk — the same incident sixteen times over. Two of them are tools we keep and re-run, not\nthrowaways. It is written down with the full list, and the card that retires the setting now points at it, so\nwhoever does that job reads this first. Nothing is broken today and nothing is urgent.\n\nWHAT I DID NOT BUILD. A real bug came up first in the order: type \"make her hair copper red in a studio\" into\nRefine and you get the copper hair, the studio is quietly dropped, and nothing tells you. Your picture is never\nwrong and no money is spent on a set change — we checked that, and it holds every time. It is a SILENCE problem,\nnot a wrong-picture one. But fixing it means deciding what the product should SAY to you in that moment, and a\nnew sentence beside your picture is your call and a design job, not a patch. I read it right through the code\nfirst so nothing has to be measured again, wrote down what I found, and handed it to the design seat, which\npicks it up next.",
+  "edition": 747,
+  "updatedAt": "2026-10-27T12:12:33Z",
+  "shift": "CLOTHING EDITS ARE ON FOR YOUR ACCOUNT, AND THE SILENT HALF-SENTENCE BUG IS FIXED AND IN REVIEW. Both of your answers from this morning were read and acted on.\n\nYOUR TWO ANSWERS. You said “Switch it on for my account” — done: clothing changes now work in Refine for you, and for nobody else, from the moment this page updated. Type something like “put her in a long black coat” on any candidate and it is an ordinary edit at the ordinary price. Widening it to everyone stays your word. You also said “WARN — tell us, never block us” about the build-tool safety check — recorded on its card, and the warning version is now ordinary queued work.\n\nTHE BUG THAT JUMPED THE QUEUE, now fixed. Yesterday's shift found that typing two things into Refine — “make her hair copper red in a studio” — delivered the hair and silently ignored the studio, with nothing telling you. Your picture was never wrong and no money was ever spent on a set change; the product just never said what it left out. Now it does: beside the picture, the moment the edit starts, you read “The studio part of your ask wasn't changed — refining changes the person, not the shoot. Everything else you asked for went ahead.” No new buttons, nothing to learn — one honest sentence in the product's own voice. It is built, tested, photographed in both themes, and waiting on the review that every customer-visible change gets; I have not merged it.\n\nONE MORE THING FOUND ON THE WAY, written down rather than folded in. The product already composes honest sentences for other partly-done edits — but because every paid edit now answers instantly with a receipt, those sentences finish composing after the receipt has already answered, and nobody has ever read one. Filed as its own card with the full reading; nothing about it loses anyone money or pictures — it is the same kind of silence as tonight's bug, one layer further down.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-27T10:41:54.117Z",
+      "readAt": "2026-10-27T12:13:28.876Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7539,6 +7539,13 @@
   ],
   "pipeline": [
     {
+      "id": "scenery-note-2695",
+      "title": "Refine says which half of your sentence named the shoot and was dropped (#2695)",
+      "status": "in-review",
+      "prNumber": 2712,
+      "note": "Customer-visible, so it waits on the relay's hand verdict; gate green, frames posted in both themes."
+    },
+    {
       "id": "open-kind-removal-2638",
       "title": "A feature the studio invented a name for can be taken back by name - \"remove her fangs\" works (#2638)",
       "status": "merged",
@@ -11286,10 +11293,12 @@
     298,
     299,
     300,
-    301
+    301,
+    302,
+    303
   ],
   "nextUp": {
-    "readAt": "2026-10-27T10:41:54.117Z",
+    "readAt": "2026-10-27T12:13:28.876Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11347,7 +11356,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "YOU — both numbers are measured and neither stops it. Switch clothing edits on for your own account? Recommend YES. Details on your Desk."
+          "because": "his desk card `outfit-flip-2544` is open"
         }
       },
       {
