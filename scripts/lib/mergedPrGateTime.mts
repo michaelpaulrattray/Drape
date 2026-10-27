@@ -38,14 +38,28 @@
  * `gateStall.mts` records: a run's age is not its duration, and reading a
  * finish time off `created_at` was a live defect there.
  *
+ * ⚠ AND THE START OF THAT SPAN IS `run_started_at`, NOT `created_at` — #2698,
+ * where the second of the two "small" limits below turned out to be 97% of a
+ * reading. See `executionMinutes` beside the loop for the measurement and for
+ * why the window filter deliberately did NOT move with it.
+ *
  * ⚠ TWO KNOWN FLOOR-DIRECTION LIMITS, STATED RATHER THAN DISCOVERED (#559
- * review, finding 5): a gate run still IN PROGRESS when the ledger reads is
- * skipped, so a PR merged minutes before a reading under-reports its gate
- * minutes in that reading; and a re-run of a completed gate bumps its
- * `updated_at`, inflating that one run's apparent duration. Both are small,
+ * review, finding 5; the second rewritten by #2698): a gate run still IN
+ * PROGRESS when the ledger reads is skipped, so a PR merged minutes before a
+ * reading under-reports its gate minutes in that reading; and a run that was
+ * RE-RUN reports only its latest attempt's execution, because the runs listing
+ * carries one record per run id and that record is the latest attempt — the
+ * earlier attempt's minutes were real and are not counted. Both are small,
  * both point the same way as the module's other bounds, and neither is worth
  * an instrument of its own — but a figure that moves between two readings of
  * the same window has these two causes before it has an interesting one.
+ *
+ * ⚠ THE SECOND ONE READ *"a re-run of a completed gate bumps its `updated_at`,
+ * inflating that one run's apparent duration"* UNTIL 2026-10-27, AND IT WAS
+ * FILED AS SMALL BECAUSE NOBODY HAD MEASURED IT. It was the largest term in
+ * the reading: five re-fired runs were 24,431.5 of the window's 25,181.8
+ * minutes, and the ledger printed a 31× regression that never happened. The
+ * direction also inverted — that limit inflated, this one is a floor.
  *
  * ⚠ THE BRANCH IS THE ASSOCIATION for gate runs, exactly as in
  * `reviewRounds.mts`, and for the same measured reason: a workflow run's
@@ -112,6 +126,60 @@ const RETRY_PAUSE_MS = 1_500;
 const syncSleep = (ms: number) => {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 };
+
+/** One row of the gate runs listing, as much of it as the gate-minutes reading needs. */
+export type GateRunRecord = {
+  created_at: string;
+  updated_at: string;
+  status: string;
+  /** Absent on old records; see `executionMinutes`. */
+  run_started_at?: string | null;
+};
+
+/**
+ * HOW LONG A COMPLETED GATE RUN ACTUALLY EXECUTED FOR.
+ *
+ * ⚠ **`created_at` IS NOT THE START OF A RE-RUN, AND READING IT AS ONE COST A
+ * REPORTED 31× REGRESSION THAT NEVER HAPPENED (#2698, Machinist patrol #9).**
+ * GitHub keeps a re-run's `created_at` at the FIRST attempt's, so a run
+ * re-fired days later spans the whole gap. Three PRs sat through the Railway
+ * build outage (2026-10-21 → 2026-10-26) and had their gates re-fired the
+ * minute it ended; each really executed in under four minutes and each was
+ * recorded as five and a half days. Over the ledger's own window, n = 189:
+ * **five runs with `run_attempt > 1` were 24,431.5 of 25,181.8 total minutes —
+ * 97.0%**. The ledger printed `184.37 gate minutes per card` against a target
+ * of 10, where the honest figure is 4.08 minutes a run (184 first attempts,
+ * 750.3 minutes) and about 6.9 per card. Measured a second way the same hour,
+ * off 300 run records: the gate's wall is 3.9 minutes median and the per-day
+ * median is 3.6–4.1 on every one of the eleven days in the window. **Nothing
+ * had moved.**
+ *
+ * `run_started_at` is when the attempt THIS record describes began, and it is
+ * already in the response — one field, not a second call. Read at the live API
+ * 2026-10-27: on a first attempt the two fields carry the same value, and on
+ * `team/unused-export-sweep-2605`'s attempt 2 they are `2026-10-21T08:25:09Z`
+ * against `2026-10-27T00:32:09Z`.
+ *
+ * ⚠ **THE FALLBACK IS A DATE CHECK, NOT `??`.** The field is optional on old
+ * records, and `??` passes an EMPTY STRING through to `Date.parse`, which
+ * yields `NaN` and poisons the sum into `NaN` silently — the whole section
+ * would then read as an absence with no reason. Anything unparseable falls
+ * back to `created_at`, which is the pre-#2698 behaviour and is right for a
+ * first attempt.
+ *
+ * ⚠ **THE WINDOW FILTER DELIBERATELY DID NOT MOVE WITH THIS.** `created_at`
+ * is the ASSOCIATION — which PR's lifetime a run belongs to — and a re-run's
+ * first-attempt creation is the correct anchor for that. Moving the filter to
+ * `run_started_at` would silently DROP a re-run that executed after its PR
+ * merged, and #2698's own rule is the opposite: *"a re-run's execution is real
+ * gate time a card paid for; what is not real is the gap between attempts."*
+ * Only the arithmetic moved.
+ */
+export function executionMinutes(run: GateRunRecord): number {
+  const started = Date.parse(run.run_started_at ?? "");
+  const start = Number.isNaN(started) ? new Date(run.created_at).getTime() : started;
+  return (new Date(run.updated_at).getTime() - start) / 60_000;
+}
 
 export function readMergedPrs(sinceIso: string, options: ReadMergedPrsOptions = {}): MergedPrsResult {
   const limit = options.limit ?? 100;
@@ -226,7 +294,7 @@ export function readMergedPrs(sinceIso: string, options: ReadMergedPrsOptions = 
 
   const prs: MergedPrReading[] = [];
   for (const pr of inWindow) {
-    let runs: Array<{ created_at: string; updated_at: string; status: string }>;
+    let runs: GateRunRecord[];
     try {
       runs = (
         JSON.parse(
@@ -249,7 +317,7 @@ export function readMergedPrs(sinceIso: string, options: ReadMergedPrsOptions = 
       const created = new Date(run.created_at).getTime();
       if (created < opened || created > merged) continue;
       if (run.status !== "completed") continue;
-      minutes += (new Date(run.updated_at).getTime() - created) / 60_000;
+      minutes += executionMinutes(run);
       count += 1;
     }
     // The head branch rides along so the join can anchor the PR to the run that
