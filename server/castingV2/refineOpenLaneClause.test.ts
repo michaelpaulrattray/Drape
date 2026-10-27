@@ -24,8 +24,12 @@ import { interpretRefinement, refineParseSystemPrompt } from "./refineInterprete
  * onto the nearest closed subject, and the acceptance door was never consulted;
  * on, the clause was in the prompt and the door decided. It reached `all` on
  * production on 2026-09-24 (his Crew reply #205, *"Turn it on for everyone"*)
- * and every flag above it was `all` too, so the OFF arm — two of the four
- * interpreter prompts — was asked of nobody. **His word retiring it,
+ * and every flag above it was `all` too. ⚠ **This docblock said the OFF arm — two
+ * of the four interpreter prompts — was *asked of nobody*, and one road was still
+ * asking it**: the removal path's RULE 3 re-read, the only production caller of
+ * `interpretRefinement` that never passed the option at all. Found by the relay on
+ * PR #2556, declared and measured on the ghost audit's D1 row, and the measurement
+ * says the surviving prompt gives that road the better answer. **His word retiring it,
  * 2026-10-15, verbatim and entire: _"yes approve the plan and switch off the six
  * settings"_** (the ghost audit's row D1).
  *
