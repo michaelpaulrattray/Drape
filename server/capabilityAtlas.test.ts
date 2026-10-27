@@ -762,7 +762,13 @@ describe("one word may be three doors, and each keeps only its own pins", () => 
 
   it("POSITIVE CONTROL — the live map really does hold a shared bare id, so this reader has a subject", () => {
     const shared = sharedBareDoorIds(sharedAtlas().declared);
-    expect([...shared.keys()].sort()).toEqual(["reader_outage", "unreadable"]);
+    /* ⚠ TWO UNTIL #2688. Splitting the reader outage per road gave one more
+       bare word to two doors (`reader_down`, `roll.reader_down`), which is the
+       very condition this reader exists for — so the new pair is a second live
+       subject rather than a weakening. */
+    expect([...shared.keys()].sort()).toEqual(["reader_down", "reader_outage", "unreadable"]);
+    expect(shared.get("reader_down")!.map((d) => d.id).sort())
+      .toEqual(["reader_down", "roll.reader_down"]);
     expect(shared.get("unreadable")!.map((d) => d.id).sort())
       .toEqual(["concept.unreadable", "unreadable", "upload.unreadable"]);
   });
@@ -868,9 +874,13 @@ describe("the roll entrance's walls are on the map", () => {
   it("POSITIVE CONTROL — every member of the roll copy table is a declared door", () => {
     const declared = declaredRollRefusals();
     /* ⚠ FIVE UNTIL #1495: `roll.unsupported_cohort` is retired with the
-       two-valued cohort question that was its only source. */
+       two-valued cohort question that was its only source. FOUR until #2688,
+       which split the reader outage in two — `roll.reader_outage` keeps the
+       transient failures a retry can fix, `roll.reader_down` answers our own
+       account being refused or no reader configured at all. */
     expect(declared).toEqual([
-      "roll.likeness", "roll.not_a_being", "roll.reader_outage", "roll.uninterpretable",
+      "roll.likeness", "roll.not_a_being", "roll.reader_down", "roll.reader_outage",
+      "roll.uninterpretable",
     ]);
     expect(declared.length).toEqual(Object.keys(ROLL_REFUSAL_COPY).length);
     const atlas = sharedAtlas();
@@ -947,7 +957,14 @@ describe("the roll entrance's walls are on the map", () => {
        real throw in the entrance's own file. */
     const atlas = sharedAtlas();
     const source = readFileSync(join(__dirname, "castingV2", "briefCompiler.ts"), "utf8").split("\n");
-    for (const [id, member] of [["roll.likeness", "likeness"], ["roll.not_a_being", "not_a_being"], ["roll.reader_outage", "reader_outage"]] as const) {
+    for (const [id, member] of [
+      ["roll.likeness", "likeness"],
+      ["roll.not_a_being", "not_a_being"],
+      ["roll.reader_outage", "reader_outage"],
+      /* #2688's raise sits on the far side of a ternary, which is a shape this
+         reader had no live specimen of until now. */
+      ["roll.reader_down", "reader_down"],
+    ] as const) {
       const entry = atlas.declared.find((d) => d.id === id)!;
       const at = entry.sites.find((s) => s.includes("briefCompiler.ts:"))!;
       expect(source[Number(at.split(":").pop()) - 1], id).toContain(`new BriefRefusal("${member}"`);

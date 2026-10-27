@@ -37,7 +37,13 @@
  */
 import { createModuleLogger } from "../logging/logger";
 import { BRIEF_TEXT_MIN, BRIEF_TOO_SHORT_MESSAGE } from "@shared/briefLength";
-import { LIKENESS_MESSAGE, NOT_A_BEING_MESSAGE, READER_OUTAGE_MESSAGE, type BriefRefusalCode } from "./briefRefusalCopy";
+import {
+  LIKENESS_MESSAGE,
+  NOT_A_BEING_MESSAGE,
+  READER_DOWN_MESSAGE,
+  READER_OUTAGE_MESSAGE,
+  type BriefRefusalCode,
+} from "./briefRefusalCopy";
 import type { TextEngine } from "../providers/types";
 import {
   EMPTY_STATED_HAIR,
@@ -306,6 +312,7 @@ export type CompiledRollBrief = {
 export {
   LIKENESS_MESSAGE,
   NOT_A_BEING_MESSAGE,
+  READER_DOWN_MESSAGE,
   READER_OUTAGE_MESSAGE,
   ROLL_REFUSAL_COPY,
   type BriefRefusalCode,
@@ -435,8 +442,13 @@ export type BriefCompilerInput = {
    * this, and unit tests must always set it: without one the compiler reaches
    * for a real transport, and a suite that quietly calls a paid API is a suite
    * nobody can trust to run offline.
+   *
+   * ⚠ `null` IS ACCEPTED AND MEANS "this deployment has no reader" (#2688) —
+   * it is passed straight to `interpretBrief`, whose own seam explains why
+   * `undefined` could not say that. It is the only way to drive the
+   * `reader_down` refusal's deployment half without a real call.
    */
-  engine?: TextEngine;
+  engine?: TextEngine | null;
 };
 
 export type BriefCompiler = (input: BriefCompilerInput) => Promise<CompiledRollBrief>;
@@ -1172,16 +1184,45 @@ export const castingBriefCompiler: BriefCompiler = async (input) => {
     Law 3: this branch is driven directly by a THROWING engine double in
     `briefCompiler.test.ts` — never through a reader that usually behaves.
   */
+  /*
+    ⚠ AND WHICH OF THE TWO SENTENCES IT REFUSES WITH DEPENDS ON WHETHER A RETRY
+    COULD WORK (#2688, the sweep of #2686).
+
+    The money is identical on every branch below and always was — the compile
+    runs before the claim — so nothing here is a money change. What was wrong
+    is the ADVICE. `thrown` is weather: a deadline, a dead transport, a
+    provider that was down, and the same brief a minute later is a different
+    reading, so *"try again in a moment"* is TRUE of it and stays. `account`
+    (the provider refused our key) and `unconfigured` (there is no reader in
+    this deployment) are not weather at all: every retry fails identically.
+
+    Measured on production, 2026-10-27 from 03:09Z — the key was disabled,
+    every call answered 401, and this raise told the founder's own rolls to
+    keep trying. `unconfigured` rides with `account` rather than with `thrown`
+    because it is the same fact to the customer, which is the line
+    `conceptDescribeCopy.ts` already draws between `no_transport` and
+    `unreadable`.
+
+    Law 3: both branches are driven directly by engine doubles in
+    `briefCompiler.test.ts` — a throwing one for `thrown`, one throwing a real
+    `ProviderError("provider_account")` for `account`, and `engine: null` for
+    `unconfigured` — never through a reader that usually behaves.
+  */
   if (
     !outcome.ok
     && outcome.reason === "unavailable"
     && outcome.cause !== "unparsed"
   ) {
+    const noRetryReachesIt = outcome.cause === "account" || outcome.cause === "unconfigured";
     log.warn(
       { briefText: briefText.slice(0, 80), cause: outcome.cause, latencyMs: outcome.latencyMs },
-      "[briefCompiler] reader outage — refusing free rather than casting from the brief alone (reply #9: always)",
+      noRetryReachesIt
+        ? "[briefCompiler] the reader is down at OUR end — refusing free, and not asking for a retry that cannot work"
+        : "[briefCompiler] reader outage — refusing free rather than casting from the brief alone (reply #9: always)",
     );
-    throw new BriefRefusal("reader_outage", READER_OUTAGE_MESSAGE);
+    throw noRetryReachesIt
+      ? new BriefRefusal("reader_down", READER_DOWN_MESSAGE)
+      : new BriefRefusal("reader_outage", READER_OUTAGE_MESSAGE);
   }
 
   /*

@@ -1,7 +1,7 @@
 {
-  "edition": 749,
-  "updatedAt": "2026-10-27T14:50:00Z",
-  "shift": "THE TEAM WAS STOPPED FOR SIX DAYS AND NOTHING TOLD YOU. That is tonight's finding and it is the\nbiggest one. No shift ran between Tuesday evening the 21st and Monday afternoon the 27th. Your machine\nwas on the whole time. Nothing was broken, nothing crashed, and nobody paused anything — the team just\nstopped, and not one of the alarms it has was able to notice.\n\nWHAT YOU WOULD HAVE SEEN. Almost nothing. Your page kept drawing the live lists correctly, because those\nread from GitHub every thirty seconds. What stood still was everything the shifts write: no new note from\nthe crew between the 17th and the 27th — ten days. The only hint anywhere was a small grey age on the\nnewest finished shift, and \"6d ago\" looks exactly like a quiet weekend.\n\nWHY NOTHING FIRED. Every alarm the team owns watches work that is in progress — a shift that went quiet\nmid-job, a report that never got written, a pause that got recorded. The 21st's shift finished properly\nand tidied up after itself. So there was no half-finished thing for anything to complain about, and six\ndays of silence went by with every check still reading green.\n\nWHAT I FOUND, AND WHAT I COULD NOT. I tested six explanations and ruled all six out at the evidence —\nmachine off, asleep, crashed, idle, and two others. One survived, and I proved it by driving it rather\nthan reading it: the thing that stops two copies of the team running at once checks only a bare process\nnumber, nothing else. I pointed it at Windows Explorer and it announced that another crew was already\nrunning and stood down. If that ever happens for real, the team parks itself indefinitely and writes\nnothing anywhere. I cannot prove that is what happened last week, and I have not claimed it — the record\nthat would say was overwritten when the team came back. It is filed with the repair.\n\nTWO THINGS YOU ASKED FOR ARE WORKABLE AGAIN. One of them was being held back by nothing at all: the\nclean-out of the old paid-edit road, which is the first job of the rung you are on. It was waiting on two\nthings, and both of them finished — one of them finished tonight, and the card was never updated. Earlier\nthis evening none of the fourteen jobs you have ordered could be started by anybody. Two can now.\n\nAND SIX FINISHED JOBS STOPPED READING AS UNFINISHED. Each one was built, merged and live, and still sat\non the board as open work. I read every one against the real code and against the version actually\nrunning, rather than taking the word of the card — and one of the six turned out NOT to be finished, so I\nleft it open and wrote down exactly what is missing. Two more that could not be merged at all can be\nmerged again.",
+  "edition": 754,
+  "updatedAt": "2026-10-27T23:25:00.000Z",
+  "shift": "NOTHING COST ANYTHING TONIGHT AND NOTHING NEEDS YOU. One sentence we fixed yesterday turned out to stop working after about five tries, three jobs that looked like they were moving were actually stuck, and three more were already finished and nobody had said so.\n\nTHE MAIN ONE. Yesterday morning our own account with the company that reads pictures and words for us was switched off, and for hours everything we asked it was refused. Last night's work gave that case an honest sentence: \"The studio can't read pictures just now — that's something at our end, not your picture. Nothing was charged. Try again later.\" It was right, and a customer would have read it for about the first five tries of the outage and then stopped.\n\nWHY IT STOPPED. After five refusals in a row the product steps back from the reader for half a minute, to avoid hammering something that is clearly unwell. That is sensible. What it also did was forget WHY it had stepped back — so from the sixth try onward a customer was told the old thing again: \"I couldn't read that picture just now — try again in a moment.\" Which blames the photograph they chose, when their photograph was never even looked at, and asks them to retry something that cannot work. They swap the picture, it fails again, and we have blamed them twice.\n\nAND IT WAS NOT A BRIEF WOBBLE. The product lets one attempt through every half minute to see if the reader has recovered; during a real outage that attempt fails too and the half minute starts again. So after the first five tries, the wrong sentence is simply what you get for the rest of the outage. Yesterday's outage ran for hours.\n\nWHAT IT DOES NOW. It remembers that the reason was our own account, and keeps saying so for as long as that is true. Every other reason — a slow moment, a dropped connection — still gets the old \"try again in a moment\", because for those it is true. The fix also brings back something that had quietly stopped working: when our account is the problem, a sheet of eight characters stops trying the remaining ones instead of spending on faces that cannot arrive.\n\nI tested it the only way that proves anything: I broke it on purpose, twice, in both directions, and checked the tests went red each time and red in different places. One of those tests disproved a note I had written about my own work, so I corrected the note rather than the test. It is written and waiting on our own review before it goes live.\n\nTHREE JOBS WERE STUCK AND THIS PAGE SAID THEY WERE MOVING. Three finished pieces of work were sitting in a state where they could not go anywhere at all, and — this is the awkward part — they could not even be checked or reviewed while stuck, though their status looked green. Nothing was wrong with any of the work. It is a bookkeeping clash about an automatically generated map of the product that every job updates. I brought each one up to date; nothing inside them changed by a single word, and all three can now be reviewed and go live. That also freed two smaller repairs that were waiting behind one of them.\n\nAND THREE JOBS WERE ALREADY DONE. Rather than take something new, I read three open jobs against the actual code and found all three finished and shipped: the picture-reader wording from yesterday, the eleven known security holes in our own build tools (there are now none — I checked the count myself rather than trusting the note), and a change to the crew's own instructions that I could confirm because the tool printed the new wording at me when I started tonight. All three closed with their evidence.\n\nONE THING I DID NOT DO. The remaining jobs on the board tonight are a design question, a measurement that asks for nothing, and a note for the weekly process review that is not due yet. I did not invent work to fill the night.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -14,7 +14,7 @@
       "title": "The refine era completes — the feature panel and the studio surfaces. What a character has is read from the character, never looked up in a fixed list, and every box on the panel is a promise that pressing there edits that thing.",
       "steps": [
         {
-          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire) and NOTHING IS WAITING ANY MORE: every one of the eight pieces of work it had in review has merged and is live, including the old dressing answer and the whole old picture-making road with its switch. The job was then left sitting on a hold that had stopped being true, which is fixed tonight — the last two slices can be built now, and this is the first thing a shift should pick up (#1577)",
+          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire) and EVERY SWITCH IN IT IS NOW RETIRED OR BUILT AND WAITING FOR A READ. Tonight took out the last one — the sixth and last of the six settings you approved retiring on 15 October. It decided whether a character's face builds a library of small pictures cut from each edit, so the next edit can see what the character already looks like; it has been on for every account since 24 August, so you will see no difference, and what changes is that it can no longer be switched off. ⚠ LAST NIGHT'S NOTE SAID THIS PIECE WAS A QUESTION FOR YOU AND IT WAS NOT — reading the code showed the answer was already written there two weeks ago, so it was ours, and nothing about it is waiting on you. What IS left is writing the record of the whole clean-out, which is a small job for us (#1577)",
           "state": "waiting"
         },
         {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-27T14:38:58.124Z",
+      "readAt": "2026-10-27T23:21:40.424Z",
       "items": [
         {
           "issueNumber": 14,
@@ -4161,7 +4161,7 @@
         }
       ],
       "recommendation": "WARN. It would have caught these on the 24th instead of the 27th, it costs nothing, and it cannot ever stand\nbetween you and a merge. REFUSE is the one I would not take: a hole with no published fix would stop the crew\ndead over something a customer cannot reach, and we have been bitten by exactly that on the production side\nalready.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-27T09:10:09.227Z",
       "issueNumber": 2703
     }
@@ -7549,6 +7549,27 @@
   ],
   "pipeline": [
     {
+      "id": "overlong-value-refusal-2714",
+      "title": "An over-long ask says so, instead of telling a customer their clear sentence was unclear (#2714)",
+      "status": "in-review",
+      "prNumber": 2732,
+      "note": "Held for the relay by hand: it changes a sentence a customer reads, but on a server file, which the automatic check cannot see (it only watches screen files). Gate run on the head."
+    },
+    {
+      "id": "refine-dispatch-flag-1577-d4",
+      "title": "Every edit answers straight away, and the switch that could turn that off is gone (#1577 slice D4)",
+      "status": "in-review",
+      "prNumber": 2728,
+      "note": "Gate green (5.2m), CLEAN. Held for the relay: it touches a money/auth file, and triage agreed on its own and said so on the pull request."
+    },
+    {
+      "id": "qs-advisory-pin-2726",
+      "title": "A security warning that blocked every piece of work in the building is cleared (#2726)",
+      "status": "merged",
+      "prNumber": 2727,
+      "note": "Gate green; ordinary change by both triage halves, merged on the gate. Live on production."
+    },
+    {
       "id": "wardrobe-cap-2552",
       "title": "A whole outfit fits in the box that holds a whole outfit (#2552)",
       "status": "merged",
@@ -10816,6 +10837,13 @@
       "status": "merged",
       "prNumber": 2709,
       "note": "Held for review on purpose — the refine charge and its refund sit inside the function it changes. No customer-visible change by construction. Gate green in 4 minutes; the sabotage check proves the new behaviour is what the tests are actually reading."
+    },
+    {
+      "id": "reference-library-flag-1577-d5",
+      "title": "The library that remembers what a character already looks like can no longer be switched off (#1577 slice D5)",
+      "status": "in-review",
+      "prNumber": 2729,
+      "note": "The sixth and last of the six settings he approved retiring. Gate green (4.2m, all eleven checks), CLEAN, held for the relay: it touches a money/auth file and a customer-visible one, and triage agreed on its own reading. The full suite ran because this is a deletion — 1,202 files, 21,118 tests, 0 failures. The one thing lost is declared: the boot refusal over the storage cleaner, which every surviving child still asks for itself."
     }
   ],
   "problems": [
@@ -11322,16 +11350,12 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-27T14:38:58.124Z",
+    "readAt": "2026-10-27T23:21:40.423Z",
     "items": [
       {
         "issueNumber": 1577,
         "title": "N3 opening act: the REFINE-ROAD half of the ghost audit — enumerate every piece of old-lane machinery still running on the refine road (his timing, 2026-08-28)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "#2560 (the seam D4 needs) and PR #2569 in review. The five PRs this line used to name have all merged."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 1598,

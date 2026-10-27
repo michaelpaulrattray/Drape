@@ -32,6 +32,7 @@ The instruments and their own record pages:
 | actionlint + zizmor | `scripts/workflow-lint.sh` | `gate.yml`, second step | `scripts/workflow-lint.sh` header |
 | semgrep (OSS rulesets) | `pnpm warden:semgrep` | `gate.yml`, before install (run 1) | `docs/WARDEN_SEMGREP.md` |
 | **known vulnerabilities in what ships** | `npx tsx scripts/check-dependency-advisories.mts` | **`gate.yml`, inside `gate-checks`, before the typecheck — W6-B, his *"add the gate step"* 2026-10-03 (#1805)** | `scripts/lib/dependencyAdvisories.mts` header |
+| **known vulnerabilities in the BUILD AND TEST tools** | the same command — a second `--dev` reading inside it | **the same step, and it WARNS rather than refusing**: his word 2026-10-27, Crew reply #302, verbatim and entire — *"WARN — tell us, never block us"* (#2703 part 2) | `DEV_AUDIT_ARGUMENTS` / `advisoryDevNotice` in the same module |
 | access-control suites | `npx vitest run server/approvalGate.test.ts server/staffImageBoundary.test.ts server/publicInputStrictness.test.ts server/sessionIssuanceSites.test.ts` | inside `pnpm test` | CLAUDE.md, "Access control" |
 | override resolution (does each override still govern anything?) | `pnpm warden:overrides` | **no, and deliberately not** — see below | `scripts/lib/overrideResolution.mts` header |
 
