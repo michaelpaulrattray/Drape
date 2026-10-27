@@ -557,6 +557,7 @@ export const ROADS: readonly Road[] = [
     doors: [
       "concept.no_being", "concept.not_about_the_person", "concept.not_a_casting_note",
       "concept.ran_long", "concept.unreadable", "concept.no_transport",
+      "concept.reader_outage",
     ],
     doorsNote:
       "⚠ THIS ROAD'S DOORS REACHED THE MAP BEFORE THE ROAD DID — the six were declared with #192 and every one of them "
@@ -565,7 +566,11 @@ export const ROADS: readonly Road[] = [
       + "named was real and could not notice it had never named the road. The FLAG and the two byte doors above the "
       + "six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared "
       + "`referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences "
-      + "reused rather than restated.",
+      + "reused rather than restated. ⚠ A SEVENTH ARRIVED WITH #2686 AND THE SIX ABOVE ARE WHY IT COULD: "
+      + "`concept.reader_outage` splits the case where the text provider refuses OUR account (401/402/403) out of "
+      + "`concept.unreadable`, which had been telling a customer to try again in a moment while our key was disabled. "
+      + "The arm that holds this list equal to the copy table is what caught the omission the same minute the door "
+      + "was declared.",
     /* The register sat between these two until #1442 re-parented the child and #1443 retired the flag. */
     flags: ["CASTING_V2_SCOPE", "CASTING_CONCEPT_UPLOAD_SCOPE"],
     notes: [
@@ -573,6 +578,7 @@ export const ROADS: readonly Road[] = [
       "THE FORMAT IS WHAT THE BYTES ARE, never what the payload claimed — the ink door's rule reused. It matters twice here: the picture rides to the describer as a `data:<mime>;base64,` URI, so a JPEG announced as a PNG is a malformed request to the vendor rather than a bad row in our database.",
       "EVERY REFUSAL IS A DIFFERENT SENTENCE ON PURPOSE: 'there is nobody in this picture' and 'the reader did not answer' ask her to do different things, and telling her the wrong one sends her looking for a better photograph of a problem that was ours. They live in `CONCEPT_DESCRIBE_COPY` — exhaustive over the union by type — because composed inline they were invisible to the census: three of this entrance's five refusals could not be seen at all (#192).",
       "`concept.no_being` is the twin of the roll road's `not_a_being`, and it reached the map FIRST while its sibling stayed invisible — the pair is the reason both entrances' copy tables are now the declared source rather than a grep.",
+      "A READER OUTAGE IS NOT A BAD PICTURE (#2686). Measured on production 2026-10-27: from 03:09Z the text account key was disabled, the provider answered 401 to every call, and every upload met `concept.unreadable` — 'I couldn't read that picture just now. Try again in a moment.' The sentence blamed the picture and asked for a retry no retry could satisfy. `concept.reader_outage` now answers it, sharing `concept.no_transport`'s words because the two are one fact to the customer: the studio cannot read pictures right now, and it is not theirs. Its stated limit is the breaker: after five consecutive failures the queue refuses as `capability` for 30 s, which is also a malformed request and a cancel, so those attempts still get the transient sentence.",
     ],
   },
 ];
