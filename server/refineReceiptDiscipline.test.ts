@@ -8,15 +8,28 @@ import { readListedSource } from "./testing/listedSource";
 import { repoPath, sourcePathsUnder } from "./testing/sourceTree";
 import { allowTreeSweeps } from "./testing/suiteClocks";
 
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 import { CONTENDED_TEST_TIMEOUT_MS } from "./testing/contendedTestTimeout";
 
-/* A tree sweep plus a `git ls-files` child, which under the parallel run costs
-   far more than vitest's 5,000 ms default. File level, never per arm: a number
-   typed onto one `it(…)` is not inherited by its neighbour (#741). */
-vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
+/*
+  THIS SUITE IS IN BOTH FAMILIES, SO IT DECLARES BOTH — and that is not belt
+  and braces, it is the honest reading of what its arms do.
 
-/* Family 2 of `suiteClocks.ts` — this sweeps the same `scripts/` directory as
-   `scriptExitDiscipline.test.ts` and `scriptConnectionDiscipline.test.ts`. */
+  It walks the `scripts/` tree and parses every caller (the contended family,
+  #741), and it spawns a real `git ls-files` through `runHook` to decide scope
+  (the child-process family, #548). Each guard derives its own population from
+  the thing the file actually does, so a file doing both is asked by both, and
+  a declaration missing here is a red on somebody's loaded machine rather than
+  in CI. ⚠ `atlasCommitHook.test.ts` carries the opposite correction — #964
+  called it a tree sweeper and at the bytes it only spawns — so the family is
+  read off the arms, never off the resemblance to a neighbour.
+
+  `allowTreeSweeps()` is LAST on purpose: it sets 60,000 where both constants
+  are 30,000, and the final `setConfig` wins. The longer number is the right
+  one here because the sweep and the child are paid in the same arm.
+*/
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 allowTreeSweeps();
 
 /**
