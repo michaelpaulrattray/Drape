@@ -376,6 +376,10 @@ const BRIEF_REFUSAL_FAULT: Readonly<Record<BriefRefusalCode, "brief" | "studio">
   likeness: "brief",
   not_a_being: "brief",
   reader_outage: "studio",
+  /* The same studio fault with no retry behind it (#2688) — our account
+     refused, or no reader configured. Whose it is does not change, so the
+     code and the status do not either; only the sentence does. */
+  reader_down: "studio",
 };
 
 export async function createRoll(

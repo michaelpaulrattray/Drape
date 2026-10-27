@@ -218,7 +218,7 @@ for (const arm of ARMS) {
     let kind = "";
     let imageKey: string | null = null;
     try {
-      const result = await refineCandidate({}, {
+      const result = await refineCandidate({ cannotTakeAReceipt: true }, {
         userId: outsider.id,
         clientRequestId: randomUUID(),
         candidatePublicId: cast.publicId,

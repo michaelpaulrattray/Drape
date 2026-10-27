@@ -94,7 +94,7 @@ async function ask(candidatePublicId: string, instruction: string): Promise<void
   const { refineCandidate } = await import("../server/castingV2/refineService.js");
   const before = await balance();
   const started = Date.now();
-  const result = await refineCandidate({}, {
+  const result = await refineCandidate({ cannotTakeAReceipt: true }, {
     userId: outsider.id, clientRequestId: randomUUID(), candidatePublicId, instruction,
   });
   const after = await balance();

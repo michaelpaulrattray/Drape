@@ -9,6 +9,8 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { PICTURE_READER_DOWN_MESSAGE } from "./readerDown";
+
 import { pictureSideAskLines, pictureSideClause } from "./sidePhrasing";
 import {
   HAIR_COLOUR_READ_REFUSAL_CODES,
@@ -401,6 +403,18 @@ describe("the read, end to end on a fake transport", () => {
     expect(outcome.ok).toBe(false);
     if (outcome.ok) throw new Error("unreachable");
     expect(outcome.refusal.code).toBe("noTransport");
+    /*
+      AND THE SENTENCE DOES NOT ASK FOR A RETRY (#2688's law-7 sweep).
+
+      `noTransport` is a DEPLOYMENT state — there is no reader at all — so the
+      *"try again in a moment"* this said until #2688 was advice no retry could
+      satisfy, on a road the customer has paid for. The code is unchanged and
+      still carries the words lane's decision; only the sentence moved, onto
+      the one #2700 already wrote for the account refusal one branch down.
+    */
+    expect(outcome.refusal.message).toBe(PICTURE_READER_DOWN_MESSAGE);
+    expect(outcome.refusal.message).not.toMatch(/in a moment/);
+    expect(outcome.refusal.message).not.toMatch(/try another/i);
   });
 
   it("reads a reply that is not JSON as unreadable", async () => {

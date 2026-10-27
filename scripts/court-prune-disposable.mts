@@ -138,7 +138,7 @@ for (const [at, candidate] of candidates.entries()) {
   say("-".repeat(78));
   const step = async (instruction: string, label: string): Promise<Buffer> => {
     const started = Date.now();
-    const result = await refineCandidate({}, {
+    const result = await refineCandidate({ cannotTakeAReceipt: true }, {
       userId: USER,
       clientRequestId: randomUUID(),
       candidatePublicId: candidate,

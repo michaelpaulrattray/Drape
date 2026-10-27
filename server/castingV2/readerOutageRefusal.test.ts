@@ -6,6 +6,8 @@ import { interpretRefinement, refusalMessage } from "./refineInterpreter";
 import { REFINE_REFUSALS, REFUSAL_REASONS } from "./refineRefusals";
 import { refusalIsAnswerableByAReader } from "./referenceWordsLane";
 import { castingBriefCompiler } from "./briefCompiler";
+import { READER_DOWN_MESSAGE } from "./briefRefusalCopy";
+import { PICTURE_READER_DOWN_MESSAGE } from "./readerDown";
 import { readHairColourFromReference } from "./hairColourFromReference";
 import { readMakeupFromReference } from "./makeupFromReference";
 
@@ -67,6 +69,23 @@ const dryAccount: TextEngine = {
   },
 };
 
+/**
+ * NOTHING COMES BACK, AND THE NEXT TRY MIGHT — the other half of the split
+ * (#2688).
+ *
+ * `dryAccount` above throws a `provider_account`, which is OUR key and which no
+ * retry reaches. This throws a `timeout`, which is weather: the same ask a
+ * minute later is a different reading, so *"try again in a moment"* is true of
+ * it and must stay. Without this double the new sentence would be
+ * indistinguishable from a blanket reword of every reader failure.
+ */
+const weather: TextEngine = {
+  id: "test:weather",
+  complete: async (): Promise<TextResult> => {
+    throw new ProviderError("timeout", "the deadline fired", { status: 504 });
+  },
+};
+
 /** A reply DOES come back — the other side of the line. */
 function replying(text: string): TextEngine {
   return {
@@ -102,22 +121,57 @@ describe("refine — the reader did not answer, and the refusal says so", () => 
     expect(parse.ok).toBe(true);
   });
 
-  it("refuses reader_outage when nothing came back", async () => {
+  /*
+    ⚠ THESE ARMS ASSERTED `reader_outage` AND ITS *"try again in a moment"*
+    UNTIL #2688, AND THE DOUBLE IS WHY THEY WERE WRONG.
+
+    `dryAccount` throws a `provider_account` — an overdrawn or disabled key —
+    which is the one reader failure no retry reaches. So this file was driving
+    the ACCOUNT case and pinning the WEATHER sentence onto it: the arm below
+    read `expect(said).toContain("Try again in a moment")` about a key that was
+    off. The money was right the whole time, which is why nobody looked.
+
+    What replaces them is a SPLIT and not a reword: the account arms take the
+    new door, and the `weather` arm beneath keeps every byte of the old
+    sentence. Delete either side and the change stops being readable.
+  */
+  it("refuses reader_down when the provider refused OUR account", async () => {
     const parse = await interpretRefinement({ instruction: SENTENCE, engine: dryAccount, ...FACE });
     expect(parse.ok).toBe(false);
-    expect(!parse.ok && parse.refusal.reason).toBe("reader_outage");
+    expect(!parse.ok && parse.refusal.reason).toBe("reader_down");
   });
 
-  it("and the sentence blames US, not her — no instruction to rephrase", async () => {
+  it("and the sentence blames US and does not promise a retry that cannot work", async () => {
     const parse = await interpretRefinement({ instruction: SENTENCE, engine: dryAccount, ...FACE });
     expect(parse.ok).toBe(false);
     if (parse.ok) return;
     const said = refusalMessage(parse);
+    /* Whose it is — the studio, said the way every other entrance says it. */
+    expect(said).toContain("The studio");
+    expect(said).toContain("not your words");
+    expect(said).toContain("Nothing was charged");
+    /* THE WHOLE CARD, AS THREE ASSERTIONS: it must not send them back to their
+       own sentence, it must not ask for a retry a disabled key cannot honour,
+       and it must say what they CAN do instead. */
+    expect(said).not.toContain("Try naming");
+    expect(said).not.toContain("in a moment");
+    expect(said).toContain("Try again later");
+  });
+
+  it("WEATHER CONTROL: a deadline keeps reader_outage and keeps 'in a moment'", async () => {
+    /*
+      The arm that makes the two above a split rather than a blanket reword. A
+      `timeout` reads differently on the next try, so its advice is true and
+      not one byte of it moves.
+    */
+    const parse = await interpretRefinement({ instruction: SENTENCE, engine: weather, ...FACE });
+    expect(parse.ok).toBe(false);
+    if (parse.ok) return;
+    expect(parse.refusal.reason).toBe("reader_outage");
+    const said = refusalMessage(parse);
     expect(said).toContain("didn't answer");
     expect(said).toContain("Try again in a moment");
     expect(said).toContain("Nothing was charged");
-    /* The whole defect, as one assertion: the outage must never wear the
-       unreadable sentence's advice. */
     expect(said).not.toContain("Try naming");
   });
 
@@ -130,17 +184,27 @@ describe("refine — the reader did not answer, and the refusal says so", () => 
     expect(refusalMessage(parse)).toContain("Try naming");
   });
 
-  it("no engine configured is an outage too — a deployment state, not her sentence", async () => {
+  it("no engine configured takes the same door — a deployment state, and no retry reaches it either", async () => {
+    /* ⚠ `reader_outage` UNTIL #2688. A deployment with no reader at all is the
+       same fact to the customer as a refused key, and it sat in the very same
+       condition on the roll road — so it moved with it rather than being left
+       for a later card to find (working law 7: the sweep is part of the fix). */
     const parse = await interpretRefinement({ instruction: SENTENCE, engine: null, ...FACE });
     expect(parse.ok).toBe(false);
-    expect(!parse.ok && parse.refusal.reason).toBe("reader_outage");
+    if (parse.ok) return;
+    expect(parse.refusal.reason).toBe("reader_down");
+    expect(refusalMessage(parse)).not.toContain("in a moment");
   });
 
   it("costs nothing, exactly as unreadable did — the money does not move", () => {
-    expect(REFINE_REFUSALS.reader_outage.charge).toBe("free");
-    expect(REFINE_REFUSALS.reader_outage.charge).toBe(REFINE_REFUSALS.unreadable.charge);
-    expect(REFINE_REFUSALS.reader_outage.report).toBe(REFINE_REFUSALS.unreadable.report);
-    expect(REFUSAL_REASONS).toContain("reader_outage");
+    /* BOTH doors, because #2688 split one into two and that card's whole claim
+       is that nothing but the sentence moved. */
+    for (const reason of ["reader_outage", "reader_down"] as const) {
+      expect(REFINE_REFUSALS[reason].charge, reason).toBe("free");
+      expect(REFINE_REFUSALS[reason].charge, reason).toBe(REFINE_REFUSALS.unreadable.charge);
+      expect(REFINE_REFUSALS[reason].report, reason).toBe(REFINE_REFUSALS.unreadable.report);
+      expect(REFUSAL_REASONS).toContain(reason);
+    }
   });
 
   /*
@@ -243,6 +307,11 @@ describe("refine — the reader did not answer, and the refusal says so", () => 
        doomed call on a road that has already failed three times. */
     expect(refusalIsAnswerableByAReader("unreadable")).toBe(true);
     expect(refusalIsAnswerableByAReader("reader_outage")).toBe(false);
+    /* And the new door even more so: re-asking a provider that refused our key
+       buys a second doomed call. It is false by ALLOWLIST rather than by a rule
+       about this reason (`ANSWERABLE_REFUSALS`), which is why it needed no edit
+       there and does need this assertion. */
+    expect(refusalIsAnswerableByAReader("reader_down")).toBe(false);
   });
 });
 
@@ -257,11 +326,44 @@ describe("the roll road is where this sentence comes from — the two agree", ()
     expect(compiled).toBeTruthy();
   });
 
-  it("refuses reader_outage on the same double, free, before the claim", async () => {
+  it("refuses reader_down on the same double, free, before the claim", async () => {
+    /* ⚠ `reader_outage` UNTIL #2688 — the same mis-pin as the refine arms
+       above, from the same double, and it is the roll half of that card. */
     await expect(castingBriefCompiler({
       briefText: BRIEF,
       engine: dryAccount,
+    } as Parameters<typeof castingBriefCompiler>[0])).rejects.toMatchObject({ code: "reader_down" });
+  });
+
+  it("WEATHER CONTROL: a deadline on the roll road still refuses reader_outage", async () => {
+    await expect(castingBriefCompiler({
+      briefText: BRIEF,
+      engine: weather,
     } as Parameters<typeof castingBriefCompiler>[0])).rejects.toMatchObject({ code: "reader_outage" });
+  });
+
+  it("THE THREE ENTRANCES AGREE ON WHOSE IT IS AND ON WHAT TO DO — the sameness that must not drift", () => {
+    /*
+      Three entrances now say this one fact — about a brief, an edit and a
+      picture — and a customer who meets two of them in one sitting is being
+      told about ONE outage. What is held is the ATTRIBUTION and the ADVICE,
+      never the whole sentence: each names its own noun, and the roll road adds
+      "nothing was cast" because it casts.
+    */
+    const refine = REFINE_REFUSALS.reader_down.say();
+    for (const said of [READER_DOWN_MESSAGE, refine, PICTURE_READER_DOWN_MESSAGE]) {
+      expect(said).toContain("The studio can't read");
+      expect(said).toContain("at our end");
+      expect(said).toContain("Try again later");
+      expect(said).not.toContain("in a moment");
+      /* The disappearing-technology law's one hard line — no vendor, no engine
+         and no status code on a path someone must walk to reach their picture. */
+      expect(said).not.toMatch(/openrouter|gemini|fal\b|nano banana|sunburst|gpt|40[123]/i);
+    }
+    /* And the two paid-road sentences keep their money clause, which the
+       concept door deliberately does not have (a concept read is house money). */
+    expect(READER_DOWN_MESSAGE).toMatch(/not been charged/);
+    expect(refine).toMatch(/[Nn]othing was charged/);
   });
 });
 

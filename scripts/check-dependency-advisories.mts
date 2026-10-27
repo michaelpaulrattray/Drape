@@ -22,10 +22,12 @@
 import { spawnSync } from "node:child_process";
 
 import {
+  advisoryDevNotice,
   advisoryPass,
   advisoryRefusal,
   advisoryTreeLine,
   AUDIT_ARGUMENTS,
+  DEV_AUDIT_ARGUMENTS,
   judgeAdvisories,
   readAuditReport,
   readTreeFromRevList,
@@ -78,17 +80,29 @@ function readTree(): TreeRead | null {
   comes back.
 */
 const COMMAND = ["pnpm", ...AUDIT_ARGUMENTS].join(" ");
+const DEV_COMMAND = ["pnpm", ...DEV_AUDIT_ARGUMENTS].join(" ");
 
-const run = spawnSync(COMMAND, {
-  encoding: "utf8",
-  shell: true,
-  /*
-    The report is ~29 KB on a tree with four advisories and grows with them, so
-    the default 1 MB buffer is ample — but a truncated read would silently drop
-    findings, so the cap is named rather than inherited.
-  */
-  maxBuffer: 32 * 1024 * 1024,
-});
+/*
+  ONE RUNNER FOR BOTH READINGS (#2703 part 2).
+
+  The dev-scope reading is the same command with a different scope flag, so it
+  shares this spawn rather than growing a second one — every quirk the comment
+  above records (the shell, the joined string, the named buffer) applies to it
+  identically, and two spawns is two places for one of them to be forgotten.
+*/
+const audit = (command: string) =>
+  spawnSync(command, {
+    encoding: "utf8",
+    shell: true,
+    /*
+      The report is ~29 KB on a tree with four advisories and grows with them, so
+      the default 1 MB buffer is ample — but a truncated read would silently drop
+      findings, so the cap is named rather than inherited.
+    */
+    maxBuffer: 32 * 1024 * 1024,
+  });
+
+const run = audit(COMMAND);
 
 if (run.error !== undefined) {
   console.log(`REFUSED: could not run \`${COMMAND}\` — ${run.error.message}`);
@@ -123,6 +137,40 @@ const verdict = judgeAdvisories(read.report);
 /* The tree is named beside BOTH verdicts, because a refusal is the reading
    somebody is most likely to carry to another machine and compare. */
 const tree = readTree();
+
+/*
+  THE DEV-SCOPE READING, AND EVERYTHING ABOUT ITS PLACEMENT IS DELIBERATE
+  (#2703 part 2 — his word, Crew reply #302: "WARN — tell us, never block us").
+
+  ⚠ **IT CANNOT CHANGE THE EXIT CODE, AND THAT IS STRUCTURAL RATHER THAN
+  PROMISED.** `advisoryDevNotice` returns a STRING. There is no verdict, no
+  boolean and no count for this file to branch on, so refusing on it later
+  would take a deliberate rewrite rather than a one-line slip — which is the
+  difference between a control and an intention.
+
+  ⚠ **IT RUNS BEFORE THE PRODUCTION VERDICT IS PRINTED, SO IT IS NEVER THE LAST
+  THING ON SCREEN.** A refusal is what a reader has to act on, and it belongs
+  at the bottom where the eye lands. It also means the notice appears even when
+  the production half is about to refuse, which is where a reader fixing one
+  hole would most like to know about the others.
+
+  ⚠ **ITS OWN FAILURE IS NOT THIS STEP'S FAILURE.** A spawn that could not
+  launch, a registry outage, an unparseable report — each is reported by the
+  notice in as many words and none of them exits non-zero. That is the opposite
+  of the production half's fail-closed direction, on purpose, and the reason is
+  argued on `DEV_AUDIT_ARGUMENTS`: a dev-scope advisory cannot reach a customer,
+  so an outage here must not cost the crew a merge over build tooling.
+*/
+const devRun = audit(DEV_COMMAND);
+console.log(
+  advisoryDevNotice(
+    devRun.error !== undefined
+      ? { ok: false, why: `could not run \`${DEV_COMMAND}\` — ${devRun.error.message}` }
+      : readAuditReport(devRun.stdout ?? ""),
+    read.report,
+  ),
+);
+console.log("");
 
 if (!verdict.ok) {
   console.log(advisoryRefusal(verdict));

@@ -3,7 +3,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import { catalogueSlots, isDerivedRegion } from "./referenceSlotCatalogue";
-import { askedAs, createFalRegionReader } from "./falRegionReader";
+import { withCallCensus } from "./callCensus";
+import {
+  askedAs,
+  createFalRegionReader,
+  POINTER_BOX_ABOUT,
+  POINTER_DETECT_ABOUT,
+} from "./falRegionReader";
 import { MaskError, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 
@@ -1078,5 +1084,155 @@ describe("falRegionReader points at a thing it has no word for", () => {
       box: { x: 0, y: 0, width: 10, height: 10 },
     })).rejects.toBeInstanceOf(MaskError);
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+/*
+  ─────────────────────────────────────────────────────────────────────────────
+  WHAT THE CALL CENSUS CAN SAY ABOUT THE POINTER ROAD — the relay's note on
+  PR #2692 (#2566).
+
+  The note's instruction is *"read the call census for pointer-road calls per
+  reading and the reading's wall time"*, and before this block the census could
+  not answer it:
+
+    · the DETECTOR's call was labelled with the discovery reading's OWN noun,
+      because `aboutOf` made the outgoing prompt the label — so the only road
+      in the product that sends an open-vocabulary prompt was also the only one
+      whose label was a customer's cast described in a model's words;
+
+    · the CUT inside the rectangle sends an EMPTY prompt, so it carried no
+      label at all and landed in the same `byModel` bucket as every catalogue
+      SAM 3 read — and that is the half that scales with `count`, which is the
+      exact multiplier the note was written about.
+
+  These arms assert the PROPERTY the note needs (the two roads are countable
+  apart, and no noun is in the census) rather than the implementation that
+  delivers it.
+*/
+describe("the pointer road's calls are countable, and carry no customer's noun", () => {
+  const WIDTH = 200;
+  const HEIGHT = 100;
+
+  /*
+    SHORT ENOUGH THAT THE OLD CODE WOULD HAVE RECORDED IT — the arms below are
+    proven able to fail only because of this. `aboutOf` caps a label at 60
+    characters, so a long noun was already dropped by accident; an arm written
+    against one of those would have passed against the defect.
+
+    It is one of the reading's real nouns from his own fixtures (#2532 arm 2,
+    checked at the frame rather than filed from the reader's word).
+  */
+  const NOUN = "small mole on left cheek near nose";
+
+  async function frame(): Promise<Buffer> {
+    return sharp({
+      create: { width: WIDTH, height: HEIGHT, channels: 3, background: { r: 40, g: 40, b: 40 } },
+    }).png().toBuffer();
+  }
+
+  async function maskUri(): Promise<string> {
+    const data = Buffer.alloc(WIDTH * HEIGHT, 0);
+    for (let y = 10; y < 30; y += 1) for (let x = 10; x < 30; x += 1) data[y * WIDTH + x] = 255;
+    const png = await sharp(data, { raw: { width: WIDTH, height: HEIGHT, channels: 1 } })
+      .png().toBuffer();
+    return `data:image/png;base64,${png.toString("base64")}`;
+  }
+
+  async function wire(): Promise<void> {
+    const mask = await maskUri();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      const endpoint = String(url).replace("https://fal.run/", "");
+      const answer = endpoint === "fal-ai/moondream3-preview/detect"
+        ? { objects: [{ x_min: 0.1, y_min: 0.1, x_max: 0.3, y_max: 0.3 }] }
+        : { masks: [{ url: mask }] };
+      return new Response(JSON.stringify(answer), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }));
+  }
+
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it("names the detector's call by its ROAD, and never by the noun it asked about", async () => {
+    await wire();
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const { census } = await withCallCensus(async () => {
+      await reader.pointer!({ image: await frame(), name: NOUN });
+    });
+
+    expect(census.byAbout[POINTER_DETECT_ABOUT]?.calls).toBe(1);
+    /* THE NEGATIVE CONTROL, and it is the whole point: the noun is nowhere in
+       the census — not as a label, not on the call. Against the code this
+       block replaced, `byAbout` held exactly this string. */
+    expect(Object.keys(census.byAbout)).not.toContain(NOUN);
+    expect(census.calls.map((call) => call.about)).not.toContain(NOUN);
+  });
+
+  it("names the cut inside the rectangle by its road, where it had no label at all", async () => {
+    await wire();
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const { census } = await withCallCensus(async () => {
+      await reader.regionInBox!({
+        image: await frame(),
+        name: NOUN,
+        box: { x: 10, y: 10, width: 40, height: 40 },
+      });
+    });
+
+    expect(census.byAbout[POINTER_BOX_ABOUT]?.calls).toBe(1);
+    expect(census.total.labelledCalls).toBe(1);
+    expect(census.calls.map((call) => call.about)).not.toContain(NOUN);
+  });
+
+  /*
+    THE ARM THE NOTE ACTUALLY NEEDS. One reading makes catalogue SAM 3 reads
+    and pointer-road SAM 3 reads, and `byModel` cannot tell them apart —
+    deliberately, because they really are the same endpoint and the same money.
+    `byAbout` is what separates them, and without it the pointer road's share
+    of a reading is not a hard number anybody can read.
+  */
+  it("separates the pointer road's SAM 3 cuts from the catalogue's, which byModel cannot", async () => {
+    await wire();
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+    const picture = await frame();
+
+    const { census } = await withCallCensus(async () => {
+      /* The catalogue's own road — a closed-vocabulary word. */
+      await reader.region({ image: picture, name: "face skin", absentIsAnswer: true });
+      /* The pointer road: one detector call, then two cuts. */
+      await reader.pointer!({ image: picture, name: NOUN });
+      await reader.regionInBox!({ image: picture, name: NOUN, box: { x: 10, y: 10, width: 40, height: 40 } });
+      await reader.regionInBox!({ image: picture, name: NOUN, box: { x: 50, y: 10, width: 40, height: 40 } });
+    });
+
+    /* THREE SAM 3 calls in one bucket — the merge that makes `byModel` unable
+       to answer the question. Asserted rather than described, so that if the
+       endpoints ever diverge this arm says so instead of quietly passing. */
+    expect(census.byModel["fal:fal-ai/sam-3/image"]?.calls).toBe(3);
+
+    /* And the split `byAbout` gives it. */
+    expect(census.byAbout[POINTER_BOX_ABOUT]?.calls).toBe(2);
+    expect(census.byAbout[POINTER_DETECT_ABOUT]?.calls).toBe(1);
+    expect(census.byAbout["face skin"]?.calls).toBe(1);
+  });
+
+  /*
+    AND THE CATALOGUE'S ROAD IS UNTOUCHED. Its label still comes from its own
+    prompt, so every figure already read off `byAbout` for a catalogue scan
+    means the same thing after this change as before it.
+  */
+  it("leaves the catalogue's own label exactly where it was", async () => {
+    await wire();
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const { census } = await withCallCensus(async () => {
+      await reader.region({ image: await frame(), name: "left eye", absentIsAnswer: true });
+    });
+
+    expect(census.byAbout[askedAs("left eye")]?.calls).toBe(1);
   });
 });

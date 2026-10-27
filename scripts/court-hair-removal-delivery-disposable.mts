@@ -38,7 +38,7 @@ const balance = async () => {
 
 const { refineCandidate } = await import("../server/castingV2/refineService.js");
 const before = await balance();
-const result = await refineCandidate({}, {
+const result = await refineCandidate({ cannotTakeAReceipt: true }, {
   userId: outsider.id,
   clientRequestId: randomUUID(),
   candidatePublicId: cast.publicId,

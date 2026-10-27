@@ -48,11 +48,21 @@
  *
  * # What a green run does NOT mean — the limit, stated rather than discovered
  *
- * ⚠ **`--prod` does not read devDependencies.** The card's instance was a
- * production dependency and `--prod` is what it proposed, so that is what runs;
- * build tooling, test tooling and this repository's own scripts are NOT judged
- * here. Dependabot still sees them, after the fact, which is the gap this module
- * only half closes. **A clean run is a floor, not coverage.**
+ * ⚠ **`--prod` does not read devDependencies, AND SINCE #2703 THAT IS NO LONGER
+ * THE WHOLE STORY — the clause below is kept because its reasoning is why the
+ * dev half WARNS instead of refusing.** The build and test tools are read now,
+ * by a second reading that can never change this step's verdict:
+ * {@link DEV_AUDIT_ARGUMENTS} and {@link advisoryDevNotice}. **His word,
+ * 2026-10-27, Crew reply #302, verbatim and entire: *"WARN — tell us, never
+ * block us"*.**
+ *
+ * The original clause, unaltered: *the card's instance was a production
+ * dependency and `--prod` is what it proposed, so that is what runs; build
+ * tooling, test tooling and this repository's own scripts are NOT judged here.
+ * Dependabot still sees them, after the fact, which is the gap this module only
+ * half closes.* **A clean PRODUCTION run is still a floor, not coverage** —
+ * what has changed is that the uncovered half is now reported rather than
+ * merely admitted.
  *
  * It also reads only what the registry's advisory database knows at the moment
  * it is asked. An advisory published an hour after a merge is invisible to it —
@@ -62,6 +72,45 @@
 
 /** Exactly what the gate runs. Read by the suite, so the step cannot drift from the measurement. */
 export const AUDIT_ARGUMENTS = ["audit", "--prod", "--json"] as const;
+
+/**
+ * THE SECOND READING — the build and test tools (#2703 part 2).
+ *
+ * **His word, 2026-10-27, Crew reply #302, verbatim and entire: *"WARN — tell
+ * us, never block us"*.** Asked whether the merge check should read the build
+ * tools at all, and if so whether it should WARN, REFUSE or be LEFT AS IT IS.
+ *
+ * # Why it was asked
+ *
+ * `--prod` had no dev-scope counterpart anywhere before a merge, and the only
+ * reader of the build tools was this seat's weekly clock. Warden run 9 measured
+ * what that costs: **eleven published advisories open, one of them HIGH**
+ * (`GHSA-587h-7wmj-h5pm`, a Windows-specific bypass in `launch-editor` under
+ * vite — and Windows is the machine the founder and every shift work on),
+ * **the oldest three days old and noticed by nobody.** It was the second
+ * measured instance of the same gap (#2169 was the first), which is what made
+ * it worth his eye rather than a shift's judgement.
+ *
+ * # Why WARN and not REFUSE, in his words and in the evidence
+ *
+ * A dev-scope advisory cannot reach a customer: it is a developer's machine and
+ * CI that are exposed. So refusing would stop the crew dead over something
+ * nobody can be hurt by, and the repository has already paid that bill twice on
+ * the production side (#1894, #1899). **The whole point is to be told on the
+ * 24th instead of the 27th**, and a warning does that without ever standing
+ * between anyone and a merge.
+ *
+ * ⚠ **SO THIS HALF IS FAIL-OPEN, WHICH IS THE EXACT OPPOSITE OF THE PRODUCTION
+ * HALF ABOVE, AND THE ASYMMETRY IS DELIBERATE RATHER THAN AN OVERSIGHT.** That
+ * half refuses when it cannot look, because a security check that passes
+ * because it could not see is invariant 7's defect. This half REPORTS that it
+ * could not look and lets the merge through, because its finding was never a
+ * blocking fact: an outage here must not cost the crew a merge over build
+ * tooling. **The one rule is that it says so out loud** — silence and "nothing
+ * found" are different answers and {@link advisoryDevNotice} never conflates
+ * them.
+ */
+export const DEV_AUDIT_ARGUMENTS = ["audit", "--dev", "--json"] as const;
 
 /** One advisory, reduced to the fields a verdict turns on. */
 export type Advisory = {
@@ -509,6 +558,116 @@ export const advisoryPass = (report: AdvisoryReport, verdict: Verdict): string =
     verdict.acknowledged.length === 0 ? "" : ` · ${verdict.acknowledged.length} acknowledged and standing`;
   return [
     `dependency advisories: none blocking — ${scope} read${signed}.`,
-    "  ⚠ devDependencies are NOT read here (--prod). A green line is a floor, not coverage.",
+    /*
+      ⚠ THIS LINE SAID *"devDependencies are NOT read here (--prod). A green
+      line is a floor, not coverage."* UNTIL #2703, AND IT WOULD HAVE BECOME
+      FALSE THE MOMENT THE DEV READING LANDED.
+
+      That is the shape law 7c exists for — a sentence in the product telling a
+      reader something the code had stopped doing. The half of it that is still
+      true is kept: this VERDICT is the production reading alone, and nothing
+      the dev notice finds can change it. What is gone is the claim that the
+      build tools go unread.
+    */
+    "  ⚠ this verdict is the PRODUCTION tree alone. The build and test tools are read",
+    "    separately and WARN ONLY — see the dev-scope line, which never blocks a merge.",
   ].join("\n");
+};
+
+/**
+ * THE DEV-SCOPE NOTICE — and it returns a STRING, which is the whole control.
+ *
+ * **His word: *"WARN — tell us, never block us"*** (Crew reply #302,
+ * 2026-10-27). This function has no verdict to give and no boolean to return,
+ * so there is nothing for a caller to branch an exit code on. That is why the
+ * shape is what it is: a `Verdict` here would be an invitation to refuse on it
+ * later, and the next person to touch this file would have to be TOLD not to.
+ *
+ * # It takes the production report too, and that is not for the verdict
+ *
+ * The two trees OVERLAP — measured on this repository: `--prod` reads 477
+ * packages, `--dev` reads 214, and the whole tree is 715, so roughly two dozen
+ * sit in both. A package in both would be reported by both readings, and a
+ * HIGH that is already refusing the merge above does not want to be restated
+ * down here as a warning. So anything the production reading already carries is
+ * counted and named as such rather than repeated — DERIVED from that report by
+ * GHSA id, never a second list of exclusions (working law 4).
+ *
+ * # It does not consult `ACKNOWLEDGED_ADVISORIES`, deliberately
+ *
+ * That list is signed permission to pass a REFUSAL. A warning needs no
+ * permission, so an exemption cannot silence one — and the consequence is
+ * intended: a dev-scope hole with no patch available warns on every merge until
+ * it has one, which is precisely *"tell us"*. Nothing about that costs anybody a
+ * merge.
+ */
+export const advisoryDevNotice = (
+  read: ReadResult,
+  productionReport: AdvisoryReport | null = null,
+): string => {
+  const NEVER_BLOCKS = "warn only — this never blocks a merge (his word, #2703: \"WARN — tell us, never block us\")";
+
+  if (!read.ok) {
+    /*
+      IT COULD NOT LOOK, AND IT SAYS SO RATHER THAN READING AS "nothing found".
+      The production half would exit 1 here; this one must not, and the reason
+      is on `DEV_AUDIT_ARGUMENTS`. Saying which of the two happened is the only
+      thing that keeps a fail-open reader honest.
+    */
+    return [
+      `dev-scope advisories: NOT READ — ${read.why}`,
+      `  the build and test tools went unjudged on this run (${NEVER_BLOCKS}).`,
+      "  it is NOT a clean reading, and the production verdict above is unaffected either way.",
+    ].join("\n");
+  }
+
+  const alreadyRefusing = new Set(
+    (productionReport?.advisories ?? [])
+      .map((advisory) => advisory.ghsa)
+      .filter((ghsa): ghsa is string => ghsa !== null),
+  );
+  const fresh = read.report.advisories.filter(
+    (advisory) => advisory.ghsa === null || !alreadyRefusing.has(advisory.ghsa),
+  );
+  const repeated = read.report.advisories.length - fresh.length;
+  const scope =
+    read.report.dependencies === null
+      ? "the build and test tree"
+      : `${read.report.dependencies} build and test dependencies`;
+
+  if (fresh.length === 0) {
+    const alsoAbove = repeated === 0 ? "" : ` · ${repeated} already named in the production reading`;
+    return `dev-scope advisories: none — ${scope} read${alsoAbove}.`;
+  }
+
+  const tally = Object.entries(read.report.counts)
+    .filter(([, count]) => count > 0)
+    .map(([severity, count]) => `${count} ${severity}`)
+    .join(", ");
+
+  const lines = [
+    `dev-scope advisories: ${fresh.length} known vulnerability(ies) in the BUILD AND TEST tools`
+    + ` — ${scope} read${tally === "" ? "" : ` (${tally})`}.`,
+    `  ${NEVER_BLOCKS}. Nothing a customer can reach is affected: what is exposed is a`,
+    "  developer's machine and CI. It is here so you learn it on the day it is published",
+    "  rather than on this seat's weekly clock (#2703 — eleven open, one HIGH, oldest three days).",
+  ];
+  for (const advisory of fresh) lines.push(describeAdvisory(advisory));
+  if (repeated > 0) {
+    lines.push(`  (${repeated} more sit in both trees and are in the production reading above, not repeated here.)`);
+  }
+  lines.push(
+    [
+      "  repair, in the order worth trying:",
+      "    1. read the `patched in:` line above against the range package.json already declares —",
+      "       all eleven of #2703's were in range, so it was a lockfile refresh and not an upgrade;",
+      "    2. RAISE THE FLOOR rather than refreshing the lockfile alone (#2171's road): a refresh",
+      "       leaves a declared range that still permits the vulnerable release;",
+      "    3. for a transitive, pin it in package.json's `pnpm.overrides`;",
+      "    4. if none of those can be done today, leave it — this is a warning and it is allowed to",
+      "       stand. Do NOT add it to ACKNOWLEDGED_ADVISORIES: that list is permission to pass a",
+      "       REFUSAL, and signing one here would silence a line whose whole job is to be noisy.",
+    ].join("\n"),
+  );
+  return lines.join("\n");
 };
