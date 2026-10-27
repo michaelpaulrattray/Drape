@@ -1,7 +1,7 @@
 {
-  "edition": 748,
-  "updatedAt": "2026-10-27T13:30:00Z",
-  "shift": "A LONG OUTFIT SENTENCE WAS LOSING THE WHOLE EDIT ON YOUR ACCOUNT. Fixed and live tonight.\n\nWHAT WAS WRONG. Clothing edits went on for your account this morning. From that moment, if you typed a full outfit — \"a heavy oiled canvas workcoat over a grey marl hoodie and faded indigo jeans, with tan leather boots and a knitted watch cap\" — the product answered \"That one didn't come through clearly. Try naming what you want changed about them.\" Your sentence was perfectly clear. There was a limit on how much the product could remember about one thing, it was set years ago for short notes like \"fox eyes\", and a whole outfit did not fit in it. Worse: anything else you asked for in the same breath died with it, silently. You would have retyped the same sentence and got the same answer.\n\nHOW BAD IT WAS. The product writes four outfit sentences of its own — the plain grey tee, and three Basics lines. THREE OF THE FOUR were too long for its own limit. It could not store the outfits it writes itself.\n\nWHAT I DID. Clothing now gets its own, larger limit — sized by measuring the longest outfit the product actually writes and leaving room for two more garments, so a five-part outfit fits: coat, top, trousers, shoes, hat. Nothing else changed. Every other kind of edit keeps the old limit, which is right — teeth do not need a paragraph. Nothing new on screen, nothing to learn, same price.\n\nONE HONEST LIMIT, WRITTEN DOWN RATHER THAN GLOSSED. Go far enough past the new limit and the old behaviour returns: the edit is dropped and you get that same untrue sentence. That is a separate fault about what the product SAYS when something does not fit, rather than about how much fits, and it is filed on its own card with the full reading. You are much less likely to meet it now, but I am not telling you it is gone.\n\nSOMETHING YOUR PAGE WAS NOT TELLING YOU. The clothing card was marked as waiting on you and was asking you for nothing — every question on it had been answered and struck out, so the page had nothing left to show and quietly showed nothing. It asks properly now: try a clothing edit on a signed cast and say whether the outfits look right. That is the only thing standing between clothing edits and everyone having them.",
+  "edition": 749,
+  "updatedAt": "2026-10-27T14:50:00Z",
+  "shift": "THE TEAM WAS STOPPED FOR SIX DAYS AND NOTHING TOLD YOU. That is tonight's finding and it is the\nbiggest one. No shift ran between Tuesday evening the 21st and Monday afternoon the 27th. Your machine\nwas on the whole time. Nothing was broken, nothing crashed, and nobody paused anything — the team just\nstopped, and not one of the alarms it has was able to notice.\n\nWHAT YOU WOULD HAVE SEEN. Almost nothing. Your page kept drawing the live lists correctly, because those\nread from GitHub every thirty seconds. What stood still was everything the shifts write: no new note from\nthe crew between the 17th and the 27th — ten days. The only hint anywhere was a small grey age on the\nnewest finished shift, and \"6d ago\" looks exactly like a quiet weekend.\n\nWHY NOTHING FIRED. Every alarm the team owns watches work that is in progress — a shift that went quiet\nmid-job, a report that never got written, a pause that got recorded. The 21st's shift finished properly\nand tidied up after itself. So there was no half-finished thing for anything to complain about, and six\ndays of silence went by with every check still reading green.\n\nWHAT I FOUND, AND WHAT I COULD NOT. I tested six explanations and ruled all six out at the evidence —\nmachine off, asleep, crashed, idle, and two others. One survived, and I proved it by driving it rather\nthan reading it: the thing that stops two copies of the team running at once checks only a bare process\nnumber, nothing else. I pointed it at Windows Explorer and it announced that another crew was already\nrunning and stood down. If that ever happens for real, the team parks itself indefinitely and writes\nnothing anywhere. I cannot prove that is what happened last week, and I have not claimed it — the record\nthat would say was overwritten when the team came back. It is filed with the repair.\n\nTWO THINGS YOU ASKED FOR ARE WORKABLE AGAIN. One of them was being held back by nothing at all: the\nclean-out of the old paid-edit road, which is the first job of the rung you are on. It was waiting on two\nthings, and both of them finished — one of them finished tonight, and the card was never updated. Earlier\nthis evening none of the fourteen jobs you have ordered could be started by anybody. Two can now.\n\nAND SIX FINISHED JOBS STOPPED READING AS UNFINISHED. Each one was built, merged and live, and still sat\non the board as open work. I read every one against the real code and against the version actually\nrunning, rather than taking the word of the card — and one of the six turned out NOT to be finished, so I\nleft it open and wrote down exactly what is missing. Two more that could not be merged at all can be\nmerged again.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -14,7 +14,7 @@
       "title": "The refine era completes — the feature panel and the studio surfaces. What a character has is read from the character, never looked up in a fixed list, and every box on the panel is a promise that pressing there edits that thing.",
       "steps": [
         {
-          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire): one is done and live, and the two biggest — the old dressing answer and the whole old picture-making road with its switch — are in review. three of the five switch retirements are in review and two are left (#1577)",
+          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire) and NOTHING IS WAITING ANY MORE: every one of the eight pieces of work it had in review has merged and is live, including the old dressing answer and the whole old picture-making road with its switch. The job was then left sitting on a hold that had stopped being true, which is fixed tonight — the last two slices can be built now, and this is the first thing a shift should pick up (#1577)",
           "state": "waiting"
         },
         {
@@ -34,7 +34,7 @@
           "state": "waiting"
         },
         {
-          "title": "Outfit changes inside a paid edit — you asked for this on 15 October, priced it on the 16th (an ordinary edit, your word) and said GO the same day. THE FIRST BUILD IS DONE AND IN REVIEW (#2544, PR #2600), switched off for everybody: same box, same price, nothing new on screen, and the set still refuses — proven with clothing switched on, in all five places the code asks. The picture test is run and its three strips are on your desk (#2597). What is left after your eye: switch it on for your account, read what it does to unrelated edits, then everyone on your word.",
+          "title": "Outfit changes inside a paid edit — you asked for this on 15 October, priced it on the 16th (an ordinary edit, your word) and said GO the same day. IT IS BUILT, MERGED AND SWITCHED ON FOR YOUR ACCOUNT — the switch reads your account by name on the live service, checked tonight. Same box, same price, nothing new on screen. A long outfit sentence was being dropped whole and that is fixed and live too. WHAT IS LEFT IS YOUR EYE: try a clothing edit on a signed character and say whether the outfits look right. Then it goes to everyone on your word (#2544)",
           "state": "waiting"
         },
         {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-27T13:21:55.785Z",
+      "readAt": "2026-10-27T14:38:58.124Z",
       "items": [
         {
           "issueNumber": 14,
@@ -206,18 +206,6 @@
           "issueNumber": 2551,
           "title": "N3: the ink-form demand table has no reachable writer — zero rows in both worlds, all time (ghost audit, found at slice 2)",
           "kind": "design-unbuilt",
-          "rung": "N3"
-        },
-        {
-          "issueNumber": 2552,
-          "title": "N3: the product's own wardrobe sentence is too long to store as an edit — 132 characters against a 120 cap, and the whole edit is dropped (found at #1577 slice 2)",
-          "kind": "design-unbuilt",
-          "rung": "N3"
-        },
-        {
-          "issueNumber": 2560,
-          "title": "A script cannot wait for a paid refine to finish without borrowing a customer switch that is being retired (blocks #1577 slice D4)",
-          "kind": "rung",
           "rung": "N3"
         },
         {
@@ -10825,12 +10813,19 @@
     {
       "id": "script-await-seam-2560",
       "title": "A measuring script can now say \"finish the picture before you answer me\", instead of flipping one of your settings (#2560)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2709,
       "note": "Held for review on purpose — the refine charge and its refund sit inside the function it changes. No customer-visible change by construction. Gate green in 4 minutes; the sabotage check proves the new behaviour is what the tests are actually reading."
     }
   ],
   "problems": [
+    {
+      "id": "team-stopped-unseen-2719",
+      "severity": "warning",
+      "state": "open",
+      "title": "The team stopped for six days and none of its own alarms could see it (#2719)",
+      "detail": "No shift ran between the evening of 21 October and the afternoon of 27 October. Your machine was on\nthroughout, nothing crashed, and nothing was paused — and no record anywhere says it happened.\n\nWhat it cost you: ten days with no new note from the crew on this page, from the 17th to the 27th.\nThe live lists kept working, so the page did not look broken.\n\nWhy nothing complained: every alarm the team has watches work that is in flight. The last shift before\nthe gap finished cleanly and closed its own row, so there was nothing half-done for anything to notice.\nNobody is at fault and no rule was broken — there is simply no check that asks \"has the team run at all\nlately?\".\n\nOne real defect was proved on the way, by driving it rather than reading it. The guard that stops two\ncopies of the team running at once looks at a bare process number and nothing else. Pointed at Windows\nExplorer, it announced that another crew was already running and stood down — and a stand-down like that\nleaves no trace at all. If a process ever inherits that number, the team parks itself for good, silently.\nThat is NOT claimed as the cause of last week; the evidence that would settle it was overwritten when the\nteam came back.\n\nThe fix has three parts and only one of them can be built by the crew, because the other two live in\nfiles that are deliberately kept out of the repository. The buildable one is the valuable one: a check\nthat runs away from this machine entirely and says so when the team has been silent too long."
+    },
     {
       "id": "deploy-outage-2678",
       "severity": "warning",
@@ -11016,7 +11011,7 @@
     {
       "id": "atlas-ratelimit-column-2704",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "Our own map of the product says seventeen doors have no speed limit when they do — one of them public (#2704)",
       "detail": "Not a hole, and worth saying that first: every one of those seventeen doors really does have its speed limit,\nand the thing that proves it is a test that drives all thirteen public doors until they refuse and then checks a\nsecond visitor still gets in. That test is green, and its list of doors is taken from the map rather than typed\nout, so a new public door cannot slip past it.\n\nWhat is broken is the map's own column. It decides whether a door is speed-limited by looking for three\nparticular spellings in that door's code — and fifteen of our files reach the limiter through a wrapper with a\ndifferent name, so every door behind one reads \"no limit\". Seventeen of 293 are wrong, all in the same\ndirection, including the public page that lets anyone check a Klieg ID.\n\nWhy it has never gone red: nothing in the product reads the column. It exists in the file, it is drawn on the\nmap's own web page, and no test or check consumes it — so it has been wrong for as long as those wrappers have\nexisted with nothing able to notice.\n\nIt matters because the map is what somebody opens to answer \"is every public door protected?\", and today it\ngives the wrong answer about a public door. The fix is either to make the column read what the code states, or\nto delete it — an unread column that is wrong is worse than no column at all."
     }
@@ -11327,7 +11322,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-27T13:21:55.785Z",
+    "readAt": "2026-10-27T14:38:58.124Z",
     "items": [
       {
         "issueNumber": 1577,
