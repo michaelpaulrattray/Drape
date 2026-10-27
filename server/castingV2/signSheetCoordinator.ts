@@ -689,7 +689,7 @@ type SheetRefusalState = { refused: boolean; retried: boolean };
  * may be a spent budget), so the coordinator, which saw the whole history,
  * says it with a type and the money road asks {@link sheetRefusedByProvider}.
  */
-export class SignSheetRefusedError extends Error {
+class SignSheetRefusedError extends Error {
   constructor(kind: SignSheetKind, options: { cause?: unknown } = {}) {
     super(`the provider refused the ${kind} Sign sheet`, options);
     this.name = "SignSheetRefusedError";

@@ -54,6 +54,8 @@ import {
   validateCastingVoiceEnvironment,
   CASTING_CURRENT_DESCRIPTION_SCOPE_ENV,
   validateCastingCurrentDescriptionEnvironment,
+  CASTING_OUTFIT_EDIT_SCOPE_ENV,
+  validateCastingOutfitEditEnvironment,
   validateCastingInkRegionCropEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
@@ -515,6 +517,17 @@ export function validateEnv(): void {
   */
   validateCastingCurrentDescriptionEnvironment({
     scope: process.env[CASTING_CURRENT_DESCRIPTION_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
+  });
+  /*
+    CLOTHING IS AN EDITABLE SUBJECT (#2544 slice 1). Parent is the CASTING scope
+    alone: clothes are worn by a cast, and the repaint is every refine's
+    renderer. No transport and no till to refuse over — an outfit edit rides the
+    refine's own price, claim and refund (his word, *"yes refine is all the same
+    price"*), so the money diff of this capability is zero lines.
+  */
+  validateCastingOutfitEditEnvironment({
+    scope: process.env[CASTING_OUTFIT_EDIT_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
   /*

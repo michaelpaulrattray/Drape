@@ -90,8 +90,16 @@ export function wordsTakeIntentFor(instruction: string): ReferenceReadIntent | n
  * **`wall_content` is not here, and never will be.** A content wall is an
  * answer about what was asked, not a gap a reader can fill, and reading a
  * picture around it would be this lane serving the one ask the product refuses.
- * `wall_stage` is out for the sibling reason: a garment is not a property of a
- * person, so no reader here speaks for it.
+ * `wall_stage` is out, and ⚠ **the REASON it is out changed on 2026-10-17
+ * (#2544 slice 1) while the answer did not.** It used to read *"a garment is not
+ * a property of a person, so no reader here speaks for it"* — and a garment IS a
+ * property of a person now, for an account inside `CASTING_OUTFIT_EDIT_SCOPE`:
+ * clothing is an editable subject and never reaches this wall at all. What
+ * raises `wall_stage` is the SCENERY half of the lexicon — the backdrop, the
+ * set, the scene, a prop, something held — and the stage is not a property of
+ * the person under any flag, so no reader here speaks for it. **The list does
+ * not move; only its argument does**, which is why the sentence is corrected
+ * rather than deleted.
  */
 const ANSWERABLE_REFUSALS = ["unreadable", "wall_likeness", "wall_unfileable"] as const;
 

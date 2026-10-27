@@ -71,7 +71,7 @@ function carriesFailedQuery(message: string): boolean {
 }
 
 /** Exported and pure so the suite drives the function wired into `initTRPC`. */
-export function withoutMachineMessage<Shape extends { message: string; data?: Record<string, unknown> }>(
+function withoutMachineMessage<Shape extends { message: string; data?: Record<string, unknown> }>(
   shape: Shape,
   error: TRPCError,
 ): Shape {

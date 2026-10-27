@@ -37,7 +37,10 @@ import {
   type FreeLaneCheck, type RefineDelta, type RefineParse,
 } from "./refineDelta";
 import type { WardrobeResolution } from "./wardrobeLine";
-import { SERVED_SUBJECTS, freeSubjectGuidance } from "./refineSubjects";
+import {
+  SERVED_SUBJECTS, SERVED_SUBJECTS_WITH_WARDROBE, freeSubjectGuidance, servedSubjectsFor,
+} from "./refineSubjects";
+import type { FreeSubject } from "./subjectCards";
 import { closedSubjectFor } from "./openLaneKind";
 import { acceptOpenKind } from "./openLaneAccept";
 import { ensureKindProperties } from "./openKindProperties";
@@ -134,7 +137,23 @@ function firstObject(text: string): string {
  * to the stage wall, because the wall check sits ABOVE the acceptance door, so
  * stage routing would return before the lane was ever consulted.
  */
-const basePromptLines = () => [
+/**
+ * ⚠ IT TAKES THE SERVED LIST NOW — #2544 slice 1, and the default is what
+ * ships today.
+ *
+ * Four sites in these lines tell the model that garments are the stage wall,
+ * and opening the wardrobe subject without changing all four would route every
+ * outfit ask to `wall_stage` regardless — the relay's binding addition to the
+ * design, verified at `origin/main` before his GO. Each one is written as a
+ * conditional whose UNSERVED branch is today's string character for character,
+ * rather than as a second copy of the prompt: two prompt bodies maintained side
+ * by side is the drift this file's own pins exist to catch.
+ *
+ * The bar is `refineOpenLaneClause.test.ts`, which hashes all FOUR prompts —
+ * the two that ship today unmoved, and the served pair pinned the day they were
+ * written (the design's §6).
+ */
+const basePromptLines = (served: readonly FreeSubject[] = SERVED_SUBJECTS) => [
   "You read ONE short instruction from someone adjusting a face they are casting, and you",
   "translate it into a structured edit. You never write prose and you never explain.",
   "",
@@ -150,7 +169,7 @@ const basePromptLines = () => [
   "  makeup      — free text, in the user's own terms",
   "",
   "THE FREE LANE — anything else about the person, keyed by subject:",
-  `  free: { "<subject>": "<their words>" }, subject one of: ${freeSubjectGuidance(SERVED_SUBJECTS)}`,
+  `  free: { "<subject>": "<their words>" }, subject one of: ${freeSubjectGuidance(served)}`,
   "",
   "Reply with JSON and nothing else.",
   "",
@@ -254,13 +273,42 @@ const basePromptLines = () => [
   "    lowercase noun, no adjectives: their describing words go in the value, in their own",
   "    words, under every rule above.",
   "    It must be part of the PERSON. This widens what may be NAMED and nothing else —",
-  "    garments, headwear, the backdrop, props and the scene are the stage wall exactly as",
-  "    they were, and so are a judgement, an age, a heritage and a sex.",
+  /* SITE 1 of the four. Served, the last resort must not still call a garment
+     the wall — the free lane would be told to refuse the very subject the
+     guidance line above now offers it. */
+  ...(served.includes("wardrobe")
+    ? [
+      "    the backdrop, props and the scene are the stage wall exactly as",
+      "    they were, and so are a judgement, an age, a heritage and a sex.",
+    ]
+    : [
+      "    garments, headwear, the backdrop, props and the scene are the stage wall exactly as",
+      "    they were, and so are a judgement, an age, a heritage and a sex.",
+    ]),
   "",
   "ADORNMENT IS THE PERSON, NOT THE STAGE. Earrings, hoops, studs, a nose ring, a septum ring,",
   "glasses, a chain, a wedding ring, any piercing — things worn ON them — are ordinary refinements",
-  "and file under statedAccessories in their own words. Only GARMENTS, HEADWEAR, the backdrop,",
-  "props and the scene are the stage.",
+  /* SITE 2. The adornment block's whole job is to say what is the person and
+     what is the stage, so served it gains the sentence clothing needs — and it
+     names what is STILL the stage in the same breath, because this is the line
+     a model reads to decide, and a half-corrected one invites it to assume the
+     set moved too. */
+  ...(served.includes("wardrobe")
+    ? [
+      "and file under statedAccessories in their own words. Only the backdrop, props and the",
+      "scene are the stage.",
+      "",
+      "AND CLOTHING IS THE PERSON TOO. A coat, a jacket, a shirt, a dress, a suit, a hat, a scarf",
+      "— anything they are WEARING — files under wardrobe in their own words. ONE entry holding",
+      "the whole outfit as they have just asked for it: swapping a piece, adding a layer, taking a",
+      "layer off, and changing a colour or a fabric are all that same one edit. The backdrop, the",
+      "set, the scene, the location and anything they are HOLDING are still the stage and still",
+      "the wall — a garment against a red backdrop is still refused, on the backdrop.",
+    ]
+    : [
+      "and file under statedAccessories in their own words. Only GARMENTS, HEADWEAR, the backdrop,",
+      "props and the scene are the stage.",
+    ]),
   "",
   "WALLS — four things that are never possible. Reply with the wall, not an attempt:",
   '  likeness: making them look like a specific real person -> {"wall": "likeness"}',
@@ -269,7 +317,10 @@ const basePromptLines = () => [
   '    "droppedReference": true beside it; never put the name anywhere. Only a PURE',
   "    likeness ask with no extractable value (more Rihanna, give her that actress's face)",
   "    is the wall. Serve what they asked for; refuse only what cannot be served.",
-  '  stage: garments, headwear, the backdrop, props, the scene -> {"wall": "stage", "asked": "<what, briefly>"}',
+  /* SITE 3. The walls list itself — the one a model is most likely to act on. */
+  ...(served.includes("wardrobe")
+    ? ['  stage: the backdrop, props, the scene -> {"wall": "stage", "asked": "<what, briefly>"}']
+    : ['  stage: garments, headwear, the backdrop, props, the scene -> {"wall": "stage", "asked": "<what, briefly>"}']),
   '  content: anything unsafe or explicit -> {"wall": "content"}',
   "    A BODY TATTOO IS NEVER THIS WALL. A chest piece, a back piece, a sleeve — those are",
   "    ink placements, so they go to the ink subject and the gate answers them. Sending them",
@@ -394,6 +445,16 @@ const NEWLINE = "\n";
 
 const BASE_PROMPT = basePromptLines().join(NEWLINE);
 
+/**
+ * THE SERVED BASE — the same lines with the wardrobe subject on offer (#2544
+ * slice 1).
+ *
+ * Precomputed beside its sibling rather than built per request, for the reason
+ * the four precomputed prompts were: a prompt composed at the call site is a
+ * prompt no pin can hash. Nothing can ask for this one unless the flag says so.
+ */
+const BASE_PROMPT_SERVED = basePromptLines(SERVED_SUBJECTS_WITH_WARDROBE).join(NEWLINE);
+
 /*
   THE REMOVAL SECTION, WITHHELD ON THE FALL-THROUGH PASS (D-163 rule 3).
 
@@ -439,6 +500,7 @@ const REMOVAL_PROMPT = [
 ].join("\n");
 
 const SYSTEM_PROMPT = BASE_PROMPT + REMOVAL_PROMPT;
+const SYSTEM_PROMPT_SERVED = BASE_PROMPT_SERVED + REMOVAL_PROMPT;
 
 /**
  * THE PARSER'S TOKEN CEILING — and why it is no longer 600.
@@ -466,7 +528,23 @@ export const REFINE_PARSE_MAX_TOKENS = 4000;
 /** Test seam: the bench measures the REAL prompt, or it measures nothing. A
  *  small hand-written prompt does not make this model reason, and a driver that
  *  cannot reproduce the failure cannot measure the fix. */
-export function refineParseSystemPrompt(mode?: "classify" | "edit"): string {
+export function refineParseSystemPrompt(
+  mode?: "classify" | "edit",
+  options: { outfitEdit?: boolean } = {},
+): string {
+  /*
+    ⚠ **FOUR AGAIN, AND THE SECOND PAIR IS THE FLAG'S — #2544 slice 1.** The
+    block below is the record of how it got to two and is unaltered; what it
+    says about the surviving pair still holds exactly, which is the point. The
+    served pair is reachable only where `CASTING_OUTFIT_EDIT_SCOPE` admits the
+    account, so an unserved request cannot be handed one — and
+    `refineOpenLaneClause.test.ts` hashes all four, the shipped two against the
+    sha256s recorded before any of this, the served two against sha256s taken
+    the day they were written.
+  */
+  if (options.outfitEdit === true) {
+    return mode === "edit" ? BASE_PROMPT_SERVED : SYSTEM_PROMPT_SERVED;
+  }
   /*
     ⚠ TWO PROMPTS, AND THERE IS NO THIRD. This said FOUR until #1577 slice D1
     took `CASTING_OPEN_LANE_SCOPE`'s pair with the flag, and FIVE before #203
@@ -636,9 +714,34 @@ const REFERENCE_CONSTRAINT = [
  * It never widens what may be filed: an unowned word produces no sentence at
  * all, and the refusal falls through exactly as before.
  */
-function ownedWordConstraint(claimed: string): string {
+/**
+ * ⚠ SITE 5 OF THE FOUR-PLUS-ONE — #2544 slice 1, and it was unreachable for a
+ * garment until this slice, which is why it is corrected here rather than left.
+ *
+ * Flag off, a sentence naming `coat` BACKS the stage refusal, so the unbacked
+ * re-look never fires and this function has never been asked about a garment
+ * word. Served, that same sentence no longer backs anything (the garment half
+ * is licensed), the re-look fires, and `closedSubjectFor("coat")` answers
+ * `wardrobe` — which would have produced *"it belongs to `wardrobe`, which is a
+ * fact about the PERSON … it is not a prop, a GARMENT or a piece of set
+ * dressing"*, a sentence arguing with itself inside one clause.
+ *
+ * So the wardrobe branch says the true thing, and only where the subject is
+ * actually served: an unserved request reaches the original words byte for
+ * byte, which is what keeps this an addition rather than an edit.
+ */
+function ownedWordConstraint(claimed: string, outfitEditServed = false): string {
   const subject = closedSubjectFor(claimed);
   if (subject === null) return "";
+  if (subject === "wardrobe" && outfitEditServed) {
+    return [
+      "",
+      `THEIR WORD "${claimed}" IS ONE OF THE SUBJECTS YOU MAY FILE — it belongs to \`wardrobe\`, which`,
+      "is clothing this person is WEARING and is theirs to change, whatever the sentence around it",
+      "looks like. File it under wardrobe in their own words. The backdrop, the set, the scene and",
+      "anything they are holding are still the stage.",
+    ].join("\n");
+  }
   return [
     "",
     `THEIR WORD "${claimed}" IS ONE OF THE SUBJECTS YOU MAY FILE — it belongs to \`${subject}\`, which is`,
@@ -659,6 +762,39 @@ const STAGE_RELOOK_CONSTRAINT = [
   "place, a scene, a garment or a prop into any facet — those have no slot, and filing one is",
   "worse than refusing it.",
 ].join("\n");
+
+/**
+ * ⚠ SITE 4. THE RE-LOOK'S FIRST SENTENCE IS A STATEMENT OF FACT, AND SERVED IT
+ * WOULD BE A FALSE ONE — #2544 slice 1.
+ *
+ * It says the code checked for *scenery, WARDROBE and props* and found none.
+ * For a served account whose sentence names a coat, the code checked for
+ * scenery and props and deliberately did not check for wardrobe — so the
+ * original words would tell the model something untrue about its own input,
+ * which is the failure this file's own docblock names two constants up (*"a
+ * prompt that lies about the history is how a model learns to distrust the rest
+ * of it"*).
+ *
+ * It is also the one place the re-look can be told what to do INSTEAD of
+ * refusing, which is the whole point of a re-look: the measured case that
+ * taught this file so was *"add horns to her head"*, refused 3/3 through a
+ * re-look that had only told it what was NOT found.
+ */
+function stageRelookConstraint(outfitEditServed: boolean): string {
+  if (!outfitEditServed) return STAGE_RELOOK_CONSTRAINT;
+  return [
+    "",
+    "",
+    "THE CODE HAS CHECKED THEIR SENTENCE FOR SCENERY AND PROPS AND FOUND NONE, so a refusal on",
+    "those grounds is not yet earned. Read the instruction once more. If it is about the PERSON —",
+    "their face, hair, skin, body, colouring, adornment or what they are WEARING — file it",
+    "normally; clothing files under wardrobe, holding the whole outfit in their own words.",
+    'If it genuinely is about the scene, the setting or a prop, reply {"wall": "stage"} again AND',
+    'put in "asked" the exact word FROM THEIR INSTRUCTION that names it. Never file a place, a',
+    "scene or a prop into any facet — those have no slot, and filing one is worse than refusing",
+    "it.",
+  ].join("\n");
+}
 
 /**
  * The echo pass's one extra line (D-172).
@@ -721,6 +857,29 @@ const RESTATED_CONSTRAINT = [
 
 export type RefineInterpretInput = {
   instruction: string;
+  /**
+   * THIS ACCOUNT IS SERVED THE WARDROBE SUBJECT — `CASTING_OUTFIT_EDIT_SCOPE`
+   * (#2544 slice 1).
+   *
+   * Set by the service from the account, the way `inkReferenceEnabled` is, and
+   * for the same stated reason: read from the ACCOUNT rather than from anything
+   * about the sentence, because what a customer may ask for is a property of
+   * their account and not of their words.
+   *
+   * It does four things, all of them named at their sites: it selects the served
+   * prompt pair (so the model is told the subject exists, and the four lines
+   * that call a garment the stage wall say the true thing instead); it licenses
+   * the garment half of the stage lexicon for the BACKING check below; it rides
+   * into `readDelta` as `outfitEditServed`, which licenses the same half for a
+   * value filed under `wardrobe`; and it rides onto a `wall_stage` refusal so
+   * the sentence is true of the account reading it.
+   *
+   * ⚠ **It never touches the scenery half**, at any site, under any subject.
+   *
+   * Absent means today — every test, every bench, and every account until the
+   * flag moves.
+   */
+  outfitEditServed?: boolean;
   /**
    * `"edit"` withholds the removal vocabulary — D-163's rule-3 second pass.
    *
@@ -1432,12 +1591,14 @@ async function runOnce(
   try {
     const reply = await engine.complete({
       about: purpose,
-      system: refineParseSystemPrompt(input.mode)
+      system: refineParseSystemPrompt(input.mode, { outfitEdit: input.outfitEditServed === true })
         + (input.referenceAttached ? REFERENCE_CONSTRAINT : "")
         + (input.echoed ? ECHO_CONSTRAINT : "")
         + (input.hybrid ? HYBRID_CONSTRAINT : "")
-        + (input.stageRelook ? STAGE_RELOOK_CONSTRAINT : "")
-        + (input.stageRelook && input.stageClaimed ? ownedWordConstraint(input.stageClaimed) : "")
+        + (input.stageRelook ? stageRelookConstraint(input.outfitEditServed === true) : "")
+        + (input.stageRelook && input.stageClaimed
+          ? ownedWordConstraint(input.stageClaimed, input.outfitEditServed === true)
+          : "")
         + (input.restated ? RESTATED_CONSTRAINT : ""),
       user: [
         `Current eye colour: ${input.currentEyeColour ?? "unknown"}`,
@@ -1645,7 +1806,21 @@ async function runOnce(
       would widen `STAGE_WORDS` from measurement rather than from taste. Anything
       else falls through to today's refusal, so the worst case is unchanged.
     */
-    const backing = stageWordIn(instruction);
+    /*
+      ⚠ SITE 3 OF THE DESIGN'S FIVE — THE BACKING CHECK, LICENSED (#2544 slice
+      1). Served, a claim backed ONLY by a garment word is a MISFILE rather than
+      a wall: the model was told the subject exists and refused it anyway. The
+      answer is the one the design names — nothing new, the existing single
+      re-look fires exactly as it does for an unbacked claim, and a claim the
+      lexicon still cannot back after it falls through to today's refusal.
+
+      ⚠ **The licence is on the GARMENT half only**, so a sentence naming a
+      backdrop still backs the refusal on the first pass for a served account —
+      which is the one thing at this site that must not move.
+    */
+    const backing = stageWordIn(instruction, {
+      garmentLicensed: input.outfitEditServed === true,
+    });
     if (backing === null && !input.stageRelook) {
       log.warn(
         { asked, instruction },
@@ -1710,7 +1885,16 @@ async function runOnce(
       `docs/specs/TWO_PATHS_PREDICATES_2026-09-24.md` is the reading.
     */
     return backing !== null
-      ? { ok: false, refusal: { reason: "wall_stage", asked: asked || "that", backed: true } }
+      ? {
+        ok: false,
+        refusal: {
+          reason: "wall_stage",
+          asked: asked || "that",
+          backed: true,
+          /* The sentence has to be true of the account reading it (#2544). */
+          ...(input.outfitEditServed === true ? { clothingServed: true } : {}),
+        },
+      }
       : { ok: false, refusal: { reason: "wall_unbacked", asked: asked || "that" } };
   }
   return containReply({ engine, input, instruction, reply });
@@ -1798,6 +1982,13 @@ async function containReply(call: {
        it rides whenever the service resolved one — and an absent resolution is
        the same answer as `unpathed`, which is what keeps the paths dark. */
     ...(input.wardrobe ? { wardrobe: input.wardrobe } : {}),
+    /*
+      AND WHETHER CLOTHING IS THIS ACCOUNT'S TO CHANGE — #2544 slice 1, site 2
+      of the design's five. One flag bit, no second question: the reader decides
+      what it licenses from the subject the value was filed under, which is the
+      only fact it has any business knowing.
+    */
+    ...(input.outfitEditServed === true ? { outfitEditServed: true } : {}),
   };
   const delta = readDelta(reply, check);
   /* A WALL is an answer, not a hiccup — it must not be re-sampled. */
@@ -1885,6 +2076,10 @@ async function containReply(call: {
     unowned: check.unowned ?? [],
     ...(engine ? { engine } : {}),
     ...(input.signal ? { signal: input.signal } : {}),
+    /* The same bit `readDelta` was given, from the same place (#2544 slice 1) —
+       the lane asks the same lexicon the reader does, so it has to be asking it
+       the same question. */
+    ...(input.outfitEditServed === true ? { outfitEditServed: true } : {}),
   });
   if (opened) {
     /*

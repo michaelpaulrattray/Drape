@@ -84,7 +84,7 @@ export const CAST_READS_COUNT = 6;
  * a clause here has misunderstood the field, and a row whose name wraps onto
  * three lines is not the list he drew.
  */
-export const CAST_READ_LABEL_MAX_LENGTH = 48;
+const CAST_READ_LABEL_MAX_LENGTH = 48;
 
 /** One alternative: what to call it, and the exact line it would store. */
 export type CastRead = {

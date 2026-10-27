@@ -2542,7 +2542,7 @@ export class CastingCreationRecordCoverageError extends Error {
   }
 }
 
-export function parseCastingCreationRecordScope(raw: string | undefined): CastingV2Scope {
+function parseCastingCreationRecordScope(raw: string | undefined): CastingV2Scope {
   return parseScopeGrammar(raw, () => {
     throw new CastingCreationRecordScopeConfigurationError();
   });
@@ -2776,6 +2776,99 @@ export function validateCastingCurrentDescriptionEnvironment(input: {
   const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
   if (uncovered.length > 0) {
     throw new CastingCurrentDescriptionCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}
+
+/* ------------------------------------------------- the outfit-edit sub-flag */
+
+/**
+ * CLOTHING IS AN EDITABLE SUBJECT IN REFINE — `CASTING_OUTFIT_EDIT_SCOPE`
+ * (#2544 slice 1; his word 2026-10-15, verbatim: *"yes allow it"*, and
+ * 2026-10-16 on the money question: *"yes refine is all the same price"*).
+ *
+ * Whether a paid refine for this account is SERVED the `wardrobe` subject —
+ * that is the whole of it. On, *"put them in a long black coat"* is an ordinary
+ * refine: the interpreter is told the subject exists, the garment half of the
+ * stage lexicon stops refusing a value filed under it, and the backed stage
+ * refusal stops claiming that clothing comes after Sign. Off, and absent means
+ * off: the subject is on offer to nobody, every garment ask meets exactly the
+ * wall it has met since #203 slice 2, and **every prompt this product sends is
+ * byte-identical to today's** — which is a property of the code rather than a
+ * promise (`refineOpenLaneClause.test.ts` pins all four by sha256).
+ *
+ * ⚠ **WHAT IT NEVER OPENS IS THE SCENERY HALF.** `backdrop`, `background`,
+ * `wall`, `studio`, `set`, `scene`, `location`, `prop`, `chair`, `table` and
+ * `holding` refuse under every subject, served or not, at all five sites. That
+ * half of the lexicon is the only thing standing between an outfit edit and a
+ * paid edit that repaints the room, and the design's §4 names the arm that
+ * proves it with the flag ON.
+ *
+ * Its parent is `CASTING_V2_SCOPE` alone — clothing is worn by a cast, and the
+ * repaint has been every refine's renderer since #1577 slice 4b. It needs no
+ * key of its own and no new money: an outfit edit rides the refine's price,
+ * claim, settle and catastrophic-only refund unchanged (the design's §2b, his
+ * word), so there is no transport and no till to refuse boot over.
+ *
+ * Road (the design's §8): dark → `users:1` with the §6 wall-rate measurement →
+ * his eye on real edits → `all` on his word → **the flag retires** (N2's law:
+ * flags go home).
+ */
+export const CASTING_OUTFIT_EDIT_SCOPE_ENV = "CASTING_OUTFIT_EDIT_SCOPE";
+
+class CastingOutfitEditScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_OUTFIT_EDIT_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingOutfitEditScopeConfigurationError";
+  }
+}
+
+class CastingOutfitEditCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_OUTFIT_EDIT_SCOPE_ENV} ${detail}`);
+    this.name = "CastingOutfitEditCoverageError";
+  }
+}
+
+function parseCastingOutfitEditScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingOutfitEditScopeConfigurationError();
+  });
+}
+
+/** Captured at the point of use, the chain ANDed — its siblings' rule. */
+export function captureCastingOutfitEditEnabled(userId: number): boolean {
+  const child = parseCastingOutfitEditScope(process.env[CASTING_OUTFIT_EDIT_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingOutfitEditEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingOutfitEditScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingOutfitEditCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — there is no cast to dress`,
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingOutfitEditCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingOutfitEditCoverageError(
       `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
     );
   }

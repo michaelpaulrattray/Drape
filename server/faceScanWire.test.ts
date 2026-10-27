@@ -25,7 +25,7 @@ import {
   readFaceScanAsk,
   FACE_SCAN_PROCEDURE,
 } from "../scripts/lib/faceScanWire.mts";
-import { FACE_SCAN_FAL_CALLS, faceScanUsd } from "../scripts/lib/falSpend.mts";
+import { faceScanSam3Reads, faceScanUsd } from "../scripts/lib/falSpend.mts";
 
 /**
  * CAPTURED, NOT COMPOSED — `drive-facescan-hold-disposable.mts` against the dev
@@ -176,8 +176,17 @@ describe("what the walk declares", () => {
     const line = meter.line() ?? "";
     expect(line).toContain(`≤ $${band.total.high.toFixed(3)}`);
     expect(band.total.high).toBeGreaterThan(band.sam3.high);
-    expect(band.total.high).toBeGreaterThanOrEqual(0.151);
-    const reads = FACE_SCAN_FAL_CALLS.sam3.measured;
+    /* EVERY PART IS IN IT, stated as the relationship rather than as a figure.
+       A literal `0.151` stood here — the dearest of #2183's eight CROP-road
+       casts — and it was unreachable from the hour the pair-one-read flag
+       flipped, because the live band tops out at $0.107 (#2577). The bracket
+       against real measured faces belongs to `faceScanSpend.test.ts`, which
+       owns the band; this file owns the LINE, so what it checks is that the
+       line carries a band with all three parts in it. */
+    expect(band.total.high).toBeGreaterThanOrEqual(
+      band.sam3.high + band.cutout.low + band.describer.low,
+    );
+    const reads = faceScanSam3Reads().measured;
     expect(line).toContain(`${reads.low}–${reads.high} segmenter reads`);
     expect(line).toContain("1 body cutout");
     expect(line).toContain("1 describer call");

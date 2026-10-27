@@ -67,8 +67,8 @@ import { LIVE_QUEUE_REPO } from "./liveQueue";
 export const LIVE_REPAIRS_OWNER = LIVE_QUEUE_REPO.split("/")[0] ?? "";
 
 /** Five minutes: twelve list reads an hour, beside `cardActivity`'s thirty, inside an allowance of sixty. */
-export const PULL_HEADS_TTL_MS = 300_000;
-export const PULL_HEADS_PAGE = 100;
+const PULL_HEADS_TTL_MS = 300_000;
+const PULL_HEADS_PAGE = 100;
 const REQUEST_TIMEOUT_MS = 8_000;
 
 /** One open pull request's head, as this reader knows it. */
@@ -199,7 +199,7 @@ function headersFor(token: string | undefined): Record<string, string> {
 }
 
 /** One row of the pulls list, reduced to the two fields read. */
-export function pullHeadFromRow(raw: unknown): { number: number; headSha: string } | null {
+function pullHeadFromRow(raw: unknown): { number: number; headSha: string } | null {
   if (!raw || typeof raw !== "object") return null;
   const row = raw as { number?: unknown; head?: { sha?: unknown } | null };
   if (typeof row.number !== "number" || !Number.isSafeInteger(row.number) || row.number <= 0) return null;

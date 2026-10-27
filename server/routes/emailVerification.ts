@@ -309,7 +309,7 @@ export async function storeVerificationToken(
  * address has an unverified account". It is logged, and the page already tells
  * the person to check spam or try again.
  */
-export const RESEND_VERIFICATION_ANSWER = {
+const RESEND_VERIFICATION_ANSWER = {
   success: true,
   message: "If that address needs verifying, we've sent a new link.",
 } as const;

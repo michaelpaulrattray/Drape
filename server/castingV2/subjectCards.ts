@@ -812,11 +812,19 @@ export const SUBJECT_CARDS = {
     /* The words people actually use, and deliberately WIDER than `STAGE_WORDS`,
        which never held `tee`, `top`, `jeans` or `hoodie` — the census's own
        finding about why a tee met an unbacked wall rather than a named one. */
+    /* ⚠ `hat` AND `scarf` JOINED THIS LIST WITH #2544 SLICE 1, and the reason
+       is the gate's question 2 rather than completeness. They were the only two
+       garment words in `STAGE_WORDS` that this list never held — so with the
+       subject served, *"add a beanie"* would have kept refusing while *"add a
+       hoodie"* worked, a distinction no customer has any basis to predict. They
+       stay in the lexicon's garment half as well: that half is what licenses
+       them under this subject, and what still refuses them everywhere else. */
     nouns: [
       "wardrobe", "outfit", "clothes", "clothing",
       "tee", "t-shirt", "shirt", "top", "jumper", "sweater", "hoodie",
       "jacket", "coat", "blazer", "dress", "suit",
       "jeans", "trousers", "pants", "shorts", "skirt",
+      "hat", "scarf",
     ],
     qualifier: { describe: ", as clothing this person is wearing in the same studio frame — the "
       + "same person, the same pose, the same light, with nothing about the set, the backdrop or "
