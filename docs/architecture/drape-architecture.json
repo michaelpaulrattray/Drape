@@ -15431,6 +15431,10 @@
       "path": "server/castingV2/wardrobeViews.test.ts"
     },
     {
+      "id": "test:server/castingV2/wornListOneThingPerItem.test.ts",
+      "path": "server/castingV2/wornListOneThingPerItem.test.ts"
+    },
+    {
       "id": "test:server/castingV2/zoneScope.test.ts",
       "path": "server/castingV2/zoneScope.test.ts"
     },
