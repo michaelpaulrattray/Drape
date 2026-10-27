@@ -42,9 +42,11 @@ vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 import {
   type Acknowledgement,
   ACKNOWLEDGED_ADVISORIES,
+  advisoryDevNotice,
   advisoryPass,
   advisoryRefusal,
   AUDIT_ARGUMENTS,
+  DEV_AUDIT_ARGUMENTS,
   judgeAdvisories,
   OUTAGE_GUIDANCE,
   readAuditReport,
@@ -156,7 +158,18 @@ describe("NEGATIVE CONTROL — a clean tree passes, and says what it read", () =
     const report = reportOf(CLEAN);
     const text = advisoryPass(report, judgeAdvisories(report, []));
     expect(text).toContain("478 production dependencies");
-    expect(text).toContain("devDependencies are NOT read here");
+    /*
+      ⚠ THIS ARM PINNED *"devDependencies are NOT read here"* UNTIL #2703, AND
+      THAT SENTENCE WOULD HAVE BECOME FALSE THE MOMENT THE DEV READING LANDED.
+
+      Keeping it would have been the exact shape law 7c exists for — a guard
+      holding the product to a claim the product had stopped making. What the
+      arm is actually FOR survives unchanged: a green must not read as
+      coverage, so the line still says what this verdict is OF.
+    */
+    expect(text).toContain("this verdict is the PRODUCTION tree alone");
+    expect(text).toContain("WARN ONLY");
+    expect(text).not.toContain("devDependencies are NOT read here");
   });
 });
 
@@ -514,9 +527,16 @@ describe("⚠ THE CALL SITE — a reader with no caller does not exist (invarian
     expect(checker).toContain("readAuditReport(");
     expect(checker).toContain("judgeAdvisories(");
     expect(checker).toContain('["pnpm", ...AUDIT_ARGUMENTS].join(" ")');
-    expect(checker).toContain("spawnSync(COMMAND, {");
-    /* And it declares no audit arguments of its own. */
+    /* ⚠ `spawnSync(COMMAND, {` UNTIL #2703: the dev-scope reading is the same
+       command with a different scope flag, so both go through ONE runner rather
+       than growing a second spawn with its own quirks to forget. */
+    expect(checker).toContain("spawnSync(command, {");
+    expect(checker).toContain("audit(COMMAND)");
+    expect(checker).toContain("audit(DEV_COMMAND)");
+    expect(checker).toContain('["pnpm", ...DEV_AUDIT_ARGUMENTS].join(" ")');
+    /* And it declares no audit arguments of its own, on EITHER scope. */
     expect(checker).not.toContain('"--prod"');
+    expect(checker).not.toContain('"--dev"');
     expect(checker).not.toContain('"audit"');
   });
 
@@ -621,5 +641,200 @@ describe("the reading names the tree it was taken from (#1899)", () => {
       checker.match(/console\.log\(advisoryTreeLine\(tree\)\);/g)?.length,
       "only one verdict names its tree — a refusal is the reading most likely to be compared",
     ).toBe(2);
+  });
+});
+
+/*
+  ⚠ PART 2 OF #2703 — THE BUILD AND TEST TOOLS ARE READ, AND THE READING CANNOT
+  BLOCK A MERGE.
+
+  **His word, 2026-10-27, Crew reply #302, verbatim and entire: *"WARN — tell
+  us, never block us"*.**
+
+  # The positive control is a real tree, not a fixture of a belief
+
+  `pnpm-audit-dev-f4d2e5d4.json` is `pnpm audit --dev --json` captured whole and
+  unedited against the lockfile and manifest as they stood at `f4d2e5d4` — the
+  commit immediately before #2706 raised the three floors, and the very tree
+  Warden run 9 took its §A measurement on. It carries **eleven advisories, three
+  low, seven moderate and one HIGH**, which is that card's own figure arrived at
+  by a reader that did not exist when the card was written.
+
+  Without it this whole block would be green over a tree that has nothing wrong
+  with it, and would prove only that a parser parses (working law 2). The clean
+  capture beside it is the negative control, and the two were taken the same
+  hour with the same command.
+
+  # What is NOT proven here, said rather than left to be assumed
+
+  The step's live exit code on a dev finding is driven out of band, because this
+  suite touches no network: run from a checkout of `f4d2e5d4`'s manifest and
+  lockfile, `scripts/check-dependency-advisories.mts` printed all eleven
+  including the HIGH and **exited 0** (recorded on PR). What this suite can and
+  does hold is the thing a future edit would break: that the notice has no
+  verdict to refuse on, and that the entrypoint spends no exit code on it.
+*/
+describe("⚠ the dev-scope reading WARNS and never blocks (#2703, his word)", () => {
+  const DEV_PREPATCH = read("server/__fixtures__/pnpm-audit-dev-f4d2e5d4.json");
+  const DEV_CLEAN = read("server/__fixtures__/pnpm-audit-dev-clean.json");
+
+  it("POSITIVE CONTROL — the real pre-bump tree really does carry the eleven, one of them HIGH", () => {
+    const report = reportOf(DEV_PREPATCH);
+    /* The fixture is the subject, so its own shape is asserted before anything
+       is concluded from it (law 2 pointed at the fixture). */
+    expect(report.advisories).toHaveLength(11);
+    expect(report.counts).toMatchObject({ low: 3, moderate: 7, high: 1, critical: 0 });
+    const high = report.advisories.filter((advisory) => advisory.severity === "high");
+    expect(high).toHaveLength(1);
+    expect(high[0]!.ghsa).toBe("GHSA-587h-7wmj-h5pm");
+    expect(high[0]!.module).toBe("vite");
+  });
+
+  it("and the notice REPORTS all eleven, with the HIGH and its patched range named", () => {
+    const text = advisoryDevNotice({ ok: true, report: reportOf(DEV_PREPATCH) });
+    expect(text).toContain("11 known vulnerability(ies) in the BUILD AND TEST tools");
+    expect(text).toContain("3 low, 7 moderate, 1 high");
+    expect(text).toContain("GHSA-587h-7wmj-h5pm");
+    expect(text).toContain("HIGH · vite");
+    /*
+      THE CARD'S HEADLINE, AND THE ONE FACT THAT MAKES THIS LINE ACTIONABLE
+      rather than merely alarming: every one of the eleven had a patch inside a
+      range `package.json` already declared, so the repair was a floor raise and
+      not an upgrade. The notice cannot judge the range — that would want semver
+      against the manifest — so it prints the number and says to read it.
+    */
+    expect(text).toContain("patched in: >=7.3.7");
+    expect(text).toContain("patched in: >=4.1.12");
+    expect(text).toContain("patched in: >=3.1.9");
+    expect(text).toContain("read the `patched in:` line above against the range package.json already declares");
+  });
+
+  it("⚠ and it says IN THE SAME BREATH that it blocks nothing — his word, in the output", () => {
+    const text = advisoryDevNotice({ ok: true, report: reportOf(DEV_PREPATCH) });
+    expect(text).toContain("never blocks a merge");
+    expect(text).toContain("WARN — tell us, never block us");
+    /* And why nobody should panic: a dev advisory cannot reach a customer. */
+    expect(text).toContain("Nothing a customer can reach is affected");
+  });
+
+  it("NEGATIVE CONTROL — today's real tree reports none, and does not shout", () => {
+    const text = advisoryDevNotice({ ok: true, report: reportOf(DEV_CLEAN) });
+    expect(reportOf(DEV_CLEAN).advisories).toHaveLength(0);
+    expect(text).toBe("dev-scope advisories: none — 214 build and test dependencies read.");
+    expect(text).not.toContain("known vulnerability");
+  });
+
+  it("⚠ IT FAILS OPEN, AND SAYS WHICH OF THE TWO HAPPENED — the opposite of the prod half", () => {
+    /*
+      THE ARM THAT MATTERS MOST, because fail-open is the direction that is
+      normally the defect. The production half REFUSES when it cannot look
+      (invariant 7). This half must not — an outage must not cost the crew a
+      merge over build tooling — so the only protection against it reading as
+      "nothing found" is that it says so in words.
+    */
+    const text = advisoryDevNotice({ ok: false, why: "the registry did not answer" });
+    expect(text).toContain("NOT READ");
+    expect(text).toContain("the registry did not answer");
+    expect(text).toContain("it is NOT a clean reading");
+    expect(text).toContain("never blocks a merge");
+    /* It must NOT be mistakable for the clean answer. */
+    expect(text).not.toContain("dev-scope advisories: none");
+  });
+
+  it("an advisory in BOTH trees is counted once — derived from the production report, not a second list", () => {
+    /*
+      The two scopes overlap: measured on this repository, `--prod` reads 477
+      packages and `--dev` reads 214 against a whole tree of 715. A package in
+      both would otherwise be refused above AND warned about down here, which
+      reads as two problems.
+    */
+    const dev = reportOf(DEV_PREPATCH);
+    const production = reportOf(DEV_PREPATCH); /* the same findings, as if prod carried them */
+    const text = advisoryDevNotice({ ok: true, report: dev }, production);
+    expect(text).toContain("dev-scope advisories: none");
+    expect(text).toContain("11 already named in the production reading");
+    expect(text).not.toContain("GHSA-587h-7wmj-h5pm");
+
+    /* POSITIVE CONTROL for the same reader: a production report carrying
+       something ELSE hides nothing. */
+    const unrelated = reportOf(CLEAN);
+    expect(advisoryDevNotice({ ok: true, report: dev }, unrelated))
+      .toContain("11 known vulnerability(ies)");
+  });
+
+  it("⚠ an acknowledgement cannot silence a warning, and that is on purpose", () => {
+    /*
+      `ACKNOWLEDGED_ADVISORIES` is signed permission to pass a REFUSAL. A
+      warning needs no permission, so the notice never consults that list — and
+      the consequence is intended: a dev hole with no patch warns on every merge
+      until it has one, which is exactly *"tell us"*. The repair text says so
+      rather than leaving somebody to discover it by signing one.
+    */
+    const text = advisoryDevNotice({ ok: true, report: reportOf(DEV_PREPATCH) });
+    expect(text).toContain("Do NOT add it to ACKNOWLEDGED_ADVISORIES");
+    expect(text).toContain("permission to pass a");
+  });
+
+  it("the arguments are the ones the positive control was taken on, and differ in the scope flag alone", () => {
+    expect(DEV_AUDIT_ARGUMENTS).toEqual(["audit", "--dev", "--json"]);
+    /* One flag apart from the production reading, so a drift in either is
+       visible as a drift rather than as two unrelated commands. */
+    expect(DEV_AUDIT_ARGUMENTS.filter((argument) => argument !== "--dev"))
+      .toEqual(AUDIT_ARGUMENTS.filter((argument) => argument !== "--prod"));
+  });
+
+  it("⚠ THE NOTICE HAS NO VERDICT TO REFUSE ON — the control is the SHAPE, not a promise", () => {
+    /*
+      `advisoryDevNotice` returns a STRING. There is no `ok`, no count and no
+      boolean for a caller to branch an exit code on, so refusing on it later
+      takes a deliberate rewrite rather than a one-line slip. That is the
+      difference between a control and an intention, and it is why the function
+      is shaped this way.
+    */
+    const text = advisoryDevNotice({ ok: true, report: reportOf(DEV_PREPATCH) });
+    expect(typeof text).toBe("string");
+    expect(text).not.toContain("REFUSED");
+  });
+
+  it("⚠ THE CALL SITE spends no exit code on it — read at the entrypoint's bytes", () => {
+    /*
+      Invariant 7's other half: the reading exists AND it is wired, and here
+      also that the wiring cannot block. The dev reading is printed, and no
+      `process.exit` anywhere in the file is reachable from it — the only two
+      exits that remain are the production verdict's, which were there before
+      this card.
+    */
+    const checker = read("scripts/check-dependency-advisories.mts");
+    expect(checker).toContain("advisoryDevNotice(");
+    expect(checker).toContain("const devRun = audit(DEV_COMMAND);");
+
+    /*
+      Every exit in the file, and each one accounted for: the spawn that could
+      not launch, the report that could not be read, the production verdict's
+      refusal — then the pass. FOUR, all three refusals belonging to the
+      production half and predating this card.
+
+      ⚠ This arm was written expecting FIVE and was wrong, which is the arm
+      doing its job on the shift that wrote it: a count typed from memory rather
+      than read. It is kept as a count rather than loosened to "no new exits",
+      because the whole claim of this card is that the dev reading added none.
+    */
+    const exits = [...checker.matchAll(/process\.exit\((\d)\)/g)].map((match) => match[1]);
+    expect(exits).toEqual(["1", "1", "1", "0"]);
+
+    /*
+      AND NO EXIT SITS INSIDE THE DEV READING'S OWN SLICE. The subject is cut
+      out rather than the whole file searched, because a whole-file assertion
+      would be satisfied by the production half's exits sitting elsewhere
+      (`guard-arm-satisfied-by-a-sibling`).
+    */
+    const from = checker.indexOf("const devRun = audit(DEV_COMMAND);");
+    const to = checker.indexOf("if (!verdict.ok) {", from);
+    expect(from).toBeGreaterThan(0);
+    expect(to).toBeGreaterThan(from);
+    const devSlice = checker.slice(from, to);
+    expect(devSlice).toContain("advisoryDevNotice(");
+    expect(devSlice).not.toContain("process.exit");
+    expect(devSlice).not.toContain("throw ");
   });
 });
