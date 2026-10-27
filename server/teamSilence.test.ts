@@ -13,7 +13,7 @@
  * opposite road — the card's own words: *"6d ago reads identically to a quiet
  * weekend."* So `parked` is asserted as carefully as `stopped`.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   judgeTeamSilence,
@@ -24,6 +24,21 @@ import {
   TEAM_SILENCE_HOURS,
 } from "../scripts/lib/teamSilence.mts";
 import { buildBoard } from "../scripts/lib/cardBuildState.mts";
+import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
+
+/*
+  ⚠ THIS SUITE IS IN `childProcessSuites`' DERIVED POPULATION, and it took the
+  guard to notice. None of these arms spawns anything — `gh` is injected as a
+  fake on every one of them — but the deriver is TRANSITIVE: it follows relative
+  imports, and `cardBuildState.mts` (imported here for `buildBoard`, the real
+  board the takeable count is asked of) runs `gh` through `execFileSync`. So a
+  path through this file CAN start a process, and under load that is the 5-second
+  default this class exists for.
+
+  It only became visible once the file was committed — `git ls-files` cannot see
+  an untracked suite, which the guard's own header says about itself.
+*/
+vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 const NOW = Date.parse("2026-10-28T00:00:00Z");
 const hoursAgo = (hours: number): number => NOW - hours * 3_600_000;
