@@ -4,6 +4,7 @@ import {
   GATE_DURATION,
   NO_SUITE_FINDING_MS,
   SUITE_CREATION,
+  attemptStartedMs,
   decideStall,
   describeVerdict,
   type GateRun,
@@ -280,5 +281,184 @@ describe("the threshold is the measured one, and the measurement is on the recor
   it("the sample sizes are recorded, so a later re-measure has something to beat", () => {
     expect(SUITE_CREATION.pushSample).toBeGreaterThan(30);
     expect(SUITE_CREATION.branchFirstSample).toBeGreaterThan(30);
+  });
+});
+
+/**
+ * A RE-RUN'S `created_at` IS ITS FIRST ATTEMPT'S, SO IT IS THE CLOCK FOR
+ * NOTHING ABOUT THIS ATTEMPT (#2702, the law-7 sibling of #2698).
+ *
+ * ⚠ MEASURED AT THE LIVE API, NOT REASONED. 2026-10-27, the gate's last 100
+ * runs: `run_started_at` present on 100 of 100, equal to `created_at` on all
+ * 95 first attempts, and on the five re-runs it is the attempt's own start.
+ * `team/relay-2672` attempt 2 is the fixture every arm below is shaped from:
+ * created `2026-10-21T09:48:44Z`, started `2026-10-27T00:32:27Z`, finished
+ * `2026-10-27T00:36:21Z` — a 5.6-day record of a 3.9-minute run.
+ *
+ * The arms come in pairs on purpose. A clock fix that simply stopped alarming
+ * would pass half of these and be worse than the defect, so every arm proving
+ * a re-run is quiet has a genuinely-slow FIRST attempt beside it proving the
+ * alarm still fires on the thing it was built for.
+ */
+const RERUN_GAP_MS = 8_147.6 * 60_000; // created -> finished, the live record
+const RERUN_EXECUTION_MS = 3.9 * 60_000; // started -> finished, what it took
+
+describe("a re-run is measured from the attempt, never from the run record", () => {
+  it("THE DEFECT: a re-run two minutes in is NOT beyond the p99", () => {
+    const v = decideStall({
+      runs: [
+        run({
+          status: "in_progress",
+          createdAt: at(RERUN_GAP_MS),
+          runStartedAt: at(2 * 60_000),
+          updatedAt: at(0),
+        }),
+      ],
+      pushedAt: at(RERUN_GAP_MS + 60_000),
+      now: NOW,
+    });
+    expect(v).toMatchObject({ kind: "running", beyondP99: false });
+    expect(describeVerdict(v)).toContain("2.0m old");
+    expect(describeVerdict(v)).toContain("inside the measured spread");
+  });
+
+  it("... and the arm cannot pass for the wrong reason — the OLD clock did alarm", () => {
+    /* Without this the arm above would still be green if `beyondP99` were
+       hard-wired false. The gap this fixture carries is far past the p99, so
+       the reading it replaces was unambiguously beyond it. */
+    expect(RERUN_GAP_MS).toBeGreaterThan(GATE_DURATION.p99Ms);
+    const onTheOldClock = decideStall({
+      runs: [run({ status: "in_progress", createdAt: at(RERUN_GAP_MS), updatedAt: at(0) })],
+      pushedAt: at(RERUN_GAP_MS + 60_000),
+      now: NOW,
+    });
+    expect(onTheOldClock).toMatchObject({ kind: "running", beyondP99: true });
+  });
+
+  it("POSITIVE CONTROL: a genuinely slow FIRST attempt still reads beyond the p99", () => {
+    /* `run_started_at` equals `created_at` on a first attempt — measured, 95
+       of 95 — so this is the live shape of a gate that really is dragging. */
+    const slow = at(GATE_DURATION.p100Ms + 10 * 60_000);
+    const v = decideStall({
+      runs: [run({ status: "in_progress", createdAt: slow, runStartedAt: slow, updatedAt: at(0) })],
+      pushedAt: at(GATE_DURATION.p100Ms + 11 * 60_000),
+      now: NOW,
+    });
+    expect(v).toMatchObject({ kind: "running", beyondP99: true });
+    expect(describeVerdict(v)).toContain("Alive, not stalled");
+  });
+
+  it("a COMPLETED re-run keeps its finish time and loses the invented duration", () => {
+    const v = decideStall({
+      runs: [
+        run({
+          status: "completed",
+          conclusion: "success",
+          createdAt: at(RERUN_GAP_MS + 2_000),
+          runStartedAt: at(RERUN_EXECUTION_MS + 2_000),
+          updatedAt: at(2_000),
+        }),
+      ],
+      pushedAt: at(RERUN_GAP_MS + 60_000),
+      now: NOW,
+    });
+    /* finishedMsAgo reads `updatedAt` and was always right — it must not move. */
+    expect(v).toMatchObject({ kind: "complete", conclusion: "success", finishedMsAgo: 2_000 });
+    const line = describeVerdict(v);
+    expect(line).toContain("finished 0.0m ago");
+    /* `the run took` is ageMs minus finishedMsAgo. It printed the 5.6-day gap. */
+    expect(line).toContain("the run took 3.9m");
+    expect(line).not.toContain("8147.6m");
+  });
+});
+
+/**
+ * THE SORT MOVED TOO, AND IT IS A SEPARATE DECISION FROM THE CLOCK (#2702).
+ *
+ * `created_at` orders by which run RECORD was created most recently;
+ * `run_started_at` orders by which attempt most recently BEGAN. They are
+ * different questions and they disagree only on a re-run — so the arm that
+ * matters is the one where a head carries two run records, which this
+ * repository produces routinely (a `pull_request` run plus a
+ * `workflow run gate.yml` dispatch, or a close/reopen).
+ */
+describe("the newest row is the newest ATTEMPT, not the newest record", () => {
+  it("a re-run running NOW outranks a later-created run that already finished", () => {
+    const v = decideStall({
+      runs: [
+        run({
+          status: "in_progress", // the re-run: old record, live attempt
+          createdAt: at(RERUN_GAP_MS),
+          runStartedAt: at(60_000),
+          updatedAt: at(0),
+        }),
+        run({
+          status: "completed", // a dispatch created later, already done
+          conclusion: "failure",
+          createdAt: at(30 * 60_000),
+          runStartedAt: at(30 * 60_000),
+          updatedAt: at(20 * 60_000),
+        }),
+      ],
+      pushedAt: at(RERUN_GAP_MS + 60_000),
+      now: NOW,
+    });
+    /* On the old sort this answered COMPLETE: failure over a gate that was at
+       that moment running, and a shift would have stopped waiting on it. */
+    expect(v.kind).toBe("running");
+  });
+
+  it("NEGATIVE CONTROL: two FIRST attempts sort exactly as they always did", () => {
+    const v = decideStall({
+      runs: [
+        run({
+          status: "completed",
+          conclusion: "cancelled",
+          createdAt: at(30 * 60_000),
+          runStartedAt: at(30 * 60_000),
+        }),
+        run({ status: "in_progress", createdAt: at(2 * 60_000), runStartedAt: at(2 * 60_000) }),
+      ],
+      pushedAt: at(31 * 60_000),
+      now: NOW,
+    });
+    expect(v.kind).toBe("running");
+  });
+});
+
+/**
+ * THE FALLBACK IS A DATE CHECK, NOT `??` (#2698's worked shape, #2702's card).
+ *
+ * `??` only catches `null` and `undefined`, so an empty or malformed string
+ * reaches `Date.parse`, yields `NaN`, and poisons both readings silently: the
+ * sort becomes unordered and the verdict prints `NaN`. Every unusable shape
+ * must fall back to `created_at`, which is the pre-#2702 behaviour and is the
+ * right answer for a first attempt.
+ */
+describe("an unusable run_started_at falls back to created_at, never to NaN", () => {
+  const created = at(7 * 60_000);
+  const unusable: Array<[string, Partial<GateRun>]> = [
+    ["absent (a caller written before #2702)", {}],
+    ["null", { runStartedAt: null }],
+    ["an empty string — the one `??` lets through", { runStartedAt: "" }],
+    ["unparseable", { runStartedAt: "not-a-date" }],
+  ];
+
+  for (const [name, over] of unusable) {
+    it(`${name}`, () => {
+      const r = run({ status: "in_progress", createdAt: created, updatedAt: at(0), ...over });
+      expect(attemptStartedMs(r)).toBe(new Date(created).getTime());
+      expect(Number.isNaN(attemptStartedMs(r))).toBe(false);
+
+      const v = decideStall({ runs: [r], pushedAt: at(8 * 60_000), now: NOW });
+      expect(v).toMatchObject({ kind: "running", ageMs: 7 * 60_000, beyondP99: false });
+      expect(describeVerdict(v)).toContain("7.0m old");
+      expect(describeVerdict(v)).not.toContain("NaN");
+    });
+  }
+
+  it("a usable one is read, which is what makes the four arms above mean anything", () => {
+    const r = run({ createdAt: at(99 * 60_000), runStartedAt: at(4 * 60_000) });
+    expect(attemptStartedMs(r)).toBe(new Date(at(4 * 60_000)).getTime());
   });
 });

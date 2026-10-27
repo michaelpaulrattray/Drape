@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 212
+      "moduleCount": 213
     },
     {
       "id": "domain:castingV2",
@@ -4485,6 +4485,12 @@
     {
       "id": "module:server/castingV2/pendingStage.ts",
       "path": "server/castingV2/pendingStage.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/pointerCut.ts",
+      "path": "server/castingV2/pointerCut.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -8977,7 +8983,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
         "client/src/features/castingV2/voice/CastVoiceStudio.tsx"
@@ -8990,7 +8996,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
         "client/src/features/castingV2/voice/CastVoiceStudio.tsx"
@@ -9003,7 +9009,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
         "client/src/features/castingV2/voice/CastVoiceStudio.tsx"
@@ -9016,7 +9022,7 @@
       "type": "query",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
         "client/src/features/castingV2/voice/CastVoiceStudio.tsx"
@@ -9029,7 +9035,7 @@
       "type": "query",
       "auth": "public",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/creationCheck.ts",
       "clientCallers": [
         "client/src/pages/CreationCheck.tsx"
@@ -9042,7 +9048,7 @@
       "type": "query",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/creationCheck.ts",
       "clientCallers": [
         "client/src/features/castingV2/creationCheck/PublicCheckCard.tsx"
@@ -9055,7 +9061,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/creationCheck.ts",
       "clientCallers": [
         "client/src/features/castingV2/creationCheck/PublicCheckCard.tsx"
@@ -9198,7 +9204,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9211,7 +9217,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9224,7 +9230,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9237,7 +9243,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9250,7 +9256,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9274,7 +9280,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": []
     },
@@ -9285,7 +9291,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9298,7 +9304,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9339,7 +9345,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9352,7 +9358,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9365,7 +9371,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": []
     },
@@ -10514,7 +10520,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/components/DecompositionDrawer.tsx"
@@ -10527,7 +10533,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/components/DecompositionDrawer.tsx"
@@ -10582,7 +10588,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeInventory.ts"
@@ -10595,7 +10601,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeInventory.ts"
@@ -10676,7 +10682,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useModelSetup.ts"
@@ -10689,7 +10695,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useModelSetup.ts"
@@ -10733,7 +10739,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/studio/components/ModelUploadZone.tsx"
@@ -10901,7 +10907,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
@@ -10914,7 +10920,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
@@ -10927,7 +10933,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
@@ -10940,7 +10946,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
@@ -10953,7 +10959,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
@@ -10966,7 +10972,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
@@ -13553,6 +13559,10 @@
       "path": "server/architecturePublicEndpoints.test.ts"
     },
     {
+      "id": "test:server/architectureRateLimited.test.ts",
+      "path": "server/architectureRateLimited.test.ts"
+    },
+    {
       "id": "test:server/architectureShapeCopies.test.ts",
       "path": "server/architectureShapeCopies.test.ts"
     },
@@ -14887,6 +14897,10 @@
     {
       "id": "test:server/castingV2/pendingStage.test.ts",
       "path": "server/castingV2/pendingStage.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/pointerCut.test.ts",
+      "path": "server/castingV2/pointerCut.test.ts"
     },
     {
       "id": "test:server/castingV2/poolTendencies.test.ts",
@@ -29780,6 +29794,11 @@
     },
     {
       "from": "module:server/castingV2/faceScanService.ts",
+      "to": "module:server/castingV2/pointerCut.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScanService.ts",
       "to": "module:server/castingV2/recipeAssembler.ts",
       "kind": "imports"
     },
@@ -31176,6 +31195,46 @@
     {
       "from": "module:server/castingV2/packageRedoService.ts",
       "to": "module:shared/creditDisplay.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/pointerCut.ts",
+      "to": "module:server/castingV2/faceDiscovery.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/pointerCut.ts",
+      "to": "module:server/castingV2/facePanel.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/pointerCut.ts",
+      "to": "module:server/castingV2/maskedComposite.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/pointerCut.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/pointerCut.ts",
+      "to": "module:server/castingV2/recipeAssembler.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/pointerCut.ts",
+      "to": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/pointerCut.ts",
+      "to": "module:server/castingV2/segmentCuts.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/pointerCut.ts",
+      "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },
     {
@@ -42577,31 +42636,38 @@
       "message": "Names 2 of TiltReading's 4 fields (server/castingV2/canthalTilt.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:562",
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:584",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:562",
+      "subject": "server/castingV2/facePanel.ts:584",
       "message": "Names 2 of PresentationClause's 2 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:563",
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:585",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:563",
+      "subject": "server/castingV2/facePanel.ts:585",
       "message": "Names 2 of PresentationClause's 2 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/faceScanService.ts:265",
+      "id": "finding:redeclared-shape:server/castingV2/faceScanService.ts:147",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/faceScanService.ts:265",
+      "subject": "server/castingV2/faceScanService.ts:147",
+      "message": "Names 5 of KeptDiscoveredRow's 5 fields (server/castingV2/keptFaceScan.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/faceScanService.ts:324",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/faceScanService.ts:324",
       "message": "Names 2 of DiscoveryCrop's 3 fields (server/castingV2/faceDiscovery.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/faceScanService.ts:351",
+      "id": "finding:redeclared-shape:server/castingV2/faceScanService.ts:410",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/faceScanService.ts:351",
+      "subject": "server/castingV2/faceScanService.ts:410",
       "message": "Names 2 of DiscoveryCrop's 3 fields (server/castingV2/faceDiscovery.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
@@ -42668,10 +42734,10 @@
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:897",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:935",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:897",
+      "subject": "server/castingV2/refineService.ts:935",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

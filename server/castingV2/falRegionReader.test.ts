@@ -924,3 +924,159 @@ describe("the reading that chose the words", () => {
     }
   });
 });
+
+/**
+ * THE POINTER ROAD'S TWO CALLS, ASSERTED AT THE WIRE (#2566 slice 2).
+ *
+ * Invariant 5: a contract about what gets sent is proven on the OUTGOING
+ * request, not on a constant near it. Both facts here are about the request and
+ * nothing else can see them:
+ *
+ *   the detector answers in FRACTIONS and the segmenter takes PIXELS, so the
+ *   conversion either happens here or it happens nowhere, and a reader that
+ *   forgot it would send a box 0.3 pixels wide and a mask would still come back;
+ *
+ *   the segmenter is sent exactly ONE rectangle, because #2532 measured that
+ *   several prompts switch which object comes back rather than combining them —
+ *   a type can refuse an array and only the wire can prove none was sent.
+ */
+describe("falRegionReader points at a thing it has no word for", () => {
+  const WIDTH = 200;
+  const HEIGHT = 100;
+
+  async function frame(): Promise<Buffer> {
+    return sharp({
+      create: { width: WIDTH, height: HEIGHT, channels: 3, background: { r: 40, g: 40, b: 40 } },
+    }).png().toBuffer();
+  }
+
+  async function maskUri(paint: (x: number, y: number) => boolean): Promise<string> {
+    const data = Buffer.alloc(WIDTH * HEIGHT, 0);
+    for (let y = 0; y < HEIGHT; y += 1) {
+      for (let x = 0; x < WIDTH; x += 1) if (paint(x, y)) data[y * WIDTH + x] = 255;
+    }
+    const png = await sharp(data, { raw: { width: WIDTH, height: HEIGHT, channels: 1 } })
+      .png().toBuffer();
+    return `data:image/png;base64,${png.toString("base64")}`;
+  }
+
+  /** Every outgoing request, by endpoint, with its parsed body. */
+  function wire(answers: Record<string, unknown>): {
+    sent: Array<{ endpoint: string; body: any }>;
+  } {
+    const sent: Array<{ endpoint: string; body: any }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      const endpoint = String(url).replace("https://fal.run/", "");
+      sent.push({ endpoint, body: JSON.parse(String(init?.body ?? "{}")) });
+      return new Response(JSON.stringify(answers[endpoint] ?? {}), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }));
+    return { sent };
+  }
+
+  it("converts the detector's fractions into this frame's own pixels", async () => {
+    const { sent } = wire({
+      "fal-ai/moondream3-preview/detect": {
+        objects: [{ x_min: 0.25, y_min: 0.5, x_max: 0.5, y_max: 1 }],
+      },
+    });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const boxes = await reader.pointer!({ image: await frame(), name: "jaw hardware" });
+
+    expect(sent.map((one) => one.endpoint)).toEqual(["fal-ai/moondream3-preview/detect"]);
+    /* The noun goes out as the prompt, unqualified — the whole reason the
+       discovery read is held to a bare noun. */
+    expect(sent[0]!.body.prompt).toBe("jaw hardware");
+    expect(boxes).toEqual([{ x: 50, y: 50, width: 50, height: 50 }]);
+  });
+
+  it("orders and clamps a rectangle rather than passing a provider's mess on", async () => {
+    const { sent } = wire({
+      "fal-ai/moondream3-preview/detect": {
+        objects: [
+          /* Reversed, and reaching past both edges. */
+          { x_min: 0.9, y_min: 1.4, x_max: 0.4, y_max: -0.2 },
+          /* Degenerate — no width at all once it is in pixels. */
+          { x_min: 0.5, y_min: 0.5, x_max: 0.5, y_max: 0.9 },
+          /* Not numbers. */
+          { x_min: "a", y_min: 0, x_max: 1, y_max: 1 },
+        ],
+      },
+    });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const boxes = await reader.pointer!({ image: await frame(), name: "sash" });
+
+    expect(sent).toHaveLength(1);
+    expect(boxes).toEqual([{ x: 80, y: 0, width: 100, height: 100 }]);
+  });
+
+  it("answers an empty list for nothing there, and never calls the segmenter", async () => {
+    const { sent } = wire({ "fal-ai/moondream3-preview/detect": { objects: [] } });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    expect(await reader.pointer!({ image: await frame(), name: "goggles" })).toEqual([]);
+    expect(sent.map((one) => one.endpoint)).toEqual(["fal-ai/moondream3-preview/detect"]);
+  });
+
+  it("THROWS on a provider failure — an absence and a bad minute are not one answer", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("concurrent_requests_limit", { status: 429 })));
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    await expect(reader.pointer!({ image: await frame(), name: "sash" }))
+      .rejects.toBeInstanceOf(MaskError);
+  });
+
+  it("sends exactly ONE rectangle and an EMPTY prompt to the segmenter", async () => {
+    const { sent } = wire({
+      "fal-ai/sam-3/image": { masks: [{ url: await maskUri((x, y) => x >= 10 && x < 30 && y >= 10 && y < 30) }] },
+    });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    const mask = await reader.regionInBox!({
+      image: await frame(),
+      name: "jaw hardware",
+      box: { x: 10, y: 20, width: 30, height: 40 },
+    });
+
+    expect(sent.map((one) => one.endpoint)).toEqual(["fal-ai/sam-3/image"]);
+    const body = sent[0]!.body;
+    expect(body.box_prompts).toEqual([{ x_min: 10, y_min: 20, x_max: 40, y_max: 60 }]);
+    /* The rectangle IS the question — #2532 benched `prompt: ""`, and sending
+       the noun as well would be a different request than the one judged. */
+    expect(body.prompt).toBe("");
+    /* No multi-mask setting on this road: one box, one object. */
+    expect(body.return_multiple_masks).toBeUndefined();
+    expect(mask).not.toBeNull();
+    expect(mask!.width).toBe(WIDTH);
+  });
+
+  it("answers null when the segmenter returns no mask for that rectangle", async () => {
+    wire({ "fal-ai/sam-3/image": { masks: [] } });
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    expect(await reader.regionInBox!({
+      image: await frame(),
+      name: "sash",
+      box: { x: 0, y: 0, width: 10, height: 10 },
+    })).toBeNull();
+  });
+
+  it("refuses both doors for bytes that are not a picture", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+
+    await expect(reader.pointer!({ image: APP_INDEX_HTML, name: "sash" }))
+      .rejects.toBeInstanceOf(MaskError);
+    await expect(reader.regionInBox!({
+      image: APP_INDEX_HTML,
+      name: "sash",
+      box: { x: 0, y: 0, width: 10, height: 10 },
+    })).rejects.toBeInstanceOf(MaskError);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});

@@ -11285,6 +11285,70 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
       process.off("unhandledRejection", watch);
     }
   });
+
+  /*
+    A CALLER THAT CANNOT TAKE A RECEIPT (#2560) — the two arms the card asks
+    for, and which of them is the discriminator.
+
+    The receipt half is already proven two arms up ("answers with a receipt
+    BEFORE the render"), against this same flag and this same latch, so it is
+    not written a second time. What is new is the HELD road reached without
+    touching the customer switch, and the control that the field is read as
+    `true` rather than as truthy.
+
+    ⚠ **NEITHER ARM CAN PASS BY NEVER RUNNING, AND THE FIRST ONE'S CLOCK IS THE
+    JOURNAL RATHER THAN A TIMER.** `"generate"` is pushed by the engine mock on
+    the line ABOVE the one that awaits the latch, so once it is in the journal
+    the render is parked and every earlier statement has run — the receipt's own
+    site among them. A `setTimeout` race would have asked the same question on a
+    contended machine's clock, where a slow sabotaged run answers "still
+    waiting" and the arm passes for the wrong reason.
+  */
+  it("HOLDS the request for a caller that cannot take a receipt — with the flag ON for this very user", async () => {
+    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
+    const render = latch();
+
+    let answered = false;
+    const pending = refineCandidate(
+      { ...greenEyes, cannotTakeAReceipt: true },
+      input,
+    ).then((outcome) => { answered = true; return outcome; });
+
+    await vi.waitFor(() => expect(journal, "the render reached the latch").toContain("generate"));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    /*
+      THE DISCRIMINATOR. Delete the `cannotTakeAReceipt` condition in
+      `refineCandidate` and this is where it reddens: the receipt is announced
+      strictly before the engine is called, so by the moment above it would have
+      won the race and this call would already have answered `dispatched`.
+    */
+    expect(answered, "the call has NOT answered while the picture is still being drawn").toBe(false);
+    expect(landedVariant, "and nothing is painted yet either").toBeNull();
+    expect(ledger.charges, "the money moved on the same line it always did").toHaveLength(1);
+
+    render.release();
+    const result = await pending;
+
+    expect(result.kind, "the picture itself answers the call, as the script needs").toBe("rendered");
+    expect(result.variantId).toBeTruthy();
+    expect(landedVariant, "the render was terminal BEFORE the caller was answered").not.toBeNull();
+    expect(ledger.charges, "one charge, the same as both other roads").toHaveLength(1);
+    expect(ledger.refunds, "and nothing came back").toHaveLength(0);
+  });
+
+  it("still dispatches when the caller says it CAN take one — the field is read as `true`, never as truthy", async () => {
+    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
+    const render = latch();
+
+    const result = await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);
+
+    expect(result.kind, "an explicit false is today's road — this field opts OUT, it never opts in").toBe("dispatched");
+    expect(landedVariant, "the latch is still shut, so this was a receipt and not a fast render").toBeNull();
+
+    render.release();
+    await vi.waitFor(() => expect(landedVariant).not.toBeNull());
+  });
 });
 
 /**
@@ -15580,13 +15644,22 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
    * is a fact about the CAP rather than about this slice.** `surfaceCovered`
    * needs a surface a known outfit COVERS, and `coverageOfWardrobeLine`
    * recognises exactly two families: `HOUSE_WARDROBE_LINE`, whose upper chest
-   * is `covered`, and the Basics lines, which are bare everywhere. The house
+   * is `covered`, and the Basics lines, which are bare everywhere. ~~The house
    * sentence is **132 characters** and `MAX_FREE_LENGTH` is **120** — and an
    * over-long free value makes the strict reader reject the WHOLE delta, not
    * just that key, so it comes back `null` and the branch reads `unpathed`.
    * **So the product's own canonical outfit cannot be stored as an edit**, and
-   * the only drivable kind here is `surfaceCoverageUnread`. That is measured at
-   * the reader, and it is filed with the rest rather than fixed here.
+   * the only drivable kind here is `surfaceCoverageUnread`.~~
+   *
+   * ⚠ **THE CAP HALF OF THAT IS SUPERSEDED — #2552, 2026-10-27.** `wardrobe`
+   * has its own cap of 245 now, so the 132-character house line DOES store as
+   * an edit and the storage reason this paragraph gave has stopped being a
+   * reason. **The arms below are unchanged and still pass**, because what they
+   * drive is a BORN line (`rollWardrobeLine`, `brief`-sourced) and the guard
+   * wants a non-`brief` source — so the road that is shut is still shut, for
+   * the OTHER reason this paragraph gives. Whether `surfaceCovered` should now
+   * be driven through an EDITED line is **#2551**, which is open; it is not
+   * folded in here, and this suite is not the place that decides it.
    */
   const wearingEdited = (line: string) => {
     variantRows = [{
@@ -15611,11 +15684,12 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       so the ask is refused free and the demand is real: this person wanted a
       chest piece and our own outfit is what stopped them.
     */
-    /* ⚠ THE HOUSE LINE AS A BORN LINE, NOT AN EDIT, AND THE HELPER SAYS WHY:
-       at 132 characters it is over `MAX_FREE_LENGTH`, so it cannot be stored
-       as one. A born line is `brief`-sourced, so this arm now records that
-       `surfaceCovered` has NO reachable road rather than pretending to drive
-       one. */
+    /* ⚠ THE HOUSE LINE AS A BORN LINE, NOT AN EDIT. ~~at 132 characters it is
+       over `MAX_FREE_LENGTH`, so it cannot be stored as one.~~ — #2552 gave
+       `wardrobe` its own cap of 245 and it stores fine now, so that is no
+       longer why. What still holds is the half that was always the real one:
+       a born line is `brief`-sourced, and the guard wants a non-`brief`
+       source. The arm is unchanged; only its stated reason narrowed. */
     rollWardrobeLine = HOUSE_WARDROBE_LINE;
     const shut = await doorShut(refineCandidate(
       { ...withCounter(), interpret: asksFor("a small swallow tattoo on her upper chest") },
@@ -15629,12 +15703,16 @@ describe("a coverage refusal is counted, and an unpathed one is not", () => {
       ⚠ **AND NOTHING IS COUNTED, WHICH IS WHAT CHANGED — this arm asserted one
       `surfaceCovered` row until #1577 slice 2.** The row needed a non-`brief`
       source; `born` was the one that reached it and it is retired with the
-      paths. The only other member is `edited`, and the helper above measures
+      paths. The only other member is `edited`, and ~~the helper above measures
       why that cannot carry this line either: 132 characters against a 120-char
-      cap, which rejects the whole delta.
+      cap, which rejects the whole delta.~~
 
-      **So `surfaceCovered` has no reachable road at all, and this arm is the
-      place that says so.** The kind is NOT deleted here — the table, the
+      ⚠ **THAT LAST REASON DIED WITH #2552 (2026-10-27): the cap is 245 for
+      this subject and the house line stores as an edit.** So `edited` is a
+      road again — unexercised here, because driving it would be folding
+      #2551's question into an arm about something else. **What this arm
+      asserts is unchanged and still true: no source THIS ARM drives reaches
+      `surfaceCovered`.** The kind is NOT deleted here — the table, the
       vocabulary and the writer all stay, and the deadness is filed as its own
       finding rather than folded into this slice (his 2026-09-24 ruling).
 

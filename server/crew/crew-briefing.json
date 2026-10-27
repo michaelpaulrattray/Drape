@@ -1,7 +1,7 @@
 {
-  "edition": 747,
-  "updatedAt": "2026-10-27T12:12:33Z",
-  "shift": "CLOTHING EDITS ARE ON FOR YOUR ACCOUNT, AND THE SILENT HALF-SENTENCE BUG IS FIXED AND IN REVIEW. Both of your answers from this morning were read and acted on.\n\nYOUR TWO ANSWERS. You said “Switch it on for my account” — done: clothing changes now work in Refine for you, and for nobody else, from the moment this page updated. Type something like “put her in a long black coat” on any candidate and it is an ordinary edit at the ordinary price. Widening it to everyone stays your word. You also said “WARN — tell us, never block us” about the build-tool safety check — recorded on its card, and the warning version is now ordinary queued work.\n\nTHE BUG THAT JUMPED THE QUEUE, now fixed. Yesterday's shift found that typing two things into Refine — “make her hair copper red in a studio” — delivered the hair and silently ignored the studio, with nothing telling you. Your picture was never wrong and no money was ever spent on a set change; the product just never said what it left out. Now it does: beside the picture, the moment the edit starts, you read “The studio part of your ask wasn't changed — refining changes the person, not the shoot. Everything else you asked for went ahead.” No new buttons, nothing to learn — one honest sentence in the product's own voice. It is built, tested, photographed in both themes, and waiting on the review that every customer-visible change gets; I have not merged it.\n\nONE MORE THING FOUND ON THE WAY, written down rather than folded in. The product already composes honest sentences for other partly-done edits — but because every paid edit now answers instantly with a receipt, those sentences finish composing after the receipt has already answered, and nobody has ever read one. Filed as its own card with the full reading; nothing about it loses anyone money or pictures — it is the same kind of silence as tonight's bug, one layer further down.",
+  "edition": 748,
+  "updatedAt": "2026-10-27T13:30:00Z",
+  "shift": "A LONG OUTFIT SENTENCE WAS LOSING THE WHOLE EDIT ON YOUR ACCOUNT. Fixed and live tonight.\n\nWHAT WAS WRONG. Clothing edits went on for your account this morning. From that moment, if you typed a full outfit — \"a heavy oiled canvas workcoat over a grey marl hoodie and faded indigo jeans, with tan leather boots and a knitted watch cap\" — the product answered \"That one didn't come through clearly. Try naming what you want changed about them.\" Your sentence was perfectly clear. There was a limit on how much the product could remember about one thing, it was set years ago for short notes like \"fox eyes\", and a whole outfit did not fit in it. Worse: anything else you asked for in the same breath died with it, silently. You would have retyped the same sentence and got the same answer.\n\nHOW BAD IT WAS. The product writes four outfit sentences of its own — the plain grey tee, and three Basics lines. THREE OF THE FOUR were too long for its own limit. It could not store the outfits it writes itself.\n\nWHAT I DID. Clothing now gets its own, larger limit — sized by measuring the longest outfit the product actually writes and leaving room for two more garments, so a five-part outfit fits: coat, top, trousers, shoes, hat. Nothing else changed. Every other kind of edit keeps the old limit, which is right — teeth do not need a paragraph. Nothing new on screen, nothing to learn, same price.\n\nONE HONEST LIMIT, WRITTEN DOWN RATHER THAN GLOSSED. Go far enough past the new limit and the old behaviour returns: the edit is dropped and you get that same untrue sentence. That is a separate fault about what the product SAYS when something does not fit, rather than about how much fits, and it is filed on its own card with the full reading. You are much less likely to meet it now, but I am not telling you it is gone.\n\nSOMETHING YOUR PAGE WAS NOT TELLING YOU. The clothing card was marked as waiting on you and was asking you for nothing — every question on it had been answered and struck out, so the page had nothing left to show and quietly showed nothing. It asks properly now: try a clothing edit on a signed cast and say whether the outfits look right. That is the only thing standing between clothing edits and everyone having them.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-27T12:13:28.876Z",
+      "readAt": "2026-10-27T13:21:55.785Z",
       "items": [
         {
           "issueNumber": 14,
@@ -327,6 +327,28 @@
   },
   "needsYou": [
     {
+      "id": "outfit-eye-2544",
+      "title": "Try a clothing edit and say whether the outfits look right",
+      "productImpact": "Clothing edits have been on for your account since this morning, and tonight's fix means a full outfit sentence now works rather than being thrown away. Nobody has typed a real one yet, so the only thing left on this is your eye.\n\nIf the clothes look right, clothing goes on for everyone next. If they do not, what is wrong with them becomes the next card. Nothing else is waiting on this and nothing is being built on it meanwhile.",
+      "workedExample": "Open any signed character and type into the box you always type in. Try an ordinary one — \"put him in a long black coat\" — and a long one — \"a charcoal three-piece suit with a navy tie, brown brogues and a pocket square\". Both cost the same as any other refine and there is no new button. The long one is the interesting test: before tonight it came back \"that one didn't come through clearly\" and your whole edit was thrown away. One thing is still refused on purpose: the backdrop and the set. \"A red studio background\" is not part of this and will say so.",
+      "options": [
+        {
+          "key": "right",
+          "label": "The outfits look right",
+          "consequence": "Clothing edits widen past your account on your word, and the flag retires."
+        },
+        {
+          "key": "wrong",
+          "label": "Something is wrong with them",
+          "consequence": "Say what is wrong and it becomes the next card on this rung. The switch stays on your account only until it is fixed."
+        }
+      ],
+      "recommendation": "Try it. There is nothing more to measure from this side — the wall rate was measured flat either way, and the sentence-length fault that would have spoiled the test is fixed and live. What is left is whether the clothes look good, and that is your eye and not a number.",
+      "state": "open",
+      "filedAt": "2026-10-27T13:05:00.000Z",
+      "issueNumber": 2544
+    },
+    {
       "id": "outfit-flip-2544",
       "title": "Switch clothing changes on for your own account — or leave it off",
       "productImpact": "Today nobody can change what a character is wearing in Refine. \"Put him in a long black coat\" is refused. You said this morning that the three clothing pictures read right, and that was the last thing holding this.\n\nWhat switching it on does: on YOUR account only, clothing becomes something you can edit in the same box you already type in. Change a garment, add a layer, change its colour or fabric, add a hat or a scarf. Same price as any other refine, nothing new on screen, no new button and no setting to learn — the words are the control, as they are for everything else there.\n\nBefore asking you I measured the one thing that could have made this a bad idea. Teaching the studio about clothing means adding to the instructions it reads before EVERY edit, and this program has already measured that adding to those instructions can make unrelated edits start refusing. So 46 ordinary customer sentences went through the real studio twice, once each way, back to back on the same character. Seven of the 46 refuse today. With clothing taught, the same seven refuse for the same seven reasons and nothing else moved.\n\nThe clothing asks themselves: six of seven work where none of seven worked before. The seventh is \"take the jacket off him\", and it does not fail as clothing — it says there is nothing recorded to take off, which is already its own job on the board.\n\nAnd the thing we were most afraid of cannot happen: a clothing edit quietly repainting the room behind the character. I asked for a jacket alongside every scenery word the studio knows, fifty-five times. Not once did any of them reach the picture instruction.\n\nOne thing you WILL meet, and it is not new and not about clothing: ask for two things at once and the studio does one and says nothing about the other. \"Give her a white coat and make the background black\" gives you the coat in silence. That happens right now, on your account, on hair and eyes and beards — it needs no settings. It is written up separately. Switching clothing on gives it one more place to show.",
@@ -344,7 +366,7 @@
         }
       ],
       "recommendation": "Yes. The one measurement that could have stopped it came back flat — the same seven sentences refuse either way — and the thing it could have broken, a refine quietly repainting the set, cannot happen in any of the fifty-five ways I tried it. Your account is the right and only place to try it next, which is what the plan said from the start.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-10-27T06:30:03.000Z",
       "issueNumber": 2544
     },
@@ -4151,7 +4173,7 @@
         }
       ],
       "recommendation": "WARN. It would have caught these on the 24th instead of the 27th, it costs nothing, and it cannot ever stand\nbetween you and a merge. REFUSE is the one I would not take: a hole with no published fix would stop the crew\ndead over something a customer cannot reach, and we have been bitten by exactly that on the production side\nalready.",
-      "state": "open",
+      "state": "answered",
       "filedAt": "2026-10-27T09:10:09.227Z",
       "issueNumber": 2703
     }
@@ -7538,6 +7560,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "wardrobe-cap-2552",
+      "title": "A whole outfit fits in the box that holds a whole outfit (#2552)",
+      "status": "merged",
+      "prNumber": 2715,
+      "note": "Gate green; ordinary PR by both triage halves, merged on the gate."
+    },
     {
       "id": "scenery-note-2695",
       "title": "Refine says which half of your sentence named the shoot and was dropped (#2695)",
@@ -11298,7 +11327,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-27T12:13:28.876Z",
+    "readAt": "2026-10-27T13:21:55.785Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11356,7 +11385,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "his desk card `outfit-flip-2544` is open"
+          "because": "YOU — clothing edits are live on your account. Try one on a signed cast and tell us if the outfits look right. Recommend: try it, then we widen."
         }
       },
       {

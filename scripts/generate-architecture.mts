@@ -232,6 +232,165 @@ const AUTH_BY_BUILDER: Record<string, string> = {
   moderatorProcedure: "moderator",
 };
 
+/**
+ * THE FUNCTIONS WHOSE CALL MEANS A RATE LIMIT WAS ENFORCED (#2704).
+ *
+ * ⚠ **THE COLUMN THIS SEEDS SAID SEVENTEEN PROCEDURES HAD NO RATE LIMIT WHEN
+ * THEY DID, AND ONE OF THEM WAS PUBLIC.** The collector was
+ * `/rateLimit|RATE_LIMITS|checkRateLimit/.test(chain.getText())` — a grep for
+ * three spellings over the procedure's own text. Fifteen route files import
+ * the enforcer and then call it through a MODULE-LOCAL WRAPPER named `limit`,
+ * `rl`, `rate`, `check`, `rateCheck`, `enforceRateLimit`, `throwIfRateLimited`
+ * or `recipientCheck` — none of which contains any of the three spellings — so
+ * every procedure reached through one read `false`. `creationCheck.lookup` is
+ * on CLAUDE.md's invariant-5 public allowlist, its own header says
+ * *"IP-rate-limited (a real `TOO_MANY_REQUESTS`, invariant 6)"*, and the map
+ * said it had no limit.
+ *
+ * **This is the fifth instance of the collector class CLAUDE.md records being
+ * fixed four times in one sitting on 2026-08-23** — *"a regex standing in for
+ * something the code already states is working law 4 inverted, and it reports
+ * a complete list either way"* — and the answer is that sitting's answer: read
+ * the declaration, refuse rather than return a short list, and give it a
+ * second reader that does not share this resolver
+ * (`server/architectureRateLimited.test.ts`).
+ *
+ * ⚠ **THE LIST IS ENUMERATED AND ITS EXCLUSIONS ARE DELIBERATE**, because
+ * nothing in `server/security/rateLimit.ts` DECLARES which of its exports
+ * enforce — so a derived list would be a regex over names, which is the very
+ * thing being removed. Included: the three that decide and refuse. Excluded,
+ * each for its own reason: `rateLimitError` formats a MESSAGE and is called
+ * beside a real check rather than being one; `releaseRateLimitSlot` gives a
+ * slot BACK; `getClientIp` reads an address; `configureTrustedProxy` is boot;
+ * the three `*GlobalFailedLogin`/`*AttackAlert*` symbols are the login-attack
+ * detector, which alerts and never refuses. The suite holds this list against
+ * that module's real exports, so a new enforcer cannot arrive unclassified.
+ */
+const RATE_LIMIT_ENFORCERS = [
+  "checkRateLimit",
+  "checkUserRateLimit",
+  "enforcePublicRateLimit",
+] as const;
+
+/**
+ * Whether a node CALLS one of `names`.
+ *
+ * ⚠ It walks CALL EXPRESSIONS, so a COMMENT can never match — which the old
+ * substring could and did: `server/routes/account.ts` carries
+ * "was `checkRateLimit(…)` with the result dropped" INSIDE a procedure chain,
+ * and that sentence alone was enough to mark the procedure limited.
+ */
+function callsAnyOf(node: Node, names: ReadonlySet<string>): boolean {
+  return node.getDescendantsOfKind(SyntaxKind.CallExpression).some((call) => {
+    const expression = call.getExpression();
+    const identifier =
+      expression.asKind(SyntaxKind.Identifier) ??
+      expression.asKind(SyntaxKind.PropertyAccessExpression)?.getNameNode();
+    return identifier !== undefined && names.has(identifier.getText());
+  });
+}
+
+/**
+ * EVERY NAME IN ONE FILE WHOSE CALL ENFORCES A RATE LIMIT — TRANSITIVELY.
+ *
+ * Three roads in, and the third is the one the card's own measurement missed:
+ *
+ *   1. the named import under whatever local name it was given
+ *      (`checkRateLimit as rl`), and the namespace import's member;
+ *   2. a MODULE-LOCAL wrapper — `limit`, `rl`, `enforce`, `enforceRateLimit`,
+ *      `rateCheck` — grown to a FIXED POINT, so a wrapper calling a wrapper
+ *      resolves;
+ *   3. ⚠ an IMPORTED function that enforces in ITS OWN file. **A one-hop,
+ *      module-local fix would still have lied about four rows**, measured at
+ *      the bytes 2026-10-27: all four `castingV2.voice.*` procedures delegate
+ *      their whole body to `./castingVoice`, whose `enforce` wraps
+ *      `checkRateLimit` — `removeVoiceForCard` at `castingVoice.ts:828`,
+ *      `keepVoiceForCard` at `:705`, `designVoicesForCard` at `:631`,
+ *      `readVoiceCardStatus` at `:438`. Resolving one module deep is not
+ *      enough either, because that file's wrapper is itself a hop, so the walk
+ *      is the same fixed point run across the import graph with a visited set
+ *      — which is the shape #274 gave the un-wiring differ for exactly this
+ *      reason: *a barrel of barrels reads zero at both ends.*
+ *
+ * ⚠ **WHAT THE COLUMN THEREFORE CLAIMS, STATED SO IT IS NOT OVER-READ: the
+ * handler's road REACHES an enforcer, not that every branch of it does.** A
+ * limiter behind an `if` reads as limited here. That is the honest ceiling of
+ * any static reading, and it is why this column is not the control —
+ * `server/publicEndpointLimiters.test.ts` DRIVES the real router until it
+ * refuses, and that suite, not this field, is what pins invariant 5.
+ *
+ * ⚠ **ONE SHAPE IS DELIBERATELY NOT READ AND IS STATED RATHER THAN
+ * DISCOVERED**: a destructured dynamic import, `const { checkRateLimit } =
+ * await import("…")`. It is the house style of the admin routes and it cost
+ * the un-wiring differ 36 wired symbols (#108 slice 2), so it is the shape to
+ * suspect first — measured on this tree 2026-10-27 there are ZERO of them for
+ * these three names. The second reader looks for exactly it, because the
+ * #2349 lesson is that two readers sharing a SHAPE LIST agree about nothing.
+ */
+const ENFORCING_NAMES = new Map<string, Set<string>>();
+
+function enforcingNamesIn(sourceFile: SourceFile, visiting: Set<string>): Set<string> {
+  const key = sourceFile.getFilePath();
+  const done = ENFORCING_NAMES.get(key);
+  if (done) return done;
+  /* A cycle answers EMPTY for this visit only and is never memoised — caching
+     a half-walk would make the whole graph's answer depend on entry order. */
+  if (visiting.has(key)) return new Set<string>();
+  visiting.add(key);
+
+  const names = new Set<string>();
+  const enforcers: readonly string[] = RATE_LIMIT_ENFORCERS;
+
+  for (const declaration of sourceFile.getImportDeclarations()) {
+    const specifier = declaration.getModuleSpecifierValue();
+    /* `import * as rateLimit from "…"` — the member is what gets called, and
+       `callsAnyOf` reads a property access by its NAME. */
+    if (declaration.getNamespaceImport() && /rateLimit/.test(specifier)) {
+      for (const enforcer of enforcers) names.add(enforcer);
+    }
+    const named = declaration.getNamedImports();
+    if (named.length === 0) continue;
+
+    const target = declaration.getModuleSpecifierSourceFile();
+    const reached = target ? enforcingNamesIn(target, visiting) : null;
+    for (const importSpecifier of named) {
+      const imported = importSpecifier.getName();
+      const local = importSpecifier.getAliasNode()?.getText() ?? imported;
+      if (enforcers.includes(imported) || reached?.has(imported)) names.add(local);
+    }
+  }
+
+  if (names.size > 0) {
+    const candidates: Array<{ name: string; body: Node }> = [];
+    for (const fn of sourceFile.getFunctions()) {
+      const name = fn.getName();
+      if (name) candidates.push({ name, body: fn });
+    }
+    for (const declaration of sourceFile.getVariableDeclarations()) {
+      const initializer = declaration.getInitializer();
+      if (!initializer) continue;
+      const kind = initializer.getKind();
+      if (kind !== SyntaxKind.ArrowFunction && kind !== SyntaxKind.FunctionExpression) continue;
+      candidates.push({ name: declaration.getName(), body: initializer });
+    }
+
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const candidate of candidates) {
+        if (names.has(candidate.name)) continue;
+        if (!callsAnyOf(candidate.body, names)) continue;
+        names.add(candidate.name);
+        grew = true;
+      }
+    }
+  }
+
+  visiting.delete(key);
+  ENFORCING_NAMES.set(key, names);
+  return names;
+}
+
 export type Procedure = {
   id: string;
   namespace: string;
@@ -566,8 +725,13 @@ function collectProcedures(project: Project, namespaceOf: Map<string, string>): 
   const procedures: Procedure[] = [];
   const unreachable: string[] = [];
   const schemas = namedZodSchemas(project);
-
-  const read = (namespace: string, name: string, chain: Node, relative: string): void => {
+  const read = (
+    namespace: string,
+    name: string,
+    chain: Node,
+    relative: string,
+    enforcers: ReadonlySet<string>,
+  ): void => {
     const text = chain.getText();
 
     // Derived from AUTH_BY_BUILDER so a new builder cannot be classified
@@ -585,7 +749,9 @@ function collectProcedures(project: Project, namespaceOf: Map<string, string>): 
       type: typeMatch[1] as Procedure["type"],
       auth: builder ? AUTH_BY_BUILDER[builder] : "unclassified",
       input: inputState(chain, schemas),
-      rateLimited: /rateLimit|RATE_LIMITS|checkRateLimit/.test(text),
+      /* What the code STATES, not three spellings of it — see
+         `RATE_LIMIT_ENFORCERS`. The handler calls a name that enforces. */
+      rateLimited: callsAnyOf(chain, enforcers),
       file: relative,
     });
   };
@@ -593,6 +759,7 @@ function collectProcedures(project: Project, namespaceOf: Map<string, string>): 
   for (const sourceFile of project.getSourceFiles()) {
     const relative = path.relative(repoRoot, sourceFile.getFilePath()).replaceAll("\\", "/");
     if (!relative.startsWith("server/")) continue;
+    const enforcers = enforcingNamesIn(sourceFile, new Set<string>());
 
     for (const declaration of sourceFile.getVariableDeclarations()) {
       const initializer = declaration.getInitializer();
@@ -630,17 +797,37 @@ function collectProcedures(project: Project, namespaceOf: Map<string, string>): 
               `${name}.${childAssignment.getName().replace(/['"]/g, "")}`,
               childChain,
               relative,
+              enforcers,
             );
           }
           continue;
         }
 
-        read(namespace, name, chain, relative);
+        read(namespace, name, chain, relative, enforcers);
       }
     }
   }
 
   UNREACHABLE_ROUTERS.push(...unreachable.sort());
+
+  /*
+    ⚠ A COLLECTOR THAT CAN COME UP EMPTY REFUSES RATHER THAN RETURNING A
+    SHORT LIST — the 2026-08-23 sitting's rule, and this field is its fifth
+    instance (#2704). An empty answer here means the import resolution broke,
+    not that the product stopped rate-limiting anything, and a column of 293
+    dashes is the one reading nobody would question.
+
+    It is scoped to a real tree: `proceduresFrom`'s fixtures are two-line
+    routers with no limiter in them, and refusing those would make every
+    procedure-shape fixture carry a rate limiter it has nothing to do with.
+  */
+  if (procedures.length > 50 && !procedures.some((procedure) => procedure.rateLimited)) {
+    throw new Error(
+      `${procedures.length} procedures and not one reads as rate-limited — the enforcer ` +
+        `resolution is broken, not the product. Start at RATE_LIMIT_ENFORCERS and ` +
+        `enforcingNamesIn; server/architectureRateLimited.test.ts is the second reader.`,
+    );
+  }
   return procedures.sort((a, b) => a.id.localeCompare(b.id));
 }
 
