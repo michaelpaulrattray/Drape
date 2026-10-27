@@ -34,7 +34,7 @@ export type Population = { patch: Patch; skin: Uint8Array; pixels: number };
  * measurement constant invented at the bench is the shape this program keeps
  * finding on the paid path.
  */
-export const DARKER_BY = CHANGE_AMPLITUDE.marks.levels;
+const DARKER_BY = CHANGE_AMPLITUDE.marks.levels;
 /** A freckle's plausible area in pixels. Bigger is a mole, a nostril or a
  *  shadow; smaller is sensor noise. */
 const MIN_AREA = 3;
@@ -107,7 +107,7 @@ export async function cheekBand(reader: RegionReader, file: string): Promise<Pop
  * Box radius 10 for its variance — (2r+1)²/12 ≈ 36.8, σ ≈ 6.1 — matching the
  * Gaussian it replaces, because `DARKER_BY` was set against that spatial scale.
  */
-export function skinBaseline(
+function skinBaseline(
   values: Uint8Array | Buffer,
   skin: Uint8Array,
   width: number,

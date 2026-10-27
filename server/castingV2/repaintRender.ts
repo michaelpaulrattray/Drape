@@ -36,7 +36,14 @@
  * assembler: it is what the general path does when the library is empty, and it
  * is the first fixture in the test file for that reason.
  *
- * Nothing calls this yet. It lands dark by having no call site.
+ * ⚠ **AND THIS BLOCK CLOSED WITH *"Nothing calls this yet. It lands dark by
+ * having no call site"* UNTIL 2026-10-17 (#2544 slice 1), WHICH HAD BEEN FALSE
+ * SINCE #1577 SLICE 4b.** That slice retired the paste compositor and its flag,
+ * so this is **every paid refine's renderer** and has been since — the one
+ * render road there is (`refineService.ts`'s repaint dispatch). The design that
+ * found it left it for this commit rather than fixing it in passing, because a
+ * docblock saying a live road is dark is exactly how a later reader comes to
+ * believe a control is unreachable.
  */
 import { createHash } from "node:crypto";
 

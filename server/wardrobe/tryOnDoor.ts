@@ -53,7 +53,7 @@ import {
  * approval gate uses, so reusing it here would make a closed feature
  * indistinguishable from an unapproved account in any log that reads codes.
  */
-export function wardrobeTryOnClosed(): TRPCError {
+function wardrobeTryOnClosed(): TRPCError {
   return new TRPCError({
     code: "PRECONDITION_FAILED",
     message: WARDROBE_TRY_ON_CLOSED,

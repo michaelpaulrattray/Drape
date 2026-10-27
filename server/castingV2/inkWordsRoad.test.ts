@@ -88,7 +88,11 @@ import {
 /* The three sentences #2562's sweep filed as #2580 — read through the real
    derivation here, where an outfit exists to move them. */
 import { cannotSaySentence } from "./cannotSayCopy";
-import { basicsWardrobeLine } from "./wardrobeLine";
+/* #2601's arm reads the coverage REASONS, which the nouns above cannot show:
+   `covered` and `unknown` both leave the list empty and only one of them was
+   ever what the sentence claimed. */
+import { wardrobeCoversSurface } from "./inkSurfaceCoverage";
+import { HOUSE_WARDROBE_LINE, basicsWardrobeLine } from "./wardrobeLine";
 import type { WardrobeResolution } from "./wardrobeLine";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -107,8 +111,25 @@ const BARE = born("basics", basicsWardrobeLine("male"));
 const ink = (said: string, wardrobe?: WardrobeResolution) =>
   classifyInkPlacement(said, "ink", wardrobe);
 
-/** An outfit that covers all three — the empty case has a real sentence (#2562). */
-const COVERED = born("basics", "a charcoal roll-neck jumper");
+/**
+ * AN OUTFIT THAT LEAVES NOTHING SHOWING — the empty case has a real sentence
+ * (#2562), and it no longer claims to have read the outfit (#2601).
+ *
+ * ⚠ **IT WAS NAMED FOR THE WRONG REASON, AND THAT WAS THE CONFLATION THE
+ * DEFECT WAS MADE OF.** A jumper is not on `BASICS_LINES` and is not the house
+ * line, so `coverageOfWardrobeLine` does not recognise it and answers
+ * **`unknown` on all three surfaces** — never `covered`. Only `bare` survives
+ * `bareSurfaces`, so the list arrives empty either way and the old sentence
+ * told the customer the first reason. The name says the reason now, because a
+ * fixture that misnames its own reason is how a suite comes to pin the very
+ * sentence it should be refusing.
+ *
+ * ⚠ **And it is the ONLY reachable empty case** — driven in the reasons arm
+ * below: the one `covered` answer in either table is the house chest, and the
+ * house table leaves the neck and upper arm bare, so any line the reader knows
+ * leaves at least two surfaces showing.
+ */
+const UNREADABLE_OUTFIT = born("basics", "a charcoal roll-neck jumper");
 
 /**
  * THE PLACES A REFUSAL CARRIES, read off the classifier rather than retyped.
@@ -313,18 +334,24 @@ describe("⚠ the sentence names only what THIS cast's outfit leaves showing (#2
     expect(offered(nowhere).length, "and it is a real population").toBeGreaterThan(0);
   });
 
-  it("⚠ an outfit that covers everything gets an honest sentence, not a gap", () => {
+  it("⚠ an outfit that leaves nothing showing gets an honest sentence, not a gap", () => {
     /*
       A roll-neck jumper leaves none of the three showing, and the old sentence
       would have read *"Tell me where it goes —  from a description alone"*: a
       refusal that names nothing and reads as broken. `elsewhereClause` answers
       this case for the three sibling gates and says *"nowhere ELSE"*, which is
       wrong at this door — it is reached by an ask that named no place at all.
+
+      ⚠ **AND IT NO LONGER CLAIMS THE OUTFIT COVERS ANYTHING — #2601.** This
+      arm asserted *"covers every place that works"* on a fixture the coverage
+      reader answers `unknown` for, so the suite was pinning the defect.
     */
-    expect(offered(ink("a rose tattoo on her thigh", COVERED)), "the premise of this arm")
+    expect(offered(ink("a rose tattoo on her thigh", UNREADABLE_OUTFIT)), "the premise of this arm")
       .toEqual([]);
-    const said = saidFor(COVERED);
-    expect(said).toContain("covers every place that works");
+    const said = saidFor(UNREADABLE_OUTFIT);
+    expect(said).toContain("nowhere showing");
+    expect(said, "#2601 — it must not assert a coverage reading it is not holding")
+      .not.toContain("covers every place");
     expect(said, "it says what moves it — D-180's every-answer-acts rule")
       .toContain("Change the outfit first");
     expect(said).toContain("work from a design instead");
@@ -336,6 +363,91 @@ describe("⚠ the sentence names only what THIS cast's outfit leaves showing (#2
        noun. */
     expect(said).not.toMatch(/—\s+tattoo/);
     expect(said).not.toMatch(/ {2}/);
+  });
+
+  /*
+    ⚠ THE SENTENCE IS TRUE OF BOTH REASONS THE LIST CAN BE EMPTY FOR (#2601).
+
+    `bareSurfaces` keeps only `bare`, so a surface drops out of the offered list
+    when the outfit `covered` it OR when the coverage reader did not recognise
+    the line and answered `unknown`. **Those are different facts and the copy
+    cannot tell them apart** — it is handed a list, and an empty list is empty
+    either way. The old sentence picked one (*"this outfit covers every place
+    that works"*) and stated it, which is a claim about the customer's clothes
+    made on a reading the product never had.
+
+    So the arms below assert the SENTENCE and the REASONS, never the list: the
+    list is identical in both and that is the whole point of the card.
+  */
+  it("⚠ the empty sentence claims no coverage, because the reason may be `unknown`", () => {
+    /* THE REASON, read at the coverage door rather than inferred from the list:
+       a jumper is on neither table, so all three answer `unknown`. */
+    for (const key of INK_PLACEMENTS) {
+      expect(wardrobeCoversSurface(UNREADABLE_OUTFIT, key), `${key} on an unreadable line`)
+        .toBe("unknown");
+    }
+    /* A SECOND unreadable line, nothing like the first: the sentence must not
+       depend on which outfit we could not read. */
+    const alsoUnreadable: WardrobeResolution =
+      { kind: "line", line: "full plate armour, helmet down, gorget buckled", source: "edited" };
+    for (const key of INK_PLACEMENTS) {
+      expect(wardrobeCoversSurface(alsoUnreadable, key)).toBe("unknown");
+    }
+    expect(saidFor(alsoUnreadable), "one sentence for every unreadable outfit")
+      .toBe(saidFor(UNREADABLE_OUTFIT));
+
+    /* ⚠ THE CLAIM ITSELF. The copy is reason-BLIND by construction — it is a
+       function of the empty list — so the one sentence it says must be true
+       whichever reason produced it. Held at the words rather than by argument:
+       it says nothing about what the outfit covers. */
+    const said = saidFor(UNREADABLE_OUTFIT);
+    expect(said).toBe(inkNeedsDocumentMessage([]));
+    expect(said, "it must not assert a coverage reading it is not holding")
+      .not.toContain("covers every place");
+    expect(said, "nor any other claim about what the clothes do").not.toContain("covers");
+    /* And it still says what is true of both, and what moves it. */
+    expect(said).toContain("nowhere showing");
+    expect(said).toContain("Change the outfit first");
+    expect(said).toContain("work from a design instead");
+  });
+
+  it("⚠ CONTROL — and `covered` alone cannot empty the list at all", () => {
+    /*
+      The stronger form of the defect, measured here rather than reasoned: the
+      only `covered` answer in either table is the house chest, and the house
+      table leaves the neck and the upper arm `bare`. So **every line the reader
+      recognises leaves at least two surfaces showing**, and an empty list means
+      *we could not read it* — every time, not sometimes. That is why (a) was
+      the right repair and why no fixture below can be an all-`covered` cast:
+      the product cannot express one.
+
+      This arm is what tells a later reader that a missing `covered` fixture is
+      an absence in the PRODUCT and not a hole in the suite.
+    */
+    const recognised: readonly string[] = [
+      HOUSE_WARDROBE_LINE,
+      basicsWardrobeLine("male"),
+      basicsWardrobeLine(null),
+      /* Retired, and it never leaves the list — two production rolls wear it. */
+      "shirtless, in plain black fitted shorts, barefoot",
+    ];
+    for (const line of recognised) {
+      for (const source of ["brief", "edited"] as const) {
+        const resolution: WardrobeResolution = { kind: "line", line, source };
+        const reasons = INK_PLACEMENTS.map((key) => wardrobeCoversSurface(resolution, key));
+        expect(reasons, `a recognised line must never read as unreadable: ${source}`)
+          .not.toContain("unknown");
+        expect(
+          servedAndBarePlacements(resolution).length,
+          `a recognised line leaves somewhere showing: ${source} ${line.slice(0, 24)}`,
+        ).toBeGreaterThan(0);
+      }
+    }
+    /* Both controls, so the two claims above are real rather than vacuous. */
+    expect(wardrobeCoversSurface(UNPATHED, "upperChest"), "the reader does say `covered`")
+      .toBe("covered");
+    expect(servedAndBarePlacements(UNREADABLE_OUTFIT), "and an empty list IS reachable")
+      .toEqual([]);
   });
 });
 
@@ -389,7 +501,7 @@ describe("⚠ the three frozen ink sentences read the outfit too (#2580)", () =>
          and has merely shrunk — census 4(c)'s own lesson. */
       expect(bare, `${reason}: the outfit moved nothing`).not.toBe(tee);
 
-      const covered = sentence(reason, COVERED);
+      const covered = sentence(reason, UNREADABLE_OUTFIT);
       expect(covered, `${reason}: a jumper leaves nowhere, and it says so`)
         .toContain("nowhere showing");
       expect(covered, `${reason}: and it names what moves it`).toContain("Change what she's wearing");
@@ -435,7 +547,7 @@ describe("⚠ the three frozen ink sentences read the outfit too (#2580)", () =>
       still pass — each reading its own half. So they are held equal here, on
       every outfit, through the only public road to the first one.
     */
-    for (const wardrobe of [UNPATHED, BARE, COVERED]) {
+    for (const wardrobe of [UNPATHED, BARE, UNREADABLE_OUTFIT]) {
       expect(
         servedAndBarePlacements(wardrobe).map((key) => inkPlacementBareNoun(key)),
         "the keys and the nouns are the same set",

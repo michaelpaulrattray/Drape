@@ -981,7 +981,7 @@ function roomForOneVoiceObtainable(allowance: VoiceAllowance): boolean {
  * the question open: the provider may have finished the job and only the
  * answer was lost (#2507, the relay's finding, item 1).
  */
-export function providerProvablyRefused(error: unknown): boolean {
+function providerProvablyRefused(error: unknown): boolean {
   if (!(error instanceof ProviderError)) return false;
   if (error.completed) return false;
   const status = error.status;
@@ -1473,7 +1473,7 @@ export function resetVoiceAllowanceStaffCache(): void {
  * erasure). An orphaned slot is logged with its id so it can be swept by hand;
  * silence is what this must not do.
  */
-export async function releaseSlotQuietly(engine: VoiceEngine, voiceId: string): Promise<boolean> {
+async function releaseSlotQuietly(engine: VoiceEngine, voiceId: string): Promise<boolean> {
   try {
     await engine.deleteVoice({ voiceId });
     return true;

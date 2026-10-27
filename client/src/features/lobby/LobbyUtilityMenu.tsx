@@ -79,7 +79,7 @@ import { FeedbackForm, type FeedbackMode } from './FeedbackForm';
  * fixes). `helpPlacement2263-guard.test.ts` holds them to being complements.
  */
 export const TOPBAR_HELP_VISIBILITY = 'hidden md:block';
-export const ACCOUNT_MENU_HELP_VISIBILITY = 'md:hidden';
+const ACCOUNT_MENU_HELP_VISIBILITY = 'md:hidden';
 
 /**
  * One width (00b §1). 264px holds the longest live label and the longest inert

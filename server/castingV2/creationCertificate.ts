@@ -131,7 +131,7 @@ export function readSignedRecord(recordJson: string): StoredCreationRecord {
 const DATE = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 const TIME = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });
 
-export function certificateDate(at: Date | string): string {
+function certificateDate(at: Date | string): string {
   return DATE.format(typeof at === "string" ? new Date(at) : at);
 }
 
@@ -295,7 +295,7 @@ function readableRecordText(recordJson: string): string {
  */
 
 /** The data blocks' line width \u2014 the PEM convention. */
-export const APPENDIX_DATA_WIDTH = 64;
+const APPENDIX_DATA_WIDTH = 64;
 
 /**
  * Cut a run of data into lines of `width` characters, never between the two

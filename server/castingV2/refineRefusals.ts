@@ -134,9 +134,33 @@ export const REFINE_REFUSALS = {
       `backed` survives on the type for refusals written before the field
       existed, and this sentence is what such a refusal has always been given.
     */
-    say: (refusal) => `Refining changes the person, not the shoot — ${askedIn(refusal)} is a `
-      + "garment, a prop or the set, which comes after Sign. Jewellery, glasses and piercings "
-      + "do work here. Nothing was charged.",
+    /*
+      ⚠ AND SERVED, THE OLD SENTENCE IS FALSE TWICE OVER — #2544 slice 1.
+
+      It says a garment *"comes after Sign"*. For an account inside
+      `CASTING_OUTFIT_EDIT_SCOPE` clothing works in the box the customer is
+      already typing in, and a garment ask cannot reach this wall at all — only
+      the scenery half raises it. So a served account is told what still refuses
+      and what now works, and an unserved one reads today's words character for
+      character.
+
+      ⚠ **The bit is READ OFF THE REFUSAL, never re-derived here.** This file's
+      own worked example of why is forty lines up: a sentence that derived its
+      own answer about where a tattoo could go named surfaces the cast's outfit
+      was covering. The wall knows the account; the copy layer does not.
+
+      No engine is named on either branch, and both say what was refused and
+      what to do — the refusal law, unchanged.
+    */
+    say: (refusal) => (
+      "clothingServed" in refusal && refusal.clothingServed === true
+        ? `Refining changes the person, not the shoot — ${askedIn(refusal)} is part of the set, `
+          + "which a refine never touches. Clothing, jewellery and glasses do work here. "
+          + "Nothing was charged."
+        : `Refining changes the person, not the shoot — ${askedIn(refusal)} is a `
+          + "garment, a prop or the set, which comes after Sign. Jewellery, glasses and piercings "
+          + "do work here. Nothing was charged."
+    ),
     charge: "free",
     report: "wall",
   },

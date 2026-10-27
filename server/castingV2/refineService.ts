@@ -61,7 +61,9 @@ import {
   recoverCastingV2RefineOperation,
   type RefineRecoveryOutcome,
 } from "./refineRecovery";
-import { captureCastingCurrentDescriptionEnabled } from "./castingV2Scope";
+import {
+  captureCastingCurrentDescriptionEnabled, captureCastingOutfitEditEnabled,
+} from "./castingV2Scope";
 import { writeCurrentDescription } from "./currentDescription";
 import { interpreterEngine } from "./interpreter";
 import type { TextEngine } from "../providers/types";
@@ -828,6 +830,14 @@ export type RefineServiceDependencies = {
   hairReferenceEnabled?: (userId: number) => boolean;
   /** `CASTING_INK_REFERENCE_SCOPE`, injectable for the same reason as its siblings. */
   inkReferenceEnabled?: (userId: number) => boolean;
+  /**
+   * `CASTING_OUTFIT_EDIT_SCOPE` — whether clothing is an editable subject for
+   * this account (#2544 slice 1). Injectable for the same reason as its
+   * siblings: the arm that proves the flag OFF leaves today's road untouched,
+   * and the arm that proves a served account reaches a render, both have to be
+   * able to say so without setting a process-wide variable.
+   */
+  outfitEditEnabled?: (userId: number) => boolean;
   /**
    * `CASTING_INK_TRANSFORM_SCOPE` — whether she may change a tattoo she
    * already has. Injectable for the same reason as its siblings: the arm that
@@ -1840,9 +1850,27 @@ async function refineCandidateCounted(
     the two option sets rather than listing them, which is the only arm shape
     neither of those two members would have needed finding by hand.
   */
+  /*
+    IS CLOTHING THIS ACCOUNT'S TO CHANGE — read ONCE, for the same reason
+    `wardrobeNow` is (#2544 slice 1).
+
+    Two `interpretRefinement` call sites in this function read it (the first
+    reading, and rule 3's re-read with the removal vocabulary withheld), and two
+    captures of one flag are two answers waiting to disagree about one request.
+  */
+  const outfitEditServed =
+    (dependencies.outfitEditEnabled ?? captureCastingOutfitEditEnabled)(input.userId);
+
   const readInstruction = (extra: { mode?: "edit"; restated?: boolean } = {}) =>
     (dependencies.interpret ?? interpretRefinement)({
       instruction,
+      /*
+        CLOTHING IS AN EDITABLE SUBJECT FOR THIS ACCOUNT, or it is not (#2544
+        slice 1). Read from the ACCOUNT, like `inkReferenceEnabled` beside it:
+        what a customer may ask for is a property of their account rather than
+        of the sentence they typed.
+      */
+      outfitEditServed,
       /*
         A PICTURE RIDES THIS ASK — the entrance to the reference road
         (fable-1104 §2).
@@ -6278,10 +6306,18 @@ async function refineCandidateCounted(
 
       The only thing this value reaches that leaves the process is `prompt`
       (`composedPrompt.full`, a few lines down), and `prompt` is read in exactly
-      one place: inside `renderOnce` — which dispatched the OLD paste road and
-      dispatches nothing now that #1577 slice 4b has taken it out. The paint's
-      own string is assembled by the repaint from `editDelta`, with its own call
-      to this function, and that is the armed one.
+      one place: `landVariant`'s `internalPrompt.prompt` — so it is RECORDED on
+      the variant row and dispatched nowhere. The paint's own string is
+      assembled by the repaint from `editDelta`, with its own call to this
+      function, and that is the armed one.
+
+      ⚠ THIS USED TO NAME `renderOnce` AS THAT ONE PLACE, and it was already
+      wrong when #1577 slice 4b landed (#2596). `renderOnce` is `announce
+      ("rendering")` then `repaintOnce()` and does not mention `prompt` at all —
+      the sentence survived the road it described by naming the function that
+      had held the dispatch rather than the reader that was left. The
+      consequence is in `subjectQualifiers.ts`'s header: every subject's
+      delivery floor is composed into this string and reaches no engine.
 
       Its other two readers cannot see the strip at all: `regionOverrides` reads
       `askedFiled.makeup`, and the record below reads `facetsAnsweredBy` — this
