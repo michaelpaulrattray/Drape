@@ -92,6 +92,7 @@ import type { PictureHalf } from "./sidePhrasing";
 import { INK_DESIGN_MIN_EDGE } from "./inkUploadDoor";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
+import { PICTURE_READER_DOWN_MESSAGE, segmenterAccountRefused } from "./readerDown";
 
 const log = createModuleLogger("castingV2/inkReferenceCutter");
 
@@ -100,6 +101,22 @@ type InkCutRefusalCode =
   | "unreadable"
   /** A reader did not answer — a provider failure, never a fact about her picture. */
   | "couldNotRead"
+  /**
+   * THE READER REFUSED **US** — our key, our balance, our access (#2688).
+   *
+   * The hair cutter's `readerDown` clause for clause, and for the same reason:
+   * `couldNotRead` is weather and *"try again in a moment"* is true of it,
+   * where a 401 invites a retry that fails identically and implies the fault
+   * was the photograph they chose.
+   *
+   * ⚠ **IT COVERS THE READER SITE AND NOT THE PADDING ONE.** This file raises
+   * `couldNotRead` twice, and only one of them is a reader: the other is
+   * `sharp` failing to pad her picture before the licence question, which is
+   * local image work with no account behind it and no claim about anyone's
+   * bytes being unread. Blanket-mapping both would have told a customer the
+   * studio's readers were down about a failure that never reached one.
+   */
+  | "readerDown"
   /** A mask came back in a space that is not her picture's. Ours, never hers. */
   | "wrongSpace"
   /**
@@ -229,7 +246,12 @@ export type CutInkDesignResult =
  */
 const REFUSALS: Readonly<Record<InkCutRefusalCode, string>> = Object.freeze({
   unreadable: "That picture won't open — attach it again and I'll take another look. Nothing was charged.",
+  /* WEATHER — and also the padding failure above, which is ours but is not an
+     account and not a reader. "In a moment" is true of both. */
   couldNotRead: "I couldn't read that picture just now — try again in a moment. Nothing was charged.",
+  /* OUR ACCOUNT, said as ours — the sentence the four sibling picture roads
+     share (`readerDown.ts`). */
+  readerDown: PICTURE_READER_DOWN_MESSAGE,
   wrongSpace: "Something went wrong reading that picture — try again in a moment. Nothing was charged.",
   personWithoutDesign:
     "That looks like a design on a model's arm — I can't safely take it from there. "
@@ -407,16 +429,30 @@ export async function cutInkDesign(input: CutInkDesignInput): Promise<CutInkDesi
     input.reader.region({ image: paddedBytes, name: PERSON_REGION, absentIsAnswer: true }),
   ]);
   if (ink.status === "rejected" || person.status === "rejected") {
+    /*
+      BOTH reasons are consulted, not just the first reported one (#2688).
+
+      These two reads are settled together, so either or both may have failed.
+      `failed` below picks the ink side when both did — fine for a log line,
+      and wrong for the sentence: if one of them was our account being refused,
+      the studio IS down, and reading only the ink side would say "try again in
+      a moment" whenever the person read was the one that hit the 401.
+    */
+    const reasons = [ink, person]
+      .filter((settled) => settled.status === "rejected")
+      .map((settled) => (settled as PromiseRejectedResult).reason);
+    const ours = reasons.some(segmenterAccountRefused);
     const failed = ink.status === "rejected" ? ink.reason : (person as PromiseRejectedResult).reason;
     log.warn(
       {
         ...input.about,
         which: ink.status === "rejected" ? INK_REGION : PERSON_REGION,
+        accountRefused: ours,
         err: failed instanceof Error ? failed.message : String(failed),
       },
       "[inkReferenceCutter] a reader did not answer — a failure, not a finding about her picture",
     );
-    return refuse("couldNotRead");
+    return refuse(ours ? "readerDown" : "couldNotRead");
   }
 
   /*
