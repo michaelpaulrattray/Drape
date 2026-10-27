@@ -127,6 +127,7 @@ import { interpreterEngine } from "./interpreter";
 import { scrubBrands } from "./brandScrub";
 import { freeSubjectMaxLength } from "./refineDelta";
 import { pictureSideAskLines, pictureSideClause, type PictureHalf } from "./sidePhrasing";
+import { PICTURE_READER_DOWN_MESSAGE, readerAccountRefused } from "./readerDown";
 
 const log = createModuleLogger("castingV2/hairColourFromReference");
 
@@ -580,6 +581,45 @@ export async function readHairColourFromReference(
       Its words are the hair/ink cutters' `couldNotRead`, which already say this
       honestly on the sibling picture roads, rather than a new sentence.
     */
+    /*
+      ⚠ AND WHICH OF THOSE THREE IT WAS DECIDES THE SENTENCE (#2688). The
+      paragraph above lumps "the transport throwing, the deadline passing, or
+      the text account being overdrawn" into one answer, and the first two are
+      weather while the third is not: a disabled key invites a retry that fails
+      identically, and the sentence it shared says "that picture" about bytes
+      the provider refused us before it read. The weather half is untouched.
+    */
+    if (readerAccountRefused(error)) {
+      log.warn({ err: error }, "[hairColourFromReference] the reader refused US — our account, not her picture");
+      /*
+        ⚠ THE SENTENCE SPLITS AND THE TALLY BUCKET DOES NOT — DECLARED, NOT
+        QUIETLY DONE (the fidelity law: a lesser path is legitimate when it is
+        named, and a violation when it is silent).
+
+        The code stays `unreadable` because `referenceReadOutcomeFor` snake-cases
+        it straight into `casting_reference_reads.outcome`, a MySQL **enum**
+        (`drizzle/schema.ts`'s `CASTING_REFERENCE_READ_OUTCOMES`). MySQL does not
+        refuse a value outside an enum — it writes the EMPTY STRING — so a new
+        code here without a migration would fill the demand table with blanks,
+        which is exactly what `referenceReadDemand.test.ts` exists to catch and
+        would correctly redden on.
+
+        And that migration is not a seat's to ship under a copy card: widening an
+        enum is `ALTER TABLE … MODIFY COLUMN`, which `ceremonyAutoApply.mts`
+        classifies destructive and REFUSES to apply unattended, by its own
+        stated reasoning. So it is a hand ceremony and its own decision.
+
+        What that costs is **internal only**: the demand tally goes on counting
+        an account refusal beside a timeout under one word. No customer sees it,
+        and the sentence they do see is now correct. Carried on #2688.
+
+        This module already varies its sentence within this code — a truncated
+        reply and an unparseable one are both `unreadable` and say different
+        things — so this is the file's own established shape rather than a new
+        liberty taken with it.
+      */
+      return { ok: false, refusal: { code: "unreadable", message: PICTURE_READER_DOWN_MESSAGE } };
+    }
     log.warn({ err: error }, "[hairColourFromReference] the reader did not answer");
     return {
       ok: false,

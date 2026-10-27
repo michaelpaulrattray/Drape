@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 
 import { CONCEPT_DESCRIBE_COPY, conceptDescribeSentence } from "./conceptDescribeCopy";
 import { NOT_A_BEING_MESSAGE } from "./briefCompiler";
+import { READER_OUTAGE_MESSAGE } from "./briefRefusalCopy";
 
 /**
  * THE ONE BOUNDARY, TWO ENTRANCES. `no_being` and the roll road's
@@ -44,18 +45,72 @@ describe("the concept upload's refusal copy", () => {
     }
   });
 
-  it("gives the two OUR-FAULT reasons the same words and the four kinds different ones", () => {
+  it("gives the two OUTAGE reasons the same words, and does NOT give them to the transient one", () => {
     /*
-      `unreadable` and `no_transport` differ only in whose fault it was, which
-      is our fact and not hers — she is asked to do the identical thing. Every
-      OTHER pair must differ: the founder's own complaint that opened #204 was a
-      creature upload meeting the sentence written for an empty picture, and a
-      table that quietly collapsed two doors onto one sentence would reproduce
-      it with nothing going red.
+      ⚠ THIS ARM USED TO PIN THE OPPOSITE PAIRING AND THAT WAS THE DEFECT
+      (#2686). It read `expect(unreadable).toBe(no_transport)` on the reasoning
+      that the two "differ only in whose fault it was ... she is asked to do the
+      identical thing by both". She is not: a noisy read is worth retrying in a
+      moment and a studio with no reader is not.
+
+      The pair that genuinely shares a sentence is `no_transport` (no reader
+      configured) and `reader_outage` (the reader refuses US) — both mean the
+      studio cannot do this and neither is about the picture.
+
+      Every OTHER pair must differ: the founder's own complaint that opened #204
+      was a creature upload meeting the sentence written for an empty picture,
+      and a table that quietly collapsed two doors onto one sentence would
+      reproduce it with nothing going red.
     */
-    expect(CONCEPT_DESCRIBE_COPY.unreadable).toBe(CONCEPT_DESCRIBE_COPY.no_transport);
+    expect(CONCEPT_DESCRIBE_COPY.no_transport).toBe(CONCEPT_DESCRIBE_COPY.reader_outage);
+    expect(CONCEPT_DESCRIBE_COPY.unreadable).not.toBe(CONCEPT_DESCRIBE_COPY.no_transport);
     const distinct = new Set(Object.values(CONCEPT_DESCRIBE_COPY));
     expect(distinct.size).toBe(Object.keys(CONCEPT_DESCRIBE_COPY).length - 1);
+  });
+
+  it("tells the customer to try LATER on an outage and IN A MOMENT only when that is true", () => {
+    /*
+      The whole of #2686 in two assertions. On production from 03:09Z on
+      2026-10-27 the text account key was disabled, every call answered 401, and
+      the upload door said "Try again in a moment" to every attempt — advice no
+      retry could satisfy.
+    */
+    expect(CONCEPT_DESCRIBE_COPY.reader_outage).toMatch(/try again later/i);
+    expect(CONCEPT_DESCRIBE_COPY.reader_outage).not.toMatch(/in a moment/i);
+    /* The positive control: the genuinely transient reason keeps its advice,
+       so this is a split and not a blanket reword. */
+    expect(CONCEPT_DESCRIBE_COPY.unreadable).toMatch(/in a moment/i);
+  });
+
+  it("names THE STUDIO as the actor on an outage, as the roll road's wall does for the same fact", () => {
+    /*
+      THE ONE FACT, TWO ENTRANCES — the `no_being` arm's discipline applied to
+      the other sameness this table carries. A customer whose brief cannot be
+      read and a customer whose picture cannot be read are being told the same
+      thing about whose problem it is.
+
+      The assertion is the ATTRIBUTION and not the whole sentence, deliberately:
+      the roll road adds what happened to the money because a roll costs
+      credits, and this entrance is house money on every call so it has none to
+      report.
+    */
+    expect(READER_OUTAGE_MESSAGE).toContain("The studio");
+    expect(CONCEPT_DESCRIBE_COPY.reader_outage).toContain("The studio");
+  });
+
+  it("the outage sentence invents no charge and names no engine", () => {
+    /*
+      Two laws in one arm. A concept read is HOUSE MONEY on every call
+      (`routes/castingV2.ts`, above its rate limit), so the roll road's
+      "you have not been charged" would be telling her about money that was
+      never at stake. And the disappearing-technology law's one hard line
+      (clause 5) is that no engine or vendor name sits on a path someone must
+      walk to reach their picture.
+    */
+    expect(CONCEPT_DESCRIBE_COPY.reader_outage).not.toMatch(/charge|credit|refund|billed/i);
+    for (const sentence of Object.values(CONCEPT_DESCRIBE_COPY)) {
+      expect(sentence).not.toMatch(/openrouter|gemini|nano banana|sunburst|gpt|fal-ai|anthropic|openai/i);
+    }
   });
 
   it("NEGATIVE CONTROL — no sentence sends her looking for a better photograph of OUR fault", () => {
@@ -66,7 +121,7 @@ describe("the concept upload's refusal copy", () => {
       prose that overran is ours exactly as an inventory is), and for the two
       transport sentences, which say "just now".
     */
-    for (const reason of ["not_a_casting_note", "ran_long", "unreadable", "no_transport"] as const) {
+    for (const reason of ["not_a_casting_note", "ran_long", "unreadable", "no_transport", "reader_outage"] as const) {
       expect(CONCEPT_DESCRIBE_COPY[reason], reason).not.toMatch(/clearer|better (shot|picture|photo)/i);
     }
     /* And the positive half: the door that IS about her picture says so. */

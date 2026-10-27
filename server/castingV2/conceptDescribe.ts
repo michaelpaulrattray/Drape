@@ -1128,6 +1128,33 @@ function worthAskingAgain(error: unknown): boolean {
   return error instanceof ProviderError && error.failureClass === "unknown";
 }
 
+/**
+ * IS THIS OUR ACCOUNT RATHER THAN THEIR PICTURE (#2686)?
+ *
+ * `provider_account` is the text provider's 401/402/403 — our key disabled,
+ * our balance gone, our access revoked (`openrouterText.ts`'s
+ * `classifyOpenRouterTextHttp`). It is the one failure here that is provably
+ * nothing to do with the bytes that were uploaded and provably not fixed by
+ * trying again, so it is the one that must not take `unreadable`'s sentence.
+ *
+ * Measured rather than supposed: on production from 03:09Z on 2026-10-27 the
+ * account key was disabled, every call answered 401, and every upload told the
+ * founder *"I couldn't read that picture just now. Try again in a moment."*
+ *
+ * ⚠ **IT IS DELIBERATELY NOT WIDENED TO `capability`, AND THAT LEAVES A
+ * STATED REMAINDER.** Once five consecutive failures open the queue's breaker
+ * (`providerQueue.ts`, `failureThreshold: 5`), the next 30 s of calls are
+ * refused by `admit()` as `capability` — the same class a malformed request
+ * and a cancelled call raise, where *"try again in a moment"* is honest. So
+ * during a sustained outage the attempts that land on the breaker still get
+ * the transient sentence. Telling those apart means the breaker carrying the
+ * class that opened it, which changes what every provider road sees and is its
+ * own card, not this one's.
+ */
+function readerAccountRefused(error: unknown): boolean {
+  return error instanceof ProviderError && error.failureClass === "provider_account";
+}
+
 /** The sentence the reader is given on the second ask. It always names the fault. */
 function reAsk(fault: Fault): string {
   switch (fault.kind) {
@@ -1267,9 +1294,15 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
         { err: error, attempt, again },
         "[conceptDescribe] the reader did not answer",
       );
-      return again
-        ? { ok: "retry", fault: null }
-        : { ok: false, reason: "unreadable", attempts: attempt };
+      if (again) return { ok: "retry", fault: null };
+      /* The one failure that is ours and not theirs gets its own sentence —
+         see {@link readerAccountRefused}. Everything else keeps `unreadable`,
+         which is unchanged. */
+      return {
+        ok: false,
+        reason: readerAccountRefused(error) ? "reader_outage" : "unreadable",
+        attempts: attempt,
+      };
     }
 
     const parsed = parse(reply.text ?? "");

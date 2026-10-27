@@ -1,7 +1,7 @@
 {
-  "edition": 745,
-  "updatedAt": "2026-10-27T09:10:09.227Z",
-  "shift": "ONE QUESTION FOR YOU TONIGHT, and the thing it is about is already fixed, so there is no hurry on it.\n\nThis was the weekly security check. The headline first: everything protecting your customers held. Nothing a\ncustomer can reach was at risk at any point, and I checked that two separate ways rather than believing one\nreader.\n\nWHAT I FOUND, AND FIXED TONIGHT. The tools we BUILD the site with — not the site itself — had eleven known\nsecurity holes open, one of them serious. They are in the dev server, the test runner, and a small address parser\nthat comes along with them. None of it goes out to customers: the check that reads what actually ships read zero,\nbefore and after. What was exposed is our own machines and our build robot. The serious one is a Windows-only hole\nin the dev server's \"open this file in my editor\" button — which is the machine you and the crew actually work on.\n\nIt is fixed, and the fix was small. All three already had a safe patched version inside the version ranges we had\nwritten down months ago, so this was three one-line changes, not an upgrade to anything new. Measured before and\nafter: eleven holes, then \"no known vulnerabilities found\". The whole test suite — about 21,000 checks — passes on\nthe new versions, and so does the check that judges how much a customer has to download before the page appears,\nwhich is the one thing a change to the build tool could plausibly have moved.\n\nWHY THEY SAT THERE FOR THREE DAYS IS THE PART WORTH YOUR ATTENTION, and nobody was asleep. The robot that offers\nus dependency updates had already opened a BIG version jump for two of these packages back on the 19th — a whole\nmajor version each — and both of those have been failing their tests ever since. The robot will not offer a\nsecond, smaller update for a package it already has an open one for. So the cheap safe fix was never put in front\nof anyone. I checked that rather than assuming it: the bundle of updates it opened this morning moves neither\npackage at all.\n\nTHE QUESTION, AND IT IS ONE WORD. Our merge check reads known holes in what SHIPS, and deliberately not in the\nbuild tools — it says so in its own output. That is a defensible line, because a hole in the test runner cannot\nreach a customer. But it does mean eleven of them, one serious, sat for three days with the only thing noticing\nbeing this weekly check. Should the merge check also read the build tools, and if so, should it REFUSE or just\nWARN? My recommendation is WARN: it would have told us on the 24th, and it can never block your work. The card is\non your desk.\n\nALSO FOUND, AND IT IS NOT A HOLE. Our own internal map of the product carries a column saying whether each of its\n293 doors has a speed limit on it. The column is wrong on seventeen of them — it says \"no limit\" where the code\nplainly has one, including on one of the thirteen doors that are open to the public with no sign-in. The limits\nare all genuinely there: the thing that really proves it is a test that drives every public door until it refuses\nand then proves a second visitor still gets in, and that test is green. The map's column is simply wrong, because\nit guesses by looking for three particular spellings and fifteen of our files use a different one. Nothing in the\nproduct reads the column, which is why it has been wrong for months with nothing ever going red. Filed; the\nrecommendation is to fix it properly or delete it, because an unread column that is wrong is worse than none.\n\nEVERYTHING ELSE WAS CLEAN. No secrets anywhere in 5,015 commits of history, checked twice this fortnight. No\nfindings from either code scanner. The access-control tests green. Your audit log gained exactly one row in ten\ndays. No blocked addresses, no suspensions, nobody frozen. And nobody's private cast recipe anywhere in the log\nthat staff can read — checked over all 1,240 rows, with the reader given a decoy first to prove it can still spot\none.",
+  "edition": 747,
+  "updatedAt": "2026-10-27T12:12:33Z",
+  "shift": "CLOTHING EDITS ARE ON FOR YOUR ACCOUNT, AND THE SILENT HALF-SENTENCE BUG IS FIXED AND IN REVIEW. Both of your answers from this morning were read and acted on.\n\nYOUR TWO ANSWERS. You said “Switch it on for my account” — done: clothing changes now work in Refine for you, and for nobody else, from the moment this page updated. Type something like “put her in a long black coat” on any candidate and it is an ordinary edit at the ordinary price. Widening it to everyone stays your word. You also said “WARN — tell us, never block us” about the build-tool safety check — recorded on its card, and the warning version is now ordinary queued work.\n\nTHE BUG THAT JUMPED THE QUEUE, now fixed. Yesterday's shift found that typing two things into Refine — “make her hair copper red in a studio” — delivered the hair and silently ignored the studio, with nothing telling you. Your picture was never wrong and no money was ever spent on a set change; the product just never said what it left out. Now it does: beside the picture, the moment the edit starts, you read “The studio part of your ask wasn't changed — refining changes the person, not the shoot. Everything else you asked for went ahead.” No new buttons, nothing to learn — one honest sentence in the product's own voice. It is built, tested, photographed in both themes, and waiting on the review that every customer-visible change gets; I have not merged it.\n\nONE MORE THING FOUND ON THE WAY, written down rather than folded in. The product already composes honest sentences for other partly-done edits — but because every paid edit now answers instantly with a receipt, those sentences finish composing after the receipt has already answered, and nobody has ever read one. Filed as its own card with the full reading; nothing about it loses anyone money or pictures — it is the same kind of silence as tonight's bug, one layer further down.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-27T09:15:59.684Z",
+      "readAt": "2026-10-27T12:13:28.876Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7539,6 +7539,13 @@
   ],
   "pipeline": [
     {
+      "id": "scenery-note-2695",
+      "title": "Refine says which half of your sentence named the shoot and was dropped (#2695)",
+      "status": "in-review",
+      "prNumber": 2712,
+      "note": "Customer-visible, so it waits on the relay's hand verdict; gate green, frames posted in both themes."
+    },
+    {
       "id": "open-kind-removal-2638",
       "title": "A feature the studio invented a name for can be taken back by name - \"remove her fangs\" works (#2638)",
       "status": "merged",
@@ -10785,6 +10792,13 @@
       "status": "merged",
       "prNumber": 2706,
       "note": "Three one-line floor raises inside ranges we already declared; squash 3360592f. Nothing a customer can reach was affected — the production check read zero before and after."
+    },
+    {
+      "id": "script-await-seam-2560",
+      "title": "A measuring script can now say \"finish the picture before you answer me\", instead of flipping one of your settings (#2560)",
+      "status": "in-review",
+      "prNumber": 2709,
+      "note": "Held for review on purpose — the refine charge and its refund sit inside the function it changes. No customer-visible change by construction. Gate green in 4 minutes; the sabotage check proves the new behaviour is what the tests are actually reading."
     }
   ],
   "problems": [
@@ -11279,10 +11293,12 @@
     298,
     299,
     300,
-    301
+    301,
+    302,
+    303
   ],
   "nextUp": {
-    "readAt": "2026-10-27T09:15:59.684Z",
+    "readAt": "2026-10-27T12:13:28.876Z",
     "items": [
       {
         "issueNumber": 1577,
@@ -11340,7 +11356,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "YOU — both numbers are measured and neither stops it. Switch clothing edits on for your own account? Recommend YES. Details on your Desk."
+          "because": "his desk card `outfit-flip-2544` is open"
         }
       },
       {

@@ -35,6 +35,7 @@ import {
   readOpenRouterActivity,
   activityByDay,
   booksLine,
+  keySpendLine,
 } from "../scripts/lib/openrouterBalance.mts";
 
 const KEY = "sk-or-v1-NOT-A-REAL-KEY";
@@ -338,5 +339,101 @@ describe("the daily books, read rather than derived", () => {
     const line = booksLine(await readOpenRouterActivity(KEY, respond({ data: [] })));
     expect(line).toContain("no activity in the last 30 days");
     expect(line).not.toContain("UNREAD");
+  });
+});
+
+/**
+ * THE FALLBACK WHEN THE BOOKS ARE SHUT (#2699, Machinist patrol #9).
+ *
+ * ⚠ The ledger's section F printed `openrouter activity UNREAD — HTTP 401` and
+ * NOTHING ELSE, while the deploy rite — reading the same endpoint with the same
+ * dead reading key, in the same hour — still printed today, this week and this
+ * month. **Two readers of one source with different coverage**, which is
+ * working law 4 in its exact shape. One function now, and these arms are what
+ * hold it to one: they drive the line itself, so neither call site can grow a
+ * copy that drifts.
+ */
+describe("the key's own spend, when the account's books cannot be read", () => {
+  const ALIVE = {
+    data: {
+      usage: 200.31760482,
+      usage_daily: 5.22,
+      usage_weekly: 5.22,
+      usage_monthly: 21.15,
+      is_management_key: false,
+    },
+  };
+  const SHUT = { ok: false as const, why: "HTTP 401" };
+
+  it("prints the key's windows when the books refuse, and names the missing breakdown", async () => {
+    const usage = await readOpenRouterUsage(KEY, respond(ALIVE));
+    const line = keySpendLine(usage, SHUT);
+    expect(line).toContain("today $5.22");
+    expect(line).toContain("week $5.22");
+    expect(line).toContain("month $21.15");
+    expect(line).toContain("per-day/model breakdown needs a management key");
+    expect(line).not.toContain("UNREAD");
+  });
+
+  /*
+    ⚠ **THE TWO READINGS ANSWER DIFFERENT QUESTIONS AND THE LINE MUST NOT BLUR
+    THEM.** `usage_*` on `/api/v1/key` is THAT KEY's own spend; `/activity` is
+    ACCOUNT-wide and per day. Run 9's `$21.15 month to date` is therefore not
+    comparable with run 8's `$5.47 over 11 active days`, and a later run reading
+    the fallback where it expected the table would compare them. `booksLine`
+    carries the mirror bracket and is asserted above.
+  */
+  it("says whose spend it is, so a later run cannot compare it with the books", async () => {
+    const line = keySpendLine(await readOpenRouterUsage(KEY, respond(ALIVE)), SHUT);
+    expect(line, "a reader will assume account-wide unless told")
+      .toContain("[this KEY's own windows, not the ACCOUNT-wide books]");
+    const books = booksLine(await readOpenRouterActivity(KEY, respond({ data: [] })));
+    expect(books).not.toContain("this KEY's own windows");
+  });
+
+  /*
+    ⚠ **THE NEGATIVE CONTROL, AND IT IS THE ARM THAT MATTERS: AN ABSENCE IS
+    NEVER A ZERO** (instrument doctrine entry 1). With BOTH reads dead the line
+    says unread with its reason — never `today $0.00`, which a reader cannot
+    tell from a quiet day.
+  */
+  it("says UNREAD with its reason when the key read is dead too, never a zero", async () => {
+    const dead = await readOpenRouterUsage(KEY, respond({}, { ok: false, status: 401 }));
+    const line = keySpendLine(dead, SHUT);
+    expect(line).toContain("UNREAD");
+    expect(line).toContain("HTTP 401");
+    expect(line).not.toContain("$0.00");
+    expect(line).not.toContain("today $");
+  });
+
+  /*
+    The positive control on the note: with the books READABLE the breakdown is
+    not missing, so the line must not claim it is — otherwise the first arm
+    passes on a constant rather than on the books' state.
+  */
+  it("drops the management-key note once the books ARE readable", async () => {
+    const usage = await readOpenRouterUsage(KEY, respond(ALIVE));
+    const open = await readOpenRouterActivity(KEY, respond({ data: [] }));
+    expect(open.ok).toBe(true);
+    const line = keySpendLine(usage, open);
+    expect(line).not.toContain("needs a management key");
+    expect(line).toContain("month $21.15");
+    /* And the scope bracket stays — the two reads are different questions
+       whether or not both of them answered. */
+    expect(line).toContain("[this KEY's own windows, not the ACCOUNT-wide books]");
+  });
+
+  /*
+    ⚠ **THE NOTE IS KEYED ON THE BOOKS, NOT ON `usage.isManagementKey`.** That
+    flag is a property of the INFERENCE key and is correctly false even when the
+    breakdown is arriving fine on the OTHER credential — printing the note off
+    it told a reader a capability was missing while it sat directly underneath.
+    This arm fails if a later hand "simplifies" the condition to the flag.
+  */
+  it("keys the note on the books and never on this key's own management flag", async () => {
+    const ordinary = await readOpenRouterUsage(KEY, respond(ALIVE));
+    expect(ordinary.ok === true && ordinary.isManagementKey).toBe(false);
+    const open = await readOpenRouterActivity(KEY, respond({ data: [] }));
+    expect(keySpendLine(ordinary, open)).not.toContain("needs a management key");
   });
 });
