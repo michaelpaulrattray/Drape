@@ -1,7 +1,7 @@
 {
-  "edition": 750,
-  "updatedAt": "2026-10-27T15:57:58.035Z",
-  "shift": "TONIGHT WAS ABOUT OUR OWN TOOLS, NOT YOUR PRODUCT. Nothing you can see changed, and that is the\nhonest headline. No money was spent and nothing was deleted.\n\nTHE JOB. The first thing on your rung is cleaning out the paid edit road, and the next piece of it\nis taking out an old switch. One real thing stood in the way. When that switch is on, asking for an\nedit answers immediately with a note saying the work has started — and the picture attached to that\nnote is the one the character already had, not the edited one. A person watching a screen waits for\nthe real picture to arrive. A tool does not: it takes the first answer, saves it as the result, and\nexits while the edit we paid for is still being made.\n\nThat has already happened once, in September, on one of our own measurements: three copies of the\nunedited face were saved as finished results, and one render was abandoned halfway. Sixteen more of\nour measuring tools were sitting in exactly that position. The only reason they were fine is a\nsetting on the development machine that happens to be switched off — and that setting is the very\nthing being deleted. All sixteen now say, in their own code, that they cannot take that kind of\nanswer.\n\nWHAT I FOUND ALONG THE WAY. Two corrections, both to our own notes rather than to the product. The\nlist of sixteen had missed two more tools — harmlessly, because those two never ask for a picture at\nall. And the tool the note called the most dangerous turned out not to spend money or make a\npicture: the note's reason was wrong even though its conclusion was right.\n\nWHY IT SHOULD NOT COME BACK. There is now a check that refuses any of our tools that asks for a paid\nedit without saying which kind of answer it can handle. I proved it works by breaking one tool on\npurpose, watching the check catch it by name, and putting it back.\n\nWHERE THAT LEAVES THE RUNG. The next-to-last slice of the cleaning-out job is genuinely clear now\nand is still the first thing to pick up. The last slice is not a simple switch removal — it needs a\ndecision from you about what controls the feature panel — and that is written on the job itself, so\nnothing is waiting here.",
+  "edition": 751,
+  "updatedAt": "2026-10-27T18:01:47.885Z",
+  "shift": "NOTHING YOU CAN SEE CHANGED TONIGHT, AND THAT IS THE POINT OF THE JOB. No money was spent,\nno character was touched, and nothing was deleted that anybody was using.\n\nTHE JOB. The next piece of cleaning out the paid edit road was taking out an old switch. That switch\ndecided whether asking for an edit answers you straight away — with a note saying the work has\nstarted — or holds the screen until the finished picture arrives. It has been set to \"answer straight\naway\" for every account since 25 August, so nobody has been on the other road for two months. Taking\nthe switch out does not change what you get; it means the good behaviour can no longer be switched\noff by one setting.\n\nWHY THAT SWITCH WAS THE ODD ONE OUT. The other five switches we retired this month each chose between\nan old way and the current way, so removing them deleted dead code. This one was different: its OTHER\nside was the FAULT. With it off, an edit held your screen for the whole render — usually about two\nminutes, sometimes six and a half — and about one edit in sixty answered so late that the connection\ncarrying the answer was already gone. The money was always safe; what was lost was being told what\nhappened. The switch was added to fix exactly that.\n\nWHAT THE WORK TURNED UP. Removing it made 235 of our own tests go red in one run, and that was worth\nmore than the switch. Those tests ask for an edit and then look at the picture — so they are in the\nsame position our measuring tools were in last night: handed a quick note instead of a picture, they\nwould read the note as the finished work. They were only safe because of the very setting being\nremoved. They now say, in one place, that they cannot take that kind of answer — the same thing the\nsixteen tools said last night.\n\nSOMETHING BLOCKED EVERY PIECE OF WORK IN THE BUILDING, AND IT WAS NOBODY'S FAULT. Halfway through the\nnight a security warning was published about a small library that Express uses to read web addresses.\nOur gate refuses to let anything ship with a known vulnerability in it, so every open piece of work\nwent red at once — including four that had not touched a dependency. It was fixed by moving a pin we\nalready had forward by one version, and that is merged and live. The timing is worth knowing: the\nsame check passed at 3:24am and failed at 3:40am with nothing in the code having changed. The\nwarning appeared, not the problem.\n\nTWO MISTAKES OF MY OWN, BOTH CAUGHT BEFORE THEY SHIPPED. I wrote down that a check had found nothing\nwhen I had run the wrong check — there are four of them and I ran one. And I wrote a note explaining\na fix whose own punctuation broke the file it was in. Both are fixed and both are written down where\nthe next shift will read them, because the lesson is the same each time: run the thing, do not\nreason about what it would have said.\n\nWHERE THAT LEAVES YOUR RUNG. The paid-edit cleanup now has ONE piece left, and it is a question for\nyou rather than a job for us: the last switch controls what turns the feature panel on, so taking it\nout means deciding what should control it instead. It is written on the job. Nothing is waiting on\nyou tonight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -14,7 +14,7 @@
       "title": "The refine era completes — the feature panel and the studio surfaces. What a character has is read from the character, never looked up in a fixed list, and every box on the panel is a promise that pressing there edits that thing.",
       "steps": [
         {
-          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire) and NOTHING IS WAITING ANY MORE: every one of the eight pieces of work it had in review has merged and is live, including the old dressing answer and the whole old picture-making road with its switch. The job was then left sitting on a hold that had stopped being true, which was cleared on Monday night. The one real thing the next slice was still waiting on is now done as well: sixteen of our own measuring tools would have started saving the wrong picture the moment that switch came out, and they now say they cannot take that answer (#2710). So the next-to-last slice is genuinely clear, and it is still the first thing a shift should pick up. The last slice is NOT a simple switch removal — it needs a decision from you about what controls the feature panel — and that is written on the job (#1577)",
+          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire) and EVERYTHING IN IT IS NOW DONE OR OPEN EXCEPT ONE. Tonight took out the switch that decided whether asking for an edit answers you straight away or holds your screen — it has been set to \"answer straight away\" for every account since 25 August, so you will see no difference; what changes is that the good behaviour can no longer be switched off. That work is open and waiting for the relay to read it, because it touches a paid road. THE ONE PIECE LEFT IS A QUESTION FOR YOU, NOT A JOB FOR US: the last switch controls what turns the feature panel on, so removing it means deciding what should control it instead. There are three things hanging off it, two of them live. It is written on the job (#1577)",
           "state": "waiting"
         },
         {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-27T14:38:58.124Z",
+      "readAt": "2026-10-27T18:00:43.314Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7549,6 +7549,20 @@
   ],
   "pipeline": [
     {
+      "id": "refine-dispatch-flag-1577-d4",
+      "title": "Every edit answers straight away, and the switch that could turn that off is gone (#1577 slice D4)",
+      "status": "in-review",
+      "prNumber": 2728,
+      "note": "Gate green (5.2m), CLEAN. Held for the relay: it touches a money/auth file, and triage agreed on its own and said so on the pull request."
+    },
+    {
+      "id": "qs-advisory-pin-2726",
+      "title": "A security warning that blocked every piece of work in the building is cleared (#2726)",
+      "status": "merged",
+      "prNumber": 2727,
+      "note": "Gate green; ordinary change by both triage halves, merged on the gate. Live on production."
+    },
+    {
       "id": "wardrobe-cap-2552",
       "title": "A whole outfit fits in the box that holds a whole outfit (#2552)",
       "status": "merged",
@@ -11322,16 +11336,12 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-27T14:38:58.124Z",
+    "readAt": "2026-10-27T18:00:43.313Z",
     "items": [
       {
         "issueNumber": 1577,
         "title": "N3 opening act: the REFINE-ROAD half of the ghost audit — enumerate every piece of old-lane machinery still running on the refine road (his timing, 2026-08-28)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "#2560 (the seam D4 needs) and PR #2569 in review. The five PRs this line used to name have all merged."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 1598,
