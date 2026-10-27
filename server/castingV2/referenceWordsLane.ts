@@ -100,8 +100,27 @@ export function wordsTakeIntentFor(instruction: string): ReferenceReadIntent | n
  * the person under any flag, so no reader here speaks for it. **The list does
  * not move; only its argument does**, which is why the sentence is corrected
  * rather than deleted.
+ *
+ * ⚠ **`wall_too_long` IS HERE TO KEEP A ROAD THIS LANE ALREADY HAD, and that
+ * is the whole of its argument (#2714).** Until that card, an over-long value
+ * returned the whole-delta `null` with no wall set and fell out of the
+ * interpreter's three samplings as **`unreadable`** — which is the first name on
+ * this list. So a picture-pointing sentence carrying one over-long value has
+ * always reached a reader here, and leaving the new id off would have closed
+ * that road silently while looking like a copy change. It is the
+ * what-was-bolted-to-it sweep: the id moved, so every list that keyed on the
+ * old one had to be asked.
+ *
+ * It also satisfies this list's own criterion rather than riding in on history.
+ * The test is *a gap a reader can fill*, and the gate above is narrow: a
+ * reference IS attached and the sentence IS a words-take intent. In that one
+ * shape the useful answer is the picture's own words — shorter than the typed
+ * description by construction — and this lane only ever OFFERS them
+ * (`WordsTakeReading`; nothing is filed until the customer says so). The three
+ * samplings are still saved, so the road is reached on the first parse and ends
+ * in the same place.
  */
-const ANSWERABLE_REFUSALS = ["unreadable", "wall_likeness", "wall_unfileable"] as const;
+const ANSWERABLE_REFUSALS = ["unreadable", "wall_likeness", "wall_unfileable", "wall_too_long"] as const;
 
 export function refusalIsAnswerableByAReader(reason: string): boolean {
   return (ANSWERABLE_REFUSALS as readonly string[]).includes(reason);

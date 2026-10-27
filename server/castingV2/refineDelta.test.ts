@@ -434,7 +434,18 @@ describe("the free lane files, or it refuses", () => {
 
   it("caps a free value, so an instruction cannot become a second brief", () => {
     const long = "a ".repeat(200);
-    expect(readDelta({ free: { brows: long } }, check(long))).toBeNull();
+    const state = check(long);
+    expect(readDelta({ free: { brows: long } }, state)).toBeNull();
+    /*
+      ⚠ AND IT NAMES ITSELF NOW (#2714). This arm asserted the null alone, which
+      a reader that walls by SILENCE satisfies — and silence is exactly what
+      that card was filed about: the whole delta went, and the customer was told
+      their clear sentence "didn't come through clearly". The cap is unchanged;
+      what is added is that the refusal has a name, so the sentence can be true
+      and the interpreter stops re-sampling toward a worse one.
+      `overlongValueRefusal.test.ts` is the whole of it.
+    */
+    expect(state.wall?.reason).toBe("wall_too_long");
   });
 });
 

@@ -198,6 +198,45 @@ export const REFINE_REFUSALS = {
     charge: "free",
     report: "wall",
   },
+  wall_too_long: {
+    /*
+      THE SENTENCE #2714 WAS FILED TO REPLACE, and every clause of it is doing
+      a job the old one got wrong.
+
+      It used to arrive as `unreadable` — *"That one didn't come through
+      clearly. Try naming what you want changed about them."* The ask HAD come
+      through clearly, so that sentence told somebody their own clear English
+      was the problem and then gave them advice they had already taken. They
+      retype it and get the same answer.
+
+      So: **it opens by agreeing the ask was understood**, because it was;
+      **it says the honest cause** — this much about one thing is more than the
+      record holds; **it says the rest of the sentence is not lost**, which is
+      the half nobody could have guessed, since an over-long value silently took
+      every unrelated change with it; and **it ends with the money**, as all of
+      these do.
+
+      ⚠ **IT DOES NOT NAME A NUMBER.** The refusal carries `length` and `limit`
+      for the log, and a character count is the disappearing-technology law's
+      own example of a number a customer has no basis to act on — *"say it in
+      fewer words"* is the same instruction without the machinery. Nor does it
+      say *try again in a moment*: nothing is going to change on its own, and a
+      retry that cannot work is the dead-end-offer class.
+
+      ⚠ **AND IT DOES NOT NAME WHICH PART, which is a declared limit** — see
+      `wall_too_long`'s docblock. There is no customer-facing label per subject
+      in this product, and the two tables that resemble one answer different
+      questions (`SUBJECT_NOUNS` → `tooth`, `cheekbone`; `heading` → `HAIR
+      WORN`). A sentence built from either would be reworded by a prompt edit.
+      The subject rides the refusal so that the day a real label table exists,
+      this is the one line that has to change.
+    */
+    say: () => "I understood that, but one part of it is longer than I can keep on record — "
+      + "so none of it was applied. Say that part in fewer words and the rest of your "
+      + "sentence will go through with it. Nothing was charged.",
+    charge: "free",
+    report: "wall",
+  },
   gate_ink_document: {
     /*
       The places the road serves THIS account, off the refusal's own bit —
