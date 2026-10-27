@@ -76,7 +76,12 @@ import {
 import { SLICE_REFUND_DESCRIPTIONS } from "../server/castingV2/sliceRefundLedger";
 import { openDatabase, resolveDatabaseUrl, worldOf } from "./lib/dbConnection.mts";
 import { faceScanSpendWords, priceFalCalls, readFalPrices, readFalTraffic } from "./lib/falSpend.mts";
-import { activityByDay, readOpenRouterActivity } from "./lib/openrouterBalance.mts";
+import {
+  activityByDay,
+  keySpendLine,
+  readOpenRouterActivity,
+  readOpenRouterUsage,
+} from "./lib/openrouterBalance.mts";
 import { SEARCH_RESULT_CEILING } from "./lib/crewNamingWindow.mts";
 import { readMergedPrs } from "./lib/mergedPrGateTime.mts";
 import {
@@ -523,7 +528,26 @@ for (const [d, n] of [...scanDays.entries()].sort()) console.log(`   ${d}  ${n}`
 console.log(`\nF. provider books`);
 const activity = await readOpenRouterActivity();
 if (!activity.ok) {
+  /*
+    ⚠ **THIS BRANCH USED TO BE THE WHOLE SECTION, AND IT WENT BLIND WHILE THE
+    DEPLOY RITE READING THE SAME THING KEPT ITS TOTALS (#2699).** On run 9 it
+    printed, in full, `openrouter activity UNREAD — HTTP 401` — the reading key
+    had died (the PRODUCT key was alive and no customer could feel it) — while
+    the rite's receipt the same hour still carried today, this week and this
+    month. The rite had a fallback this reader never got: working law 4, two
+    readers of one source with different coverage.
+
+    ⚠ The fallback is NOT a quieter version of the table above it. Those are the
+    ACCOUNT's books per day and per model; this is the inference KEY's own
+    windows, so the two are not comparable and `keySpendLine` says which it is
+    in its own words. A later run that treats `month to date` as the window's
+    total is the mistake this note exists to stop.
+
+    ⚠ And with BOTH reads unreadable it prints UNREAD with the reason, never a
+    zero (doctrine entry 1) — which is the negative control its arm drives.
+  */
   console.log(`   openrouter activity UNREAD — ${activity.why}`);
+  console.log(`   ${keySpendLine(await readOpenRouterUsage(), activity)}`);
 } else {
   const sinceDay = sinceIso.slice(0, 10);
   const perDay = activityByDay(activity.rows).filter((row) => row.date >= sinceDay).sort((a, b) => a.date.localeCompare(b.date));

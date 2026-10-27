@@ -350,6 +350,51 @@ export function activityByDay(
 }
 
 /**
+ * THE KEY'S OWN SPEND, AND THE NOTE THAT BELONGS BESIDE IT WHEN THE BOOKS ARE
+ * SHUT — ONE function, because two readers of one source with different
+ * coverage is exactly the defect this closed (#2699, Machinist patrol #9).
+ *
+ * ⚠ **THE LEDGER WENT BLIND AND THE DEPLOY RITE DID NOT, ON THE SAME DEAD KEY,
+ * IN THE SAME HOUR.** `machinist-ledger-read.mts`'s section F printed, in full,
+ * `openrouter activity UNREAD — HTTP 401`; the rite's receipt the same hour
+ * printed the remainder, `today $5.22 · week $5.22 · month $21.15`, and only
+ * then its own `books UNREAD — HTTP 401`. **The rite lost the per-day and
+ * per-model breakdown and kept the totals; the ledger lost everything** — and
+ * the per-day view is not decoration: run 7 used it to see $29.55 of court
+ * spend against run 8's $5.47, and run 8 used it to notice a second model
+ * appearing in these books for the first time. The rite had a fallback this
+ * reader never got, which is working law 4 in its exact shape. Fixing it by
+ * writing a THIRD copy would have been the same mistake, so both call sites
+ * take the line from here.
+ *
+ * ⚠ **AND IT SAYS WHOSE SPEND IT IS, BECAUSE THE TWO ANSWER DIFFERENT
+ * QUESTIONS AND A READER WILL OTHERWISE COMPARE THEM.** `usage_*` on
+ * `/api/v1/key` is THIS KEY's own windows; `/activity` is ACCOUNT-wide and per
+ * day. So run 9's `$21.15 month to date` is not comparable with run 8's `$5.47
+ * over 11 active days`, and a later run reading the fallback where it expected
+ * the table would make exactly that comparison. `booksLine` below carries the
+ * mirror bracket for the same reason.
+ *
+ * ⚠ **THE NOTE IS KEYED ON THE BOOKS, NOT ON `usage.isManagementKey`** — moved
+ * here from the rite's own call site, where it was reasoned out and would have
+ * been lost to a refactor that only moved the arithmetic. That flag is a
+ * property of the INFERENCE key and is correctly `false`, but the breakdown
+ * arrives on a DIFFERENT credential: printing the note off the flag alone told
+ * the reader a capability was missing while it sat directly underneath.
+ *
+ * ⚠ **AN ABSENCE IS NEVER A ZERO** (instrument doctrine entry 1). With the
+ * usage read unreadable too this says UNREAD with its reason, rather than
+ * printing three dollar signs and nought.
+ */
+export function keySpendLine(usage: OpenRouterUsage, books: OpenRouterActivity): string {
+  if (!usage.ok) return `openrouter spend UNREAD — ${usage.why}`;
+  return `openrouter spend  today $${usage.daily.toFixed(2)} · week $${usage.weekly.toFixed(2)}`
+    + ` · month $${usage.monthly.toFixed(2)}`
+    + (books.ok ? "" : "  (per-day/model breakdown needs a management key)")
+    + "  [this KEY's own windows, not the ACCOUNT-wide books]";
+}
+
+/**
  * The books, as one receipt line: the biggest day in the window and the window's
  * own total, because a single day's figure with no scale beside it is the shape
  * of number that gets misread in both directions.
