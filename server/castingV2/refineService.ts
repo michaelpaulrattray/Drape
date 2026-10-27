@@ -6307,10 +6307,18 @@ async function refineCandidateCounted(
 
       The only thing this value reaches that leaves the process is `prompt`
       (`composedPrompt.full`, a few lines down), and `prompt` is read in exactly
-      one place: inside `renderOnce` — which dispatched the OLD paste road and
-      dispatches nothing now that #1577 slice 4b has taken it out. The paint's
-      own string is assembled by the repaint from `editDelta`, with its own call
-      to this function, and that is the armed one.
+      one place: `landVariant`'s `internalPrompt.prompt` — so it is RECORDED on
+      the variant row and dispatched nowhere. The paint's own string is
+      assembled by the repaint from `editDelta`, with its own call to this
+      function, and that is the armed one.
+
+      ⚠ THIS USED TO NAME `renderOnce` AS THAT ONE PLACE, and it was already
+      wrong when #1577 slice 4b landed (#2596). `renderOnce` is `announce
+      ("rendering")` then `repaintOnce()` and does not mention `prompt` at all —
+      the sentence survived the road it described by naming the function that
+      had held the dispatch rather than the reader that was left. The
+      consequence is in `subjectQualifiers.ts`'s header: every subject's
+      delivery floor is composed into this string and reaches no engine.
 
       Its other two readers cannot see the strip at all: `regionOverrides` reads
       `askedFiled.makeup`, and the record below reads `facetsAnsweredBy` — this

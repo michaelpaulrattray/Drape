@@ -7,6 +7,8 @@ import {
   qualifierFor,
 } from "./subjectQualifiers";
 import { FREE_SUBJECTS, FREE_SUBJECT_KEYS, type FreeSubject } from "./refineSubjects";
+import { repaintAsksFor } from "./repaintAsks";
+import { assembleRecipe } from "./recipeAssembler";
 
 /*
   THE TABLE IS DERIVED, AND THIS IS THE HALF THE COMPILER CANNOT DO.
@@ -134,5 +136,85 @@ describe("headings and qualifiers describe the same vocabulary", () => {
     for (const subject of FREE_SUBJECT_KEYS) {
       expect(FREE_SUBJECTS[subject], `${subject} has no heading`).toBeTruthy();
     }
+  });
+});
+
+/*
+  ⚠ WHERE THESE CLAUSES ACTUALLY GO, PINNED SO THE HEADER CANNOT GO QUIET AGAIN
+  (#2596).
+
+  The module's header says, with a court behind it, that no qualifier reaches an
+  engine: the road that renders is `repaintAsksFor` -> `assembleRecipe`, and
+  neither names this table. That fact went unnoticed for about two months
+  because nothing anywhere asserted it — the suite above proves every subject is
+  ARMED and nothing proved the arming was connected to anything.
+
+  **This is a DECISION PIN, not a wall.** If a later card wires the floor into
+  the repaint road, this arm is supposed to turn red: read #2596's court first
+  (wardrobe and marks both measured no effect, and the bare clause delivered
+  18 of 18 at the frames), state the reason the court does not cover, derive the
+  clause FROM this table rather than copying it (law 4), and then delete this
+  arm in the same commit as the header paragraph it guards.
+*/
+describe("the floor and the road that renders (#2596)", () => {
+  /* Stands in for `EDIT_PROSE` with recognisably different text, so an arm
+     cannot pass by accidentally reproducing production prose. Importing the
+     real one would pull `refineService` into a leaf suite. */
+  const prose = {
+    eyeColour: (value: string) => `iris prose for ${value}`,
+    eyeShape: (value: string) => `shape prose for ${value}`,
+    hairStyle: (value: string) => `a ${value} (family)`,
+    hairColour: (value: string) => `colour prose for ${value}`,
+    hairTexture: (value: string) => `texture prose for ${value}`,
+  } as unknown as Parameters<typeof repaintAsksFor>[0]["prose"];
+
+  const promptFor = (words: string): string => {
+    const asks = repaintAsksFor({
+      delta: { free: { marks: [words] } } as never,
+      prose,
+      pronouns: { subject: "they", object: "them", possessive: "their", plural: true },
+    });
+    if (!asks.ok) throw new Error(`expected asks, got ${asks.reason}`);
+    const recipe = assembleRecipe({
+      master: { key: "casting-v2/candidates/pin.png" },
+      pronouns: { subject: "they", object: "them", possessive: "their", plural: true },
+      library: [],
+      asks: asks.asks,
+      ...(asks.presentation ? { presentation: asks.presentation } : {}),
+    });
+    if (!recipe.ok) throw new Error(`the assembler refused: ${recipe.reason}`);
+    return recipe.prompt;
+  };
+
+  it("sends the customer's words bare — the delivery floor is not in the dispatched prompt", () => {
+    const sent = promptFor("freckles across the nose and cheeks");
+    /* THE POSITIVE CONTROL, and it is deliberately NOT keyed on the sentence
+       ENDING here: an arm that demanded the full stop would redden on its own
+       control the moment anything were appended, and the failure would read as
+       "the ask went missing" rather than as "the floor arrived". So this proves
+       the prompt is real and carries the ask, and the next line alone carries
+       the finding. */
+    expect(sent).toContain("Change only their skin: freckles across the nose and cheeks");
+    expect(sent, "THE FLOOR NOW REACHES THE ENGINE — read the pin above before changing this")
+      .not.toContain(TEETH);
+  });
+
+  it("is not merely missing the floor — the whole marks qualifier is absent", () => {
+    /* Keyed on the class's own `describe` wording as well as the shared floor,
+       so a change that drops `TEETH` while keeping per-class prose does not
+       read as compliance. */
+    const sent = promptFor("a beauty mark on the left cheek");
+    expect(sent).toContain("Change only their skin: a beauty mark on the left cheek");
+    expect(sent, "the marks qualifier now reaches the engine").not.toContain(qualifierFor("marks"));
+    expect(sent, "the marks `describe` wording now reaches the engine")
+      .not.toContain("following the form of the face rather than painted flat");
+  });
+
+  it("the bare clause really does end there — nothing is appended after the words", () => {
+    /* The other half of the control above: with the full stop checked in its
+       own arm, a prompt that grew a tail is still caught, and it is caught by
+       an assertion whose name says what happened. */
+    expect(promptFor("freckles across the nose and cheeks"))
+      .toContain("Change only their skin: freckles across the nose and cheeks.");
   });
 });
