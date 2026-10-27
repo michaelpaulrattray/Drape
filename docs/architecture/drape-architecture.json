@@ -8971,7 +8971,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
         "client/src/features/castingV2/voice/CastVoiceStudio.tsx"
@@ -8984,7 +8984,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
         "client/src/features/castingV2/voice/CastVoiceStudio.tsx"
@@ -8997,7 +8997,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
         "client/src/features/castingV2/voice/CastVoiceStudio.tsx"
@@ -9010,7 +9010,7 @@
       "type": "query",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/castingV2.ts",
       "clientCallers": [
         "client/src/features/castingV2/voice/CastVoiceStudio.tsx"
@@ -9023,7 +9023,7 @@
       "type": "query",
       "auth": "public",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/creationCheck.ts",
       "clientCallers": [
         "client/src/pages/CreationCheck.tsx"
@@ -9036,7 +9036,7 @@
       "type": "query",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/creationCheck.ts",
       "clientCallers": [
         "client/src/features/castingV2/creationCheck/PublicCheckCard.tsx"
@@ -9049,7 +9049,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/creationCheck.ts",
       "clientCallers": [
         "client/src/features/castingV2/creationCheck/PublicCheckCard.tsx"
@@ -9192,7 +9192,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9205,7 +9205,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9218,7 +9218,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9231,7 +9231,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9244,7 +9244,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9268,7 +9268,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": []
     },
@@ -9279,7 +9279,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9292,7 +9292,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9333,7 +9333,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9346,7 +9346,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": [
         "client/src/features/casting/evidence/useInkAddWorkflow.ts"
@@ -9359,7 +9359,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/evidence.ts",
       "clientCallers": []
     },
@@ -10508,7 +10508,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/components/DecompositionDrawer.tsx"
@@ -10521,7 +10521,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/components/DecompositionDrawer.tsx"
@@ -10576,7 +10576,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeInventory.ts"
@@ -10589,7 +10589,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeInventory.ts"
@@ -10670,7 +10670,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useModelSetup.ts"
@@ -10683,7 +10683,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useModelSetup.ts"
@@ -10727,7 +10727,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/studio/components/ModelUploadZone.tsx"
@@ -10895,7 +10895,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
@@ -10908,7 +10908,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
@@ -10921,7 +10921,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "open",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
@@ -10934,7 +10934,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
@@ -10947,7 +10947,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
@@ -10960,7 +10960,7 @@
       "type": "mutation",
       "auth": "protected",
       "input": "strict",
-      "rateLimited": false,
+      "rateLimited": true,
       "file": "server/routes/wardrobe.ts",
       "clientCallers": [
         "client/src/features/wardrobe/hooks/useWardrobeGeneration.ts"
@@ -13545,6 +13545,10 @@
     {
       "id": "test:server/architecturePublicEndpoints.test.ts",
       "path": "server/architecturePublicEndpoints.test.ts"
+    },
+    {
+      "id": "test:server/architectureRateLimited.test.ts",
+      "path": "server/architectureRateLimited.test.ts"
     },
     {
       "id": "test:server/architectureShapeCopies.test.ts",
