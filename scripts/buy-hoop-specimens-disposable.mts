@@ -90,7 +90,7 @@ for (const hoop of HOOPS) {
   await selectVariant({ userId: USER_ID, candidatePublicId: candidate.publicId, variantPublicId: null });
   const started = Date.now();
   try {
-    const result = await refineCandidate({}, {
+    const result = await refineCandidate({ cannotTakeAReceipt: true }, {
       userId: USER_ID,
       clientRequestId: randomUUID(),
       candidatePublicId: candidate.publicId,

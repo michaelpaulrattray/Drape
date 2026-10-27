@@ -117,7 +117,7 @@ for (const [at, step] of STEPS.entries()) {
   let threw: string | null = null;
   let outcome: any = null;
   try {
-    outcome = await refineCandidate({}, {
+    outcome = await refineCandidate({ cannotTakeAReceipt: true }, {
       userId: USER, clientRequestId: randomUUID(),
       candidatePublicId: candidate.publicId, instruction: step.instruction,
     });
