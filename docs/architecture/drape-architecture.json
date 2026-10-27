@@ -16879,6 +16879,10 @@
       "path": "server/refinePanelDoors.test.ts"
     },
     {
+      "id": "test:server/refineReceiptDiscipline.test.ts",
+      "path": "server/refineReceiptDiscipline.test.ts"
+    },
+    {
       "id": "test:server/refundRestoresItsBucket.test.ts",
       "path": "server/refundRestoresItsBucket.test.ts"
     },

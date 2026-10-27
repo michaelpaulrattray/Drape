@@ -165,6 +165,15 @@ function harness(counters: Counters, stop: Stop) {
   return {
     admit: () => true,
     /*
+      THIS ARM MEASURES THE MOMENT AFTER THE CLAIM, SO IT CANNOT TAKE A RECEIPT.
+      Both call sites below read the counters once `refineCandidate` has answered;
+      on the dispatch road it answers at the receipt, while the deduct latch above
+      is still holding — so the overlap this harness exists to create would be
+      measured after the function had already returned. Stated here once rather
+      than at each call site, because it is a fact about the harness.
+    */
+    cannotTakeAReceipt: true,
+    /*
       SABOTAGE 3 TAKES THE LOCK AWAY, which is the only perturbation that can
       flip this arm now that the guard exists.
     

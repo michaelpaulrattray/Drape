@@ -128,7 +128,7 @@ for (const [index, stack] of STACKS.entries()) {
   for (const instruction of stack.steps) {
     const started = Date.now();
     try {
-      const result = await refineCandidate({}, {
+      const result = await refineCandidate({ cannotTakeAReceipt: true }, {
         userId: bot!.id,
         clientRequestId: randomUUID(),
         candidatePublicId: candidate!.publicId,

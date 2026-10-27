@@ -159,7 +159,7 @@ async function run(candidateIndex: number, steps: string[]): Promise<{ rows: Row
   const rows: Row[] = [];
   for (const instruction of steps) {
     const started = Date.now();
-    const result = await refineCandidate({}, {
+    const result = await refineCandidate({ cannotTakeAReceipt: true }, {
       userId: bot!.id,
       clientRequestId: randomUUID(),
       candidatePublicId: candidate.publicId,
