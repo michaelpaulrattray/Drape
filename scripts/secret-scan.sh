@@ -75,7 +75,7 @@ if [ "${1:-}" = "fetch" ]; then
   # The pin decides whether the cached archive may be used, on every run.
   # `-c` is quiet-checked here only to choose the branch; the re-verify below
   # is the one whose failure is allowed to kill the script.
-  if ! echo "${SHA}  $CACHE/$ASSET" | sha256sum -c --status - 2>/dev/null; then
+  if ! echo "${SHA}  $CACHE/$ASSET" | sha256sum -c --status - >/dev/null 2>&1; then
     curl -fsSL -o "$CACHE/$ASSET" \
       "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${ASSET}"
     # Unguarded: a fresh download that does not match the pin is fatal, and

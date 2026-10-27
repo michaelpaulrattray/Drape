@@ -52,9 +52,10 @@
  *   ROLLS      open a census per candidate and write it to the LOG only, so a
  *              roll's renders are counted from the candidate ROWS instead —
  *              one GPT Image 2 render per delivered attempt.
- *   FACE SCANS mint nothing at all by design (CLAUDE.md), so their 21–27
+ *   FACE SCANS mint nothing at all by design (CLAUDE.md), so their 14–17
  *              segmenter calls and one body cutout per version looked at are
- *              invisible here (`FACE_SCAN_FAL_CALLS` below). This
+ *              invisible here (`faceScanSam3Reads()` below — 21–27 on the crop
+ *              road every account left on 2026-10-16). This
  *              is the largest blind spot and the derived total is a FLOOR
  *              because of it.
  */
@@ -164,11 +165,20 @@ export const FACE_SCAN_FAL_CALLS = {
      * ones. ⚠ Arrived at twice, by the drive and by that arithmetic, because
      * the first number written here was neither.
      *
-     * ⚠ **Off on the service, so `faceScanUsd()` and `faceScanFalFloorUsd()`
-     * deliberately do NOT read these** — a cost reader quoting a road nobody is
-     * on would under-report every real scan. They move into the figures above
-     * on the day the flag is flipped, with the re-measurement that flip earns.
-     * The flag's own entry is in `docs/architecture/FEATURE_FLAGS.md`.
+     * ⚠ **THESE ARE WHAT PRODUCTION DOES SINCE 2026-10-16, AND THE CLAUSE THAT
+     * STOOD HERE SAID THE OPPOSITE FOR THE WORST POSSIBLE REASON — IT WAS TRUE
+     * WHEN IT WAS WRITTEN (#2577).** It read *"Off on the service, so
+     * `faceScanUsd()` and `faceScanFalFloorUsd()` deliberately do NOT read
+     * these — a cost reader quoting a road nobody is on would under-report
+     * every real scan"*, and **its reasoning is exactly right and is why the
+     * readers moved**: the flag went to `"true"` for every account on his Desk
+     * reply #294 (*"Yes, Turn it on"*), so from that hour the road nobody was
+     * on was the CROP road, and every reader still quoting it OVER-reported
+     * every real scan by about 4½¢. Which road the readers price is declared
+     * once, at `FACE_SCAN_PAIR_ONE_READ_POSITION` below, and read through
+     * `faceScanSam3Reads()`. The flag's own entry is in
+     * `docs/architecture/FEATURE_FLAGS.md`; its position is in
+     * `scripts/lib/productionFlagPositions.mts`.
      */
     pairInOneRead: {
       fewest: 13,
@@ -239,16 +249,95 @@ export const FACE_SCAN_PART_USD = {
 type UsdBand = { low: number; high: number };
 
 /**
+ * WHERE `ENABLE_CASTING_PAIR_ONE_READ` STANDS ON PRODUCTION — the one place in
+ * this module that knows, and the only thing a flip has to move here.
+ *
+ * `"true"` since 2026-10-16, on his Desk reply #294, verbatim and entire:
+ * *"Yes, Turn it on"*. Compared EXACTLY against `"true"` and never for
+ * truthiness, because that is how the service reads it
+ * (`pairInOneReadEnabled()`, `server/castingV2/faceScanService.ts`): a Railway
+ * variable created with no value holds the empty string, which is the shape
+ * that reads as off while looking set.
+ *
+ * ⚠ **IT IS A COPY, AND WHAT MAKES IT SAFE IS A GUARD AND NOT A PROMISE.**
+ * `server/faceScanSpend.test.ts` holds this string equal to
+ * `PRODUCTION_FLAG_POSITIONS.ENABLE_CASTING_PAIR_ONE_READ.position` — the
+ * recorded position the deploy rite compares against the live service on every
+ * push — so a flip in either direction that does not move this line reddens
+ * that suite, and the mis-pricing #2577 was filed about cannot happen
+ * silently a second time.
+ *
+ * ⚠ **The tempting repair is to IMPORT the recorded position instead, and it
+ * is declined for this module's own stated rule** (`faceScanSpend.test.ts`'s
+ * header: the figures live here as constants *"only so that module stays out
+ * of the server's import graph"*). `productionFlagPositions.mts` reaches
+ * `governedBootSettings.mts`, which `readFileSync`s three SERVER declarations
+ * at import and THROWS if any of their shapes move — so importing it would put
+ * the server's boot declarations behind every price reader and take six test
+ * suites and three scripts down with it for a reason that has nothing to do
+ * with prices. A guarded copy of one four-character string is the cheaper
+ * side of that trade, and the trade is named rather than taken quietly.
+ */
+export const FACE_SCAN_PAIR_ONE_READ_POSITION = "true";
+
+/**
+ * THE SAM 3 READ COUNTS FOR THE ROAD PRODUCTION IS ACTUALLY ON — the one
+ * reader every scan-cost figure derives from.
+ *
+ * It exists because there are two measured figure sets for one question and
+ * five places that ask it: `faceScanUsd()`, `faceScanSpendWords()`,
+ * `faceScanFalFloorUsd()`, the derived-spend line's own gaps sentence, and the
+ * face-scan wire meter in `faceScanWire.mts`. Before #2577 each of those five
+ * reached into `FACE_SCAN_FAL_CALLS.sam3` directly, so the flip left all five
+ * pricing a road no account was on and nothing anywhere said so — which is
+ * working law 4 (a second list shadowing a source of truth) counted five
+ * times. **A road change is one line now**, and the `source` travels with the
+ * numbers so a reader printing them can cite the measurement it is quoting
+ * rather than a card number typed beside it.
+ */
+export function faceScanSam3Reads(): {
+  road: "pair-in-one-read" | "crop";
+  fewest: number;
+  most: number;
+  measured: { low: number; high: number; source: string };
+} {
+  const { fewest, most, measured, pairInOneRead } = FACE_SCAN_FAL_CALLS.sam3;
+  if (FACE_SCAN_PAIR_ONE_READ_POSITION === "true") {
+    return {
+      road: "pair-in-one-read",
+      fewest: pairInOneRead.fewest,
+      most: pairInOneRead.most,
+      measured: {
+        low: pairInOneRead.measured.low,
+        high: pairInOneRead.measured.high,
+        source: pairInOneRead.measured.source,
+      },
+    };
+  }
+  return { road: "crop", fewest, most, measured };
+}
+
+/**
  * One scan in dollars, built from its parts rather than typed as a total.
  *
  * `fal` is what a fal balance drop can be charged with (SAM 3 reads plus the
  * cutout); `total` adds the describer, which is billed at OpenRouter. The band
- * adds independent extremes, so it is a little wider than any one measured face
- * — #2183's eight casts ran $0.121–$0.151, all inside it.
+ * adds independent extremes, so it is a little wider than any one measured
+ * face.
+ *
+ * The read count comes from `faceScanSam3Reads()` — the road production is on,
+ * not whichever road was built first. **On the pair-in-one-read road that is
+ * $0.076–$0.107 a scan** (14–17 reads, #2191's three casts); it priced
+ * **$0.111–$0.157** while it was reading the crop road's 21–27, which is what
+ * #2577 was filed about and is ~4½¢ a scan of over-reporting. The crop road's
+ * own band still holds #2183's eight casts ($0.121–$0.151, all inside it), and
+ * `server/faceScanSpend.test.ts` keeps proving that about the crop figures
+ * whichever road is live — a bracket arm that moved with the flag would stop
+ * being a check on anything.
  */
 export function faceScanUsd(): { sam3: UsdBand; cutout: UsdBand; describer: UsdBand; fal: UsdBand; total: UsdBand } {
   const perRead = FAL_MEASURED_USD["fal-ai/sam-3/image"].usd;
-  const reads = FACE_SCAN_FAL_CALLS.sam3.measured;
+  const reads = faceScanSam3Reads().measured;
   const sam3 = { low: reads.low * perRead, high: reads.high * perRead };
   const cutout = {
     low: FACE_SCAN_FAL_CALLS.cutouts * FACE_SCAN_PART_USD.cutout.low,
@@ -280,21 +369,42 @@ export function faceScanUsd(): { sam3: UsdBand; cutout: UsdBand; describer: UsdB
  */
 export function faceScanSpendWords(looks: number): string {
   const usd = faceScanUsd();
-  const { low, high } = FACE_SCAN_FAL_CALLS.sam3.measured;
-  const money = (value: number) => `$${value.toFixed(value < 1 ? 3 : 2)}`;
+  const { low, high } = faceScanSam3Reads().measured;
+  /*
+    ONE PRECISION PER RANGE, taken from the end that needs the most of it.
+
+    ⚠ This was a per-VALUE rule (`value < 1 ? 3 : 2`) and it printed
+    **`= $0.763–$1.07`** the moment the cheaper road went live: ten scans is the
+    first figure in this line that can straddle a dollar, so the two ends of one
+    band formatted differently and the range read like a typo (#2577). The
+    three-place end is the one that must be kept — a scan is cents, and
+    `$0.08 each` is not a price anybody can check.
+  */
+  const band = (lowUsd: number, highUsd: number) => {
+    const places = Math.min(lowUsd, highUsd) < 1 ? 3 : 2;
+    return `$${lowUsd.toFixed(places)}–$${highUsd.toFixed(places)}`;
+  };
   return `${low}–${high} segmenter reads + ${FACE_SCAN_FAL_CALLS.cutouts} cutout at fal`
     + ` + ${FACE_SCAN_FAL_CALLS.describer} describer call at OpenRouter,`
-    + ` ${money(usd.total.low)}–${money(usd.total.high)} each`
-    + ` = ${money(looks * usd.total.low)}–${money(looks * usd.total.high)}`;
+    + ` ${band(usd.total.low, usd.total.high)} each`
+    + ` = ${band(looks * usd.total.low, looks * usd.total.high)}`;
 }
 
 /**
  * The fewest dollars a scan can cost at fal — every question answered first
  * time, and the cheapest cutout measured. A FLOOR for subtracting scans out of
  * a balance drop, where an overestimate would hide a render's real price.
+ *
+ * ⚠ **It fell $0.0905 → $0.0655 on 2026-10-16 (#2577), and the direction is
+ * the point rather than the size.** The floor is `faceScanSam3Reads().fewest`,
+ * which is 13 on the road production is on and was being read as the crop
+ * road's 18 — so `fal-picture-price.mts` was subtracting 2½¢ per scan MORE
+ * than a scan can possibly cost, which is precisely the overestimate the
+ * sentence above says must never happen: it was hiding that much of every
+ * render it priced beside a scan.
  */
 export function faceScanFalFloorUsd(): number {
-  return FACE_SCAN_FAL_CALLS.sam3.fewest * FAL_MEASURED_USD["fal-ai/sam-3/image"].usd
+  return faceScanSam3Reads().fewest * FAL_MEASURED_USD["fal-ai/sam-3/image"].usd
     + FACE_SCAN_FAL_CALLS.cutouts * FACE_SCAN_PART_USD.cutout.low;
 }
 
@@ -836,7 +946,7 @@ export function falLine(
        per-version figures come from the constants above rather than from a
        number typed into this sentence — the same fact in two spellings is how
        one of them goes stale. */
-    `face scans (mint nothing, ${FACE_SCAN_FAL_CALLS.sam3.measured.low}–${FACE_SCAN_FAL_CALLS.sam3.measured.high}`
+    `face scans (mint nothing, ${faceScanSam3Reads().measured.low}–${faceScanSam3Reads().measured.high}`
       + ` segmenter calls + ${FACE_SCAN_FAL_CALLS.cutouts} cutout per version viewed)`,
   ];
   return `fal DERIVED $${derived.priced.usd.toFixed(2)} over ${days}d`
