@@ -145,8 +145,17 @@ export type MintedSlotsInput = {
    * the segment cutter and this all have to name the same kind of object, and
    * three derivations of one string is how they come to disagree about whether
    * an ask was about ears or eyes.
+   *
+   * ⚠ **EVERY KIND THE LIST NAMES, NOT ONE (#2616).** A single kind was right
+   * while one ask meant one object. A plural facet's value is the whole worn
+   * list, and the caller's longest-match pick resolved every other item in it
+   * to the winner's slots — so earrings worn with glasses added filed the
+   * glasses under `earring@left, earring@right`, and a feature the customer had
+   * just paid for got no row of its own. The caller derives the grouping once,
+   * through `familyGroupsOf`, and hands the whole list; `slotsForFacet` unions
+   * and dedupes. A bare string is still accepted and still means one kind.
    */
-  accessoryKind?: string | null;
+  accessoryKind?: string | readonly string[] | null;
   /**
    * THE SLOTS THE LIBRARY ALREADY KEEPS SOMETHING FOR, on this branch.
    *

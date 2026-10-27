@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import sharp from "sharp";
 
 import {
   FACE_SCAN_CACHE_LIMIT,
   STENCIL_MAX_SIDE,
+  defaultDiscoverer,
   faceScanCacheStats,
   panelScanOf,
   resetFaceScanCache,
@@ -13,9 +14,12 @@ import {
   scannedFaceIfReady,
   scannedFaceAlreadyRead,
 } from "./faceScanService";
+import { resetInterpreterForTests } from "./interpreter";
 import { MaskError } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
+import { scanPlan } from "./faceScan";
+import type { FaceDiscovery } from "./faceDiscovery";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { once } from "../testing/once";
@@ -364,6 +368,52 @@ describe("the panel fills a feature at a time", () => {
     /* The settled answer is the authority and it is at least as complete as the
        partial ever was. */
     expect(settled.slots.size).toBeGreaterThanOrEqual(midway!.scan.slots.size);
+  });
+
+  it("a discovery that OMITS a feature today's road answers takes no row away (#2566)", async () => {
+    /*
+      THE RELAY'S SECOND HELD FINDING ON PR #2570. On cast 812's selected
+      version the discovery named no earring in reading 2 of 3, the question
+      was cancelled, and the Earrings row (piercings plainly on the ear) left
+      the panel. The repair is that a discovery may only ADD, so this drives the
+      exact shape: a successful reading that names hair and eyes and says
+      nothing about earrings, horns or glasses, against a reader that finds
+      every feature. Every catalogue question is asked and every row stays.
+    */
+    const held = heldReader({ x: 10, y: 10, width: 20, height: 20 });
+    const { deps } = await dependencies(held.reader);
+    let discovered = 0;
+    const omitting: FaceDiscovery = {
+      ok: true,
+      features: [{ name: "hair", count: 1, about: "" }, { name: "eyes", count: 2, about: "" }],
+      cannotSee: [],
+      unusable: [],
+      crops: ["head", "full"],
+    };
+    const reading = scannedFace({
+      ...FACE,
+      dependencies: { ...deps, discover: async () => { discovered += 1; return omitting; } },
+    });
+    const midway = await waitForProgress(held.release);
+    expect(midway, "some features have landed").not.toBeNull();
+    expect(midway!.scan.asked, "the partial counts the whole catalogue").toBe(scanPlan().length);
+
+    while (scanProgressOf(FACE)?.done !== true) await held.release();
+    const settled = await reading;
+    expect(discovered, "the discovery was bought, so the arm is not vacuous").toBe(1);
+    expect(settled.asked).toBe(scanPlan().length);
+    expect(settled.slots.has("earring@left"), "the omitted earring is still asked and still found").toBe(true);
+    expect(settled.slots.has("earring@right")).toBe(true);
+  });
+
+  it("CONTROL — the same reader with no discovery finds the same rows", async () => {
+    const held = heldReader({ x: 10, y: 10, width: 20, height: 20 });
+    const { deps } = await dependencies(held.reader);
+    const reading = scannedFace({ ...FACE, dependencies: { ...deps, discover: null } });
+    while (scanProgressOf(FACE)?.done !== true) await held.release();
+    const settled = await reading;
+    expect(settled.asked).toBe(scanPlan().length);
+    expect(settled.slots.has("earring@left")).toBe(true);
   });
 
   it("says DONE on the first look at a face already read — no polling for an answer we have", async () => {
@@ -850,6 +900,26 @@ describe("the reading this face has already paid for", () => {
     expect(keptCalls.kept[0].scan.slots.size).toBeGreaterThan(0);
   });
 
+  it("writes a reading with a discovery beside it down like any other (#2566)", async () => {
+    /*
+      The narrowed-reading refusal that stood here went with the gate: a
+      discovery cancels nothing, so a flag-on reading is as whole as a flag-off
+      one and is kept on the same rule.
+    */
+    arm("all");
+    const { deps } = await dependencies(countingReader());
+    const scan = await scannedFace({
+      ...FACE,
+      dependencies: {
+        ...deps,
+        discover: async () => ({ ok: true, features: [{ name: "hair", count: 1, about: "" }], cannotSee: [], unusable: [], crops: ["head", "full"] }),
+      },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(scan.asked).toBe(scanPlan().length);
+    expect(keptCalls.kept).toHaveLength(1);
+  });
+
   /*
     ⚠ AND THE PANEL'S FIRST PAINT ASKS THE TABLE TOO (#1378).
 
@@ -977,5 +1047,59 @@ describe("the reading this face has already paid for", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(keptCalls.kept, "a damaged reading is served and dropped, never kept").toHaveLength(0);
+  });
+});
+
+/*
+  WHETHER A DISCOVERY IS BOUGHT AT ALL (#2566).
+
+  ⚠ These arms exist because their absence survived sabotage, and the reason is
+  worth more than the arms: driven through a SCAN, replacing the flag check
+  with a constant left every suite green — `defaultDiscoverer`'s next line
+  finds no transport, or the read fails, and both fall open to exactly the
+  answer a correctly-gated scan gives. **The three silent roads that make this
+  road safe are the same three that make it invisible from outside**, so the
+  decision is driven where it is made.
+*/
+describe("whether a discovery is bought", () => {
+  const previous = { ...process.env };
+  afterEach(() => { process.env = { ...previous }; });
+
+  function chainOn(): void {
+    process.env.CASTING_V2_SCOPE = "all";
+    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "all";
+    process.env.CASTING_FACE_SCAN_SCOPE = "all";
+  }
+
+  it("buys none when the flag names nobody — the position every account is in today", () => {
+    chainOn();
+    delete process.env.CASTING_FACE_DISCOVERY_SCOPE;
+    process.env.OPENROUTER_API_KEY = "a-key-that-is-never-reached";
+    expect(defaultDiscoverer(1)).toBeNull();
+  });
+
+  it("buys none for a user the flag does not name", () => {
+    chainOn();
+    process.env.CASTING_FACE_DISCOVERY_SCOPE = "users:1";
+    process.env.OPENROUTER_API_KEY = "a-key-that-is-never-reached";
+    expect(defaultDiscoverer(2)).toBeNull();
+    expect(defaultDiscoverer(1)).not.toBeNull();
+  });
+
+  it("buys none when a parent flag is off, even with its own flag on", () => {
+    chainOn();
+    process.env.CASTING_FACE_DISCOVERY_SCOPE = "all";
+    process.env.OPENROUTER_API_KEY = "a-key-that-is-never-reached";
+    expect(defaultDiscoverer(1)).not.toBeNull();
+    process.env.CASTING_FACE_SCAN_SCOPE = "off";
+    expect(defaultDiscoverer(1)).toBeNull();
+  });
+
+  it("buys none with no text transport configured, flag or no flag", () => {
+    chainOn();
+    process.env.CASTING_FACE_DISCOVERY_SCOPE = "all";
+    delete process.env.OPENROUTER_API_KEY;
+    resetInterpreterForTests();
+    expect(defaultDiscoverer(1)).toBeNull();
   });
 });

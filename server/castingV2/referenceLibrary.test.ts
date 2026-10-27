@@ -16,6 +16,11 @@ import {
   type StoredReference,
 } from "./referenceLibrary";
 import { assembleRecipe } from "./recipeAssembler";
+import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
+import { facetOfSubject } from "./refineFacets";
+import type { RefineDelta } from "./refineDelta";
+import { familyKindsOf } from "./repaintAsks";
+import { slotsForFacet } from "./referenceSlotCatalogue";
 
 let nextId = 1;
 
@@ -638,5 +643,90 @@ describe("which one of a pair the last edit wrote", () => {
     const left = row({ slot: "eye@left", words: ["green"], version: 2, retiredAt: new Date() });
 
     expect(instanceLastWritten([left], eyes)).toBeNull();
+  });
+});
+
+/*
+  AND A WORN LIST NAMING MORE THAN ONE KIND HAS NO SIDE TO NARROW TO (#2616,
+  the relay's finding on PR #2627).
+
+  `statedAccessories` is one facet over everything a face can wear, so the
+  verifier asks this resolver for the whole worn list at once — and its facts
+  for a plural facet are built one per ITEM while every one of them carries the
+  same facet, so a narrowing made here reaches every item in the list. The
+  worry was therefore that glasses beside an earring stack could narrow the
+  facet to `earring@left`, and **the glasses' own verification row would be
+  read against a side**.
+
+  On the single-kind road it could, and that is this card's defect rather than
+  a new one: the caller's longest match answered `earring` for that list, the
+  slots were the earring pair alone, and this resolver named a side. With every
+  kind the list names the union is THREE slots, and a pair resolver answers for
+  two — so the mixed list answers nobody, which is the honest answer for a
+  question whose own words are about two different objects.
+
+  Driven over the three functions the verifier composes rather than over a
+  restatement of them, and DERIVED over every pair the table can produce: a
+  kind that comes to share a sided pair with another — an ordinary thing for
+  that table to grow — reddens here instead of at a customer.
+*/
+describe("a worn list naming more than one kind has no side to narrow to", () => {
+  const WORN = facetOfSubject("statedAccessories");
+  const wearing = (...items: string[]): RefineDelta =>
+    ({ free: { statedAccessories: items } } as unknown as RefineDelta);
+
+  /** `refineService`'s own library branch (`sideOfFact`), at its real functions. */
+  const narrowsTo = (delta: RefineDelta, fallback: string | null, rows: StoredReference[]) => {
+    const slots = slotsForFacet(WORN, { accessoryKind: familyKindsOf(WORN, delta, fallback) });
+    const written = instanceLastWritten(rows, slots.map((definition) => definition.slot));
+    const side = written === null ? undefined : slots.find((it) => it.slot === written);
+    /* The narrowing loop's own gate: a slot there is one of narrows nothing. */
+    return side === undefined || side.instance === null ? null : side.slot;
+  };
+
+  /* The only library state a side can ever be read from: one ear written and
+     the other never touched, which is what a scoped edit leaves behind. */
+  const oneEarWritten = () => [row({ slot: "earring@left", words: ["a gold hoop"], version: 2 })];
+
+  it("the finding's own case — glasses beside a one-sided earring", () => {
+    const worn = wearing("round glasses", "a gold hoop in her left ear");
+
+    expect(narrowsTo(worn, "glasses", oneEarWritten())).toBeNull();
+  });
+
+  it("names nobody for a mixed list however the longest match fell", () => {
+    /* The fallback is the caller's single longest match, and it is a different
+       kind in each of these — so the answer cannot depend on which item
+       happened to win a word-length contest. */
+    expect(narrowsTo(wearing("round glasses", "gold hoop earrings"), "earring", oneEarWritten()))
+      .toBeNull();
+    expect(narrowsTo(
+      wearing("gold hoop earrings", "a nose stud", "round glasses"), "nose stud", oneEarWritten(),
+    )).toBeNull();
+  });
+
+  it("POSITIVE CONTROL: an earring list alone still names the side it wrote", () => {
+    /*
+      Without this the arms above would pass on a resolver that had simply
+      stopped answering — which is the one way this repair could be wrong, and
+      it would cost every per-side edit its narrowed question.
+    */
+    expect(narrowsTo(wearing("a gold hoop in her left ear"), "earring", oneEarWritten()))
+      .toBe("earring@left");
+  });
+
+  it("no two kinds the table can produce can name a side between them", () => {
+    const kinds = LANDMARK_OF_ACCESSORY.map((entry) => entry.region);
+    for (const first of kinds) {
+      for (const second of kinds) {
+        if (first === second) continue;
+        const slots = slotsForFacet(WORN, { accessoryKind: [first, second] });
+        const written = instanceLastWritten(oneEarWritten(), slots.map((it) => it.slot));
+        const side = written === null ? undefined : slots.find((it) => it.slot === written);
+        const named = side === undefined || side.instance === null ? null : side.slot;
+
+        expect(named, `${first} + ${second}`).toBeNull();
+      }
+    }
   });
 });

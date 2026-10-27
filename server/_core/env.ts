@@ -27,6 +27,7 @@ import {
   validateSnapshotRestoreEnvironment,
 } from "../casting/snapshotRestoreScope";
 import {
+  CASTING_FACE_DISCOVERY_SCOPE_ENV,
   CASTING_FACE_SCAN_SCOPE_ENV,
   CASTING_INK_CUT_SCOPE_ENV,
   CASTING_INK_TRANSFORM_SCOPE_ENV,
@@ -39,6 +40,7 @@ import {
   CASTING_ROLL_ENGINE_MODEL_ENV,
   CASTING_SCAN_TABLE_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
+  validateCastingFaceDiscoveryEnvironment,
   validateCastingFaceScanEnvironment,
   validateCastingInkCutEnvironment,
   validateCastingInkTransformEnvironment,
@@ -412,6 +414,17 @@ export function validateEnv(): void {
     libraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
   });
   /*
+    And whether that reading starts by asking the PICTURE what is on this
+    character, instead of asking the catalogue about each of its own entries
+    (#2566). Checked against the scan scope, because a discovery narrows a scan
+    plan and does nothing else: a user who buys no scan has no plan for it to
+    narrow, and the read would be money spent into the dark.
+  */
+  validateCastingFaceDiscoveryEnvironment({
+    scope: process.env[CASTING_FACE_DISCOVERY_SCOPE_ENV],
+    scanScope: process.env[CASTING_FACE_SCAN_SCOPE_ENV],
+  });
+  /*
     And whether a finished scan is KEPT (migration 0032). Checked against the
     scan scope — a user who produces no scans has nothing to write down — and
     against the cleanup worker, because a kept scan owns one stencil object per
@@ -430,8 +443,17 @@ export function validateEnv(): void {
 
     The fence that stood here refused a scope reaching past its parent. There is
     nothing left to fence: the flag had been `all` since 2026-09-24 with every
-    flag above it `all` too, so its off arm — the two closed-lane prompts — was
-    asked of nobody, and both are gone with it.
+    flag above it `all` too, and both prompts are gone with it.
+
+    ⚠ **This paragraph said that off arm was *asked of nobody*, and ONE ROAD was
+    still asking it** — the removal path's RULE 3 re-read, the only production
+    caller of `interpretRefinement` that never passed the option at all, so
+    *absent means off* applied to it. Found by the relay on PR #2556, declared and
+    measured on the ghost audit's D1 row. **Nothing about the BOOT question
+    changes** — that road never read a scope — and the sentence is corrected here
+    rather than only where it was found, because a correction that reaches the
+    audit row and not the four copies in the code is the drift this file has been
+    bitten by before.
 
     ⚠ **The Railway variable is removed only AFTER this build is serving**, and
     the order is not reversible: an absent variable parsed as `off`, so dropping

@@ -270,7 +270,8 @@ import { recordInkFormDemand } from "../db/castingV2InkFormDemand";
 import { readOpenKindProperties } from "../db/castingV2OpenKindProperties";
 import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } from "./repaintRender";
 import {
-  RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
+  RepaintCannotSayError, familyKindsOf, repaintAsksFor, repaintCannotRemove,
+  scopedAskIsUnsayable,
 } from "./repaintAsks";
 import { refineRefundDescription } from "./refineRefundLedger";
 import { inkSlotOfPhrase, slotsOfPrunedStep } from "./prunedSlots";
@@ -3548,6 +3549,27 @@ async function refineCandidateCounted(
         ordinary content edit. Re-read with the removal vocabulary withheld, or
         the same sentence classifies as a removal forever.
 
+        ⚠ **THIS CALL IS THE ONE LIVE ROAD #1577 SLICE D1 CHANGED, and it is said
+        HERE because this is where the next person to touch it will be** (the
+        relay's finding on PR #2556; the declaration and the measurement are the
+        ghost audit's D1 row, and the guard is `refineService.test.ts` ›
+        *"the RULE 3 re-read takes the open lane"*).
+
+        It was the ONLY `interpretRefinement` call in the product that never
+        passed `openLane`, and that option meant *off* when absent — so while the
+        flag stood at `all` for everybody, this one re-read was still being asked
+        the CLOSED prompt and still skipping the acceptance door. Retiring the
+        flag put it on the same prompt as the main read, which is the behaviour it
+        should always have had: the main read of these very words had the lane and
+        only its re-read did not.
+
+        **What it costs, stated rather than glossed:** an uncatalogued creature
+        feature asked to come off used to refuse here for FREE (`wall_unbacked`,
+        nothing charged) and now files the absence in the customer's own words and
+        renders it, at Refine's own price. Nothing about the walls, the prices or
+        the refund paths moved, and the thing still has to be ON them — the brief,
+        the recipe or the segmenter — to reach this line at all.
+
         ⚠ **THROUGH `readInstruction`, AND IT WAS A HAND-WRITTEN OBJECT UNTIL
         #2584.** `readInstruction`'s own docblock warns that *"a fourth copy of
         this block would be the drift law's own failure mode on the step that
@@ -4332,6 +4354,16 @@ async function refineCandidateCounted(
      here — "a small nose stud" contains "stud", and first-match put it on her
      earlobe once already. */
   const accessoryRegion = describedAccessories ? accessoryKindOf(describedAccessories) : null;
+  /* EVERY KIND THE WORN LIST NAMES, not just the one that won the longest
+     match over the joined words (#2616) — derived ONCE here, through the
+     grouping `repaintAsks` already owns, and handed to the mint and the
+     library's side lookup below. The reasoning, the measurement and what
+     `fallbackKind` still does are on `familyKindsOf` itself. */
+  const accessoryKinds = familyKindsOf(
+    facetOfSubject("statedAccessories"),
+    composed,
+    accessoryRegion,
+  );
 
   /**
    * EVERY SLOT A PRUNE CAN NAME — one derivation, two readers (working law 4).
@@ -8178,8 +8210,10 @@ async function refineCandidateCounted(
       }
       /* The library's answer, which needs no scope and outlives the ask.
          `accessoryKind` is this step's own object, so a carried accessory's
-         slots resolve exactly as the mint resolved them. */
-      const slots = slotsForFacet(factFacet, { accessoryKind: accessoryRegion });
+         slots resolve exactly as the mint resolved them — EVERY kind the worn
+         list names since #2616, derived once above, so this reader and the mint
+         below cannot resolve one item to two different slots. */
+      const slots = slotsForFacet(factFacet, { accessoryKind: accessoryKinds });
       const written = instanceLastWritten(branchRows, slots.map((it) => it.slot));
       if (written === null) return null;
       const side = slots.find((it) => it.slot === written);
@@ -9561,9 +9595,12 @@ async function refineCandidateCounted(
              readers worded differently cannot delete a paid feature. */
           asked: askedWords,
           open: openAsks,
-          /* What the instruction said the worn object IS — derived once above,
-             beside the region override that has to name the same object. */
-          accessoryKind: accessoryRegion,
+          /* What the instruction said the worn object IS — EVERY kind the worn
+             list names, derived once above through `familyGroupsOf` (#2616).
+             It was the single longest match, so a list holding two sorts of
+             thing filed every item under the winner's slots and the other
+             item's slot got no row at all. */
+          accessoryKind: accessoryKinds,
           /*
             WHAT THE LIBRARY ALREADY KEEPS FOR HER, which is the only honest
             answer to *has she paid for a build?*

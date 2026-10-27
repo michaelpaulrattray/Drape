@@ -207,6 +207,68 @@ describe("the slots a render files", () => {
     expect(slots[0]!.frame).toBe("wholeFrame");
   });
 
+  /*
+    A WORN LIST HOLDING TWO SORTS OF THING FILES BOTH (#2616).
+
+    `statedAccessories` is ONE facet over everything a face can wear, so its
+    value is the whole worn list. The caller used to hand ONE kind, picked by
+    longest match over the joined words, and every other item in the list then
+    resolved to that winner's slots — measured at the real functions, glasses
+    beside earrings answers `earring`, so the glasses filed on her earlobes and
+    the `glasses` slot got no row at all. A feature the customer had just paid
+    for was therefore absent from the library, and the next render forgot it.
+
+    This is the defect `LANDMARK_OF_ACCESSORY.region`'s own docblock says that
+    table exists to prevent, one layer along: there it was a hardcoded
+    `"earring"` fallback, here it is a single longest match standing in for a
+    list.
+  */
+  it("files every kind the worn list names, not only the longest match", () => {
+    const { slots, unfiled } = mintedSlotsForRender({
+      earned: ["statedAccessories"],
+      captions: { statedAccessories: "Round tortoiseshell glasses and small gold hoop earrings" },
+      /* What the caller now derives once through `familyGroupsOf`. */
+      accessoryKind: ["glasses", "earring"],
+    });
+
+    expect(unfiled).toEqual([]);
+    expect(slots.map((slot) => slot.slot)).toEqual(["glasses", "earring@left", "earring@right"]);
+    /* Each slot keeps its own shape — the single-instance one is still
+       whole-frame and the pair is still per-side, so unioning the kinds has not
+       flattened them into one another. */
+    expect(slots.map((slot) => slot.frame)).toEqual(["wholeFrame", "ownSide", "ownSide"]);
+  });
+
+  it("is unchanged when the list names one kind — a string and a one-item list agree", () => {
+    /* THE CONTROL. The repair must be invisible to every caller that had one
+       kind, which is all of them before #2616, so the two shapes are driven
+       against each other rather than only the new one being asserted. */
+    const input = {
+      earned: ["statedAccessories"] as const,
+      captions: { statedAccessories: "Dangly cross earrings in gold" },
+    };
+    const asString = mintedSlotsForRender({ ...input, earned: [...input.earned], accessoryKind: "earring" });
+    const asList = mintedSlotsForRender({ ...input, earned: [...input.earned], accessoryKind: ["earring"] });
+
+    expect(asString.slots.map((slot) => slot.slot)).toEqual(["earring@left", "earring@right"]);
+    expect(asList.slots).toEqual(asString.slots);
+    expect(asList.unfiled).toEqual(asString.unfiled);
+  });
+
+  it("says an EMPTY list is an unnamed object, exactly as a null kind does", () => {
+    /* The other end of the control: the caller hands `[]` when nothing in the
+       worn list names a kind the table knows, and that must stay the honest
+       `unnamedObject` rather than becoming a silent no-op with no finding. */
+    const { slots, unfiled } = mintedSlotsForRender({
+      earned: ["statedAccessories"],
+      captions: { statedAccessories: "A jewelled forehead chain" },
+      accessoryKind: [],
+    });
+
+    expect(slots).toEqual([]);
+    expect(unfiled).toEqual([{ facet: "statedAccessories", reason: "unnamedObject" }]);
+  });
+
   it("says an accessory it cannot name is UNNAMED rather than not a slot", () => {
     const { slots, unfiled } = mintedSlotsForRender({
       earned: ["statedAccessories"],
