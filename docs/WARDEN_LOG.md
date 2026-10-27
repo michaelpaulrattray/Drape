@@ -1372,6 +1372,17 @@ purpose); **the ~58 stale shift worktrees** (known Janitor litter, and the Janit
 **and `missingFacts` as a dead export** (§D — housekeeping, named for the Janitor, not a card).
 
 **Spent: nothing.** No money, no customer credits, no house money, no paid model call, no render, no
-production variable, no flag, no migration. Four read-only disposables against production and the
-tree, all deleted at close. One detached worktree at `b1613763c`, removed with both commands; one
-branch worktree for #2703's repair.
+production variable, no flag, no migration. ⚠ **SEVEN read-only disposables, not four** — the
+second `rateLimited` reader, its false-positive pass, the production readings, the boundary
+reconciliation, the shard-binding drive, the desk-draw drive and the edition writer — all deleted
+at close, with their output kept under the gitignored `output/warden-run9/`. **This sentence said
+four until it was counted**, because the figure was carried over from run 8's closing line rather
+than measured: the same citation-is-not-a-measurement shape this run found twice elsewhere, in the
+seat's own record, on the cheapest possible fact. One detached worktree at `b1613763c`, removed with
+both commands; one branch worktree for #2703's repair, removed after the merge.
+
+⚠ **AND THE ELEVEN CLOSED THEMSELVES — read at GitHub's alert list after the merge, which is the
+FOURTH independent confirmation of W9-A's repair: 131 alerts all time, 131 `fixed`, 0 open**, where
+before the merge the same reading gave 131 = 11 open + 120 fixed. So `pnpm audit`, `pnpm audit
+--prod`, GitHub's push notice and now the alert list all agree. **Run 10 therefore expects 0 open
+and should treat any open alert as new rather than as a remnant.**
