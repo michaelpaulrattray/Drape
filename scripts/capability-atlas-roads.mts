@@ -173,9 +173,13 @@ export const ROADS: readonly Road[] = [
     /* CASTING_OPEN_LANE_SCOPE stood first here and is RETIRED (#1577 slice D1,
        his word of 2026-10-15): the open lane is what the interpreter does, so
        it is no longer a flag this road runs under. Side phrasing (D2) and ink
-       words (D3) retired before it, so this road runs under no flag. */
-    flags: [],
+       words (D3) retired before it, so this road runs under no flag.
+       CASTING_OUTFIT_EDIT_SCOPE arrives with #2544 slice 1 and IS a flag this
+       road runs under — it decides which of two prompt pairs the reading is
+       asked with, and whether the garment half of the stage lexicon refuses. */
+    flags: ["CASTING_OUTFIT_EDIT_SCOPE"],
     notes: [
+      "CASTING_OUTFIT_EDIT_SCOPE (#2544 slice 1) serves the WARDROBE subject to an account, and clothing stops being the stage: inside it a garment ask files under wardrobe and never reaches wall_stage, the backed refusal drops the false 'comes after Sign' clause, and four prompt lines that called a garment the wall say the true thing instead. OFF EVERYWHERE TODAY, and off is byte-identical: SERVED_SUBJECTS never moves and only the flag's bit can select the other list, with all four interpreter prompts hashed. The SCENERY half of the lexicon — backdrop, background, wall, studio, set, scene, location, prop, chair, table, holding — refuses under every subject, served or not, at all five sites; the licence needs BOTH the wardrobe subject and the account, so a garment word smuggled into a skin value still walls. No new door is minted: the corpus rows below are the flag-off reading and are unchanged.",
       "wall_stage = PROVABLY the shoot (the lexicon backed the claim); wall_unbacked = the model claimed out-of-scope and the lexicon could not confirm — one wall was two walls wearing one name until census card C1.",
       "gate_ink_document asks 'is there a document for this design'; its answers are the anchor itself, a pointed-at photograph, the delivered crop, and (words road) the delivery about to be minted.",
       "gate_ink_uncarried is a place the product can SEE and cannot KEEP (a covered chest): render would land, the mint could not crop, the tattoo would die on the next edit — his own find-and-crop condition enforced.",

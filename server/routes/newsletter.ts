@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { checkRateLimit, getClientIp, RATE_LIMITS, rateLimitError } from "../security/rateLimit";
 import { newsletterSignup } from "../klaviyo";
 
-export const NEWSLETTER_SUBSCRIBED_ANSWER = {
+const NEWSLETTER_SUBSCRIBED_ANSWER = {
   success: true,
   message: "You're on the list.",
 } as const;

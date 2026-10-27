@@ -268,7 +268,7 @@ export function closeLine(outcome: CloseOutcome): string | null {
  */
 export const EXIT_WATCHDOG_MS = 10_000;
 
-export function exitWatchdogLine(code: number, bound: number, holding: readonly string[]): string {
+function exitWatchdogLine(code: number, bound: number, holding: readonly string[]): string {
   return `predeploy: still running ${bound} ms after the verdict was decided — exiting ${code} anyway (#2501).`
     + ` Still holding the process: ${holding.length ? holding.join(", ") : "nothing reported"}.`
     + " The verdict above is unchanged; only the wait was cut.";

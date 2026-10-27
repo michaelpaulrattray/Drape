@@ -61,7 +61,9 @@ import {
   recoverCastingV2RefineOperation,
   type RefineRecoveryOutcome,
 } from "./refineRecovery";
-import { captureCastingCurrentDescriptionEnabled } from "./castingV2Scope";
+import {
+  captureCastingCurrentDescriptionEnabled, captureCastingOutfitEditEnabled,
+} from "./castingV2Scope";
 import { writeCurrentDescription } from "./currentDescription";
 import { interpreterEngine } from "./interpreter";
 import type { TextEngine } from "../providers/types";
@@ -269,7 +271,8 @@ import { recordInkFormDemand } from "../db/castingV2InkFormDemand";
 import { readOpenKindProperties } from "../db/castingV2OpenKindProperties";
 import { repaint, type ReferenceFitter, type RepaintEngine, type SentRequest } from "./repaintRender";
 import {
-  RepaintCannotSayError, repaintAsksFor, repaintCannotRemove, scopedAskIsUnsayable,
+  RepaintCannotSayError, familyKindsOf, repaintAsksFor, repaintCannotRemove,
+  scopedAskIsUnsayable,
 } from "./repaintAsks";
 import { refineRefundDescription } from "./refineRefundLedger";
 import { inkSlotOfPhrase, slotsOfPrunedStep } from "./prunedSlots";
@@ -829,6 +832,14 @@ export type RefineServiceDependencies = {
   hairReferenceEnabled?: (userId: number) => boolean;
   /** `CASTING_INK_REFERENCE_SCOPE`, injectable for the same reason as its siblings. */
   inkReferenceEnabled?: (userId: number) => boolean;
+  /**
+   * `CASTING_OUTFIT_EDIT_SCOPE` — whether clothing is an editable subject for
+   * this account (#2544 slice 1). Injectable for the same reason as its
+   * siblings: the arm that proves the flag OFF leaves today's road untouched,
+   * and the arm that proves a served account reaches a render, both have to be
+   * able to say so without setting a process-wide variable.
+   */
+  outfitEditEnabled?: (userId: number) => boolean;
   /**
    * `CASTING_INK_TRANSFORM_SCOPE` — whether she may change a tattoo she
    * already has. Injectable for the same reason as its siblings: the arm that
@@ -1841,9 +1852,27 @@ async function refineCandidateCounted(
     the two option sets rather than listing them, which is the only arm shape
     neither of those two members would have needed finding by hand.
   */
+  /*
+    IS CLOTHING THIS ACCOUNT'S TO CHANGE — read ONCE, for the same reason
+    `wardrobeNow` is (#2544 slice 1).
+
+    Two `interpretRefinement` call sites in this function read it (the first
+    reading, and rule 3's re-read with the removal vocabulary withheld), and two
+    captures of one flag are two answers waiting to disagree about one request.
+  */
+  const outfitEditServed =
+    (dependencies.outfitEditEnabled ?? captureCastingOutfitEditEnabled)(input.userId);
+
   const readInstruction = (extra: { mode?: "edit"; restated?: boolean } = {}) =>
     (dependencies.interpret ?? interpretRefinement)({
       instruction,
+      /*
+        CLOTHING IS AN EDITABLE SUBJECT FOR THIS ACCOUNT, or it is not (#2544
+        slice 1). Read from the ACCOUNT, like `inkReferenceEnabled` beside it:
+        what a customer may ask for is a property of their account rather than
+        of the sentence they typed.
+      */
+      outfitEditServed,
       /*
         A PICTURE RIDES THIS ASK — the entrance to the reference road
         (fable-1104 §2).
@@ -4313,6 +4342,16 @@ async function refineCandidateCounted(
      here — "a small nose stud" contains "stud", and first-match put it on her
      earlobe once already. */
   const accessoryRegion = describedAccessories ? accessoryKindOf(describedAccessories) : null;
+  /* EVERY KIND THE WORN LIST NAMES, not just the one that won the longest
+     match over the joined words (#2616) — derived ONCE here, through the
+     grouping `repaintAsks` already owns, and handed to the mint and the
+     library's side lookup below. The reasoning, the measurement and what
+     `fallbackKind` still does are on `familyKindsOf` itself. */
+  const accessoryKinds = familyKindsOf(
+    facetOfSubject("statedAccessories"),
+    composed,
+    accessoryRegion,
+  );
 
   /**
    * EVERY SLOT A PRUNE CAN NAME — one derivation, two readers (working law 4).
@@ -6287,10 +6326,18 @@ async function refineCandidateCounted(
 
       The only thing this value reaches that leaves the process is `prompt`
       (`composedPrompt.full`, a few lines down), and `prompt` is read in exactly
-      one place: inside `renderOnce` — which dispatched the OLD paste road and
-      dispatches nothing now that #1577 slice 4b has taken it out. The paint's
-      own string is assembled by the repaint from `editDelta`, with its own call
-      to this function, and that is the armed one.
+      one place: `landVariant`'s `internalPrompt.prompt` — so it is RECORDED on
+      the variant row and dispatched nowhere. The paint's own string is
+      assembled by the repaint from `editDelta`, with its own call to this
+      function, and that is the armed one.
+
+      ⚠ THIS USED TO NAME `renderOnce` AS THAT ONE PLACE, and it was already
+      wrong when #1577 slice 4b landed (#2596). `renderOnce` is `announce
+      ("rendering")` then `repaintOnce()` and does not mention `prompt` at all —
+      the sentence survived the road it described by naming the function that
+      had held the dispatch rather than the reader that was left. The
+      consequence is in `subjectQualifiers.ts`'s header: every subject's
+      delivery floor is composed into this string and reaches no engine.
 
       Its other two readers cannot see the strip at all: `regionOverrides` reads
       `askedFiled.makeup`, and the record below reads `facetsAnsweredBy` — this
@@ -8168,8 +8215,10 @@ async function refineCandidateCounted(
       }
       /* The library's answer, which needs no scope and outlives the ask.
          `accessoryKind` is this step's own object, so a carried accessory's
-         slots resolve exactly as the mint resolved them. */
-      const slots = slotsForFacet(factFacet, { accessoryKind: accessoryRegion });
+         slots resolve exactly as the mint resolved them — EVERY kind the worn
+         list names since #2616, derived once above, so this reader and the mint
+         below cannot resolve one item to two different slots. */
+      const slots = slotsForFacet(factFacet, { accessoryKind: accessoryKinds });
       const written = instanceLastWritten(branchRows, slots.map((it) => it.slot));
       if (written === null) return null;
       const side = slots.find((it) => it.slot === written);
@@ -9548,9 +9597,12 @@ async function refineCandidateCounted(
              readers worded differently cannot delete a paid feature. */
           asked: askedWords,
           open: openAsks,
-          /* What the instruction said the worn object IS — derived once above,
-             beside the region override that has to name the same object. */
-          accessoryKind: accessoryRegion,
+          /* What the instruction said the worn object IS — EVERY kind the worn
+             list names, derived once above through `familyGroupsOf` (#2616).
+             It was the single longest match, so a list holding two sorts of
+             thing filed every item under the winner's slots and the other
+             item's slot got no row at all. */
+          accessoryKind: accessoryKinds,
           /*
             WHAT THE LIBRARY ALREADY KEEPS FOR HER, which is the only honest
             answer to *has she paid for a build?*

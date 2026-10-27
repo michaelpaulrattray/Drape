@@ -151,16 +151,27 @@ describe("every refusal answers all three questions", () => {
 
     it("⚠ and with NOWHERE left it says so, rather than naming nothing", () => {
       /*
-        An outfit that covers all three leaves this sentence with an empty list,
-        and the old one read *"Tell me where it goes —  from a description
+        An outfit that leaves nothing showing leaves this sentence with an empty
+        list, and the old one read *"Tell me where it goes —  from a description
         alone"*. `elsewhereClause` answers the case for the three gates above
         and says *"nowhere ELSE"*, which is wrong at a door reached by an ask
         that named no place at all. Verbatim, because it is new copy.
+
+        ⚠ **AND IT NO LONGER CLAIMS TO HAVE READ THE OUTFIT — #2601.** It said
+        *"and this outfit covers every place that works"*; an empty list means
+        every served surface was `covered` OR `unknown`, and those are different
+        facts. The sentence states what is true of both. The reasons themselves
+        are driven in `inkWordsRoad.test.ts` — this arm is the copy, pinned.
       */
       expect(said({ reason: "gate_ink_document", alternatives: [] })).toBe(
-        "A tattoo from a description alone needs skin that's showing, and this outfit "
-        + "covers every place that works. Change the outfit first, or work from a design "
+        "A tattoo from a description alone needs skin that's showing, and there's "
+        + "nowhere showing right now. Change the outfit first, or work from a design "
         + "instead. The body-art studio is coming. Nothing was charged.");
+      /* The claim this card is about, asserted rather than left to the prose:
+         the sentence does not say the outfit covers anything. */
+      expect(said({ reason: "gate_ink_document", alternatives: [] }),
+        "#2601 — it must not assert a coverage reading it is not holding")
+        .not.toContain("covers every place");
       /* And an absent list behaves exactly as an empty one, so the refusals
          written before the field existed cannot read as a gap. */
       expect(said({ reason: "gate_ink_document" } as RefineRefusal))

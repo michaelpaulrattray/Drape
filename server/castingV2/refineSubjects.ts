@@ -284,6 +284,37 @@ export const SERVED_SUBJECTS: readonly FreeSubject[] =
   subjectsWhere((card) => card.bornPathsServing === "everyPath");
 
 /**
+ * THE SAME LIST WITH THE WARDROBE SUBJECT ON IT — #2544 slice 1.
+ *
+ * ⚠ **`SERVED_SUBJECTS` ABOVE DOES NOT MOVE, AND THAT IS THE DESIGN'S §7 BAR
+ * RATHER THAN TIDINESS.** The constant stays the base every account gets, so
+ * flag-off is byte-identical by CONSTRUCTION: there is no code path on which an
+ * unserved request can be handed this list, because the only thing that selects
+ * it is the flag's own bit.
+ *
+ * Derived from the constant rather than re-filtered on a second predicate — a
+ * second `subjectsWhere` here would be a list that could silently stop agreeing
+ * with the one above about the other twenty-eight subjects.
+ *
+ * The ORDER puts `wardrobe` last, and it matters by one byte: this list is
+ * joined into the interpreter prompt, so appending keeps the served prompt a
+ * pure extension of the shipped one and its diff one clause long.
+ */
+export const SERVED_SUBJECTS_WITH_WARDROBE: readonly FreeSubject[] =
+  [...SERVED_SUBJECTS, "wardrobe"];
+
+/**
+ * WHICH LIST THIS REQUEST IS SERVED — the one place that question is answered.
+ *
+ * Named so that every reader of it (the prompt, the parser's validation, a test
+ * arm) asks the same function rather than composing the array itself, which is
+ * how the prompt and the checker came to be able to drift in the first place.
+ */
+export function servedSubjectsFor(outfitEdit: boolean): readonly FreeSubject[] {
+  return outfitEdit ? SERVED_SUBJECTS_WITH_WARDROBE : SERVED_SUBJECTS;
+}
+
+/**
  * The instruction the interpreter is given about where each free ask belongs.
  *
  * Built from the same constant the parser validates against, so the prompt and

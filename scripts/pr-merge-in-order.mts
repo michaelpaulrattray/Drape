@@ -22,7 +22,13 @@
  *     it is mergeable, and prints the merge commit as the receipt;
  *   - when an earlier PR lands and a later one goes CONFLICTING or BEHIND,
  *     merges main into it IN ITS OWN REGISTERED WORKTREE and pushes, then goes
- *     back to waiting on its new gate run.
+ *     back to waiting on its new gate run;
+ *   - and does the same for a head GitHub calls CLEAN that main has simply
+ *     MOVED PAST, when the work meets — `CLEAN` is a statement about text, and
+ *     a green gate on a stale head is a verdict about a tree that is not the
+ *     one it would land on (#2590). Where the work does NOT meet it merges and
+ *     says the head was stale, because refusing every stale head measured at a
+ *     re-gate on two merges in three.
  *
  * ⚠ WHAT IT REFUSES TO DO IS THE POINT. It never judges. It stops, names the
  * PR and says why, whenever the next step is a decision:
@@ -63,8 +69,10 @@
  *
  * Writes exactly three kinds of thing and nothing else: `gh pr merge --squash`
  * on a PR you named, and `git merge origin/main` + `git push` inside a
- * worktree GitHub says is behind. `--dry-run` prints every one of them and
- * performs none. No database, no production, no deploy — the rite is still the
+ * worktree that is behind the main it would land on. `--dry-run` prints every
+ * one of them and performs none. It also FETCHES (`origin main` and each PR's
+ * own branch) to take the staleness reading above — a read, and the only
+ * network write it makes is the two already named. No database, no production, no deploy — the rite is still the
  * only road to main for a doc push.
  */
 import { execFileSync } from "node:child_process";
@@ -74,6 +82,7 @@ import { fileURLToPath } from "node:url";
 
 import { closingKeywordHits, closingKeywordRefusal } from "./lib/closingKeyword.mts";
 import {
+  type MainGained,
   type MergeAction,
   type PrReading,
   type Rollup,
@@ -98,7 +107,10 @@ import {
   refuseNoUnitShards,
   refuseUnknownJobName,
   unitShardJobNames,
+  gateRunIdOf,
+  readMainGained,
   sharesFiles,
+  sharesDirectory,
   supplyChainStateOf,
   moneySymbolHits,
   touchesMoney,
@@ -418,6 +430,58 @@ function readWorktrees(): Map<string, string> {
   return map;
 }
 
+// ---- what main gained since the gate ran -----------------------------------
+/**
+ * THE BASE THE GATE ACTUALLY TESTED — read off the gate's own workflow run
+ * (#2590, repaired on the relay's finding).
+ *
+ * `gate.yml` runs on `pull_request`, so the run tested the head merged onto main
+ * **as main stood when the run was created**, and GitHub records that base on
+ * the run: `pull_requests[0].base.sha`. Driven before it was trusted — five
+ * runs' recorded bases were compared against the times the corresponding main
+ * commits actually landed, and all five agreed, so the field is frozen at
+ * run-creation time rather than refreshed.
+ *
+ * ⚠ **IT IS ONLY THERE WHILE THE PULL REQUEST IS OPEN.** GitHub empties
+ * `pull_requests` once a PR closes — measured on #2581's own merged head, where
+ * both runs report an empty array. That costs this tool nothing, because it only
+ * ever reads OPEN pull requests; it is written down because it is the reason the
+ * historical population had to be measured another way, and the reason a future
+ * reader must not expect this road to work on a merged PR.
+ *
+ * ⚠ **EVERY FAILURE IS `null`, INCLUDING A THROW.** `api` raises on anything but
+ * a rate limit, and a tool that MERGES must not die because one extra read
+ * failed — nor refuse on the strength of it. `null` leaves `decideMergeAction`
+ * behaving exactly as it did before this card.
+ */
+const gateBaseOf = (rollup: Rollup[]): string | null => {
+  const runId = gateRunIdOf(rollup, GATE_JOB_NAME);
+  if (runId === null) return null;
+  try {
+    /* `:owner/:repo` is resolved by `gh` from the working directory, the same
+       road `OWNER_LOGIN` above takes — so there is no second place where this
+       repository's name is written down. */
+    const run = api<{ pull_requests?: Array<{ base?: { sha?: string } }> }>(
+      `repos/:owner/:repo/actions/runs/${runId}`,
+    );
+    return run.pull_requests?.[0]?.base?.sha ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * THE STALENESS READING, BOUND TO THIS REPOSITORY (#2590).
+ *
+ * The reading itself is `readMainGained` in `lib/prMergeOrder.mts`, so it can be
+ * driven against real temporary repositories with a real remote
+ * (`server/prMergeStaleness.test.ts`) — a git reader nobody has driven is the
+ * one shape this tool cannot afford, because its answer now decides whether a
+ * merge happens. All this does is bind the working directory.
+ */
+const gainedSinceGateOf = (gateBase: string | null): MainGained =>
+  readMainGained((args) => git(REPO_ROOT, [...args]), gateBase);
+
 // ---- readings --------------------------------------------------------------
 /*
  * `gate-checks` on the PR's CURRENT head commit (or, by name, its siblings
@@ -530,7 +594,7 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
       "view",
       String(number),
       "--json",
-      "number,createdAt,isDraft,state,mergeable,mergeStateStatus,headRefName,statusCheckRollup,labels,commits",
+      "number,createdAt,isDraft,state,mergeable,mergeStateStatus,headRefName,headRefOid,statusCheckRollup,labels,commits",
     ]),
   ) as {
     number: number;
@@ -540,6 +604,7 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     mergeable: string;
     mergeStateStatus: string;
     headRefName: string;
+    headRefOid: string;
     statusCheckRollup: Rollup[] | null;
     labels: Array<{ name: string }>;
     commits: Array<{ committedDate: string }>;
@@ -609,6 +674,7 @@ function readPr(number: number, worktrees: Map<string, string>): PrReading {
     verdictCount,
     acknowledgedAtVerdictCount: ackPinnedAt.get(view.number) ?? null,
     worktreePath: worktrees.get(view.headRefName) ?? null,
+    gainedSinceGate: gainedSinceGateOf(gateBaseOf(view.statusCheckRollup ?? [])),
   };
 }
 
@@ -1003,6 +1069,19 @@ for (let i = 0; i < readings.length; i += 1) {
       console.log(
         `  note: #${readings[j]!.number} shares ${shared.length} file(s) with #${readings[i]!.number} ` +
           `(${shared.slice(0, 3).join(", ")}${shared.length > 3 ? ", …" : ""}) — expect a sync after #${readings[i]!.number} lands`,
+      );
+      continue;
+    }
+    /* ⚠ AND THE SAME SENTENCE FOR THE DIRECTORY TEST, or step 5.2's refusal is
+       the surprise this block exists to prevent (#2590). A later PR sharing no
+       FILE with an earlier one can still be refused once that one lands, and
+       the measured population says this is the commoner of the two: 18 of the
+       last 50 merges would meet the directory test and 4 the file test. */
+    const nearby = sharesDirectory(readings[i]!.files, readings[j]!.files);
+    if (nearby.length > 0) {
+      console.log(
+        `  note: #${readings[j]!.number} shares no file with #${readings[i]!.number} but works in ` +
+          `${nearby.join(", ")} — expect a sync after #${readings[i]!.number} lands (#2590)`,
       );
     }
   }

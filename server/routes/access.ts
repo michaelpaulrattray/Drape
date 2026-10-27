@@ -25,7 +25,7 @@ import { waitPhrase } from "@shared/waitPhrase";
  * on the status ever fired. Now a real TOO_MANY_REQUESTS, in the shape
  * `routes/referral.ts` already uses, and it says when to come back.
  */
-export function accessCodeRefusalMessage(resetIn: number): string {
+function accessCodeRefusalMessage(resetIn: number): string {
   return `Too many attempts. Try again ${waitPhrase(resetIn)}.`;
 }
 
