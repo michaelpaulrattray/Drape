@@ -714,12 +714,20 @@ any of them (his rule on #1398).
      a candidate — and `casting_ink_form_demand` holds **zero rows in both
      worlds, all time**. What changed is only HOW it is shut: by a member
      nothing can produce rather than by rows that happen not to exist.
-   - **`HOUSE_WARDROBE_LINE` cannot be stored as a wardrobe edit**: 132
+   - ~~**`HOUSE_WARDROBE_LINE` cannot be stored as a wardrobe edit**: 132
      characters against `MAX_FREE_LENGTH`'s 120, and an over-long free value
      makes the strict reader reject the WHOLE delta rather than that key, so
      the branch reads `unpathed`. It is the only line whose upper chest reads
      `covered`, so the demand table's `surfaceCovered` kind has no road either.
-     Found by driving the arms rather than by reading them.
+     Found by driving the arms rather than by reading them.~~
+     ✅ **FIXED — #2552, 2026-10-27.** `wardrobe` has its own cap of 245,
+     derived from the longest outfit sentence the product composes (149) plus
+     two more garment clauses at the richest observed clause mean (48). All
+     four of the product's wardrobe sentences store now. It was raised because
+     #2544 slice 1 SERVED the subject, which turned a latent finding into a
+     live one — a customer's five-part outfit was losing the whole edit. The
+     `surfaceCovered` road opening is a consequence and is **#2551**'s to
+     judge. **A value past the new cap still behaves the old way — #2714.**
 
    **The suites were re-pointed and not relaxed**: seven files, and the arms
    that guarded the retired members were replaced with arms that assert the

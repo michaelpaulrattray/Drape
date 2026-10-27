@@ -522,10 +522,29 @@ export function basicsWardrobeLine(sex: string | null | undefined): string {
      needs a pathed roll with a candidate: none exists), and
      `casting_ink_form_demand` holds **zero rows in both worlds, all time**.
      What changed is only HOW it is shut.
-  2. **`HOUSE_WARDROBE_LINE` cannot be stored as a wardrobe edit.** It is 132
+  2. ~~**`HOUSE_WARDROBE_LINE` cannot be stored as a wardrobe edit.** It is 132
      characters and `MAX_FREE_LENGTH` is 120, and an over-long free value makes
      the strict reader reject the WHOLE delta rather than that one key — so
      the branch reads `unpathed`. It is the only line whose upper chest reads
      `covered`, which is why the demand table's `surfaceCovered` kind has no
-     road either. Measured at the reader while re-pointing the arms.
+     road either. Measured at the reader while re-pointing the arms.~~
+
+     ✅ **FIXED — #2552, 2026-10-27.** `wardrobe` has its own cap of 245 now,
+     derived in `FREE_SUBJECT_MAX_LENGTH`'s own docblock from the longest
+     outfit sentence this file composes. **All four of this file's sentences
+     store as edits** — the guard is `refineDelta.test.ts` › *"⚠ THE CLASS —
+     every outfit sentence the product writes can be stored under
+     `wardrobe`"*, and its population is DERIVED from these functions, so a
+     fifth sentence or a reworded one is measured the day it lands.
+
+     ⚠ **It was raised because the subject went LIVE, not to feed the demand
+     table.** #2544 slice 1 serves `wardrobe` to a flagged account, so the
+     over-long case stopped being latent: a customer's own five-part outfit
+     sentence was losing the whole edit and being told it *"didn't come
+     through clearly"*. The `surfaceCovered` road opening is a consequence of
+     that and is **#2551**'s to judge, not this file's.
+
+     ⚠ **And what is NOT fixed: a value past the NEW cap behaves exactly as
+     before** — whole delta dropped, three model samplings, the same untrue
+     sentence. That is **#2714**, filed rather than folded in.
 */
