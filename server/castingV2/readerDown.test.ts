@@ -50,6 +50,7 @@ import {
 import { createFalRegionReader } from "./falRegionReader";
 import { HAIR_REGION, SCALE_REGION, cutHairCarrier } from "./hairReferenceCutter";
 import { cutInkDesign } from "./inkReferenceCutter";
+import { INK_REGION, PERSON_REGION } from "./inkReferenceCrop";
 import { readHairColourFromReference } from "./hairColourFromReference";
 import { readMakeupFromReference } from "./makeupFromReference";
 
@@ -326,7 +327,24 @@ describe("the ink design cutter", () => {
       at the same moment, which is exactly what a sustained outage produces.
     */
     const result = await cut(({ name }) => (
-      name === "tattoo" ? new MaskError("fal 503", { retryable: true }) : SEGMENTER_401()
+      name === INK_REGION ? SEGMENTER_WEATHER() : SEGMENTER_401()
+    ));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.refusal.code).toBe("readerDown");
+  });
+
+  it("CONTROL: and the mirror — the INK side holding the 401 is seen too", async () => {
+    /*
+      The arm above would pass on a reader that answered 401 to everything, so
+      this is its other half: the two names come from the product's own
+      constants (`INK_REGION`, `PERSON_REGION` — "tattooed skin" and "human
+      skin"), because a fixture that invents a region name answers every
+      question the same way and measures nothing. The first cut of the arm above
+      did exactly that and survived its own sabotage.
+    */
+    const result = await cut(({ name }) => (
+      name === PERSON_REGION ? SEGMENTER_WEATHER() : SEGMENTER_401()
     ));
     expect(result.ok).toBe(false);
     if (result.ok) return;
