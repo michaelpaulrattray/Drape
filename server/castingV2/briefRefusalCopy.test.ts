@@ -30,14 +30,23 @@ import { describe, expect, it } from "vitest";
 
 import { BRIEF_TOO_SHORT_MESSAGE } from "@shared/briefLength";
 
-import { ROLL_REFUSAL_COPY, LIKENESS_MESSAGE, NOT_A_BEING_MESSAGE, READER_OUTAGE_MESSAGE } from "./briefRefusalCopy";
+import {
+  ROLL_REFUSAL_COPY,
+  LIKENESS_MESSAGE,
+  NOT_A_BEING_MESSAGE,
+  READER_DOWN_MESSAGE,
+  READER_OUTAGE_MESSAGE,
+} from "./briefRefusalCopy";
 
 const HERE = __dirname;
 
-describe("the roll entrance's four walls each have a sentence", () => {
-  it("the table is exactly the four, and every member resolves", () => {
+describe("the roll entrance's five walls each have a sentence", () => {
+  it("the table is exactly the five, and every member resolves", () => {
+    /* ⚠ FOUR UNTIL #2688, which split the reader outage in two: `reader_outage`
+       keeps the transient failures a retry can fix, and `reader_down` answers
+       our own account being refused or no reader being configured at all. */
     expect(Object.keys(ROLL_REFUSAL_COPY).sort()).toEqual([
-      "likeness", "not_a_being", "reader_outage", "uninterpretable",
+      "likeness", "not_a_being", "reader_down", "reader_outage", "uninterpretable",
     ]);
     for (const [code, sentence] of Object.entries(ROLL_REFUSAL_COPY)) {
       expect(sentence.length, code).toBeGreaterThan(20);
@@ -124,11 +133,48 @@ describe("the roll entrance's four walls each have a sentence", () => {
       + "Describe who you want in the frame and we'll cast them. You have not been charged.",
     );
     expect(READER_OUTAGE_MESSAGE).toMatch(/couldn't read your brief just now/);
+    expect(READER_DOWN_MESSAGE).toBe(
+      "The studio can't read briefs just now — that's something at our end, not your words. "
+      + "Nothing was cast and you have not been charged. Try again later.",
+    );
     expect(ROLL_REFUSAL_COPY.likeness).toBe(LIKENESS_MESSAGE);
     expect(ROLL_REFUSAL_COPY.not_a_being).toBe(NOT_A_BEING_MESSAGE);
     expect(ROLL_REFUSAL_COPY.reader_outage).toBe(READER_OUTAGE_MESSAGE);
+    expect(ROLL_REFUSAL_COPY.reader_down).toBe(READER_DOWN_MESSAGE);
     /* DERIVED, not copied: the floor's sentence is shared with the client. */
     expect(ROLL_REFUSAL_COPY.uninterpretable).toBe(BRIEF_TOO_SHORT_MESSAGE);
+  });
+});
+
+describe("⚠ the two outage sentences differ in the one way that matters (#2688)", () => {
+  it("one asks for a retry and the other does not, and both say whose fault it is", () => {
+    /*
+      THE WHOLE CARD, ON THE COPY. `reader_outage` answers a deadline or a dead
+      transport — weather, where the same brief a minute later is a different
+      reading, so *"try again in a moment"* is TRUE and must stay. The new one
+      answers our key being refused, where every retry fails identically.
+
+      Measured on production, 2026-10-27 from 03:09Z: the key was disabled,
+      every call answered 401, and the compiler raised `reader_outage` for it.
+    */
+    expect(READER_OUTAGE_MESSAGE).toContain("Try again in a moment");
+    expect(READER_DOWN_MESSAGE).toContain("Try again later");
+    expect(READER_DOWN_MESSAGE).not.toContain("in a moment");
+
+    /* Neither blames the brief, and neither sends them back to their words —
+       the brief was never read on either road. */
+    for (const said of [READER_OUTAGE_MESSAGE, READER_DOWN_MESSAGE]) {
+      expect(said).toContain("The studio");
+      expect(said).toMatch(/not been charged/);
+      expect(said).not.toMatch(/describe|rewrite|rephrase|edit the brief/i);
+    }
+  });
+
+  it("neither names an engine, a vendor or a status code", () => {
+    /* The disappearing-technology law's one hard line (clause 5). */
+    for (const said of [READER_OUTAGE_MESSAGE, READER_DOWN_MESSAGE]) {
+      expect(said).not.toMatch(/openrouter|gemini|nano banana|sunburst|gpt|claude|40[123]/i);
+    }
   });
 });
 

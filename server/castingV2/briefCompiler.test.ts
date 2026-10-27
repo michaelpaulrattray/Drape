@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { castingBriefCompiler, FALLBACK_CARRIES_CHARS, READER_OUTAGE_MESSAGE } from "./briefCompiler";
+import {
+  castingBriefCompiler,
+  FALLBACK_CARRIES_CHARS,
+  READER_DOWN_MESSAGE,
+  READER_OUTAGE_MESSAGE,
+} from "./briefCompiler";
 import {
   lockFactsOf,
   EMPTY_STATED_HAIR,
@@ -17,7 +22,7 @@ import {
   resolveCandidateIdentity,
 } from "./cohortPhotorealHuman";
 import { interpretBrief, interpreterSystemPrompt } from "./interpreter";
-import type { TextEngine } from "../providers/types";
+import { ProviderError, type TextEngine } from "../providers/types";
 import { HOUSE_WARDROBE_LINE } from "./wardrobeLine";
 
 /**
@@ -613,6 +618,70 @@ describe("a reader outage refuses free (#126 — founder, Crew reply #7: 'refuse
       engine: engineReturning("I'm sorry, I can't help with that."),
     });
     expect(outcome).toMatchObject({ ok: false, reason: "unavailable", cause: "unparsed" });
+  });
+
+  /*
+    ⚠ WHICH SENTENCE, AND THE DOUBLE IS THE WHOLE INSTRUMENT (#2688, the sweep
+    of #2686).
+
+    `engineThrowing` above throws a bare `Error`, which is weather — a deadline,
+    a dead transport — and every arm below it keeps `reader_outage` because
+    *"try again in a moment"* is TRUE of that. This one throws what an
+    overdrawn or disabled key actually produces, and no retry reaches it.
+
+    Measured on production, 2026-10-27 from 03:09Z: the key was off, every call
+    answered 401, and this road told the founder's own rolls to try again in a
+    moment for the whole outage.
+
+    Law 3: the branch is driven by this double directly, never through a reader
+    that usually behaves — and `classifyOpenRouterTextHttp`'s own mapping of
+    401/402/403 to `provider_account` is asserted in
+    `readerOutageRefusal.test.ts`, so the fixture cannot drift from the
+    product's idea of what a 402 is.
+  */
+  const engineRefusingOurAccount = (): TextEngine => ({
+    id: "test:dry-account",
+    complete: async () => {
+      throw new ProviderError("provider_account", "openrouter 401 disabled key", { status: 401 });
+    },
+  });
+
+  it("interpretBrief names the cause `account` when the provider refuses OUR key", async () => {
+    const outcome = await interpretBrief({ briefText: BRIEF, engine: engineRefusingOurAccount() });
+    expect(outcome).toMatchObject({ ok: false, reason: "unavailable", cause: "account" });
+  });
+
+  it("the compiler refuses reader_down for it — a different sentence, the same free refusal", async () => {
+    await expect(
+      castingBriefCompiler({
+        briefText: BRIEF,
+        candidateCount: 8,
+        rollSeed: "s",
+        engine: engineRefusingOurAccount(),
+      }),
+    ).rejects.toMatchObject({ name: "BriefRefusal", code: "reader_down", message: READER_DOWN_MESSAGE });
+    /* The defect, as two assertions. */
+    expect(READER_DOWN_MESSAGE).not.toMatch(/in a moment/);
+    expect(READER_DOWN_MESSAGE).toMatch(/not been charged/);
+  });
+
+  it("no engine configured refuses reader_down too — the sibling in the same condition", async () => {
+    /*
+      ⚠ THIS WAS `reader_outage` UNTIL #2688 and is the law-7 sweep of that
+      card rather than its subject: `cause: "unconfigured"` sat in the very
+      same `if` as `account`, and a deployment with no reader cannot be fixed
+      by trying again in a moment either.
+
+      `engine: null` is the interpreter's own "no engine" seam — `undefined`
+      would fall through to `interpreterEngine()` and read the real
+      environment, which is what makes this arm the deployment state and not a
+      missing key on this machine.
+    */
+    const outcome = await interpretBrief({ briefText: BRIEF, engine: null });
+    expect(outcome).toMatchObject({ ok: false, reason: "unavailable", cause: "unconfigured" });
+    await expect(
+      castingBriefCompiler({ briefText: BRIEF, candidateCount: 8, rollSeed: "s", engine: null }),
+    ).rejects.toMatchObject({ code: "reader_down", message: READER_DOWN_MESSAGE });
   });
 
   it("the compiler REFUSES a brief the reader never read — code, sentence, nothing compiled", async () => {

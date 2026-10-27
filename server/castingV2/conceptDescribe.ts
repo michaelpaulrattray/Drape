@@ -451,7 +451,7 @@ import {
   createOpenRouterTextEngine,
   DEFAULT_INTERPRETER_MODEL,
 } from "../providers/openrouterText";
-import { ProviderError, type TextEngine } from "../providers/types";
+import { ProviderError, providerAccountRefused, type TextEngine } from "../providers/types";
 
 const log = createModuleLogger("castingV2/conceptDescribe");
 
@@ -1150,9 +1150,18 @@ function worthAskingAgain(error: unknown): boolean {
  * the transient sentence. Telling those apart means the breaker carrying the
  * class that opened it, which changes what every provider road sees and is its
  * own card, not this one's.
+ *
+ * ⚠ **THE TEST ITSELF MOVED TO THE TAXONOMY (#2688) AND THIS IS NOW A LOCAL
+ * NAME FOR IT.** The expression was written out here and, the same day, again
+ * in `readerDown.ts`; the roll and refine roads needed it next, which would
+ * have made four copies of one classification. It lives at
+ * {@link providerAccountRefused} now and every road reads that. What stays
+ * here is the local name and the paragraphs above, because the REASONING is
+ * this entrance's — the taxonomy knows what a 402 is and nothing about which
+ * sentence an upload should be shown.
  */
 function readerAccountRefused(error: unknown): boolean {
-  return error instanceof ProviderError && error.failureClass === "provider_account";
+  return providerAccountRefused(error);
 }
 
 /** The sentence the reader is given on the second ask. It always names the fault. */

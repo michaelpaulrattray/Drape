@@ -424,6 +424,35 @@ export function providerAlreadyBilled(error: unknown): boolean {
 }
 
 /**
+ * IS THIS OUR ACCOUNT RATHER THAN THEIR REQUEST — the one test, in the one
+ * place the taxonomy lives (#2688).
+ *
+ * `provider_account` is a 401, a 402 or a 403: our key disabled, our balance
+ * gone, our access revoked. Every transport maps those three to it
+ * (`openrouterText.ts`, `openrouterImages.ts`, `falTransport.ts`,
+ * `elevenlabsVoice.ts`), and the class's own entry above says what makes it
+ * categorically different — nothing about the request is wrong, and no action
+ * the customer can take fixes it.
+ *
+ * ⚠ **IT IS A PREDICATE RATHER THAN A SHAPE AT EACH CALLER FOR THE REASON
+ * {@link providerAlreadyBilled} IS**, and this one had already drifted before
+ * it existed: the identical expression was written out at
+ * `conceptDescribe.ts` and at `castingV2/readerDown.ts`, and the roads this
+ * card repairs would have made it four. Two copies of one classification is
+ * the drift working law 4 is about, and the harm is specific here — a road
+ * that gets this question wrong tells a customer their picture or their words
+ * were the problem when the bytes were never looked at.
+ *
+ * It answers only the failure CLASS. Whether a given road should then say a
+ * different sentence, refuse free, or stop a loop is that road's decision, and
+ * each one states its own (`readerDown.ts` carries the sentence for the four
+ * picture roads; `briefRefusalCopy.ts` and `refineRefusals.ts` carry theirs).
+ */
+export function providerAccountRefused(error: unknown): boolean {
+  return error instanceof ProviderError && error.failureClass === "provider_account";
+}
+
+/**
  * MAY this attempt have cost us money? — the question a render BUDGET has to
  * ask, and it is not the same question as {@link providerAlreadyBilled}
  * (#1968, Cid's reprice condition).
