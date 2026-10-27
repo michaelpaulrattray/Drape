@@ -87,6 +87,25 @@ export async function readRunSupersessions(
     gate on one question is the mirror working law 4 is about, and this one was
     unobservable: nothing could ever tell the two apart. The verdict owns the
     lane question; this owns the TIME bound and nothing else.
+
+    ⚠ **AND SINCE #2679 IT IS OBSERVABLE, SO THAT SENTENCE IS NO LONGER THE
+    ONLY REASON — RESTORING A LANE FILTER HERE WOULD NOW BREAK A VERDICT.**
+    `readRunSupersession`'s second road asks whether a run of ANY seat opened
+    and closed inside the row's silence: no cross-lane rows means no evidence
+    the runner was cycling, so a lane-narrowed SELECT would make every busy
+    night look like a park. The rows the lane filter above discards are exactly
+    the rows that road reads. A filter that was once harmless duplication is
+    now a defect; the paragraph above is kept because its sabotage reasoning is
+    what made the widening free.
+
+    ⚠ **IT IS HELD IN TWO PLACES BECAUSE THE TWO HALVES FAIL DIFFERENTLY, AND
+    THE WEAKER HALF SAYS SO.** `server/crewRunSupersession.test.ts` drives the
+    query with another seat's completed run in the rows and then with none, and
+    the verdict flips — so the rows REACHING the reading are proven, not
+    asserted. But the stub cannot execute a WHERE, so narrowing the SQL itself
+    would change no row the suite sees: that half is held by a TEXT arm on this
+    statement (no `shift =`/`LIKE`/`IN`), which is the same honest split the
+    `heartbeatAt` note below already makes.
   */
   /* ⚠ `heartbeatAt` RIDES ALONG BECAUSE THAT IS WHERE A LANE-MATE'S LIFE ENDS
      (#2079). The overlap clause used to read `endedAt`, which is a stamp any
