@@ -11121,14 +11121,25 @@ describe("an ink design IS scopable — the door, at the wire", () => {
  * A refine is one long-held mutation: the customer's exposure is the
  * operation's own life — median 121 s, p95 276 s, and 1.7% answered past the
  * observed ~305 s gateway wall, where the socket is gone before the answer
- * exists. Behind `CASTING_REFINE_DISPATCH_SCOPE` the paid half returns a
- * receipt the moment the work is genuinely under way and the outcome arrives on
- * the surface like every other durable fact.
+ * exists. So the paid half returns a receipt the moment the work is genuinely
+ * under way and the outcome arrives on the surface like every other durable
+ * fact.
  *
- * What these arms hold the swap to, and each is a bound rather than a nicety:
+ * ⚠ **IT WAS A SWAP BEHIND `CASTING_REFINE_DISPATCH_SCOPE` AND IT IS NOW THE
+ * ROAD — the flag is RETIRED (#1577 slice D4).** It stood at `all` on
+ * production from 2026-08-25, so nothing was ever on the arm that was removed,
+ * and these arms did not change their verdicts: every one of them used to pin
+ * the flag to `users:1` on its first line, and that line is simply gone. **What
+ * replaced the suite's first arm is the retirement's own discriminator** — with
+ * no variable set anywhere, a caller that says nothing gets a receipt. That arm
+ * was written and DRIVEN RED against the pre-cut tree before a line of
+ * production code moved.
  *
- *   1. flag OFF is today's product, byte for byte — the held path stays
- *      reachable at every moment, so a park mid-item leaves a working thing;
+ * What these arms hold the road to, and each is a bound rather than a nicety:
+ *
+ *   1. the held path stays reachable — not for a customer any more, but for a
+ *      caller that says `cannotTakeAReceipt` (#2560), which is the door the
+ *      retirement waited on;
  *   2. the receipt arrives BEFORE the render, proven by holding the render on a
  *      latch the test opens itself — a receipt that merely arrives is a receipt
  *      that might have waited;
@@ -11158,21 +11169,61 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
   });
 
   afterEach(() => {
-    delete process.env.CASTING_REFINE_DISPATCH_SCOPE;
     delete process.env.CASTING_V2_SCOPE;
   });
 
-  it("holds the request while the flag is off — the picture, on the request, as today", async () => {
-    const result = await refineCandidate({ ...greenEyes }, input);
+  it("dispatches with NO dispatch variable set anywhere — the gate is GONE, not merely open", async () => {
+    /*
+      THE DISCRIMINATOR FOR THE RETIREMENT (#1577 slice D4), and it is a
+      before/after arm rather than one more assertion.
 
-    expect(result.kind, "the delivered picture answers the mutation").toBe("rendered");
-    expect(result.variantId).toBeTruthy();
-    expect(landedVariant, "and it had already landed when the request answered").not.toBeNull();
-    expect(ledger.charges).toHaveLength(1);
+      On the tree this slice cut from, an absent variable parsed as `off`, so
+      this exact call HELD — which is what the arm that stood here asserted,
+      and it is the road the 1.7% lost answers came from. Driven at `3e90b4d7`
+      before a line of production code was touched: `expected undefined to be
+      "dispatched"`. So it is proven able to fail against the real tree rather
+      than against a fixture, and it is the line that reddens if anybody ever
+      gives this road a second gate again.
+
+      `CASTING_V2_SCOPE` is still `users:1` from the `beforeEach`, because the
+      ENTRANCE's own door has not moved. What moved is that nothing asks a
+      second question behind it.
+
+      ⚠ IT IS SHAPED LIKE THE `cannotTakeAReceipt` ARM BELOW AND FOR THAT ARM'S
+      REASON. Awaiting the call directly would deadlock against a shut latch on
+      the held road, so the before-reading would arrive as a 30-second timeout —
+      true, but a timeout says only that something did not finish. Starting the
+      call and reading the journal gives the same verdict as a sentence.
+    */
+    expect(
+      process.env.CASTING_REFINE_DISPATCH_SCOPE,
+      "the control: this arm is only about the retired variable if it is really absent",
+    ).toBeUndefined();
+    const render = latch();
+
+    type Answer = Awaited<ReturnType<typeof refineCandidate>>;
+    let answered: Answer | null = null;
+    const pending = refineCandidate({ ...greenEyes }, input)
+      .then((outcome) => { answered = outcome; return outcome; });
+
+    await vi.waitFor(() => expect(journal, "the render reached the latch").toContain("generate"));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(
+      (answered as Answer | null)?.kind,
+      "a caller that says nothing gets a receipt — production's own road, now the only one",
+    ).toBe("dispatched");
+    expect(landedVariant, "the latch is shut, so this was a receipt and not a fast render").toBeNull();
+    expect(ledger.charges, "charged once, before the receipt, exactly as before").toHaveLength(1);
+
+    render.release();
+    await pending;
+    await vi.waitFor(() => expect(landedVariant, "and the picture arrives afterwards").not.toBeNull());
+    expect(ledger.charges, "still one charge").toHaveLength(1);
+    expect(ledger.refunds, "and nothing came back").toHaveLength(0);
   });
 
   it("answers with a receipt BEFORE the render, and the picture lands afterwards", async () => {
-    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
     const render = latch();
 
     const result = await refineCandidate({ ...greenEyes }, input);
@@ -11196,7 +11247,6 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
   });
 
   it("lands a background failure DURABLY — on the rows, where the surface reads it", async () => {
-    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
     const render = latch();
     const unhandled: unknown[] = [];
     const watch = (reason: unknown) => unhandled.push(reason);
@@ -11222,7 +11272,6 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
   });
 
   it("logs the census at SETTLEMENT, carrying the render's wall clock and not the receipt's", async () => {
-    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
     const render = latch();
 
     const started = Date.now();
@@ -11260,7 +11309,6 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
       disappearance — so this arm asserts the RECORD. Deleting the catch reddens
       it and nothing else.
     */
-    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
     const render = latch();
     const unhandled: unknown[] = [];
     const watch = (reason: unknown) => unhandled.push(reason);
@@ -11291,10 +11339,12 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     for, and which of them is the discriminator.
 
     The receipt half is already proven two arms up ("answers with a receipt
-    BEFORE the render"), against this same flag and this same latch, so it is
-    not written a second time. What is new is the HELD road reached without
-    touching the customer switch, and the control that the field is read as
-    `true` rather than as truthy.
+    BEFORE the render"), on this same latch, so it is not written a second time.
+    What is new is the HELD road, and the control that the field is read as
+    `true` rather than as truthy. ⚠ Since #1577 slice D4 retired
+    `CASTING_REFINE_DISPATCH_SCOPE` these two arms are the ONLY thing deciding
+    which road a refine takes, so the discriminator below is the whole fork
+    rather than one gate of two.
 
     ⚠ **NEITHER ARM CAN PASS BY NEVER RUNNING, AND THE FIRST ONE'S CLOCK IS THE
     JOURNAL RATHER THAN A TIMER.** `"generate"` is pushed by the engine mock on
@@ -11304,8 +11354,7 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     contended machine's clock, where a slow sabotaged run answers "still
     waiting" and the arm passes for the wrong reason.
   */
-  it("HOLDS the request for a caller that cannot take a receipt — with the flag ON for this very user", async () => {
-    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
+  it("HOLDS the request for a caller that cannot take a receipt — the one road left that does", async () => {
     const render = latch();
 
     let answered = false;
@@ -11338,7 +11387,6 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
   });
 
   it("still dispatches when the caller says it CAN take one — the field is read as `true`, never as truthy", async () => {
-    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
     const render = latch();
 
     const result = await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);

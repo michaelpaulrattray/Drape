@@ -339,12 +339,19 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "Widening past users:1 is his word, and the flag retires at the end of its road "
       + "(N2's law: flags go home)",
   },
-  CASTING_REFINE_DISPATCH_SCOPE: {
-    position: "all",
-    why:
-      "founder ruling 2026-08-25 on the Desk (register card #3): fixes the "
-      + "1.7% lost-answer defect at the ~305s gateway wall; parent V2 is all",
-  },
+  /* ⚠ `CASTING_REFINE_DISPATCH_SCOPE` had a row here at `all` and it is RETIRED
+     (#1577 slice D4, his word of 2026-10-15). The row is REMOVED rather than
+     moved to `off`, which is the framing trim's and the repaint flag's
+     precedent and what `productionFlagPositions.test.ts` enforces from both
+     directions: nothing in the code declares the variable any more, so a row
+     for it could never disagree with anything.
+
+     ⚠ ORDER, and it is the expensive half: the code stops reading the variable
+     in this commit and the variable leaves the SERVICE after the merge. The
+     other order is the costly one — with the old build still serving, an absent
+     variable parses as `off`, which would put every customer back on the held
+     road and the 1.7% lost answers with it. Between the merge and the deletion
+     `comparePositions` reports exactly that one mismatch, by design. */
   CASTING_DIAGNOSTIC_CAPTURE_SCOPE: {
     position: "users:1",
     why: "keeps the frame from a refused render, on the private evidence adapter",

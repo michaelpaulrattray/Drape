@@ -53,13 +53,25 @@ const usage = () => {
  * the output so every observation says what doors were open when it was made.
  * The shipped parents are `all` (production's own values, read 2026-08-21); the
  * feature doors are opened for the fixture alone, the way the founder's account
- * is opened; the three that need a table or a worker stay off.
+ * is opened; the one that needs a table stays off.
+ *
+ * ⚠ `CASTING_REFINE_DISPATCH_SCOPE` was pinned `off` beside the scan table and
+ * is RETIRED (#1577 slice D4), so the name is gone from the line below — the
+ * loop walks `declaredFlags()`, so an undeclared flag was never going to be
+ * visited and this is tidying a dead string rather than a behaviour change.
+ * **The reason it was pinned off is worth keeping: this census must never read
+ * a dispatch receipt as a delivered frame.** It cannot, and the reason is not
+ * the flag: the drive runs with the claim door SHUT (`admit: () => false`), so
+ * reaching the money throws `busy` and the census reads WOULD-RENDER long
+ * before a receipt could exist. `cannotTakeAReceipt` (#2560) is the door for a
+ * caller that does get that far, and `server/refineReceiptDiscipline.test.ts`
+ * holds every tracked script to one or the other.
  */
 const profileFor = (userId: number): Record<string, string> => {
   const flags: Record<string, string> = {};
   for (const flag of declaredFlags()) {
     if (["CASTING_V2_SCOPE", "CASTING_REFERENCE_LIBRARY_SCOPE"].includes(flag)) flags[flag] = "all";
-    else if (["CASTING_SCAN_TABLE_SCOPE", "CASTING_REFINE_DISPATCH_SCOPE"].includes(flag)) flags[flag] = "off";
+    else if (flag === "CASTING_SCAN_TABLE_SCOPE") flags[flag] = "off";
     else flags[flag] = `users:${userId}`;
   }
   return flags;
