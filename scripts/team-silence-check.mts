@@ -37,12 +37,26 @@ const GH_TIMEOUT_MS = 60_000;
 
 const argv = process.argv.slice(2);
 const hoursArg = argv.indexOf("--hours");
-const thresholdHours = hoursArg >= 0 && argv[hoursArg + 1] !== undefined
-  ? Number(argv[hoursArg + 1])
-  : Number(process.env.TEAM_SILENCE_HOURS ?? TEAM_SILENCE_HOURS);
+
+/*
+  ⚠ AN UNSET WORKFLOW INPUT ARRIVES AS THE EMPTY STRING, NOT AS UNDEFINED, and
+  `??` does not catch it.
+
+  `TEAM_SILENCE_HOURS: ${{ inputs.hours }}` is empty on every SCHEDULED run,
+  because `workflow_dispatch` inputs do not exist there. `Number("")` is **0**,
+  which fails the positive check below — so a `??` default would have refused
+  every scheduled run with exit 1 while the hand-dispatched ones worked, and the
+  detector would have been dead in exactly the mode it is meant to run in.
+  (Memory's own specimen is a blank Railway variable reaching `parseInt`.)
+
+  So the test is on the TRIMMED TEXT being non-empty, before any conversion.
+*/
+const asked = hoursArg >= 0 ? argv[hoursArg + 1] : process.env.TEAM_SILENCE_HOURS;
+const given = typeof asked === "string" && asked.trim() !== "" ? asked.trim() : null;
+const thresholdHours = given === null ? TEAM_SILENCE_HOURS : Number(given);
 
 if (!Number.isFinite(thresholdHours) || thresholdHours <= 0) {
-  console.error(`[team-silence] --hours must be a positive number, got ${JSON.stringify(argv[hoursArg + 1] ?? process.env.TEAM_SILENCE_HOURS)}`);
+  console.error(`[team-silence] the hours threshold must be a positive number, got ${JSON.stringify(given)}`);
   process.exit(1);
 }
 

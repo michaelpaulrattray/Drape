@@ -142,16 +142,24 @@ jobs:
 
       # The red belongs in the Actions tab too — a card nobody has opened yet
       # and a job that passed would be a finding with no surface at all.
+      # ⚠ EVERY `${{ … }}` REACHES THE SHELL THROUGH `env:`, NEVER INLINE IN A
+      # `run:` BLOCK. The gate lints these with zizmor on the PEDANTIC persona
+      # and fails on ANY finding, and an inline step output is its
+      # template-injection shape. It is also simply correct: a value that
+      # travels as an environment variable cannot be read as script.
       - name: Fail on the finding, or on a reading that did not happen
         if: ${{ steps.read.outputs.verdict != 'ok' }}
+        env:
+          VERDICT: ${{ steps.read.outputs.verdict }}
+          STATUS: ${{ steps.read.outputs.status }}
         run: |
-          if [ "${{ steps.read.outputs.verdict }}" = "stopped" ]; then
+          if [ "$VERDICT" = "stopped" ]; then
             echo "::error::the team has stopped — a team-outage card is open on the board"
           else
             # ⚠ NEITHER CRYING WOLF NOR GOING QUIET: a reading that did not
             # happen files NO card — it cannot tell a park from a stall, so any
             # card it wrote would be a guess — and fails, so the silence is
             # visible without being asserted.
-            echo "::error::the team's silence could not be judged (exit ${{ steps.read.outputs.status }}) — no card filed, because a park and a stall cannot be told apart from this reading"
+            echo "::error::the team's silence could not be judged (exit $STATUS) — no card filed, because a park and a stall cannot be told apart from this reading"
           fi
           exit 1
