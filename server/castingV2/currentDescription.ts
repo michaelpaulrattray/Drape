@@ -69,12 +69,85 @@ const CURRENT_DESCRIPTION_MAX_LENGTH = 2400;
 export const CURRENT_DESCRIPTION_TIMEOUT_MS = 20_000;
 export const CURRENT_DESCRIPTION_RETRIES = 1;
 
+/**
+ * ⚠ **THE PERSON IS ALWAYS THEY/THEIR, AND THE RULE BELOW SAYING SO IS THE
+ * SECOND ONE — THE FIRST ONE LOST (#2755, his ruling 2026-10-09: *"i dont want
+ * my crew being gender specific about anything"*).**
+ *
+ * Rule 1 has said *"written in the third person with they/their"* since this
+ * feature's first commit (#2565, 2026-10-16), and a model can satisfy *"third
+ * person"* with `his`. Measured at the rows rather than supposed, and the two
+ * worlds disagree so completely that reading only one would have chosen the
+ * wrong repair:
+ *
+ *   DEV, stored      34 of 139 described versions carry a gendered pronoun
+ *                    (24.5%); `his` 42, `he` 2, and not one `she` or `her`.
+ *                    32 of the 34 survive `descriptionForFollow` into the words
+ *                    a customer reads in a Follow's box.
+ *   PRODUCTION       **6 of 6**, all `her`, all on the one account the flag
+ *                    names. The defect is the whole population there.
+ *
+ * # WHERE IT COMES FROM, BECAUSE IT DECIDES THE REPAIR
+ *
+ * Of dev's 34: **25 were handed a gendered previous paragraph** and inherited
+ * it (this prompt tells the writer to keep every fact *"in its own words where
+ * you can"*), **8 are on the seed road** and read it off the brief's own words,
+ * and **1** came from a neutral previous. So the writer rarely introduces a
+ * pronoun and then it STICKS — and a gendered word in the SOURCE is what
+ * invites it: 28 of the 34 trace to a gendered brief, 1 to a gendered ask, and
+ * the remaining 5 to the brief's own gendered occupation noun (*"a weathered
+ * fisherman"*). **There is no case where the writer gendered a cast whose
+ * source carried no gender signal at all.**
+ *
+ * # THE COURT — both arms through the real writer, house money, 2026-10-29
+ *
+ * Today's prompt against today's plus the rule, over inputs reconstructed from
+ * the real chains (the parent's stored paragraph, or the seed road, plus the
+ * last ask):
+ *
+ *   dev, the 34 source-gendered cases ×8    6 of 272 -> **0 of 272**
+ *   production's own 6 cases ×8            47 of 48 -> **0 of 48**
+ *
+ * ⚠ **The feminine direction is where today's prompt fails almost completely —
+ * 97.9% — and the masculine one where it nearly holds, 2.2%.** A court run only
+ * on dev would have read 6 of 272, called the repair unproven, and left a
+ * defect that is certain on the only account that has the feature.
+ *
+ * **It costs no facts and displaces no other rule**, which is not assumed
+ * because *context is not additive* is this repository's own measured law:
+ * content words of the previous paragraph lost were **48 in each arm** (0.18 a
+ * reply, pronoun-blind — `clauseBalance` cannot read this question, because
+ * `his left eyebrow` becoming `their left eyebrow` scores itself as a lost
+ * clause), and across 320 replies per arm the forbidden words, the edit-list
+ * wall and the picture-talk wall each fired **0 times in both arms**. The price
+ * is **+192 tokens of input a call** (301,738 -> 354,060 over 272 calls), about
+ * **$0.0006** on a Refine whose six reads measure $0.0397.
+ *
+ * # AND IT REPAIRS WHAT IS ALREADY STORED, SO NO CEREMONY IS OWED
+ *
+ * 25 of the 34 dev cases and 3 of production's 6 hand the writer a GENDERED
+ * previous paragraph, and arm B answered 0 on every one of them: a gendered
+ * paragraph is rewritten neutral on its next paid edit. Nothing has to be
+ * migrated, and nothing a customer owns is touched.
+ *
+ * # A WALL WAS CONSIDERED AND DECLINED, AND THE TRADE IS THE REASON
+ *
+ * #2755 offered one (*"a check that refuses a gendered reply"*). A refusal here
+ * has one fallback and this module's own comment states it: the render rides
+ * today's prompt and **the version stores NO description**, so the next edit
+ * re-seeds and that version's paragraph is gone. That spends a picture's memory
+ * to buy one word, on a reply the engine will not misread — and after the
+ * repair there is nothing left for it to catch (0 of 320). The honest shape is
+ * therefore the instruction alone, with the rate stated here so a later reading
+ * can disagree with a number rather than with a preference.
+ */
 export const CURRENT_DESCRIPTION_SYSTEM = [
   "You keep one description of a character for a casting studio: who they are and how they look right now.",
   "You are given what they looked like before one change, and the change itself. Write the description as it is after the change.",
   "",
   "Rules:",
   "- One natural paragraph of plain prose in the present tense, written in the third person with they/their. It must read as a description of a person, never as a list of edits.",
+  "- Always they/their for the person, whatever the brief or the customer's words imply about them: never he, him, his, she, her or hers, not once, and not in a clause stating what they do not have (\"They have no horns.\", never \"He has no horns.\"). A brief that says a fisherman, a lizard man, a she or a his is telling you who the character is; it never licenses a gendered pronoun in the description. Keep the customer's own nouns for the character exactly as they wrote them — a lizard man stays a lizard man — because a pronoun is not one of their words for a feature: supplying one is ours, never theirs.",
   "- Never use the words now, changed, added, removed, new, no longer, instead or anymore, and never describe the change itself. Describe the result.",
   "- The change is given in the customer's own words. Every word they use for a feature (a short crop, wire-frame glasses, short curved horns) goes into the description exactly as they wrote it: never a synonym, a fuller or more technical spelling, or a studio term in its place.",
   "- Keep every fact from the previous description that the change does not touch, in its own words where you can. Never strengthen a comparison the previous description already makes (deeper, darker, shorter) unless the change itself asks for more of it.",

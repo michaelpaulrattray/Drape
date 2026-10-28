@@ -294,6 +294,36 @@ describe("removals and the customer's own words (#2645)", () => {
     expect(CURRENT_DESCRIPTION_SYSTEM).toContain("never a synonym");
   });
 
+  it("the person is always they/their, and the rule says so in a way \"third person\" cannot satisfy with \"his\" (#2755)", () => {
+    /*
+      Rule 1 has carried "written in the third person with they/their" since
+      this feature's first commit and a model satisfies it with `his`: 34 of
+      dev's 139 stored paragraphs gender, and 6 of production's 6. Driven on
+      both arms through the real writer, 2026-10-29: today's prompt genders
+      47 of 48 of production's own cases, and 6 of 272 of dev's; with this rule,
+      0 of 48 and 0 of 272. So the rule is pinned, including the two clauses
+      that do the work — the absence sentence, which is where five of dev's hits
+      sat, and the one that keeps the customer's own nouns out of the ban.
+    */
+    expect(CURRENT_DESCRIPTION_SYSTEM).toContain("Always they/their for the person");
+    expect(CURRENT_DESCRIPTION_SYSTEM).toContain("never he, him, his, she, her or hers");
+    expect(CURRENT_DESCRIPTION_SYSTEM).toContain("not in a clause stating what they do not have");
+    /* The customer's own words for the CHARACTER are never what this bans — a
+       rule that stripped them would fight #2645's verbatim rule, which is his
+       own ruling and is pinned two tests above. */
+    expect(CURRENT_DESCRIPTION_SYSTEM).toContain("a lizard man stays a lizard man");
+    /* And it sits ABOVE the two rules it has to outrank, because a model reads
+       a prompt in order: the verbatim-words rule and the keep-every-fact rule
+       are what it was losing to. */
+    const lines = CURRENT_DESCRIPTION_SYSTEM.split("\n");
+    const pronounRule = lines.findIndex((line) => line.startsWith("- Always they/their for the person"));
+    const verbatimRule = lines.findIndex((line) => line.includes("goes into the description exactly as they wrote it"));
+    const keepEveryFact = lines.findIndex((line) => line.includes("Keep every fact from the previous description"));
+    expect(pronounRule).toBeGreaterThan(-1);
+    expect(verbatimRule).toBeGreaterThan(pronounRule);
+    expect(keepEveryFact).toBeGreaterThan(pronounRule);
+  });
+
   it("an addition: nothing taken back, no absences — the turn is the previous description and the customer's sentence alone", () => {
     const turn = currentDescriptionUserTurn({ previous: LIZARD, seed, change: "a notch missing from the left ear" });
     expect(turn).toBe(`How they looked before this change:\n${LIZARD}\n\nThe change, in the customer's own words:\na notch missing from the left ear`);

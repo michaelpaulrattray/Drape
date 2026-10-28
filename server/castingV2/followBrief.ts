@@ -2,10 +2,22 @@
  * THE BRIEF A FOLLOW SENDS — #2576, his word 2026-10-16: *"build it"*
  * (option 3 on the card).
  *
- * Called by the `follow` procedure BEFORE `createRoll`, so before the claim:
- * whatever this returns is the `briefText` the roll is cast from and records,
- * and therefore what the new sheet shows as its brief. Price, claim and refunds
- * are `createRoll`'s and are untouched — this only chooses a string.
+ * Called from INSIDE `createRoll` (`rollService.ts`) — below every refusal that
+ * function makes for free in milliseconds, below the casting stamp, and above
+ * the compile — so it waits only for a roll that is actually going to happen.
+ * Whatever it returns is the `briefText` the roll is cast from and records, and
+ * therefore what the new sheet shows as its brief. Price, claim and refunds are
+ * `createRoll`'s and are untouched — this only chooses a string.
+ *
+ * ⚠ **THIS LINE READ *"Called by the `follow` procedure BEFORE `createRoll`, so
+ * before the claim"* UNTIL 2026-10-29 (#2754), AND IT HAD BEEN STALE SINCE
+ * #2582 items 1 and 3 (PR #2586) MOVED THE CALL.** That position put the
+ * rewrite ahead of the free refusals, so a Follow that was going to be refused
+ * for nothing — a foreign sheet, an expired one, a photograph that will not
+ * load, a brief over the bound — still waited on a text call and still spent
+ * one. **"Before the claim" is still true and is the half that was ever
+ * load-bearing**; `rollService.ts`'s own block beside the call carries why the
+ * claim is keyed on the customer's words rather than on this rewrite.
  *
  * It returns the box's own words, the very string it was handed, in every case
  * but one: the account is inside `CASTING_CURRENT_DESCRIPTION_SCOPE`, the
