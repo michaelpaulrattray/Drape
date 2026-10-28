@@ -592,7 +592,9 @@ export type RefineRefusal =
    * and this card's body re-argued it): dropping the over-long key and keeping
    * the others silently discards a change the customer stated, which is harder
    * to notice than losing them all. What changes is that the refusal is now
-   * TRUE and actionable, and that it is reached on the FIRST parse — see below.
+   * TRUE and actionable. ⚠ **AND IT IS NOT REACHED ON THE FIRST PARSE — this
+   * clause said *"and that it is reached on the FIRST parse"* until the relay's
+   * finding on PR #2732, and the section below carries what that cost.**
    *
    * # Why it is a `wall_` and why it is not `wall_unfileable`
    *
@@ -602,8 +604,15 @@ export type RefineRefusal =
    * were not the customer's own, and here they were: a shared id would deliver
    * a provenance accusation for a length problem. The two also behave
    * differently downstream — `wall_unfileable` is the one wall the invention
-   * door may re-check, and re-asking the model to say the same thing again
-   * cannot make it shorter.
+   * door may re-check, and that door cannot help here: it re-reads the SAME
+   * parse with a vouched pair, so the value it judges is the same length it
+   * was. ⚠ **This clause read *"re-asking the model to say the same thing
+   * again cannot make it shorter"* until PR #2732's repair, and as a general
+   * claim it is false — an INDEPENDENT sampling is a fresh draw and often
+   * does come back shorter, which is the whole ground of the interpreter's
+   * re-sample branch.** What is true is the narrower thing: a door that
+   * re-checks one parse cannot change that parse's length. The shortening
+   * road is the loop's, not a door's.
    *
    * ⚠ **It must not be read as *the product cannot do this*.** The ask is
    * ordinary and the product does it; only this much prose ABOUT ONE THING
@@ -611,13 +620,38 @@ export type RefineRefusal =
    * naming rule (see `wall_unbacked`, named for the field it derives from after
    * two better-sounding names were found to make false claims).
    *
-   * # It is reached on the first parse, and that is money rather than tidiness
+   * # ⚠ IT IS THE LAST SAMPLING THAT ANSWERS, AND THIS SECTION ONCE CLAIMED
+   * # THE OPPOSITE AS A SAVING
    *
    * `containReply` checks `check.wall` before anything else — *a wall is an
-   * answer, not a hiccup; it must not be re-sampled* — so setting it here ends
-   * the read immediately. Before this, an over-long value bought **three** real
-   * model samplings on its way to a refusal the first parse already knew about:
-   * house money spent to reach a worse sentence.
+   * answer, not a hiccup; it must not be re-sampled* — so setting it here does
+   * end THAT parse immediately. **What this section got wrong is that ending
+   * the parse is the same as ending the read.** It read:
+   *
+   * > ~~It is reached on the first parse, and that is money rather than
+   * > tidiness. Before this, an over-long value bought **three** real model
+   * > samplings on its way to a refusal the first parse already knew about:
+   * > house money spent to reach a worse sentence.~~
+   *
+   * The refusal the first parse "already knew about" is **not** a fact the
+   * first parse knows. The length is a property of OUR reply, so the second
+   * sampling of the very same sentence may file within the cap — and on `main`
+   * the interpreter's three samplings mean that ask is **served**. Terminating
+   * on sampling 1 therefore did not save three samplings on a doomed ask; it
+   * spent a servable paid edit to save two samplings' worth of cents, and
+   * nothing in the pull request measured how often that trade loses.
+   *
+   * Caught by the relay on PR #2732 before it shipped. The interpreter now
+   * treats this wall as a failed sampling on attempts 1 and 2 and returns it
+   * only when the LAST sampling is still too long — the loop's own stated rule
+   * — so a first-sampling-long, second-sampling-short ask is served, and the
+   * persistent case costs what it costs on `main` with a true sentence at the
+   * end of it. **The re-sample is the loop's, and it is the one place that
+   * decision can live**: this reader sets the wall for whoever asked, and has
+   * no idea which sampling it is on. The reasoning lives beside that branch in
+   * `refineInterpreter.ts`; the lesson kept here is narrower and worth more —
+   * **a door that ends a parse early is only a saving if the answer it jumps
+   * to was certain, and a refusal caused by our own verbosity never is.**
    *
    * # The numbers ride it and never reach the customer
    *
@@ -1776,9 +1810,14 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
         purpose, because dropping one stated change and keeping the rest is
         harder to notice than losing them all (#2552's argument, re-made on
         #2714). What changes is that the caller can now say something TRUE, and
-        that `containReply` returns it without re-sampling: *a wall is an
-        answer, not a hiccup.* Before this an over-long value bought three real
-        model samplings on its way to "didn't come through clearly".
+        that the caller can say it at all. ⚠ **AND NOT *"without re-sampling"*,
+        which is what this paragraph claimed until the relay's finding on PR
+        #2732: `containReply` does return a set wall ahead of everything, but
+        the interpreter's loop now discards THIS wall on attempts 1 and 2 and
+        re-samples, because the length is our reply's property and the next
+        sampling of the same sentence may fit.** The union member's own docblock
+        carries why; the short version is that terminating here refused asks
+        that `main` serves.
 
         ⚠ **A caller with no `check` is byte-unchanged**, which is the reader
         split `unowned`'s docblock sets out: with no `check` in hand this is our

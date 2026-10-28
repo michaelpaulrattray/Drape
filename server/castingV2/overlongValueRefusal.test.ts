@@ -16,9 +16,16 @@
  *   2. **It took the rest of the sentence with it.** The over-long value never
  *      dropped its own key; it dropped the delta. Every unrelated change in the
  *      same instruction died silently beside it.
- *   3. **It bought three real model samplings** on the way to a refusal the
- *      FIRST parse already knew about — house money spent to reach a worse
- *      answer.
+ *   3. ⚠ **AND THE THIRD THING THIS HEADER LISTED WAS NOT A DEFECT AT ALL.**
+ *      It read: ~~*it bought three real model samplings on the way to a
+ *      refusal the FIRST parse already knew about — house money spent to reach
+ *      a worse answer*~~, and the first parse does not know that refusal. The
+ *      length is a property of OUR reply, so the second sampling of the very
+ *      same sentence can file within the cap — and then the edit is **served**.
+ *      Ending the read on sampling 1 was not a saving; it refused asks `main`
+ *      serves. Caught by the relay on PR #2732 before it shipped. What is left
+ *      of the point is narrower and true: the sentence the three samplings used
+ *      to END on was `unreadable`'s, and that is what 1 and 2 above fix.
  *
  * # What is deliberately NOT fixed, and is asserted as kept
  *
@@ -26,7 +33,10 @@
  * keeping its neighbours is #2552's rejected option (a), and this card re-made
  * the argument: silently discarding one change the customer stated is harder to
  * notice than losing all of them. So the delta still nulls — what changed is
- * that the refusal is now true, actionable, and reached without re-sampling.
+ * that the refusal is now true and actionable. ⚠ **AND NOT *"reached without
+ * re-sampling"*, which this sentence claimed until PR #2732's repair: this wall
+ * is discarded on attempts 1 and 2 and answers only if the LAST sampling is
+ * still too long, so a servable ask stays servable.**
  * The arm below asserts the null and the named wall TOGETHER, so a later shift
  * that "fixes" this into a partial file reddens here rather than shipping.
  *
@@ -294,22 +304,65 @@ describe("what the customer reads, and what it costs (#2714)", () => {
   });
 });
 
-describe("it is reached on the FIRST parse, which is the house-money half (#2714)", () => {
-  it("refuses on ONE sampling where it used to buy three", async () => {
+describe("⚠ THE LAST SAMPLING ANSWERS, AND A SHORTER SECOND ONE IS SERVED (the relay's finding on PR #2732)", () => {
+  /*
+    WHAT THESE TWO ARMS ARE FOR, and the first of them is the one the finding
+    was about.
+
+    This block used to hold a single arm called *"refuses on ONE sampling where
+    it used to buy three"*, asserting `engine.seen.length === 1` and filed as
+    the card's house-money saving. **It was measuring a behaviour change nobody
+    had priced.** The over-long value is a property of OUR REPLY, not of the
+    sentence: on `main` the interpreter's three samplings mean that a first
+    reply which ran long and a second which fits gets the customer's edit
+    SERVED. Terminating on sampling 1 refused it.
+
+    That arm could not see the case, because its stub returns the same long
+    value every time — so it passed, and the cost stayed invisible. The pair
+    below is the repair's proof, and it is a pair on purpose: one arm that the
+    rescue happens, one that the persistent case still ends in this door's own
+    words rather than reverting to `unreadable`'s.
+  */
+  const over = "freckled ".repeat(20).trim();
+
+  it("⚠ A FIRST REPLY THAT RAN LONG AND A SECOND THAT FITS IS SERVED, NEVER REFUSED", async () => {
     /*
-      THE ARM THAT MEASURES THE SPEND. `containReply` checks `check.wall` before
-      anything else — *a wall is an answer, not a hiccup; it must not be
-      re-sampled* — so a named wall ends the read immediately. With no wall set
-      the reader returned a bare `null`, which is indistinguishable from an
-      unusable reply, and the loop sampled twice more at full price.
-
-      Every content word of the value is in the instruction, so the reply clears
-      containment and really does reach the cap check, rather than failing one
-      guard earlier for a reason this arm would misread as its own.
+      The sentence is identical in both samplings — only OUR rendering of it
+      differs, which is the whole ground of the re-sample. Every content word of
+      the short reply is in the instruction, so it clears containment and really
+      files, rather than passing this arm by failing a guard one step earlier.
     */
-    const over = "freckled ".repeat(20).trim();
     expect(over.length).toBeGreaterThan(freeSubjectMaxLength("marks"));
+    const short = "freckled";
+    expect(short.length).toBeLessThanOrEqual(freeSubjectMaxLength("marks"));
 
+    const engine = scripted([
+      JSON.stringify({ intent: "edit", free: { marks: over } }),
+      JSON.stringify({ intent: "edit", free: { marks: short } }),
+    ]);
+    const parsed = await interpretRefinement({
+      instruction: over,
+      currentEyeColour: "brown",
+      currentEyeShape: null,
+      engine,
+    });
+
+    expect(parsed.ok, "the ask is servable and must be served").toBe(true);
+    expect(parsed.ok && parsed.delta.free?.marks).toEqual([short]);
+    expect(engine.seen.length, "the second sampling answered, so there is no third").toBe(2);
+  });
+
+  it("and the PERSISTENT case still answers in THIS door's words, after all three", async () => {
+    /*
+      The stub returns the same over-long value for every sampling, so the last
+      one is still too long and the wall becomes the answer. This is the arm the
+      block used to have, with the count corrected from 1 to 3 — and the count
+      matters as much as the reason: it is what proves the wall is being
+      DISCARDED on attempts 1 and 2 rather than returned early.
+
+      The sentence must be this door's, not `unreadable`'s. That is the whole
+      card, and it is what the repair had to keep while giving the rescue back.
+    */
     const engine = scripted([JSON.stringify({ intent: "edit", free: { marks: over } })]);
     const parsed = await interpretRefinement({
       instruction: over,
@@ -319,7 +372,7 @@ describe("it is reached on the FIRST parse, which is the house-money half (#2714
     });
 
     expect(parsed.ok).toBe(false);
-    expect(!parsed.ok && parsed.refusal.reason).toBe("wall_too_long");
-    expect(engine.seen.length, "one reading, not three").toBe(1);
+    expect(!parsed.ok && parsed.refusal.reason, "never `unreadable`").toBe("wall_too_long");
+    expect(engine.seen.length, "three samplings — the wall is discarded on 1 and 2").toBe(3);
   });
 });
