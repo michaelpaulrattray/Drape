@@ -88,6 +88,35 @@
  * position here in the same commit that flips it, with the ruling that
  * authorised it named — the reason field is where a future seat learns whether
  * a position is a decision or an accident.
+ *
+ * # RETIRING A ROW — AND WHEN THE VARIABLE COMES OFF. THE ONE SENTENCE, SAID HERE ONCE
+ *
+ * ⚠ **A RETIREMENT'S VARIABLE COMES OFF AFTER THE CODE DEPLOYS — NEVER IN THE
+ * SAME ACT AS THE MERGE.** The row leaves in the commit that stops reading the
+ * variable; the variable leaves the service once that build is SERVING. An
+ * absent variable parses as off ({@link UNSET}), so deleting it while the old
+ * build still answers puts every customer back on the retired road — and a
+ * merge is not a deploy: `main` moving starts a build, and `/api/health` keeps
+ * answering from the OLD process until the cutover.
+ *
+ * So the two acts are SEPARATE, and the window between them is expected rather
+ * than a fault: with the row gone and the variable still set, the service holds
+ * a governed variable this table does not name, so `comparePositions` reports
+ * exactly one mismatch naming that flag until the deletion. **That window is
+ * why the sentence has an order at all.**
+ *
+ * ⚠ **This is the authority on that question, and until #2738 it said the
+ * opposite in its own two retirement notes** — *"in the same act as the
+ * merge"*, which eight statements across six files repeated. Every one of them
+ * then said *"in that order"*, or described the one-mismatch window above, and
+ * both are only meaningful if the acts are separate — so each sentence
+ * contradicted its own next clause, and the headline is the half a reader acts
+ * on. **What it cost is #2735**: a handoff wrote the obligation as firing when
+ * the PR merged, and at 00:20:51Z on 2026-10-28 the merge had happened, the
+ * variable was still `all`, and `/api/health` was serving the pre-merge build
+ * that still read it — the fourth instance of a precondition stated one step
+ * too early. The retirement records, the catalogue entries and the retirement
+ * guards' docblocks now point HERE instead of re-wording it six ways.
  */
 
 import { BOOT_GOVERNED_ENV_NAMES } from "./governedBootSettings.mts";
@@ -202,18 +231,20 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
      2026-10-15, on his word (*"yes approve the plan and switch off the six
      settings"*). It read `all` since fable-1253 widened the compositor swap past
      `users:1`, and the ghost audit found the whole OLD paste road still standing
-     behind it as the flag's off arm. The code stops reading the variable in this
-     commit and the variable leaves the service in the same act as the merge —
-     in that order, and the other order is the expensive one: with the old build
-     still serving, an absent variable parses as `off`, which would put every
-     customer back on the paste road.
+     behind it as the flag's off arm. The code stopped reading the variable in
+     this commit and the variable came off the service AFTER that code DEPLOYED
+     — never in the same act as the merge, which is the rule said once at the
+     head of this file. The other order is the expensive one: with the old build
+     still serving, an absent variable parses as `off`, which would have put
+     every customer back on the paste road.
 
      The row is REMOVED rather than moved to `off`, which is the framing trim's
      precedent (#11) and what `productionFlagPositions.test.ts` enforces from
      both directions: a row for a variable nothing declares can never disagree
      with anything, and a governed variable with no row is reported by
-     `comparePositions`. So the two have to move together — and between the merge
-     and the deletion the rite reports exactly that mismatch, by design. */
+     `comparePositions`. So neither moves without the other — the row in this
+     commit, the variable after the deploy — and between the merge and the
+     deletion the rite reports exactly that mismatch, by design. */
   /* ⚠ CASTING_REFERENCE_LIBRARY_SCOPE'S ROW STOOD HERE AND IS GONE — #1577
      slice D5, 2026-10-15, on his word (*"yes approve the plan and switch off the
      six settings"*), the LAST of the six. It read `all` since 2026-08-24 and
@@ -221,17 +252,19 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
      it"* — true, and the repaint's own flag went two slices earlier, leaving
      this one gating nothing a customer could switch.
 
-     The code stops reading the variable in this commit and the variable leaves
-     the service in the same act as the merge — in that order, and the other
+     The code stopped reading the variable in this commit and the variable came
+     off the service AFTER that code DEPLOYED — never in the same act as the
+     merge, which is the rule said once at the head of this file. The other
      order is the expensive one: with the old build still serving, an absent
-     variable parses as `off`, which would blank the face panel for every
-     customer and stop every refine carrying the cast's own features.
+     variable parses as `off`, which would have blanked the face panel for every
+     customer and stopped every refine carrying the cast's own features.
 
      The row is REMOVED rather than moved to `off`, which is the repaint's
      precedent four rows up and what `productionFlagPositions.test.ts` enforces
      from both directions: a row for a variable nothing declares can never
      disagree with anything, and a governed variable with no row is reported by
-     `comparePositions`. So the two have to move together — and between the
+     `comparePositions`. So neither moves without the other — the row in this
+     commit, the variable after the deploy — and between the
      merge and the deletion the rite reports exactly that mismatch, by
      design. */
   CASTING_INK_STUDIO_SCOPE: {
@@ -448,8 +481,9 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
      for it could never disagree with anything.
 
      ⚠ ORDER, and it is the expensive half: the code stops reading the variable
-     in this commit and the variable leaves the SERVICE after the merge. The
-     other order is the costly one — with the old build still serving, an absent
+     in this commit and the variable leaves the SERVICE after that code DEPLOYS
+     — never in the same act as the merge, which is the rule said once at the
+     head of this file. The other order is the costly one — with the old build still serving, an absent
      variable parses as `off`, which would put every customer back on the held
      road and the 1.7% lost answers with it. Between the merge and the deletion
      `comparePositions` reports exactly that one mismatch, by design. */

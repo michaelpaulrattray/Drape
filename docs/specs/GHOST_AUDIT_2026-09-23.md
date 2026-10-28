@@ -1109,3 +1109,39 @@ record drifted under a green guard, which is the only way this kind of staleness
 ever survives**, and the repair is to tighten that one arm rather than to write a
 new instrument — carded with the finding above, because a control is built from a
 card that predates the shift.
+
+### ✅ BOTH OF THOSE ARE DISCHARGED — #2738, and the sweep found the class wider than the card
+
+The card both paragraphs above were written into is **#2738**, and it is built.
+What changed against what it asked for, because the difference is the finding:
+
+- **The sentence is said ONCE**, at the head of `scripts/lib/productionFlagPositions.mts`,
+  which is the authority on exactly this question and had been saying the opposite
+  in its own two retirement notes. Every other statement was made to agree with it.
+- **The population was 16 statements in 9 files, not 8 in 6.** The card measured
+  `grep "same act as the merge"`, which is case-sensitive — so it missed the three
+  CAPITALISED catalogue headlines it then listed by line anyway, and it could not
+  see the same claim in **different words**: `CLAUDE.md`'s own index said *"the
+  variable leaves the service with that merge"* on two rows, this authority's third
+  retirement note said *"after the merge"* (true but under-specified — the dangerous
+  window is before the DEPLOY), two row comments said the row and the variable
+  *"have to move together"*, and two records said *"in the same act"* with no merge
+  in the sentence at all. **Grep for the sentence, never for the phrase.**
+- **The guard arm was three arms**, not one: `sidePhrasingClause.test.ts`,
+  `inkWordsRoad.test.ts` and `refineOpenLaneClause.test.ts` each carried the same
+  6,000-character window. All three now assert the opening shape, which makes four
+  guards on that property and none on a character count. ⚠ **The open lane's entry
+  is 6,191 characters — already longer than the window it was measured against** —
+  so that arm had been passing for the right reason with the window doing none of
+  the work, which is the clearest statement of why the number was never the property.
+- **Three statements were stale in TENSE as well as wrong in order**, and that was
+  read rather than assumed: the three refine-road variables were read ABSENT from
+  the Drape service by name on 2026-10-28, with three live flags asked for in the
+  same breath as a positive control. Their headlines now say the variable *is gone*
+  and came off after the code deployed.
+
+⚠ **One statement is deliberately NOT changed**, and it is the paragraph above:
+it QUOTES the wrong wording as the finding, so rewriting it would delete the
+record of the defect. `CASTING_CREATIVE_REGISTER_SCOPE`'s headline is also left
+alone — it says *"the variable leaves the service with this deploy"*, which is the
+right ORDER; only its tense is now stale, and that is not this card's class.

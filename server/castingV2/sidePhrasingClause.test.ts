@@ -208,11 +208,29 @@ describe("and it stays retired (#1577 slice D2)", () => {
     expect(cataloguedFlags(CATALOGUE), "and the catalogue must still carry its entry")
       .toContain(RETIRED);
 
-    /* Anchored on the BULLET rather than on the first mention of the name
-       anywhere, so a future entry that merely cites this flag in its prose
-       cannot move where this slice starts. */
-    const bullet = CATALOGUE.indexOf(`- \`${RETIRED}\``);
-    expect(bullet, "the catalogue's own top-level entry for it").toBeGreaterThan(-1);
-    expect(CATALOGUE.slice(bullet, bullet + 6_000)).toMatch(/RETIRED/);
+    /* ⚠ THE PROPERTY IS THE ENTRY'S OPENING, NOT A CHARACTER COUNT — #2738.
+       This arm asked that /RETIRED/ appear within 6,000 characters of the
+       bullet, and the entry was 4,464, so the window WAS the whole entry and a
+       retirement recorded anywhere inside it passed. It did pass, for twelve
+       days, while the entry OPENED with a live description, carried a live
+       boot-fence rule, and named a parent that is itself now retired — the
+       retirement sat ~2,800 characters in. ⚠ A bigger number is not the repair:
+       the six retired entries run 3,889 to 8,154 characters, so no character
+       window can express the property. The OPENING SHAPE can, and it is what
+       the three guarded siblings already assert
+       (`referenceLibraryFlagRetirement.test.ts`, `repaintFlagRetirement.test.ts`
+       and `refineDispatchFlagRetirement.test.ts`); this is the fourth.
+
+       Line-based rather than offset-based, for the same reason the old arm
+       anchored on the bullet: one catalogue entry is one line, so a neighbouring
+       entry that merely cites this flag in its prose cannot move where this
+       slice starts. The flag name is written out in the regex rather than
+       interpolated from RETIRED, the siblings' own choice — a pattern built
+       from the constant it is checking can be weakened by editing the
+       constant. */
+    const entry = CATALOGUE.split("\n").find((line) => line.startsWith(`- \`${RETIRED}\``));
+    expect(entry, "the catalogue's own top-level entry for it").toBeTruthy();
+    expect(entry, "and it opens with the retirement, not with what the flag used to do")
+      .toMatch(/^- `CASTING_SIDE_PHRASING_SCOPE` — ✅ \*\*RETIRED/);
   });
 });

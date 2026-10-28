@@ -91,7 +91,10 @@ describe("the framing trim's retirement (#11)", () => {
     /* And the other direction is what actually bites: while a row stands here
        and the service still holds the variable, the deploy rite compares them
        and passes — reporting a healthy position for a feature that no longer
-       exists. The variable is deleted from the service in the same act. */
+       exists. The variable is deleted from the service AFTER the code DEPLOYS,
+       never in the same act as the merge that removes this row —
+       `scripts/lib/productionFlagPositions.mts` is the authority and says
+       it once. */
     expect(Object.keys(PRODUCTION_FLAG_POSITIONS)).not.toContain(RETIRED);
   });
 
