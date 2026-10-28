@@ -562,6 +562,17 @@ describe("⚠ #2747 — every catalogue entry that states a position states the 
       + "(read until today). **Production: `all`** — his word.\n";
     expect(compareCatalogueToRecord(struck, record).drift).toEqual([]);
 
+    /* ⚠ AND THE TYPOGRAPHIC QUOTE, because the three fixtures above all share
+       one property — a STRAIGHT quote — and a fixture family that shares a
+       property leaves the other road untested. Measured on the real catalogue:
+       both shapes are in it (9 curly pairs against 470 straight), and today's
+       two correction notes happen to use straight ones, so the curly branch of
+       the stripper's character class has no cover from the live file at all. */
+    const curly = `- \`ACME_SCOPE\` — this entry said ${String.fromCharCode(0x201c)}Production: UNSET`
+      + `${String.fromCharCode(0x201d)} until today. **Production: \`all\`** — his word.\n`;
+    expect(compareCatalogueToRecord(curly, record).drift).toEqual([]);
+    expect(compareCatalogueToRecord(curly, record).stating[0]?.stated).toEqual(["all"]);
+
     /* ⚠ THE CONTROL ON THE CONTROL. All three arms above are satisfied by a
        reader that strips the whole entry and finds nothing, which is the shape
        that makes a stripper worse than no stripper. So the same fixtures with
@@ -571,10 +582,43 @@ describe("⚠ #2747 — every catalogue entry that states a position states the 
       ["quoted then declared", quotedThenDeclared],
       ["declared then quoted", declaredThenQuoted],
       ["struck then declared", struck],
+      ["curly-quoted then declared", curly],
     ] as const) {
       const { drift, stating } = compareCatalogueToRecord(text, wrong);
       expect(stating, `${label}: the declaration must still be READ`).toHaveLength(1);
       expect(drift, `${label}: and compared`).toHaveLength(1);
+      expect(drift[0]).toContain("ACME_SCOPE");
+    }
+  });
+
+  it("⚠ CONTROL — prose `UNSET` means this record's `off`, in both directions", () => {
+    /* ⚠ THIS ARM EXISTS BECAUSE THE SABOTAGE ROUND FOUND IT MISSING. Dropping
+       the normalisation entirely left all nine other cases GREEN: after PR
+       #2746 and the strike above, no live entry spells its position `UNSET`
+       any more — all fourteen use a backticked value — so a branch that was
+       exercised by three entries as recently as `72d56cc06` had no cover at
+       all. The catalogue writes UNSET in prose and `UNSET` is this record's own
+       word for `off`, so the mapping is live code either way and will be
+       exercised again the next time a dark flag gets an entry.
+
+       Both directions, because a normalisation that maps everything to `off`
+       passes the first half on its own. And both spellings the catalogue has
+       actually used — the capitalised bare word, and the lowercase
+       "unset, `off`" that `CASTING_VOICE_SCOPE`'s entry carried for 14 days. */
+    for (const spelt of ["UNSET", "unset, `off`"]) {
+      expect(
+        compareCatalogueToRecord(
+          `- \`ACME_SCOPE\` — **Production: ${spelt}** — built dark.\n`,
+          { ACME_SCOPE: { position: "off", why: "a fixture" } },
+        ).drift,
+        `"${spelt}" against a record that says off`,
+      ).toEqual([]);
+
+      const { drift } = compareCatalogueToRecord(
+        `- \`ACME_SCOPE\` — **Production: ${spelt}** — built dark.\n`,
+        { ACME_SCOPE: { position: "users:1", why: "a fixture" } },
+      );
+      expect(drift, `"${spelt}" against a record that says users:1`).toHaveLength(1);
       expect(drift[0]).toContain("ACME_SCOPE");
     }
   });

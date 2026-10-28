@@ -142,9 +142,19 @@ export function catalogueEntries(catalogue: string): CatalogueEntry[] {
  * so a stripper that blinded itself on a live flag reddens rather than passing.
  */
 export function withoutMarkedHistory(entryText: string): string {
+  /* ⚠ THE SOURCE OF THIS REGEX IS ASCII AND THE CURLY QUOTES ARE CODEPOINTS.
+     The catalogue uses both straight and typographic double quotes, and the
+     first draft of this line carried the literal U+201C/U+201D bytes inside the
+     character class. That is functionally identical and a standing hazard on
+     this machine: a PowerShell round-trip mangles non-ASCII, and a non-ASCII
+     character inside a regex parses perfectly and then silently stops matching
+     — which here would turn the stripper off with nothing going red.
+     `server/productionFlagPositions.test.ts` drives both quote shapes. */
+  const OPEN = `[${String.fromCharCode(0x201c)}"]`;
+  const CLOSE = `[${String.fromCharCode(0x201d)}"]`;
   return entryText
     .replace(/~~[\s\S]*?~~/g, " ")
-    .replace(/[“"][\s\S]{0,400}?[”"]/g, " ");
+    .replace(new RegExp(`${OPEN}[\\s\\S]{0,400}?${CLOSE}`, "g"), " ");
 }
 
 /** A position an entry states in its own prose, as prose — never normalised. */
