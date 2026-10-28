@@ -512,8 +512,10 @@ function overlaps(a: PointerBox, b: PointerBox): boolean {
 
     the same thing, two nouns      cross mark/scar 0.998–1.000 · collar/jacket
                                    0.605 · scar/neck tattoo 0.782
-    two things, one kind           shoulder pads/jacket 0.013 · strap/jacket
-                                   0.014–0.025 · collarbone/tattoo 0.25–0.33
+    two things, kinds it may join  shoulder pads/jacket 0.013 · strap/jacket
+                                   0.014–0.025
+    two things, kinds it may not   collarbone/tattoo 0.25–0.33 (anatomy and a
+                                   marking: never joined whatever the number)
 
   ⚠ **What it does NOT merge, declared**: a small cut lying inside a large one
   of the same kind (a mole on a tattoo, a belt inside a jacket's cut) is two
