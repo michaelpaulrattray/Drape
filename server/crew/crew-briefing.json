@@ -1,7 +1,7 @@
 {
-  "edition": 759,
-  "updatedAt": "2026-10-28T07:55:00.000Z",
-  "shift": "THE PHOTO-REFERENCE ROAD WAS TESTED TONIGHT ON YOUR OWN CHARACTERS, AND IT WORKS. ONE THING WANTS YOUR EYE.\n\nWHAT WAS TESTED. You asked for this on 28 October: attach a photo, say what to take from it — \"wear this jacket\" — and have the studio read it off the picture rather than off a list. The design for it was written yesterday. Tonight it was actually measured, on Chichi, Sifr2 and Kai, with twelve real pictures. It cost about 28 cents of our own money and no credits of yours.\n\nWHAT HAPPENED. The garment transfers. We cut a layered wrap jacket out of one of your characters pictures and put it on the other two, and it arrived with its own shape — the deep V front, the lapels, the pattern underneath, the sash at the waist, the buckle. Every one of the twelve pictures still shows the right character: same face, same pose, same light, same framing. That includes Kai, who is a creature, which is the hardest case we had.\n\nAND IT BEATS TYPING — BUT ONLY WHEN THE GARMENT IS SPECIFIC. We ran every picture twice: once with the photo, once with only the best words we could write for the same garment. For the distinctive jacket the photo wins clearly; the typed version gives a plausible but different coat. For a plain black cloak the two are close, because \"a long black cloak\" is a thing you can simply type. So the road earns its keep exactly where you would reach for a photo anyway.\n\nONE FAULT FOUND, AND IT IS THE RIGHT KIND TO FIND NOW. When the garment is being worn by someone in the photo, cutting it out does not yet remove all of that person: a patch of their bare skin, framed by the opening of their own jacket, comes along with the cut. None of it reached any finished picture tonight, and it never reaches anyone else. But it must be cleaned before this is built, and that is now written into the build.\n\nALSO TONIGHT: a finished repair that had been stuck for four hours is moving again — it could not even be checked, because it had drifted out of step with the rest of the code. That is fixed and its checks are running.\n\nWHAT NEEDS YOU: the pictures. Three strips are below. The one that decides it is Kai.",
+  "edition": 761,
+  "updatedAt": "2026-10-28T09:45:00.000Z",
+  "shift": "EVERYTHING FINISHED TODAY IS NOW ON THE LIVE SITE. TWO CHANGES HAD BEEN STUCK OUTSIDE IT, AND THE REASON WAS NOT OURS.\n\nTHE ONE THAT MATTERS TO YOU. When you send a paid edit, the studio owes you a few plain sentences — what it did, and why it could not do a part of it. Until tonight those sentences were written too late to ever reach you: the studio answers you the moment the edit is sent, and the sentences were only being composed when the picture finished, so they arrived after you had already been told. It is live now. One of those sentences also used to be wrong: if you attached a photo and asked for something the studio cannot take from a photo yet, it told you your photo \"didn't ask for anything I could take from it\". It now says what actually happened.\n\nAND THE FACE PANEL'S FIRST PIECE IS LIVE TOO. The reading now says what each thing on a character IS, so the panel can group what it finds the way a person would, rather than listing it flat. It had been finished and approved for four hours and could not be merged: too much else had moved underneath it, so the checks that had passed were checking a version of the code that no longer existed. It was brought back into step, re-checked from scratch — 8,283 tests — merged, and published.\n\nWHY ANY OF THIS TOOK A NIGHT, AND IT IS WORTH KNOWING IT IS NOT A FAULT IN OUR WORK. Every time we publish, Railway — the company that runs our servers — builds the site. Their builder failed nine times out of eleven today, every time before it even began on our code, and Railway's own status page reports degraded performance. Our side is fine: the same unchanged code failed and then succeeded with nothing altered in between. The first change took eight attempts to publish. Nothing needed fixing; it needed publishing again.\n\nONE THING WE FOUND ABOUT OURSELVES RATHER THAN ABOUT RAILWAY, AND IT IS THE REAL FINDING. A change can be finished, approved, merged and still not be on the live site — and nothing on the team was checking. Everything we naturally look at agrees it shipped, because the previous version is still running and still answering healthy. One change sat finished-but-not-live for 52 minutes before anyone noticed, and it was noticed by accident. That is written up as its own job and is not yet built.\n\nNOTHING TONIGHT COST YOU A CREDIT, and no setting was changed. Your character pictures from last night's photo test are still below and still want your eye.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-28T07:38:28.512Z",
+      "readAt": "2026-10-28T09:30:54.521Z",
       "items": [
         {
           "issueNumber": 30,
@@ -10912,6 +10912,20 @@
       "status": "merged",
       "prNumber": 2734,
       "note": "Gate green in 4.5 minutes. Waiting on review; no shift merges it."
+    },
+    {
+      "id": "refine-owed-sentences-live-2713",
+      "title": "The sentences a paid edit owes you now reach you when it is sent, and an unused photo says why (#2713)",
+      "status": "merged",
+      "prNumber": 2740,
+      "note": "Merged 8addd635 and LIVE — read at the running service on a 42-second uptime, so a new process rather than the old one answering. It took eight build attempts inside Railway's builder."
+    },
+    {
+      "id": "face-reader-grouping-slice1-2566",
+      "title": "The reading says what each thing IS, so the panel can group it the way a person would — the face reader's first piece (#2566)",
+      "status": "merged",
+      "prNumber": 2744,
+      "note": "Merged f6f5e70a and LIVE — read at /api/health's build field on a 52-second uptime. It was unmergeable on arrival: main had gained six commits in the same area, so its green checks described a tree it would never land on. Brought into step, preflight and gate green on the merged tree."
     }
   ],
   "problems": [
@@ -11110,6 +11124,13 @@
       "state": "resolved",
       "title": "Our own map of the product says seventeen doors have no speed limit when they do — one of them public (#2704)",
       "detail": "Not a hole, and worth saying that first: every one of those seventeen doors really does have its speed limit,\nand the thing that proves it is a test that drives all thirteen public doors until they refuse and then checks a\nsecond visitor still gets in. That test is green, and its list of doors is taken from the map rather than typed\nout, so a new public door cannot slip past it.\n\nWhat is broken is the map's own column. It decides whether a door is speed-limited by looking for three\nparticular spellings in that door's code — and fifteen of our files reach the limiter through a wrapper with a\ndifferent name, so every door behind one reads \"no limit\". Seventeen of 293 are wrong, all in the same\ndirection, including the public page that lets anyone check a Klieg ID.\n\nWhy it has never gone red: nothing in the product reads the column. It exists in the file, it is drawn on the\nmap's own web page, and no test or check consumes it — so it has been wrong for as long as those wrappers have\nexisted with nothing able to notice.\n\nIt matters because the map is what somebody opens to answer \"is every public door protected?\", and today it\ngives the wrong answer about a public door. The fix is either to make the column read what the code states, or\nto delete it — an unread column that is wrong is worse than no column at all."
+    },
+    {
+      "id": "merged-work-not-live-unwatched-2748",
+      "severity": "warning",
+      "state": "open",
+      "title": "Work can be finished, approved and merged and still not be on the live site, with nobody watching (#2748)",
+      "detail": "This bit twice today, and you would not have been able to tell by looking.\n\nWhen a change is merged, Railway rebuilds and publishes the site. If that build fails, the change stays merged, stays green, stays reviewed — and simply is not live. Everything the team naturally looks at agrees that it shipped: the pull request says merged, the code is on the main branch, and the site answers healthy, because the OLD version is still running and answering.\n\nToday one change sat finished-but-not-live for 52 minutes before anyone noticed, and it was noticed by accident. A second one sat for two hours. Nobody skipped a step: the person who writes a change has finished and gone by the time it merges, and every alarm the team owns watches work that is still in progress.\n\nThe underlying cause of the failures is Railway's, not ours — their builder has failed nine of eleven attempts today and their status page reports degraded performance. What is ours is that nothing was checking whether what we merged is actually the thing running. There is a reading that would answer it exactly, which the site already publishes.\n\nBoth of today's changes are now live, so nothing is outstanding on the live site tonight — what stays open is that nobody was watching. It is written up and not yet built. It is tooling rather than something you can see, so it waits behind the current feature work. Nothing is charged wrongly and nothing is lost — the delay is the whole of the harm, and a change that is not live is simply the previous version still serving."
     }
   ],
   "acknowledgedReplyIds": [
@@ -11418,7 +11439,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-28T07:38:28.511Z",
+    "readAt": "2026-10-28T09:30:54.521Z",
     "items": [
       {
         "issueNumber": 14,

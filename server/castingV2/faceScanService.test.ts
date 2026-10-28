@@ -19,7 +19,14 @@ import { MaskError } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import { scanPlan } from "./faceScan";
-import type { FaceDiscovery } from "./faceDiscovery";
+import type { DiscoveredFeature, FaceDiscovery } from "./faceDiscovery";
+
+/* One place a discovered feature is built in this suite, so a new field on
+   `DiscoveredFeature` is one line here and not six (#2566). The grouping facts
+   default to the parse's own fallbacks, which is today's behaviour. */
+const discoveredFeature = (name: string, count = 1): DiscoveredFeature => (
+  { name, count, about: "", kind: "anatomy", on: "", coverage: "single" }
+);
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { once } from "../testing/once";
@@ -385,7 +392,7 @@ describe("the panel fills a feature at a time", () => {
     let discovered = 0;
     const omitting: FaceDiscovery = {
       ok: true,
-      features: [{ name: "hair", count: 1, about: "" }, { name: "eyes", count: 2, about: "" }],
+      features: [discoveredFeature("hair"), discoveredFeature("eyes", 2)],
       cannotSee: [],
       unusable: [],
       crops: ["head", "full"],
@@ -913,7 +920,7 @@ describe("the reading this face has already paid for", () => {
       ...FACE,
       dependencies: {
         ...deps,
-        discover: async () => ({ ok: true, features: [{ name: "hair", count: 1, about: "" }], cannotSee: [], unusable: [], crops: ["head", "full"] }),
+        discover: async () => ({ ok: true, features: [discoveredFeature("hair")], cannotSee: [], unusable: [], crops: ["head", "full"] }),
       },
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -1136,7 +1143,7 @@ describe("what a discovery's names become", () => {
 
   const discoveryOf = (features: Array<{ name: string; count: number }>): FaceDiscovery => ({
     ok: true,
-    features: features.map((one) => ({ ...one, about: "" })),
+    features: features.map((one) => discoveredFeature(one.name, one.count)),
     cannotSee: [],
     unusable: [],
     crops: ["head", "full"],
