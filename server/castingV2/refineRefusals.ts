@@ -29,6 +29,12 @@
  * product declining something it does not do; `gate` names what does work and
  * what is coming; `absorbed` is an ask that was already true; `unread` is a
  * sentence that did not come through.
+ *
+ * `resampled` — whether the interpreter ANSWERS with this refusal the moment a
+ * sampling raises it, or discards it on every sampling but the last and asks
+ * again. See the field's own docblock; it is the relay's lesson from PR #2732
+ * made a question every refusal must answer rather than a branch somebody has
+ * to remember to widen.
  */
 import type { RefineRefusal } from "./refineDelta";
 import { inkNeedsDocumentMessage } from "./inkPlacement";
@@ -42,6 +48,40 @@ export type RefusalEntry = {
   readonly say: (refusal: RefineRefusal, of: CastPronouns) => string;
   readonly charge: RefusalCharge;
   readonly report: RefusalReportClass;
+  /**
+   * IS THIS REFUSAL A FACT ABOUT THEIR SENTENCE, OR ABOUT HOW WE RENDERED IT?
+   * (#2730/#2731, from the relay's finding on PR #2732.)
+   *
+   * `true` means the interpreter's sampling loop treats it as a failed
+   * sampling on attempts 1 and 2 — it re-samples — and lets it answer only if
+   * the LAST sampling still raises it. That is the loop's own rule (*"THE LAST
+   * attempt decides, not the first, and not 'any'"*), and it is the right one
+   * exactly when the cause is a property of OUR REPLY that a fresh sampling
+   * can change: how long we wrote a value, how many items we split a set into.
+   * Terminating on the first such sampling refuses asks a second sampling
+   * would have served, which is what PR #2732 did before its repair.
+   *
+   * `false` means the refusal answers on the sampling that raised it. That is
+   * right when the cause is a fact about what was ASKED — a real person's
+   * name, the set rather than the person, words that were never theirs — which
+   * a re-sample cannot change, so re-sampling is pure spend for a certain
+   * answer. It is also the only honest value for a refusal no single sampling
+   * raises at all (`unreadable`, the reader outages, `empty`): the branch never
+   * meets them, and `true` would claim a re-sample that does not exist.
+   *
+   * ⚠ **`true` needs its argument written beside it, at the entry.** Two
+   * things are NOT reasons to set it: that the refusal is model-caused
+   * (`wall_unfileable` is, and its re-ask is the dedicated echo pass rather
+   * than a plain re-sample), and that re-sampling is cheap (it is cents; the
+   * question is whether it can change the answer).
+   *
+   * It was ONE string comparison in the interpreter — `reason ===
+   * "wall_too_long"` — until a second member needed the same answer. A second
+   * comparison beside it would have been a list of re-sampled ids living in the
+   * loop, shadowing the registry that already holds every other fact about a
+   * refusal (working law 4). So the loop reads it here.
+   */
+  readonly resampled: boolean;
 };
 
 /** Narrow a refusal to the variant that carries `asked`. */
@@ -118,6 +158,7 @@ export const REFINE_REFUSALS = {
     say: () => "Refining can't make someone look like a specific real person. Nothing was charged.",
     charge: "free",
     report: "wall",
+    resampled: false,
   },
   wall_stage: {
     /*
@@ -163,6 +204,7 @@ export const REFINE_REFUSALS = {
     ),
     charge: "free",
     report: "wall",
+    resampled: false,
   },
   wall_unbacked: {
     /*
@@ -182,11 +224,13 @@ export const REFINE_REFUSALS = {
       + "Nothing was charged.",
     charge: "free",
     report: "wall",
+    resampled: false,
   },
   wall_content: {
     say: () => "That one can't be rendered. Nothing was charged.",
     charge: "free",
     report: "wall",
+    resampled: false,
   },
   wall_unfileable: {
     /* The honest version of wall (d): we will not render what we cannot write
@@ -197,6 +241,10 @@ export const REFINE_REFUSALS = {
       + "Nothing was charged.",
     charge: "free",
     report: "wall",
+    /* ⚠ OUR reply's fault and STILL false, which is the field's own warning: its
+       re-ask is the echo pass — constrained to their words, twice — and a
+       plain re-sample ahead of it would only be a worse version of that. */
+    resampled: false,
   },
   wall_too_long: {
     /*
@@ -236,6 +284,86 @@ export const REFINE_REFUSALS = {
       + "sentence will go through with it. Nothing was charged.",
     charge: "free",
     report: "wall",
+    /* The length is how verbosely WE wrote the value, so the next sampling of
+       the same sentence may fit — the relay's finding on PR #2732, and the
+       branch this field replaced was written for exactly this member. */
+    resampled: true,
+  },
+  wall_too_many: {
+    /*
+      #2730's SENTENCE, and it is `wall_too_long`'s shape on a different fact.
+
+      It used to arrive as `unreadable` — *"didn't come through clearly"* — for
+      a list that had come through perfectly, discarded because it held more
+      items of one kind than a set keeps. So it **opens by agreeing it was
+      understood**; it says the honest cause as what the result WOULD COME TO,
+      because the count includes everything already on record (the model
+      restates a set whole), and a customer who typed two things can meet this
+      wall on a cast already holding seven; it says **none of it was applied**,
+      because every unrelated change in the sentence went with it; it gives the
+      two moves that work — fewer, or make room first; and **it ends with the
+      money**.
+
+      ⚠ **IT DOES NOT NAME THE NUMBER**, though the refusal carries `count` and
+      `limit` for the log. #2730's body suggested *"I can keep eight of these at
+      a time"*, and that is the one clause not taken: a count the customer must
+      hold in their head is the disappearing-technology law's clause 6, and the
+      copy rule this card was built under says no numbers. **The cost is
+      stated rather than hidden** — *"fewer"* gives no basis for HOW many fewer
+      (the law's gate, question 2), and that is the trade made.
+
+      ⚠ **IT DOES NOT PROMISE THE REST WILL GO THROUGH**, which is the one place
+      it departs from `wall_too_long`'s wording on purpose: a shorter list still
+      meets every other door, and a promise this sentence cannot keep is the
+      dead-end-offer class. *"None of it was applied"* is the half the customer
+      could not have guessed, and it is the half that is certain.
+
+      It does not name WHICH kind of thing — `wall_too_long`'s declared limit,
+      for the same reason: there is no customer-facing label per subject.
+    */
+    say: () => "I understood that, but it would come to more of one kind of thing than I can "
+      + "keep on record at once — so none of it was applied. Ask for fewer of them, or remove "
+      + "a few that are already there first. Nothing was charged.",
+    charge: "free",
+    report: "wall",
+    /* How many items a set comes back as is how WE split and restated it —
+       argued and measured at the union member (`wall_too_many`). */
+    resampled: true,
+  },
+  wall_brand_only: {
+    /*
+      #2731's SENTENCE — a different fact from the two above, so a different
+      sentence: nothing here is too long or too many, and *"say it in fewer
+      words"* would be false advice to somebody who typed one word.
+
+      It **opens by agreeing it was understood**, because it was — the product
+      read *"put her in Gucci"* perfectly and removed the name on purpose; it
+      says the one thing the customer could not otherwise learn, that **a brand
+      name is never put into a picture** (`scrubBrands`'s standing rule, which
+      this card does not touch); it says **none of it was applied**, because
+      the neighbour died too — *"…with thick and straight brows"* filed neither
+      half; it tells them what works, **the look rather than whose it is**; and
+      it ends with the money.
+
+      ⚠ **IT DOES NOT PROMISE THE REST WILL GO THROUGH.** A described outfit on
+      an account the wardrobe subject does not serve still meets the stage wall,
+      so *"describe it and it will work"* is not true of every account that can
+      reach this door. The sentence says what to do and stops.
+
+      ⚠ **It is said only when the customer's OWN sentence named the brand** —
+      the reader checks the bare name against the marks their sentence names
+      (`bareBrandWall`) before it sets this wall. A model that introduced a brand
+      nobody typed must never tell them to stop naming one; that state keeps
+      its old road (the union member says why).
+    */
+    say: () => "I understood that, but I can't put a brand name into a picture — so none of it "
+      + "was applied. Describe the look itself rather than whose it is. Nothing was charged.",
+    charge: "free",
+    report: "wall",
+    /* A value that is ONLY a brand is a reply that kept the name the prompt
+       told it to drop and lost the description it told it to keep — a slip of
+       OUR rendering, measured, and argued at the union member. */
+    resampled: true,
   },
   gate_ink_document: {
     /*
@@ -253,6 +381,7 @@ export const REFINE_REFUSALS = {
     say: (refusal) => inkNeedsDocumentMessage(alternativesIn(refusal)),
     charge: "free",
     report: "gate",
+    resampled: false,
   },
   /*
     SHE NAMED A REAL PLACE AND THE PRODUCT CANNOT KEEP IT THERE — the words-road
@@ -278,6 +407,7 @@ export const REFINE_REFUSALS = {
     },
     charge: "free",
     report: "gate",
+    resampled: false,
   },
   /*
     ITS TWIN, AND THE SPLIT IS THE WHOLE POINT (item 7a, fable-1368 ruling 1).
@@ -302,6 +432,7 @@ export const REFINE_REFUSALS = {
     },
     charge: "free",
     report: "gate",
+    resampled: false,
   },
   /*
     AND THE THIRD, WHICH IS ABOUT US RATHER THAN ABOUT HER (fable-1368 ruling 1).
@@ -321,6 +452,7 @@ export const REFINE_REFUSALS = {
     },
     charge: "free",
     report: "gate",
+    resampled: false,
   },
   absorbed: {
     /*
@@ -333,6 +465,7 @@ export const REFINE_REFUSALS = {
       + "or say it another way.",
     charge: "free",
     report: "absorbed",
+    resampled: false,
   },
   absorbed_departure: {
     /* The same fact about the other direction, in her words rather than ours:
@@ -342,11 +475,13 @@ export const REFINE_REFUSALS = {
       + "and I'll put it on.",
     charge: "free",
     report: "absorbed",
+    resampled: false,
   },
   empty: {
     say: () => "Say what you'd like changed — anything about the person themselves.",
     charge: "free",
     report: "unread",
+    resampled: false,
   },
   unreadable: {
     /* A reply CAME BACK and could not be read. Rephrasing is real advice here,
@@ -356,6 +491,7 @@ export const REFINE_REFUSALS = {
       + "them. Nothing was charged.",
     charge: "free",
     report: "unread",
+    resampled: false,
   },
   reader_outage: {
     /*
@@ -375,6 +511,7 @@ export const REFINE_REFUSALS = {
       + "didn't answer. Try again in a moment. Nothing was charged.",
     charge: "free",
     report: "unread",
+    resampled: false,
   },
   reader_down: {
     /*
@@ -410,6 +547,7 @@ export const REFINE_REFUSALS = {
       + "words. Nothing was charged. Try again later.",
     charge: "free",
     report: "unread",
+    resampled: false,
   },
 } as const satisfies Record<RefineRefusal["reason"], RefusalEntry>;
 

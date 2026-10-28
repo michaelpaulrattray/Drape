@@ -176,6 +176,14 @@ describe("an over-long value is refused by name, not as an unreadable sentence (
     expect(readDelta({ free: { marks: "Gucci" } }, state)).toBeNull();
     expect(state.wall?.reason, "a brand-only value is not a length problem")
       .not.toBe("wall_too_long");
+    /*
+      ⚠ AND IT NAMES ITS OWN WALL NOW (#2731). The two assertions above were
+      satisfied by silence — no wall at all — which is the state that card was
+      filed about. A negative control that a SILENT reader also passes cannot
+      tell the split held from the defect returning, so the positive half is
+      pinned beside it. `brandOnlyAndTooManyRefusal.test.ts` is the whole of it.
+    */
+    expect(state.wall?.reason, "the sibling #2714 filed, built").toBe("wall_brand_only");
   });
 });
 
@@ -199,6 +207,10 @@ describe("⚠ LAW 7's SWEEP — the class had TWO instances in one function (#27
         on `marks`, `wardrobe` and `makeup`, names no wall, and takes an
         ordinary brows ask down with it. The arm below pins that it did not
         inherit this card's sentence.
+
+    ✅ **BOTH ARE BUILT** (2026-10-28, one PR): `wall_too_many` and
+    `wall_brand_only`, each re-sampled for this card's own reason — the cause
+    is our reply — and each guarded in `brandOnlyAndTooManyRefusal.test.ts`.
 
     ⚠ **AND A SECOND ONE WAS CLAIMED, DRIVEN, AND DOES NOT EXIST — written here
     because the next sweep will otherwise re-find it.** The `absent` (removal)
@@ -236,6 +248,8 @@ describe("⚠ LAW 7's SWEEP — the class had TWO instances in one function (#27
     const state = check("give her Gucci makeup");
     expect(readDelta({ makeup: "Gucci" }, state)).toBeNull();
     expect(state.wall?.reason).not.toBe("wall_too_long");
+    /* And named, for the same reason as the free lane's arm above (#2731). */
+    expect(state.wall?.reason).toBe("wall_brand_only");
   });
 });
 

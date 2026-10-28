@@ -1131,6 +1131,19 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
         NOT covered by this branch and should not be added to it without the
         same argument.
 
+        ⚠ **AND TWO LATER MEMBERS WERE, WITH THE ARGUMENT — #2730 and #2731 —
+        so the branch no longer names an id.** `wall_too_many` (how many items
+        WE split and restated a set into) and `wall_brand_only` (a value WE
+        filed as nothing but a brand name, which the prompt tells the model to
+        drop) are the same kind of fact as a length, and each argues it at its
+        own union member with the measurement beside it. A second `=== "…"`
+        here would have been a list of re-sampled ids living in the loop and
+        shadowing the registry that holds every other fact about a refusal, so
+        the loop reads `REFINE_REFUSALS[reason].resampled` instead — and every
+        refusal now has to say, in the one place it is declared, which kind of
+        fact it is. "Why THIS wall and no other" above is kept as the argument
+        that field encodes; read "this wall" as "these".
+
         # THE LAST attempt decides, which is already written above
 
         On attempts 1 and 2 the wall is discarded exactly as an unusable reply
@@ -1162,15 +1175,13 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
         loop. So the fact goes in the operator log, where the diagnosis
         actually reads it, and the type keeps meaning what it says.
       */
-      if (!parsed.ok && parsed.refusal.reason === "wall_too_long" && attempt < 3) {
+      if (!parsed.ok && REFINE_REFUSALS[parsed.refusal.reason].resampled && attempt < 3) {
+        /* The refusal's own fields — the subject, and the length, count or
+           value it carries for exactly this log. None of them is ever a
+           customer sentence; the copy states each fact without its number. */
         log.warn(
-          {
-            attempt,
-            asked: parsed.refusal.asked,
-            length: parsed.refusal.length,
-            limit: parsed.refusal.limit,
-          },
-          "[refineInterpreter] the reply ran longer than that subject stores — re-sampling",
+          { attempt, ...parsed.refusal },
+          "[refineInterpreter] the reply hit a wall OUR rendering caused — re-sampling",
         );
         continue;
       }
