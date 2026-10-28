@@ -111,6 +111,7 @@
 import sharp from "sharp";
 
 import { boundForJudge } from "./judgeFrame";
+import { normalisedName } from "./pointerCut";
 import { createModuleLogger } from "../logging/logger";
 import type { TextEngine } from "../providers/types";
 
@@ -130,10 +131,45 @@ const HEAD_FRACTION = 0.5;
 const ASK_WIDTH = 768;
 
 /**
+ * WHAT SORT OF THING A FEATURE IS — the panel's own grammar, never a menu.
+ *
+ * Five words, and they are not a feature list: they are the distinctions the
+ * panel has to make to organise itself the way a stylist would (law 8). The
+ * one that carries his ⚠ is `anatomy`, which INCLUDES anything fixed to or
+ * embedded in the body — an implant, body hardware, a prosthetic — because the
+ * implants on his cyberpunk cast were labelled "Collar", so any rule keyed on
+ * the WORD would have swept body hardware into the outfit.
+ */
+export type FeatureKind = "anatomy" | "clothing" | "accessory" | "marking" | "makeup";
+
+/** One thing, or many small ones spread over an area. What decides cut vs words. */
+export type FeatureCoverage = "single" | "scattered";
+
+/**
  * One thing the reader can see on this character.
  *
  * No box, on purpose — see the module header. `about` is prose for the
  * description road and is never sent to a cutter.
+ *
+ * # THE THREE GROUPING FACTS, AND WHY THE READING DECLARES THEM (#2566)
+ *
+ * Until this slice the panel knew WHAT the reading named and nothing about what
+ * each named thing IS. The only grouping instrument on the road was
+ * `coveredByCatalogue` — a spelling test — so every name that was not literally
+ * a catalogue word became a top-level sibling row: "freckles" was cut like an
+ * object when it is scattered across skin, "lip ring" became a sibling of Lips,
+ * "eye makeup" became a row at all, and six garment nouns became six rows.
+ *
+ * His binding sentence is why these are ASKED and not looked up: *"nothing
+ * should be confined to a set list thats the old way of doing things the new way
+ * is the image is analyzed and features are determined that way."* So the facts
+ * are judged from the picture, per cast. There is no synonym table, no part-of
+ * table and no word list anywhere in this repair.
+ *
+ * ⚠ **THEY ARE CARRIED HERE AND USED BY NOBODY YET.** Slice 2 is the grouping
+ * (`pointerCut` + `faceScanService` + `facePanel`) and slice 3 is the loader; a
+ * panel that grouped on half a design would be worse than today's. This slice's
+ * product is the three facts arriving correct and attributable.
  */
 export type DiscoveredFeature = {
   /** A short bare noun, the words a person would use pointing at it. */
@@ -142,6 +178,15 @@ export type DiscoveredFeature = {
   count: number;
   /** Anything else worth saying about it, in words. May be empty. */
   about: string;
+  /** What sort of thing it is. Decides what may enter the Outfit row (slice 2). */
+  kind: FeatureKind;
+  /**
+   * The bare noun of the feature this sits on or is part of, `""` when it stands
+   * alone. A lip ring is `on` "lips". Decides folding (slice 2).
+   */
+  on: string;
+  /** One outlineable thing, or many scattered bits. Decides cut vs words (slice 2). */
+  coverage: FeatureCoverage;
 };
 
 /** Something the reader could name but could not see well enough to name it. */
@@ -249,6 +294,34 @@ export async function discoveryCropsOf(frame: {
  * the bench: asked plainly for "a name", the model writes a caption. It is
  * given the three worked examples from the measured failures rather than a rule
  * in the abstract.
+ *
+ * # THE GROUPING PARAGRAPH IS A MEASURED ARTIFACT — DO NOT RE-WORD IT (#2566)
+ *
+ * It is byte-identical to the one the grouping bench ran
+ * (`scripts/_2566-grouping-discovery-disposable.mts`, receipts
+ * `output/2566/grouping-discovery.{json,txt}`, twelve reads on the three
+ * production fixtures, ~$0.11 house), and the bench is why each clause reads
+ * as it does:
+ *
+ *   the hardware clause     The jaw and neck hardware read `anatomy` in every
+ *                           arm of both runs; in **0 of 4** calls did body
+ *                           hardware read as `clothing`. That is the one call
+ *                           his ⚠ turns on, because his cast's implants were
+ *                           labelled "Collar".
+ *   "one connected piece"   Run 1 said "spread across an area" and the model
+ *                           called a connected chest tattoo spread — which
+ *                           would have demoted the tattoo row he liked to
+ *                           words. Run 2's wording answers `single` on both
+ *                           arms. **A paraphrase of this clause invalidates
+ *                           the bench**, which is the whole reason it is
+ *                           quoted rather than rewritten.
+ *   nothing was lost        Bareness survived the bigger ask: **66 of 66**
+ *                           names came back bare (69/69 on the small ask), so
+ *                           the cutter's contract is untouched.
+ *
+ * What the addition costs, stated beside what it buys: ~600 extra prompt tokens
+ * and 15–40% more output per read; a read moved ~11 s → ~13 s. The two crops
+ * run in parallel, so the reading's wall time barely moves.
  */
 export const DISCOVERY_SYSTEM_PROMPT = [
   "You are looking at one frame of a character and naming what is physically on them.",
@@ -265,6 +338,18 @@ export const DISCOVERY_SYSTEM_PROMPT = [
   "brackets with tube-like extensions'. Everything you want to add about it goes in `about`.",
   "",
   "Give a count. If a feature comes as a matched pair or set, say how many you can see.",
+  "",
+  "For each feature, also say what SORT of thing it is and where it belongs:",
+  "- kind: 'anatomy' for a part of the body — INCLUDING anything fixed to or embedded in the",
+  "  body, such as an implant, body hardware or a prosthetic, whatever word names it;",
+  "  'clothing' for a garment they are wearing; 'accessory' for a small worn item such as",
+  "  jewellery, a piercing ring or glasses; 'marking' for something on the skin such as a",
+  "  tattoo, scar, mole or freckles; 'makeup' for cosmetics.",
+  "- on: if this feature sits on or is part of another feature you named, give that feature's",
+  "  bare noun (a lip ring is on 'lips', an ear piercing is on 'ear'). Otherwise ''.",
+  "- coverage: 'single' if it is one thing or one connected piece you could draw one tight",
+  "  outline around (a tattoo piece or a jacket is single); 'scattered' if it is many separate",
+  "  small bits spread over an area, like freckles, scales or stubble.",
   "",
   "Two rules matter more than completeness:",
   "1. Name ONLY what you can actually see in this frame. Never infer a feature from what the",
@@ -294,11 +379,20 @@ export const DISCOVERY_SCHEMA = {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["name", "count", "about"],
+          required: ["name", "count", "about", "kind", "on", "coverage"],
           properties: {
             name: { type: "string", description: "a short bare noun, one or two plain words" },
             count: { type: "integer", description: "how many of this feature are visible" },
             about: { type: "string", description: "anything worth saying about it, in words" },
+            /* The two closed facts are ENUMS so the provider refuses an invented
+               word rather than the parse having to: `kind` is the one his ⚠ is
+               about, and a sixth value here would be a vocabulary, which is the
+               thing the N3 principle forbids. `on` is deliberately open — it is
+               a NOUN the reading chose, and a closed list of hosts would be the
+               fixed list wearing a different hat. */
+            kind: { type: "string", enum: ["anatomy", "clothing", "accessory", "marking", "makeup"] },
+            on: { type: "string", description: "bare noun of the feature this sits on, or ''" },
+            coverage: { type: "string", enum: ["single", "scattered"] },
           },
         },
       },
@@ -357,6 +451,56 @@ function cleanCount(raw: unknown): number {
   return Math.min(count, 20);
 }
 
+const FEATURE_KINDS: readonly FeatureKind[] = [
+  "anatomy", "clothing", "accessory", "marking", "makeup",
+];
+
+/**
+ * ONE RULE GOVERNS ALL THREE FALLBACKS, AND IT IS THE MODULE'S OWN LAW: **an
+ * unreadable grouping fact leaves the feature exactly where today's panel puts
+ * it — its own top-level row, cut on its own.**
+ *
+ * The schema's enums mean a bad value should be rare, so this is the shape of a
+ * rare event rather than a routine path; what matters is that the rare event
+ * cannot be the one that hurts. Each default is the choice that CANNOT remove a
+ * row:
+ *
+ *   kind -> anatomy      `clothing` would fold it into the Outfit row and
+ *                        `makeup` would give it no row at all, so those are the
+ *                        two values an unreadable answer must never become.
+ *                        Of the remaining three, `anatomy` is the one his ⚠ is
+ *                        about and the one the bench measured hardware into
+ *                        (4 of 4). An unreadable kind therefore behaves like a
+ *                        found feature does today.
+ *   coverage -> single   `scattered` means never cut, which removes a row.
+ *   on -> ""             Stands alone, which is today's placement. A host is
+ *                        also held to {@link isBareNoun}, because `on` becomes
+ *                        a LOOKUP KEY against row nouns in slice 2 — a caption
+ *                        could never match a row, so accepting one would only
+ *                        make a wrong fold look like a considered one.
+ *
+ * ⚠ It does NOT drop the feature. A parse rule that deletes a feature is the
+ * exact mistake the relay's finding on PR #2570 was about, one field over.
+ */
+function cleanKind(raw: unknown): FeatureKind {
+  if (typeof raw !== "string") return "anatomy";
+  const kind = raw.trim().toLowerCase();
+  return FEATURE_KINDS.find((known) => known === kind) ?? "anatomy";
+}
+
+function cleanCoverage(raw: unknown): FeatureCoverage {
+  return typeof raw === "string" && raw.trim().toLowerCase() === "scattered"
+    ? "scattered"
+    : "single";
+}
+
+function cleanHost(raw: unknown): string {
+  if (typeof raw !== "string") return "";
+  const host = raw.trim().toLowerCase();
+  if (host.length === 0 || host.length > 40) return "";
+  return isBareNoun(host) ? host : "";
+}
+
 /**
  * Parse one answer.
  *
@@ -386,7 +530,10 @@ export function parseDiscovery(
   if (Array.isArray(body.features)) {
     for (const entry of body.features) {
       if (typeof entry !== "object" || entry === null) continue;
-      const row = entry as { name?: unknown; count?: unknown; about?: unknown };
+      const row = entry as {
+        name?: unknown; count?: unknown; about?: unknown;
+        kind?: unknown; on?: unknown; coverage?: unknown;
+      };
       const cleaned = cleanName(row.name);
       if (cleaned === null || seen.has(cleaned.name)) continue;
       seen.add(cleaned.name);
@@ -402,6 +549,9 @@ export function parseDiscovery(
         name: cleaned.name,
         count: cleanCount(row.count),
         about: typeof row.about === "string" ? row.about.trim().slice(0, 400) : "",
+        kind: cleanKind(row.kind),
+        on: cleanHost(row.on),
+        coverage: cleanCoverage(row.coverage),
       });
     }
   }
@@ -424,7 +574,36 @@ export function parseDiscovery(
      features" would gate the whole scan to silence. A reply whose every name
      was a caption lands here too, which is the fail-open direction. */
   if (features.length === 0) return null;
-  return { features, cannotSee, unusable };
+  /* A thing cannot sit on itself. One reading did not do this; it is refused
+     here because slice 2 follows `on` chains to a top host, and a self-host is
+     a one-link cycle that a chain walker meets before any visited set it
+     carries. Cheaper to make it unrepresentable than to handle. */
+  return {
+    features: features.map((feature) => (
+      feature.on === feature.name ? { ...feature, on: "" } : feature
+    )),
+    cannotSee,
+    unusable,
+  };
+}
+
+/** The two kinds that take a row away; everything else keeps its own. */
+const ROW_TAKING_KINDS: readonly FeatureKind[] = ["clothing", "makeup"];
+
+function mergedKind(held: FeatureKind, seen: FeatureKind): FeatureKind {
+  if (held === seen) return held;
+  const heldTakes = ROW_TAKING_KINDS.includes(held);
+  const seenTakes = ROW_TAKING_KINDS.includes(seen);
+  if (heldTakes && !seenTakes) return seen;
+  if (seenTakes && !heldTakes) return held;
+  return held;
+}
+
+function mergedHost(held: string, seen: string): string {
+  if (held === seen) return held;
+  if (held.length === 0) return seen;
+  if (seen.length === 0) return held;
+  return "";
 }
 
 /**
@@ -435,6 +614,45 @@ export function parseDiscovery(
  * the one that is wrong about how many there are. `about` is kept from whichever
  * crop said more about it, which on the measured runs is the crop that could see
  * it better.
+ *
+ * # IT MATCHES ON `normalisedName` NOW, NOT ON THE RAW NOUN (#2566)
+ *
+ * The two crops are two readings, so one says `earring` and the other `earrings`
+ * — and on the raw noun those were TWO merged rows, each with half the facts,
+ * which the fold in slice 2 would then have treated as two different features.
+ * {@link normalisedName} is the comparison spelling the pointer road already
+ * uses for exactly this; it is IMPORTED rather than re-implemented, because a
+ * second spelling-folder is working law 4's own failure shape and these two
+ * would decide the same question differently within a week.
+ *
+ * ⚠ The import makes this module name `pointerCut`, which imports `DiscoveredFeature`
+ * back — a cycle on paper and not at runtime, because that direction is
+ * `import type` and is erased. Do not "fix" it by copying the function.
+ *
+ * The noun the panel and the cutter get is still the reading's own, untouched:
+ * the normalised form is a KEY and is never stored.
+ *
+ * # THE THREE FACTS, AND ONE RULE DECIDES EVERY DISAGREEMENT
+ *
+ * The crops see different things, so they can disagree — the bench measured one:
+ * the alien's neck hardware read `anatomy` on the full frame and `accessory` on
+ * the head crop. **On any disagreement the merged value is the one that leaves
+ * the feature its own row and its own cut**, which is today's behaviour and the
+ * same rule the parse fallbacks follow:
+ *
+ *   kind       equal, or the value that is NEITHER `clothing` NOR `makeup`,
+ *              since those are the only two that take a row away (one folds it
+ *              into the Outfit row, the other draws nothing). Two "own row"
+ *              kinds disagreeing is cosmetic in slice 2's sectioning, so the
+ *              HELD one wins — deterministically the head crop, which is asked
+ *              first (`discoveryCropsOf` pushes head then full) and is the crop
+ *              measured to read the face better.
+ *   coverage   `single` unless BOTH say `scattered`, because `scattered` is the
+ *              value that means never cut.
+ *   on         a named host beats `""` — a crop that cannot see the host says
+ *              `""`, which is an absence and not a claim. Two DIFFERENT hosts
+ *              is a real disagreement and resolves to `""`: no fold is honest,
+ *              and a guessed fold puts a lip ring under a nose.
  */
 export function mergeDiscoveries(
   answers: ReadonlyArray<{
@@ -446,25 +664,36 @@ export function mergeDiscoveries(
   const features = new Map<string, DiscoveredFeature>();
   for (const answer of answers) {
     for (const feature of answer.features) {
-      const held = features.get(feature.name);
+      const key = normalisedName(feature.name);
+      const held = features.get(key);
       if (held === undefined) {
-        features.set(feature.name, { ...feature });
+        features.set(key, { ...feature });
         continue;
       }
-      features.set(feature.name, {
-        name: feature.name,
+      features.set(key, {
+        /* The HELD noun, not the later one: the head crop is asked first, so a
+           singular/plural pair keeps the face reading's spelling. */
+        name: held.name,
         count: Math.max(held.count, feature.count),
         about: feature.about.length > held.about.length ? feature.about : held.about,
+        kind: mergedKind(held.kind, feature.kind),
+        on: mergedHost(held.on, feature.on),
+        coverage: held.coverage === "scattered" && feature.coverage === "scattered"
+          ? "scattered"
+          : "single",
       });
     }
   }
   /* A thing one crop could not see and the other NAMED is seen, so the unseen
-     list is only what nothing could see. */
+     list is only what nothing could see. ⚠ Compared on the same normalised key
+     as the features above — on the raw noun, a `cannotSee` row saying `earrings`
+     sat beside a named `earring` and the panel was told both at once. */
   const unseen = new Map<string, UnseenFeature>();
   for (const answer of answers) {
     for (const row of answer.cannotSee) {
-      if (features.has(row.name)) continue;
-      if (!unseen.has(row.name)) unseen.set(row.name, row);
+      const key = normalisedName(row.name);
+      if (features.has(key)) continue;
+      if (!unseen.has(key)) unseen.set(key, row);
     }
   }
   /* The rejected names are the UNION and are not de-duplicated against
@@ -535,24 +764,78 @@ export async function discoverFeatures(input: {
         about: "discover",
         /*
           A DEADLINE OF ITS OWN, AND NO RETRIES — the relay's fourth finding on
-          PR #2570, and the reason is where this call SITS rather than how long
-          it takes.
+          PR #2570. The deadline EXISTS because of what a hung provider holds;
+          its NUMBER comes from the measured tail, and those are two facts.
 
-          It stands AHEAD of every segmenter call in the scan (`faceScanService`
-          awaits it before the first question goes out) and it shares the
-          interpreter's text queue, whose concurrency is 4. On the transport's
-          defaults that is 45 s per attempt times three retries: a hung provider
-          would hold a customer's whole panel for over two minutes, and hold a
-          paid roll's interpreter behind it on the way.
+          WHAT IT HOLDS, read at this head rather than carried: one of the FOUR
+          slots on the `openrouter-text` queue (`interpreterTextQueue`,
+          concurrency 4, depth 32), which a paid roll's interpreter draws from
+          too. On the transport's defaults that is 45 s per attempt times three
+          retries — over two minutes of one slot on one hung provider — which is
+          why the deadline and `retries: 0` are both here.
 
-          15 s is above the 8–9 s the relay measured for a real read and far
-          below the damage. ⚠ **A deadline that fires here costs nothing**: the
-          reading comes back `{ ok: false }` and the scan asks the full
-          catalogue, which is the panel the customer gets today — so trading a
-          rare timeout for a bounded wait is the cheap side of this call.
+          ⚠ **IT NO LONGER HOLDS THE PANEL, AND THIS COMMENT SAID IT DID UNTIL
+          #2566 SLICE 1'S REPAIR.** It read *"it stands AHEAD of every segmenter
+          call in the scan (`faceScanService` awaits it before the first
+          question goes out)"*, and that stopped being true at #2570's SECOND
+          finding: `faceScanService` starts this beside `scanFace` and awaits it
+          only at settle, so no question waits on it and the panel's first paint
+          reads the partial either way. The sentence outlived its road, and the
+          number bolted to it is what bit.
+
+          THE NUMBER, from `output/2566/grouping-discovery.txt` — six reads on
+          the final wording: 8,912 · 10,180 · 10,186 · 13,684 · 14,500 ·
+          **18,821 ms**, mean 12,714. **30 s is 1.6× that measured tail.**
+
+          ⚠ **15 s was already marginal BEFORE this slice, and the receipt in
+          the tree said so** — the pre-grouping run
+          (`output/2566/fullframe-discovery.txt`, the same six crops) ran
+          10,107–**13,091 ms**, so the old deadline carried 1.9 s of headroom
+          against a measured max, never the 8–9 s this comment used to claim.
+          The bigger ask then pushed the tail over the line: at 15 s the
+          cyberpunk cast's head crop times out at 18.8 s, that crop returns
+          null, and `discoverFeatures` refuses to gate on a part-answer — so the
+          customer loses the WHOLE discovery on the densest cast, silently,
+          because it fails open. A deadline set from a number no receipt
+          supported is the defect; 1 of 6 reads over the line is the measurement.
+
+          ⚠ **A deadline that fires here still costs nothing** in money or
+          correctness: the reading comes back `{ ok: false }` and the scan asks
+          the full catalogue, which is the panel the customer gets today. What
+          it costs is the saving this road exists for, and that is the trade the
+          number is chosen on.
         */
-        timeoutMs: 15_000,
+        timeoutMs: 30_000,
         retries: 0,
+        /*
+          A CEILING OF ITS OWN, BECAUSE THE DEFAULT ONE ALREADY BITES THIS ROAD
+          (#2566, found by the grouping bench rather than reasoned about).
+
+          This call passed no `maxOutputTokens`, so it took the transport's
+          default of 900 (`openrouterText.ts`'s `request.maxOutputTokens ?? 900`).
+          The bench's dense-cast full-frame answer was **cut off at 900 mid-JSON
+          and parsed to nothing** — and on this road that is not a bad arm in a
+          script: `parseDiscovery` returns null, the crop is discarded, and
+          `discoverFeatures` refuses to gate on a part-answer, so **a
+          feature-dense cast loses its whole discovery**. It fails open, so
+          nobody would ever see it as a fault — they would see the full
+          catalogue and a missing saving.
+
+          ⚠ **That was true before this slice, not caused by it.** The three
+          facts make it likelier by adding 15–40% to each answer, which is why
+          the ceiling moves in the same commit rather than in a card of its own.
+
+          2,000 is the measured number, and the measurement is the WHOLE
+          receipt rather than one line of it: the heaviest of the six reads in
+          `output/2566/grouping-discovery.txt` is the cyberpunk cast's head crop
+          at **1,293 output tokens** (⚠ this comment said 1,133 until #2566
+          slice 1's repair — the relay's second finding; 1,133 is the elder
+          alien's full frame, the second heaviest, so the ceiling always
+          covered the real worst case and only the sentence was wrong). It is a
+          CEILING and not a spend — an ordinary answer still costs what it
+          costs.
+        */
+        maxOutputTokens: 2_000,
       });
       /*
         A REPLY CUT OFF AT THE CEILING IS DISCARDED, NOT READ (#1272's class,
