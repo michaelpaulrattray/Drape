@@ -2,9 +2,11 @@
  * THE DISPATCH WALK — Landing C, in the running app (working law 6; ordered
  * fable-973 §3d).
  *
- * One real paid refine on the dev fixture face, with
- * `CASTING_REFINE_DISPATCH_SCOPE` armed in the server this drives. What it
- * reads back is the whole claim, at the wire and on the screen:
+ * One real paid refine on the dev fixture face. ⚠ It needed
+ * `CASTING_REFINE_DISPATCH_SCOPE` armed in the server it drives and it does
+ * NOT any more — that flag is retired (#1577 slice D4) and every paid refine
+ * takes this road, so a re-run needs no variable set. What it reads back is the
+ * whole claim, at the wire and on the screen:
  *
  *   1. the refine mutation ANSWERS in seconds rather than minutes — timed on
  *      the response itself, not on a spinner disappearing;

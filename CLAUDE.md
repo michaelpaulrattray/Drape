@@ -646,7 +646,7 @@ the live service on every push.
 | `CASTING_V2_SCOPE` | the whole `castingV2.*` namespace — the root of every scope chain below, and spendable surface |
 | `CASTING_SEGMENTS_SCOPE` | the segment store (segment permanence) — ✅ RETIRED (#1160); the variable is off the service |
 | `CASTING_SEGMENTS_DELIVERED_SCOPE` | cutting a segment from the delivered frame's own extent rather than the master's — ✅ RETIRED with its parent (#1160) |
-| `CASTING_REFERENCE_LIBRARY_SCOPE` | the compositor swap's reference library |
+| `CASTING_REFERENCE_LIBRARY_SCOPE` | the reference library's own switch — ✅ RETIRED (#1577 slice D5, the last of the six); the variable leaves the service with that merge |
 | `CASTING_REPAINT_SCOPE` | the compositor swap itself — ✅ RETIRED (#1577 slice 4b); every refine repaints, and the variable leaves the service with that merge |
 | `CASTING_SIDE_PHRASING_SCOPE` | whether a per-side ask also says where that side is — ✅ RETIRED (#1577 slice D2); every ask says it now |
 | `CASTING_FACE_SCAN_SCOPE` | the face panel's auto-scan |
@@ -665,7 +665,7 @@ the live service on every push.
 | `CASTING_BRIEF_FIDELITY_SCOPE` | whether a customer's own words are rationed on the way into her sheet |
 | `CASTING_CREATIVE_REGISTER_SCOPE` | whether a roll takes the author road — ✅ RETIRED with the old lane (#1443); every roll takes it |
 | `CASTING_CONCEPT_UPLOAD_SCOPE` | upload a concept — a picture in, a description of the being out |
-| `CASTING_REFINE_DISPATCH_SCOPE` | whether the paid half of a refine stops holding the request |
+| `CASTING_REFINE_DISPATCH_SCOPE` | whether the paid half of a refine stops holding the request — ✅ RETIRED (#1577 slice D4); every refine answers with a receipt now |
 | `CASTING_RETRY_SCOPE` | the Retry button on a failed tile |
 | `CASTING_ROLL_ENGINE_SCOPE` | which accounts roll on an EXCEPTION to the default engine — `CASTING_ROLL_ENGINE_MODEL` (`flare` / `sunburst`) says which |
 | `CASTING_TWO_PATHS_SCOPE` | the Wardrobe / Basics path choice — ✅ RETIRED OUTRIGHT (#203 step (e)); the flag is gone from the code and the columns are kept |

@@ -1,11 +1,19 @@
 /**
- * REHEARSE #1577 SLICE 4a AT THE REAL BOOT GATE — does production still boot
- * after the repaint's children were re-parented onto the reference library?
+ * REHEARSE #1577's RE-PARENTS AT THE REAL BOOT GATE — does production still
+ * boot after the children were moved onto the parent above the one that died?
+ *
+ * ⚠ **IT HAS NOW REHEARSED TWO RE-PARENTS, AND THE SECOND IS SLICE D5.** Slice
+ * 4a moved four fences from `CASTING_REPAINT_SCOPE` onto the reference library;
+ * slice D5 retires that flag in turn and moves the three survivors onto
+ * `CASTING_V2_SCOPE`, the chain root. The arm below is RE-POINTED rather than
+ * removed, which is the first time in this file's history that was the right
+ * act: the three earlier arms died because their own FENCE was deleted, and
+ * here the fence survives and only the variable it reads has changed.
  *
  * # Why this exists rather than reasoning about it
  *
- * Slice 4a moves four boot fences from `CASTING_REPAINT_SCOPE` to
- * `CASTING_REFERENCE_LIBRARY_SCOPE`. The unit arms prove each validator in
+ * A re-parent moves boot fences from one variable to another. The unit arms
+ * prove each validator in
  * isolation; they do not prove that `validateEnv()` — the function the real
  * process calls, in the order it calls things — accepts the values the live
  * service actually holds. The switch sitting of 2026-09-24 set the precedent
@@ -23,8 +31,8 @@
  * signing key. Those are in `BASE` now.
  *
  * **2 · THE NEGATIVE CONTROLS PASSED FOR THE WRONG REASON.** Narrowing the
- * reference library under an `all` child makes the REPAINT's own fence refuse
- * too (`CASTING_REPAINT_SCOPE cannot be "all" while
+ * parent under an `all` child makes a DIFFERENT child's fence refuse
+ * too (at the time: `CASTING_REPAINT_SCOPE cannot be "all" while
  * CASTING_REFERENCE_LIBRARY_SCOPE is limited to specific users`) and it fires
  * first — and that message CONTAINS the string the arm was asserting on, so the
  * arm printed PASS over a control that never reached the fence being tested.
@@ -175,7 +183,9 @@ function expectRefusal(
   child: string,
 ): void {
   arms += 1;
-  const parent = "CASTING_REFERENCE_LIBRARY_SCOPE";
+  /* ⚠ The parent was `CASTING_REFERENCE_LIBRARY_SCOPE` until #1577 slice D5
+     retired it; the surviving fences read the chain root now. */
+  const parent = "CASTING_V2_SCOPE";
   const message = run(overrides);
   if (message === null) {
     failures += 1;
@@ -194,7 +204,7 @@ function expectRefusal(
   console.log("  PASS  " + label + "\n        " + message);
 }
 
-console.log("REHEARSAL — #1577 slice 4a at the real validateEnv() gate\n");
+console.log("REHEARSAL — #1577's re-parents (4a, then D5) at the real validateEnv() gate\n");
 
 console.log("1 · POSITIVE CONTROL — production's own recorded positions");
 expectPass("the live service's flag positions boot", {});
@@ -242,8 +252,13 @@ const NARROWED = {
   /* ⚠ `CASTING_REPAINT_SCOPE: "off"` stood here to stop the repaint's own fence
      firing first — defect 2 above. It is removed with the flag (slice 4b): the
      variable is read by nothing now, so setting it silenced nothing and described
-     a refusal that cannot happen. Driven at four values, all admitted. */
-  CASTING_REFERENCE_LIBRARY_SCOPE: "users:1",
+     a refusal that cannot happen. Driven at four values, all admitted.
+     ⚠ And `CASTING_REFERENCE_LIBRARY_SCOPE: "users:1"` was the NARROWED PARENT
+     here until slice D5 retired it. The parent is the chain root now, so this is
+     the variable the arm narrows — and narrowing it is why every sibling in
+     `SIBLINGS` has to be `off`: the casting scope is a parent to all of them,
+     not only to the fence under test. */
+  CASTING_V2_SCOPE: "users:1",
   ...SIBLINGS,
 };
 
@@ -267,7 +282,7 @@ const NARROWED = {
   rehearsal's verdict still means what it says.**
 */
 expectRefusal(
-  "a reference-attach user outside the reference library",
+  "a reference-attach user outside the casting scope",
   { ...NARROWED, CASTING_REFERENCE_ATTACH_SCOPE: "users:1,9" },
   "CASTING_REFERENCE_ATTACH_SCOPE",
 );

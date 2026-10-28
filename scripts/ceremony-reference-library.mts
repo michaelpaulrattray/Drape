@@ -169,8 +169,8 @@ try {
 
   console.log("\nCEREMONY COMPLETE. Next, IN THIS ORDER:");
   console.log("  a. the code that writes this table is already deployed and DARK —");
-  console.log("     CASTING_REFERENCE_LIBRARY_SCOPE is unset, so no row is ever written");
-  console.log("  b. set CASTING_REFERENCE_LIBRARY_SCOPE=users:1 on the app service when the");
+  console.log("     the table is absent, so the library has nothing to read or write");
+  console.log("  b. (HISTORY) CASTING_REFERENCE_LIBRARY_SCOPE was flipped here after the table");
   console.log("     minting path is ready to be dogfooded (boot refuses it unless the cleanup");
   console.log("     worker is on and the user is inside CASTING_V2_SCOPE)");
   console.log("  c. check /api/health after that deploy, and read the SHA off the row");

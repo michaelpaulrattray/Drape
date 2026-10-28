@@ -11190,16 +11190,6 @@
       "valueRecorded": false
     },
     {
-      "id": "env:CASTING_REFERENCE_LIBRARY_SCOPE",
-      "name": "CASTING_REFERENCE_LIBRARY_SCOPE",
-      "valueRecorded": false
-    },
-    {
-      "id": "env:CASTING_REFINE_DISPATCH_SCOPE",
-      "name": "CASTING_REFINE_DISPATCH_SCOPE",
-      "valueRecorded": false
-    },
-    {
       "id": "env:CASTING_RETRY_SCOPE",
       "name": "CASTING_RETRY_SCOPE",
       "valueRecorded": false
@@ -11594,16 +11584,6 @@
     {
       "id": "flag:CASTING_REFERENCE_ATTACH_SCOPE",
       "name": "CASTING_REFERENCE_ATTACH_SCOPE",
-      "grammar": "off|all|users:<ids>"
-    },
-    {
-      "id": "flag:CASTING_REFERENCE_LIBRARY_SCOPE",
-      "name": "CASTING_REFERENCE_LIBRARY_SCOPE",
-      "grammar": "off|all|users:<ids>"
-    },
-    {
-      "id": "flag:CASTING_REFINE_DISPATCH_SCOPE",
-      "name": "CASTING_REFINE_DISPATCH_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -15007,6 +14987,10 @@
       "path": "server/castingV2/referenceLibrary.test.ts"
     },
     {
+      "id": "test:server/castingV2/referenceLibraryFlagRetirement.test.ts",
+      "path": "server/castingV2/referenceLibraryFlagRetirement.test.ts"
+    },
+    {
       "id": "test:server/castingV2/referenceMediumDoor.test.ts",
       "path": "server/castingV2/referenceMediumDoor.test.ts"
     },
@@ -15045,6 +15029,10 @@
     {
       "id": "test:server/castingV2/refineDeparture.test.ts",
       "path": "server/castingV2/refineDeparture.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/refineDispatchFlagRetirement.test.ts",
+      "path": "server/castingV2/refineDispatchFlagRetirement.test.ts"
     },
     {
       "id": "test:server/castingV2/refineFacets.test.ts",
@@ -15189,6 +15177,10 @@
     {
       "id": "test:server/castingV2/rollService.test.ts",
       "path": "server/castingV2/rollService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/sceneryLeftOut.test.ts",
+      "path": "server/castingV2/sceneryLeftOut.test.ts"
     },
     {
       "id": "test:server/castingV2/seedFidelity.test.ts",
@@ -31678,11 +31670,6 @@
     },
     {
       "from": "module:server/castingV2/referenceMint.ts",
-      "to": "module:server/castingV2/castingV2Scope.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/referenceMint.ts",
       "to": "module:server/castingV2/deliveryCourt.ts",
       "kind": "imports"
     },
@@ -42736,17 +42723,17 @@
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:752",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:751",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:752",
+      "subject": "server/castingV2/refineService.ts:751",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:935",
+      "id": "finding:redeclared-shape:server/castingV2/refineService.ts:937",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/refineService.ts:935",
+      "subject": "server/castingV2/refineService.ts:937",
       "message": "Names 3 of Thumbnail's 3 fields (server/castingV2/thumbnails.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

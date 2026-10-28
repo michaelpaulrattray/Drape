@@ -328,7 +328,6 @@ for (const row of live) {
       read,
       readGround: read,
       readWords: captionSlot,
-      enabledFor: () => true,
       record: recordShim(row, before),
       /* THE CROP THE READER WAS HANDED, written where a human can open it.
          "The reader said it could not see the earring" is a claim; the pixels

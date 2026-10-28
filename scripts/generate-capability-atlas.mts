@@ -25,10 +25,11 @@ import "dotenv/config";
 import fs from "node:fs";
 
 import {
-  buildStaticAtlas, driveRow, drivenFindings, readCommittedAtlas, writeAtlas, declaredFlags,
+  buildStaticAtlas, driveRow, drivenFindings, readCommittedAtlas, writeAtlas,
   committedPageIsFresh,
+  driveProfileFlags, driveProfileDrift, profileFixtureUserId, profileHasDrifted,
   CAPABILITY_SCHEMA_VERSION, CAPABILITY_JSON, CAPABILITY_MD,
-  type CapabilityAtlas, type DrivenAtlas, type Observation,
+  type CapabilityAtlas, type DrivenAtlas, type Finding, type Observation,
 } from "./lib/capabilityAtlas.mts";
 import { CORPUS } from "./capability-atlas-corpus.mts";
 
@@ -46,23 +47,6 @@ const ONLY_STATE = [...args].map((a) => /^--state=(.+)$/.exec(a)?.[1]).find(Bool
 
 const usage = () => {
   console.log("capability census — --drive to put the corpus through the real entrance (dev only, text calls), --check to verify, --help for this.");
-};
-
-/**
- * The flag configuration the drive runs under — ONE named profile, recorded in
- * the output so every observation says what doors were open when it was made.
- * The shipped parents are `all` (production's own values, read 2026-08-21); the
- * feature doors are opened for the fixture alone, the way the founder's account
- * is opened; the three that need a table or a worker stay off.
- */
-const profileFor = (userId: number): Record<string, string> => {
-  const flags: Record<string, string> = {};
-  for (const flag of declaredFlags()) {
-    if (["CASTING_V2_SCOPE", "CASTING_REFERENCE_LIBRARY_SCOPE"].includes(flag)) flags[flag] = "all";
-    else if (["CASTING_SCAN_TABLE_SCOPE", "CASTING_REFINE_DISPATCH_SCOPE"].includes(flag)) flags[flag] = "off";
-    else flags[flag] = `users:${userId}`;
-  }
-  return flags;
 };
 
 async function drive(committed: CapabilityAtlas | null): Promise<DrivenAtlas> {
@@ -83,7 +67,10 @@ async function drive(committed: CapabilityAtlas | null): Promise<DrivenAtlas> {
   const account = await ensureOutsider();
   const { ensureCensusFixture } = await import("./lib/censusFixture.mts");
   const fixture = { id: account.id, openId: account.openId, candidatePublicId: (await ensureCensusFixture({ userId: account.id })).candidatePublicId };
-  const flags = profileFor(fixture.id);
+  /* ONE OWNER — `driveProfileFlags`, which the drift reader also computes from
+     (#2694). A copy here is the mirror that would always drift toward this
+     file, which is the shape working law 4 names. */
+  const flags = driveProfileFlags(fixture.id);
   for (const [key, value] of Object.entries(flags)) process.env[key] = value;
 
   /* Imported AFTER the flags are set, so any module-level read sees the profile. */
@@ -179,11 +166,98 @@ async function drive(committed: CapabilityAtlas | null): Promise<DrivenAtlas> {
   const after = await ledger();
   await connection.end();
   return {
-    profile: { name: "fixture-as-founder", flags, fixture: `${fixture.openId} / ${fixture.candidatePublicId}` },
+    profile: {
+      name: "fixture-as-founder",
+      flags,
+      fixture: `${fixture.openId} / ${fixture.candidatePublicId}`,
+      /* THE DAY, so "how old is this table" stops being unanswerable (#2694).
+         A day and not a timestamp: the question it answers is measured in
+         weeks, and a full ISO instant would move this field on every drive of
+         the same afternoon for no reader's benefit. */
+      drivenAt: new Date().toISOString().slice(0, 10),
+    },
     observations,
     notDriven,
     ledger: { before, after },
   };
+}
+
+/**
+ * THE PROFILE THE TABLE WAS TAKEN UNDER, AGAINST THE ONE A DRIVE WOULD USE
+ * TODAY (#2694).
+ *
+ * # Why it is asked on a NON-drive run and not on a drive
+ *
+ * On `--drive` the profile IS today's derived one, so there is nothing to
+ * compare and nothing to warn about — the table and its description are minted
+ * together. The reading that matters is the other one: a plain `generate` or a
+ * `check` serves the COMMITTED `driven` half, and that is the table a reader is
+ * about to trust and a driver is about to replace.
+ *
+ * # Why it is a warn
+ *
+ * `pnpm capability:check` runs inside `pnpm test` and inside the deploy rite on
+ * every push, and only error-severity findings fail it. An error here would
+ * block every push until somebody re-drove the census — and a drive writes the
+ * committed table and spends provider calls, which is a deliberate act and not
+ * something a blocked push should force. The card's ask is a sentence the next
+ * driver has to read.
+ */
+function profileDriftFindings(input: {
+  driven: DrivenAtlas | null;
+  isDrive: boolean;
+}): Finding[] {
+  if (input.driven === null || input.isDrive) return [];
+  const committedFlags = input.driven.profile.flags;
+  const userId = profileFixtureUserId(committedFlags);
+  /*
+    A PROFILE WITH NO `users:` ROW CANNOT BE COMPARED BY POSITION, and this
+    says so rather than comparing against an invented id. Every profile this
+    census has ever written carries several, so this is the unreachable arm
+    kept honest rather than a case anybody expects.
+  */
+  if (userId === null) {
+    return [{
+      id: "drive-profile:unreadable",
+      severity: "warn",
+      kind: "drive-profile-unreadable",
+      subject: input.driven.profile.name,
+      message:
+        "the committed drive profile carries no `users:<id>` value, so the fixture account it was "
+        + "taken on cannot be read out of it and today's profile cannot be compared against it",
+    }];
+  }
+
+  const drift = driveProfileDrift({ committed: committedFlags, derived: driveProfileFlags(userId) });
+  if (!profileHasDrifted(drift)) return [];
+
+  /* The age rides on the drift rather than on a finding of its own: a permanent
+     "this table records no date" warn is noise, and the question "how old is
+     it" is only ever asked because something has moved under it. */
+  const taken = input.driven.profile.drivenAt === undefined
+    ? "the table records no date — it was taken before a drive wrote one"
+    : `taken ${input.driven.profile.drivenAt}`;
+  const parts: string[] = [];
+  if (drift.opened.length > 0) {
+    parts.push(`${drift.opened.length} flag(s) the next drive would OPEN for the first time (${drift.opened.join(", ")})`);
+  }
+  if (drift.retired.length > 0) {
+    parts.push(`${drift.retired.length} the tree no longer declares (${drift.retired.join(", ")})`);
+  }
+  if (drift.moved.length > 0) {
+    parts.push(`${drift.moved.length} standing somewhere different (${drift.moved.map((one) => `${one.flag}: ${one.committed} -> ${one.derived}`).join(", ")})`);
+  }
+  return [{
+    id: "drive-profile:drift",
+    severity: "warn",
+    kind: "drive-profile-drift",
+    subject: input.driven.profile.name,
+    message:
+      `this census was driven under a different product than the next drive would measure — ${taken}; `
+      + `${parts.join("; ")}. A corpus row's expectation and a road's prose describing "the flag-off `
+      + `reading" may both be true of this table and false of the next one — read this before reading `
+      + "any belief-mismatch or route-changed finding a drive produces",
+  }];
 }
 
 async function main(): Promise<number> {
@@ -194,6 +268,7 @@ async function main(): Promise<number> {
   const findings = [
     ...staticAtlas.findings,
     ...(driven ? drivenFindings({ staticAtlas, driven, corpus: CORPUS, committed: WANT_DRIVE ? committed : null }) : []),
+    ...profileDriftFindings({ driven, isDrive: WANT_DRIVE }),
   ].sort((a, b) => a.id.localeCompare(b.id));
   const atlas: CapabilityAtlas = { schemaVersion: CAPABILITY_SCHEMA_VERSION, static: staticAtlas, driven, findings };
 

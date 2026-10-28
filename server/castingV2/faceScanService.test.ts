@@ -834,9 +834,10 @@ describe("the reading this face has already paid for", () => {
     if (scope === undefined) delete process.env.CASTING_SCAN_TABLE_SCOPE;
     else process.env.CASTING_SCAN_TABLE_SCOPE = scope;
     /* The whole chain, because the flag is an AND of its parents and a test
-       that set only the leaf would be arming nothing. */
+       that set only the leaf would be arming nothing. ⚠ The reference library
+       was a link here and left with #1577 slice D5 — dropped rather than pinned
+       `all`, because a value nothing reads is a lever that looks live. */
     process.env.CASTING_V2_SCOPE = "all";
-    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "all";
     process.env.CASTING_FACE_SCAN_SCOPE = "all";
   };
 
@@ -1066,8 +1067,8 @@ describe("whether a discovery is bought", () => {
   afterEach(() => { process.env = { ...previous }; });
 
   function chainOn(): void {
+    /* ⚠ Two links, not three, since #1577 slice D5 retired the library's. */
     process.env.CASTING_V2_SCOPE = "all";
-    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "all";
     process.env.CASTING_FACE_SCAN_SCOPE = "all";
   }
 

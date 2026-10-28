@@ -24,7 +24,7 @@
  * import { ensureOutsider, assertOutsideScope } from "./lib/outsider.mts";
  *
  * const outsider = await ensureOutsider();          // upserts, clones a sheet, mints a token
- * assertOutsideScope(outsider, "CASTING_REPAINT_SCOPE");   // refuses a vacuous negative arm
+ * assertOutsideScope(outsider, "CASTING_FACE_SCAN_SCOPE"); // refuses a vacuous negative arm
  * ```
  *
  * `assertOutsideScope` reads THIS process's environment, which is the same one
@@ -80,11 +80,22 @@ export type Outsider = {
   insideScopes: string[];
 };
 
-/** The flags a driver might want to be outside of, and the env var each reads. */
+/*
+  The flags a driver might want to be outside of, and the env var each reads.
+
+  ⚠ TWO RETIRED NAMES CAME OFF THIS LIST AT #1577 SLICE D5 AND ONLY ONE OF THEM
+  WAS THAT SLICE'S OWN. `CASTING_REFERENCE_LIBRARY_SCOPE` is the flag D5
+  retires; `CASTING_REPAINT_SCOPE` was retired two slices earlier (4b) and was
+  left here, which is the same shape of leftover one slice older. Working law 7
+  — fix the class, not the instance — so both went in one act.
+
+  Why it matters rather than being tidying: `insideScopes` is the field a court
+  reads to say *this account is outside everything*, so a name nothing reads can
+  only ever report OUTSIDE. That is a reassuring answer about a question nobody
+  is asking any more, next to real answers about live flags.
+*/
 const SCOPE_FLAGS = [
   "CASTING_V2_SCOPE",
-  "CASTING_REFERENCE_LIBRARY_SCOPE",
-  "CASTING_REPAINT_SCOPE",
   "CASTING_FACE_SCAN_SCOPE",
 ] as const;
 type ScopeFlag = (typeof SCOPE_FLAGS)[number];
@@ -307,18 +318,26 @@ if (invokedDirectly && process.argv.includes("--prove")) {
   );
 
   /* THE ARM THAT MATTERS: the refusal must fire on an admitting flag and stay
-     silent on a refusing one. Driven on both, never on one. */
-  const savedAll = process.env.CASTING_REPAINT_SCOPE;
-  process.env.CASTING_REPAINT_SCOPE = "all";
+     silent on a refusing one. Driven on both, never on one.
+
+     ⚠ IT DROVE `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE D5 AND THAT FLAG HAS
+     BEEN RETIRED SINCE SLICE 4b — a self-control naming a flag the type no
+     longer admits, which the compiler caught the moment the list above was
+     trimmed. The subject is now the auto-scan's flag, which band E of the ghost
+     audit marks KEEP. The value is restored below either way, so driving a LIVE
+     flag here costs nothing. */
+  const savedScan = process.env.CASTING_FACE_SCAN_SCOPE;
+  process.env.CASTING_FACE_SCAN_SCOPE = "all";
   let threwOnAll = false;
-  try { assertOutsideScope(first, "CASTING_REPAINT_SCOPE"); } catch { threwOnAll = true; }
-  process.env.CASTING_REPAINT_SCOPE = "users:1";
+  try { assertOutsideScope(first, "CASTING_FACE_SCAN_SCOPE"); } catch { threwOnAll = true; }
+  process.env.CASTING_FACE_SCAN_SCOPE = "users:1";
   let threwOnUsers1 = false;
-  try { assertOutsideScope(first, "CASTING_REPAINT_SCOPE"); } catch { threwOnUsers1 = true; }
-  process.env.CASTING_REPAINT_SCOPE = `users:${first.id}`;
+  try { assertOutsideScope(first, "CASTING_FACE_SCAN_SCOPE"); } catch { threwOnUsers1 = true; }
+  process.env.CASTING_FACE_SCAN_SCOPE = `users:${first.id}`;
   let threwOnSelf = false;
-  try { assertOutsideScope(first, "CASTING_REPAINT_SCOPE"); } catch { threwOnSelf = true; }
-  process.env.CASTING_REPAINT_SCOPE = savedAll;
+  try { assertOutsideScope(first, "CASTING_FACE_SCAN_SCOPE"); } catch { threwOnSelf = true; }
+  if (savedScan === undefined) delete process.env.CASTING_FACE_SCAN_SCOPE;
+  else process.env.CASTING_FACE_SCAN_SCOPE = savedScan;
 
   check("POSITIVE — an `all` flag refuses the arm", threwOnAll, "threw");
   check("NEGATIVE — a flag naming somebody else does not", !threwOnUsers1, "did not throw");

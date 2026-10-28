@@ -200,7 +200,6 @@ beforeEach(() => {
   calls.listInkDeliveryCrops.mockResolvedValue([]);
   calls.deleteInkDeliveryCrops.mockResolvedValue(0);
   mapState.cropOpen = null;
-  delete process.env.CASTING_REFERENCE_LIBRARY_SCOPE;
   delete process.env.CASTING_SCAN_TABLE_SCOPE;
   delete process.env.CASTING_INK_STUDIO_SCOPE;
   delete process.env.CASTING_INK_REFERENCE_SCOPE;
@@ -842,19 +841,41 @@ describe("a candidate's segments purge with it", () => {
     await expect(runCandidateRetentionSweep()).rejects.toThrow(/doesn't exist/);
   });
 
-  it("tolerates an absent library table only while the library is disarmed", async () => {
+  /*
+    ⚠ THE TOLERATE HALF OF THIS ARM IS GONE AND IT IS THE SEGMENT CASE'S SHAPE
+    EXACTLY, ONE FLIGHT UP — #1577 slice D5.
+
+    It read *tolerates an absent library table only while the library is
+    disarmed* and drove both halves: with `CASTING_REFERENCE_LIBRARY_SCOPE`
+    unset the sweep carried on past a missing table, and with it at `users:1`
+    the same error was rethrown.
+
+    **The first half cannot be expressed any more.** That flag is retired, so
+    there is no value to set and no `castingReferenceLibraryArmed()` to read —
+    the entry is `armed: () => true` by construction now, and its docblock says
+    so at the site. ⚠ It was ALREADY unreachable in production before this
+    slice: the variable stood at `all`, so the sweep has refused to tolerate an
+    absent table on every deploy since 2026-08-24. What is lost is a tolerance
+    no live configuration could reach.
+
+    What survives is the half that was doing the work, and it is what this arm
+    asserts: a missing table is a fault said out loud. The seven sibling
+    tolerances in this module keep their own armed-and-missing arms, because
+    their features still have switches.
+  */
+  it("an absent library table is a fault said out loud — it has no switch to be disarmed by", async () => {
     const missing = Object.assign(new Error("Table 'x.casting_reference_library' doesn't exist"), {
       code: "ER_NO_SUCH_TABLE",
       errno: 1146,
     });
     calls.listReferences.mockRejectedValue(missing);
 
-    const result = await runCandidateRetentionSweep();
-    expect(result.candidatesPurged).toBe(1);
-    expect(calls.deleteReferences).not.toHaveBeenCalled();
+    await expect(runCandidateRetentionSweep()).rejects.toThrow(/doesn't exist/);
 
-    /* Armed and missing is a real fault, and a warning would bury it. */
-    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "users:1";
+    /* ⚠ AND IT STAYS A FAULT WITH THE RETIRED VARIABLE PINNED `off` IN THIS
+       PROCESS, which is the arm that would redden if anything read that name
+       again. A dead variable must not be able to silence a real fault. */
+    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "off";
     await expect(runCandidateRetentionSweep()).rejects.toThrow(/doesn't exist/);
   });
 

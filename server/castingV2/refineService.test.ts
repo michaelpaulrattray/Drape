@@ -661,8 +661,53 @@ vi.mock("./signEngine", () => ({
 
 const {
   assertNotAnUncataloguedDeparture, asksToRemoveHerHair, readAskReference,
-  readAskScope, refineCandidate,
+  readAskScope, refineCandidate: refineCandidateRaw,
 } = await import("./refineService");
+
+/**
+ * ⚠ THIS SUITE IS A RECEIPT-BLIND CALLER AND SAYS SO ONCE, HERE — #2710's class,
+ * one step over, found by #1577 slice D4.
+ *
+ * Nearly four hundred arms in this file `await refineCandidate(…)` and then
+ * assert on the PICTURE: `journal` contains `"generate"`, `landedVariant` is
+ * set, the charge is out, the prompt that was sent said a particular thing.
+ * That is a caller which cannot take a dispatch receipt, in exactly the sense
+ * `cannotTakeAReceipt`'s own docblock means — handed one, it reads the answer as
+ * the finished picture and carries on.
+ *
+ * **Until slice D4 they were protected by an accident of configuration**, and
+ * the accident is worth naming because it is the same one the sixteen scripts
+ * of #2710 were living on: `captureCastingRefineDispatchEnabled` ANDed the
+ * dispatch flag with `CASTING_V2_SCOPE`, and almost no arm here sets EITHER, so
+ * every one of them took the held road without ever asking for it. The flag
+ * retired, the AND went with it, and **235 arms turned red in one run** —
+ * which is the honest measure of how load-bearing that accident was.
+ *
+ * ⚠ **#2710's GUARD CANNOT SEE THIS FILE, BY CONSTRUCTION**:
+ * `server/refineReceiptDiscipline.test.ts` walks `git ls-files -- scripts`, so
+ * a `.test.ts` caller is outside its population. That is a stated floor there
+ * and this is the declaration that answers it for the one suite that matters.
+ *
+ * ⚠ **THE SPREAD ORDER IS THE WHOLE DESIGN.** The default goes in FIRST, so any
+ * arm that means to exercise the receipt road overrides it by saying
+ * `cannotTakeAReceipt: false` in its own bag — which the dispatch suite does,
+ * explicitly, on every arm. Nothing is hidden: an arm that wants a receipt
+ * has to say the word, and an arm that wants the picture gets what it has
+ * always got, byte for byte.
+ */
+const refineCandidate: typeof refineCandidateRaw = (dependencies, input) =>
+  refineCandidateRaw({ cannotTakeAReceipt: true, ...dependencies }, input);
+
+/**
+ * What the entrance answers, for the two arms that read it WITHOUT awaiting.
+ *
+ * Declared at file scope rather than inside one of them because both need it —
+ * and because the first version lived in one `it` block and the second arm
+ * referenced it from another, which `check:root` cannot see (its `exclude`
+ * drops every test file) and `check:server-tests` caught. `vitest` transpiles
+ * without typechecking, so a green suite says nothing about this.
+ */
+type Answer = Awaited<ReturnType<typeof refineCandidateRaw>>;
 /* The door itself, so the pair-vacancy rows below are checked against the rule
    that used to refuse them rather than against a copy of it. */
 const { slotWordsRefusal } = await import("./slotWordShape");
@@ -1272,6 +1317,76 @@ describe("refusals land before anything is claimed", () => {
 
     expect(result.note ?? "").not.toContain("isn't something I can do yet");
     expect(result.note ?? "").not.toContain("one more thing");
+  });
+
+  /*
+    AND THE CLAUSE THAT REACHED NO LANE AT ALL — not even an unserved key —
+    SAYS SO (#2695). "Make her hair copper red in a studio" files only the
+    copper: the stage wall runs over the PARSED value, the elided studio is
+    handed to nobody, and the measured result through the real entrance was 20
+    of 21 served reads rendering with the scenery word dropped in silence. The
+    detector reads the sentence against the delta it filed, so the confession
+    depends on no model behaviour at all.
+  */
+  it("⚠ SAYS SO WHEN HALF THE SENTENCE NAMED THE SHOOT AND THE READING DROPPED IT", async () => {
+    const result = await refineCandidate(
+      {
+        interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }),
+      },
+      { ...input, instruction: "make her hair copper red in a studio" },
+    );
+
+    expect(result.note).toContain("The studio part of your ask wasn't changed");
+    expect(result.note).toContain("refining changes the person, not the shoot");
+    /* A DELIVERED, charged take — the refusal's reassurance would be a lie. */
+    expect(result.note?.toLowerCase()).not.toContain("nothing was charged");
+    expect(ledger.charges.length, "and it was paid for like any other edit").toBeGreaterThan(0);
+  });
+
+  it("CONTROL — a whole-person ask owes no shoot sentence", async () => {
+    /* Without this arm the fix is satisfied by a product that apologises about
+       the shoot on every edit — the permanent-confession failure the unserved
+       control above exists to stop, one note over. */
+    const result = await refineCandidate(
+      {
+        interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }),
+      },
+      { ...input, instruction: "make her hair copper red" },
+    );
+    expect(result.note ?? "").not.toContain("part of your ask wasn't changed");
+  });
+
+  it("CONTROL — a stage word the reading actually USED is never apologised for", async () => {
+    const result = await refineCandidate(
+      {
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { skinCharacter: "a studio glam look" } },
+        }),
+      },
+      { ...input, instruction: "give her a studio glam look" },
+    );
+    expect(result.note ?? "").not.toContain("The studio part");
+  });
+
+  it("never confesses one clause twice: an unserved key keeps its own richer sentence", async () => {
+    /* "chair" recorded as an unserved open key gets the named-but-not-served
+       note, which carries more than this one; the dropped-clause note stands
+       down for that word rather than saying the same fact in two voices. */
+    const result = await refineCandidate(
+      {
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { lips: "nude gloss" } },
+          unserved: ["chair"],
+        }),
+      },
+      { ...input, instruction: "give her nude gloss on her lips sitting in a chair" },
+    );
+
+    const said = result.note ?? "";
+    expect(said).toContain("The chair isn't something I can do yet");
+    expect(said).not.toContain("The chair part of your ask wasn't changed");
   });
 
   it("⚠ CARRIES the waist on the wire since #2671 — the note, the stored recipe and the painter's ask", async () => {
@@ -4052,7 +4167,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       say so. Production holds it at `all`, which is why this is a fixture
       change and not a behaviour one.
     */
-    referenceLibraryEnabled: () => true,
     /* The masked harvest must never be reached on this road; if it is, this
        passthrough keeps the failure legible instead of masking a real cut. */
   };
@@ -5269,7 +5383,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
      slot, so the mint has something to file. Kept from the retired compositing
      block, where it happened to live. */
   const mintingHair = {
-    referenceLibraryEnabled: () => true,
     verifier: {
       id: "verifier",
       complete: async (request: { system: string }) => ({
@@ -6841,7 +6954,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   });
 
   const mintingLibrary = {
-    referenceLibraryEnabled: () => true,
     verifier: {
       id: "verifier",
       complete: async (request: { system: string }) => ({
@@ -7006,7 +7118,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   const stepTwoAfterStepOne = async () => {
     captionsRead = { "hair.cut": "Short dark brown hair, closely cropped at the sides" };
     await refineCandidate(
-      { ...shortCropAsk, referenceLibraryEnabled: () => true, verifier: checkerDisputesEverything },
+      { ...shortCropAsk, verifier: checkerDisputesEverything },
       { ...input, instruction: "cut the hair into a short crop" },
     );
     expect(painted, "step 1 was delivered (the dispute is advisory)").toHaveLength(1);
@@ -9819,7 +9931,6 @@ describe("removal is typed, and most of it is free", () => {
 */
 describe("a render files in the library only the facets its own reading earned", () => {
   const freckles = {
-    referenceLibraryEnabled: () => true,
     interpret: async () => ({ ok: true as const, delta: { free: { marks: "freckles" } } }),
   };
   /** Earned = filed and unmarked. Disputed rides the same list marked. */
@@ -10143,7 +10254,6 @@ describe("the service says where an accessory lives, from the words in the ask",
     captionsRead = { statedAccessories: "Small gold hoops, one in each lobe" };
     await refineCandidate(
       {
-        referenceLibraryEnabled: () => true,
         verifier: sawIt("small gold hoops at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10162,7 +10272,6 @@ describe("the service says where an accessory lives, from the words in the ask",
     captionsRead = { statedAccessories: "Round tortoiseshell glasses" };
     await refineCandidate(
       {
-        referenceLibraryEnabled: () => true,
         verifier: sawIt("round tortoiseshell glasses"),
         interpret: async () => ({
           ok: true as const,
@@ -10182,7 +10291,7 @@ describe("the service says where an accessory lives, from the words in the ask",
        mentioned any. */
     captionsRead = { eyeColour: "Green eyes" };
     await refineCandidate(
-      { ...greenEyes, referenceLibraryEnabled: () => true, verifier: sawIt("green eyes") },
+      { ...greenEyes, verifier: sawIt("green eyes") },
       input,
     );
 
@@ -10202,7 +10311,6 @@ describe("the service says where an accessory lives, from the words in the ask",
  * arguments its harness had handed it.
  */
 describe("the render tells the library what it made of her", () => {
-  const onFlag = { referenceLibraryEnabled: () => true };
   const readerSees = (saw: string) => ({
     id: "verifier",
     complete: async () => ({
@@ -10225,7 +10333,6 @@ describe("the render tells the library what it made of her", () => {
     captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10273,7 +10380,6 @@ describe("the render tells the library what it made of her", () => {
 
     await refineCandidate(
       {
-        ...onFlag,
         regions: {
           region: async () => ({ data: Buffer.alloc(1), width: 1, height: 1 }),
           regionSides: async ({ name }: { name: string }) => {
@@ -10314,7 +10420,6 @@ describe("the render tells the library what it made of her", () => {
     const union = { data: Buffer.alloc(1), width: 1, height: 1 };
     await refineCandidate(
       {
-        ...onFlag,
         /* Production's reader before today, and any stub that has not opted in. */
         regions: {
           region: async () => union,
@@ -10374,7 +10479,6 @@ describe("the render tells the library what it made of her", () => {
 
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("thin gold wire frames"),
         interpret: async () => ({
           ok: true as const,
@@ -10395,7 +10499,6 @@ describe("the render tells the library what it made of her", () => {
     captionsRead = {};
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10434,7 +10537,6 @@ describe("the render tells the library what it made of her", () => {
     captionsRead = { lips: "Natural, slim, no pronounced fuller cupid's bow visible" };
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerDisputes("lips appear natural, slim, no pronounced fuller cupid's bow visible"),
         interpret: async () => ({
           ok: true as const,
@@ -10466,7 +10568,6 @@ describe("the render tells the library what it made of her", () => {
     captionsRead = { lips: "Full, with a pronounced cupid's bow" };
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("a fuller, more defined cupid's bow"),
         interpret: async () => ({
           ok: true as const,
@@ -10484,11 +10585,30 @@ describe("the render tells the library what it made of her", () => {
       .toEqual(["lips"]);
   });
 
-  it("CONTROL — with the flag dark it never speaks to the library at all", async () => {
+  /*
+    ⚠ THIS ARM WAS THE CUT'S OWN BAR AND IT IS INVERTED RATHER THAN DELETED —
+    #1577 slice D5.
+
+    It read *CONTROL — with the flag dark it never speaks to the library at all*
+    and asserted the opposite of what is below: handed a dependency bag with no
+    `referenceLibraryEnabled`, a refine minted nothing and never called
+    `listLineageReferences`. Both of those are now wrong, and they are the ONLY
+    behaviour this slice changes, so the arm is re-pointed at the new fact in the
+    same fixture rather than removed.
+
+    ⚠ It had already passed once for the WRONG REASON, which is why it is worth
+    keeping as a positive arm: before slice 4b what silenced the query was the
+    suite leaving the REPAINT flag unset, not the library flag. A bar that can
+    be satisfied by the absence of a key nobody named is not a bar.
+
+    The production shape is now this bag, with no library key in it at all —
+    because there is no key.
+  */
+  it("speaks to the library on every render — the one behaviour slice D5 changed", async () => {
     captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
     await refineCandidate(
       {
-        /* No `referenceLibraryEnabled` — production's shape today. */
+        /* No library key — there is no library key. This is production's shape. */
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10498,10 +10618,10 @@ describe("the render tells the library what it made of her", () => {
       { ...input, instruction: "give her dangly cross earrings" },
     );
 
-    expect(mintAsks, "a dark deploy mints nothing").toHaveLength(0);
-    /* And it does not pay for the digest query either — the flag is read once,
-       by the caller, before any of this costs anything. */
-    expect(vi.mocked(listLineageReferences)).not.toHaveBeenCalled();
+    expect(mintAsks, "every refine mints now — there is no dark deploy").toHaveLength(1);
+    /* And it pays for the digest query too, unconditionally: the read that used
+       to sit behind the flag is now the first thing the branch does. */
+    expect(vi.mocked(listLineageReferences)).toHaveBeenCalled();
   });
 
   /**
@@ -10518,7 +10638,7 @@ describe("the render tells the library what it made of her", () => {
    */
   it("says so when the mint filed nothing, with the ingredients it was handed", async () => {
     logged.length = 0;
-    await refineCandidate({ ...onFlag, ...greenEyes }, input);
+    await refineCandidate({ ...greenEyes }, input);
 
     expect(mintAsks, "the road to this arm is a render that minted no slot").toHaveLength(0);
     const line = logged.find((entry) => entry.message.includes("filed nothing in the library"));
@@ -10541,7 +10661,6 @@ describe("the render tells the library what it made of her", () => {
     captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10578,7 +10697,6 @@ describe("the render tells the library what it made of her", () => {
 
     const result = await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10620,7 +10738,6 @@ describe("the render tells the library what it made of her", () => {
 
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10648,27 +10765,23 @@ describe("the render tells the library what it made of her", () => {
     /*
       The negative control this assertion cannot do without. An observer that
       quietly reported the FINAL state would pass the test above no matter where
-      the mint sat, so it has to be shown counting zero somewhere. With the flag
-      dark nothing is ever minted, and the count at the landing is 0 — the same
-      instrument, the same instant, a different answer.
+      the mint sat, so it has to be shown counting zero somewhere.
+
+      ⚠ ITS LEVER CHANGED AT #1577 SLICE D5 AND THE CONTROL IS THE SAME CONTROL.
+      It used to drive the LIBRARY'S FLAG dark, which minted nothing; that flag
+      is retired, so a bag with no library key no longer silences anything and
+      this arm would have passed for the wrong reason — the quietest way a
+      control rots. The road to zero mints is now a REAL one, borrowed from the
+      *filed nothing* arm two describes up: no verifier, so nothing is earned or
+      confirmed, and an eye-colour delta no caption reader worded. **It is the
+      better lever** — it is a road a customer can actually take, where the old
+      one was a configuration production never held.
     */
-    captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
+    await refineCandidate({ ...greenEyes }, input);
 
-    await refineCandidate(
-      {
-        /* No `referenceLibraryEnabled` — production's shape today. */
-        verifier: readerSees("dangly gold crosses at both lobes"),
-        interpret: async () => ({
-          ok: true as const,
-          delta: { free: { statedAccessories: ["dangly cross earrings"] } },
-        }),
-      },
-      { ...input, instruction: "give her dangly cross earrings" },
-    );
-
+    expect(mintAsks, "the road to this arm is a render that minted no slot").toHaveLength(0);
     expect(atLanding).toHaveLength(1);
     expect(atLanding[0]!.mints).toBe(0);
-    expect(mintAsks).toHaveLength(0);
   });
 });
 
@@ -10730,7 +10843,6 @@ describe("a later confirmation rescues a refused carrier", () => {
     /* The mint runs behind the library's own flag. (The repaint arg that
        used to sit above this went with the paste road in #1577 slice 4b —
        every refine repaints now, so there is no second flag to need.) */
-    referenceLibraryEnabled: () => true,
     repaintEngine,
     readBytes,
   };
@@ -10823,7 +10935,6 @@ describe("a later confirmation rescues a refused carrier", () => {
  * overlap even in principle.
  */
 describe("two read-backs on one render, and whether they wait for each other", () => {
-  const onFlag = { referenceLibraryEnabled: () => true };
   /*
     A TWO-FACET RENDER ASKS THE VERIFIER TWO QUESTIONS, so this answers every
     id it is asked about rather than only the first. The single-result reader
@@ -10892,7 +11003,6 @@ describe("two read-backs on one render, and whether they wait for each other", (
 
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("a fuller cupid's bow, and dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10935,7 +11045,6 @@ describe("two read-backs on one render, and whether they wait for each other", (
 
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("a fuller cupid's bow"),
         interpret: async () => ({
           ok: true as const,
@@ -11121,14 +11230,25 @@ describe("an ink design IS scopable — the door, at the wire", () => {
  * A refine is one long-held mutation: the customer's exposure is the
  * operation's own life — median 121 s, p95 276 s, and 1.7% answered past the
  * observed ~305 s gateway wall, where the socket is gone before the answer
- * exists. Behind `CASTING_REFINE_DISPATCH_SCOPE` the paid half returns a
- * receipt the moment the work is genuinely under way and the outcome arrives on
- * the surface like every other durable fact.
+ * exists. So the paid half returns a receipt the moment the work is genuinely
+ * under way and the outcome arrives on the surface like every other durable
+ * fact.
  *
- * What these arms hold the swap to, and each is a bound rather than a nicety:
+ * ⚠ **IT WAS A SWAP BEHIND `CASTING_REFINE_DISPATCH_SCOPE` AND IT IS NOW THE
+ * ROAD — the flag is RETIRED (#1577 slice D4).** It stood at `all` on
+ * production from 2026-08-25, so nothing was ever on the arm that was removed,
+ * and these arms did not change their verdicts: every one of them used to pin
+ * the flag to `users:1` on its first line, and that line is simply gone. **What
+ * replaced the suite's first arm is the retirement's own discriminator** — with
+ * no variable set anywhere, a caller that says nothing gets a receipt. That arm
+ * was written and DRIVEN RED against the pre-cut tree before a line of
+ * production code moved.
  *
- *   1. flag OFF is today's product, byte for byte — the held path stays
- *      reachable at every moment, so a park mid-item leaves a working thing;
+ * What these arms hold the road to, and each is a bound rather than a nicety:
+ *
+ *   1. the held path stays reachable — not for a customer any more, but for a
+ *      caller that says `cannotTakeAReceipt` (#2560), which is the door the
+ *      retirement waited on;
  *   2. the receipt arrives BEFORE the render, proven by holding the render on a
  *      latch the test opens itself — a receipt that merely arrives is a receipt
  *      that might have waited;
@@ -11158,24 +11278,75 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
   });
 
   afterEach(() => {
-    delete process.env.CASTING_REFINE_DISPATCH_SCOPE;
     delete process.env.CASTING_V2_SCOPE;
   });
 
-  it("holds the request while the flag is off — the picture, on the request, as today", async () => {
-    const result = await refineCandidate({ ...greenEyes }, input);
+  it("dispatches with NO dispatch variable set anywhere — the gate is GONE, not merely open", async () => {
+    /*
+      THE DISCRIMINATOR FOR THE RETIREMENT (#1577 slice D4), and it is a
+      before/after arm rather than one more assertion.
 
-    expect(result.kind, "the delivered picture answers the mutation").toBe("rendered");
-    expect(result.variantId).toBeTruthy();
-    expect(landedVariant, "and it had already landed when the request answered").not.toBeNull();
-    expect(ledger.charges).toHaveLength(1);
+      On the tree this slice cut from, an absent variable parsed as `off`, so
+      this exact call HELD — which is what the arm that stood here asserted,
+      and it is the road the 1.7% lost answers came from. Driven at `3e90b4d7`
+      before a line of production code was touched: `expected undefined to be
+      "dispatched"`. So it is proven able to fail against the real tree rather
+      than against a fixture, and it is the line that reddens if anybody ever
+      gives this road a second gate again.
+
+      `CASTING_V2_SCOPE` is still `users:1` from the `beforeEach`, because the
+      ENTRANCE's own door has not moved. What moved is that nothing asks a
+      second question behind it.
+
+      ⚠ IT IS SHAPED LIKE THE `cannotTakeAReceipt` ARM BELOW AND FOR THAT ARM'S
+      REASON. Awaiting the call directly would deadlock against a shut latch on
+      the held road, so the before-reading would arrive as a 30-second timeout —
+      true, but a timeout says only that something did not finish. Starting the
+      call and reading the journal gives the same verdict as a sentence.
+    */
+    expect(
+      process.env.CASTING_REFINE_DISPATCH_SCOPE,
+      "the control: this arm is only about the retired variable if it is really absent",
+    ).toBeUndefined();
+    const render = latch();
+
+    let answered: Answer | null = null;
+    /*
+      ⚠ `cannotTakeAReceipt: false` is spelled out HERE and it is not a
+      contradiction of the arm's own title. The title's "a caller that says
+      nothing" is about the PRODUCT's caller — `routes/castingV2.ts` passes
+      `refineCandidate({}, …)` and says nothing. This FILE is a receipt-blind
+      caller and defaults the field to `true` at its import (the block there
+      records why and what it measured), so an arm about the receipt road has to
+      opt back in. **An explicit `false` is not the same statement as a bag that
+      never mentions the field**, which is what the product passes — so that
+      shape is pinned on its own, in the last arm of this suite, through the
+      UNWRAPPED import.
+    */
+    const pending = refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input)
+      .then((outcome) => { answered = outcome; return outcome; });
+
+    await vi.waitFor(() => expect(journal, "the render reached the latch").toContain("generate"));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(
+      (answered as Answer | null)?.kind,
+      "a caller that says nothing gets a receipt — production's own road, now the only one",
+    ).toBe("dispatched");
+    expect(landedVariant, "the latch is shut, so this was a receipt and not a fast render").toBeNull();
+    expect(ledger.charges, "charged once, before the receipt, exactly as before").toHaveLength(1);
+
+    render.release();
+    await pending;
+    await vi.waitFor(() => expect(landedVariant, "and the picture arrives afterwards").not.toBeNull());
+    expect(ledger.charges, "still one charge").toHaveLength(1);
+    expect(ledger.refunds, "and nothing came back").toHaveLength(0);
   });
 
   it("answers with a receipt BEFORE the render, and the picture lands afterwards", async () => {
-    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
     const render = latch();
 
-    const result = await refineCandidate({ ...greenEyes }, input);
+    const result = await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);
 
     /*
       The latch is still shut at this line, so this is not a fast render — it is
@@ -11195,15 +11366,57 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     expect(ledger.refunds).toHaveLength(0);
   });
 
+  it("⚠ THE DROPPED CLAUSE RIDES THE RECEIPT — the only answer a dispatched customer reads (#2695)", async () => {
+    /*
+      The confession is a fact of the READING, known before the render begins —
+      which is what makes it honest on a receipt, and what makes the receipt the
+      right carrier: on production every paid refine answers this way, the
+      settled result loses the race, and a note composed only at the landing
+      reaches nobody (the inert-on-arrival class `refineOutcomeNote.ts` records).
+      The latch is still shut when the note is asserted, so this is provably the
+      parse's sentence and not a fast render's.
+    */
+    /* The receipt road is asked for on the CALL, as every arm in this suite
+       does since #1577 slice D4 retired the variable this arm used to set. */
+    const render = latch();
+
+    const result = await refineCandidate(
+      {
+        interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }),
+        cannotTakeAReceipt: false,
+      },
+      { ...input, instruction: "make her hair copper red in a studio" },
+    );
+
+    expect(result.kind).toBe("dispatched");
+    expect(result.note, "said before any paint exists").toContain(
+      "The studio part of your ask wasn't changed",
+    );
+
+    render.release();
+    await vi.waitFor(() => expect(landedVariant, "and the picture still lands").not.toBeNull());
+  });
+
+  it("CONTROL — a receipt for a whole-person ask carries no note", async () => {
+    const render = latch();
+
+    const result = await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);
+
+    expect(result.kind).toBe("dispatched");
+    expect(result.note).toBeUndefined();
+
+    render.release();
+    await vi.waitFor(() => expect(landedVariant).not.toBeNull());
+  });
+
   it("lands a background failure DURABLY — on the rows, where the surface reads it", async () => {
-    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
     const render = latch();
     const unhandled: unknown[] = [];
     const watch = (reason: unknown) => unhandled.push(reason);
     process.on("unhandledRejection", watch);
 
     try {
-      const result = await refineCandidate({ ...greenEyes }, input);
+      const result = await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);
       expect(result.kind).toBe("dispatched");
 
       engineThrows = new Error("the paint never came back");
@@ -11222,11 +11435,10 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
   });
 
   it("logs the census at SETTLEMENT, carrying the render's wall clock and not the receipt's", async () => {
-    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
     const render = latch();
 
     const started = Date.now();
-    await refineCandidate({ ...greenEyes }, input);
+    await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);
     expect(censusLines(), "nothing is priced while the render is still running").toHaveLength(0);
 
     await new Promise((resolve) => setTimeout(resolve, 60));
@@ -11260,14 +11472,13 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
       disappearance — so this arm asserts the RECORD. Deleting the catch reddens
       it and nothing else.
     */
-    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
     const render = latch();
     const unhandled: unknown[] = [];
     const watch = (reason: unknown) => unhandled.push(reason);
     process.on("unhandledRejection", watch);
 
     try {
-      const result = await refineCandidate({ ...greenEyes }, input);
+      const result = await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);
       expect(result.kind).toBe("dispatched");
 
       costLineThrows = true;
@@ -11291,10 +11502,12 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     for, and which of them is the discriminator.
 
     The receipt half is already proven two arms up ("answers with a receipt
-    BEFORE the render"), against this same flag and this same latch, so it is
-    not written a second time. What is new is the HELD road reached without
-    touching the customer switch, and the control that the field is read as
-    `true` rather than as truthy.
+    BEFORE the render"), on this same latch, so it is not written a second time.
+    What is new is the HELD road, and the control that the field is read as
+    `true` rather than as truthy. ⚠ Since #1577 slice D4 retired
+    `CASTING_REFINE_DISPATCH_SCOPE` these two arms are the ONLY thing deciding
+    which road a refine takes, so the discriminator below is the whole fork
+    rather than one gate of two.
 
     ⚠ **NEITHER ARM CAN PASS BY NEVER RUNNING, AND THE FIRST ONE'S CLOCK IS THE
     JOURNAL RATHER THAN A TIMER.** `"generate"` is pushed by the engine mock on
@@ -11304,8 +11517,7 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     contended machine's clock, where a slow sabotaged run answers "still
     waiting" and the arm passes for the wrong reason.
   */
-  it("HOLDS the request for a caller that cannot take a receipt — with the flag ON for this very user", async () => {
-    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
+  it("HOLDS the request for a caller that cannot take a receipt — the one road left that does", async () => {
     const render = latch();
 
     let answered = false;
@@ -11337,8 +11549,52 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     expect(ledger.refunds, "and nothing came back").toHaveLength(0);
   });
 
+  it("⚠ dispatches for a bag that never mentions the field — the shape the PRODUCT passes", async () => {
+    /*
+      THE PRODUCTION SHAPE, AND THE ONLY ARM IN THIS FILE THAT CAN HOLD IT.
+
+      `server/routes/castingV2.ts` calls `refineCandidate({}, …)`: the one
+      production caller says nothing about receipts, and after slice D4 that is
+      the whole of what decides its road. Every other arm here goes through this
+      file's wrapper, which puts `cannotTakeAReceipt: true` in FIRST — so a bag
+      that merely omits the field is a shape the wrapper can no longer express,
+      and an arm spelling `false` proves something weaker.
+
+      So this one calls `refineCandidateRaw` — the unwrapped import — with a bag
+      carrying the engine mock and NOTHING else. If a future change makes the
+      product's empty bag take the held road, this is the line that reddens and
+      no other one in the file will.
+    */
+    const render = latch();
+
+    /*
+      Shaped like the discriminator above rather than awaiting the call, for its
+      reason, which was measured on this very arm: awaiting it deadlocks against
+      a shut latch on the held road, so the sabotage that proves this arm can
+      fail arrived as a 30-second timeout instead of a sentence. Reading the
+      journal gives the same verdict in 70 ms and names it.
+    */
+    let answered: Answer | null = null;
+    const pending = refineCandidateRaw({ ...greenEyes }, input)
+      .then((outcome) => { answered = outcome; return outcome; });
+
+    await vi.waitFor(() => expect(journal, "the render reached the latch").toContain("generate"));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(
+      (answered as Answer | null)?.kind,
+      "a dependency bag that says nothing about receipts dispatches, as the procedure's does",
+    ).toBe("dispatched");
+    expect(landedVariant, "the latch is shut, so this was a receipt and not a fast render").toBeNull();
+    expect(ledger.charges, "charged once, before the receipt").toHaveLength(1);
+
+    render.release();
+    await pending;
+    await vi.waitFor(() => expect(landedVariant, "and the picture lands afterwards").not.toBeNull());
+    expect(ledger.refunds).toHaveLength(0);
+  });
+
   it("still dispatches when the caller says it CAN take one — the field is read as `true`, never as truthy", async () => {
-    process.env.CASTING_REFINE_DISPATCH_SCOPE = "users:1";
     const render = latch();
 
     const result = await refineCandidate({ ...greenEyes, cannotTakeAReceipt: false }, input);
@@ -15954,7 +16210,6 @@ describe("one current description rides the paid refine", () => {
     readBytes: async (key: string) => (key === "casting-v2/candidates/abc.png"
       ? { bytes: TINY_MASTER_PNG, contentType: "image/png" }
       : { bytes: Buffer.from(`crop:${key}`), contentType: "image/png" }),
-    referenceLibraryEnabled: () => true,
     interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "hair down" } } }),
     readBaseWorn: async () => ({
       compiledBrief: null,

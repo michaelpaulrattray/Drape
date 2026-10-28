@@ -81,7 +81,6 @@ import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import {
   captureCastingFaceScanEnabled,
   captureCastingScanTableEnabled,
-  captureCastingReferenceLibraryEnabled,
 } from "../castingV2/castingV2Scope";
 import {
   panelScanOf,
@@ -2710,17 +2709,25 @@ export const castingV2Router = router({
    * retired that store, and the client had already superseded the panel: the
    * sheet dropped v1's rows on the floor whenever this one answered.
    *
-   * **Gated on `CASTING_REFERENCE_LIBRARY_SCOPE`.** The flag governs whether
-   * rows are written; a panel over an empty library would be a list of every
-   * feature with nothing said about any of them, which is true and useless. Off,
-   * this returns an empty panel — and with v1 gone that is now a face holding
-   * NOTHING on screen rather than a fallback to the older list.
+   * ⚠ **IT HAS NO FLAG OF ITS OWN ANY MORE — #1577 slice D5.** It was gated on
+   * `CASTING_REFERENCE_LIBRARY_SCOPE`, which governed whether library rows were
+   * written at all: off, this returned `enabled: false` with no rows, and with
+   * v1 gone that was a face holding NOTHING on screen rather than a fallback to
+   * the older list. That flag stood at `all` in production from 2026-08-24 — it
+   * rode with the repaint road, which carries features by crop and cannot work
+   * without it — so the dark branch described a configuration production did
+   * not have, and his word of 2026-10-15 retired the switch. The panel is now
+   * open to every account `requireCastingV2` lets through, two statements below.
    *
-   * ⚠ **The clause above read *"which is unset everywhere"* until 2026-08-24
-   * and the flag is `all` in production** — it rode with the repaint road, which
-   * carries features by crop and cannot work without it. So this panel is live
-   * for every account, and the empty-panel branch describes a configuration
-   * production does not have.
+   * ⚠ **`enabled` STAYS ON THE WIRE AS A CONSTANT `true` RATHER THAN COMING
+   * OFF IT, and that is deliberate on two counts.** `faceScan` beside this one
+   * still has a real dark branch (`CASTING_FACE_SCAN_SCOPE` survives, band E of
+   * the ghost audit), and the two payloads are the same shape ON PURPOSE — a
+   * field on only one of them puts panel logic in the browser. And the client
+   * reads it (`CastingSheet.tsx`: `face.data?.enabled ? face.data : null`), so
+   * dropping it in a server-only merge would blank the panel for every customer
+   * still holding the old bundle. Production deploys on merge; #1698 is the
+   * lesson.
    *
    * Ownership is proved inside the statements that read (invariant 1):
    * `resolveOwnedCandidateId`, `listCandidateVariants` and
@@ -2731,9 +2738,6 @@ export const castingV2Router = router({
     .query(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
-      if (!captureCastingReferenceLibraryEnabled(ctx.user.id)) {
-        return { enabled: false as const, scanning: false, possessive: "their", groups: [] };
-      }
 
       const face = await readOwnedFaceForPanel(ctx.user.id, input);
       /*
@@ -2831,7 +2835,14 @@ export const castingV2Router = router({
     .query(async ({ ctx, input }) => {
       requireCastingV2(ctx.user.id);
       enforceRateLimit(ctx.user.id, RATE_LIMITS.castingRead);
-      if (!captureCastingReferenceLibraryEnabled(ctx.user.id) || !captureCastingFaceScanEnabled(ctx.user.id)) {
+      /* ⚠ The library's own flag was the first half of this condition until
+         #1577 slice D5 retired it. The scan's flag survives (band E of the
+         ghost audit — a scan SPENDS house money, so widening it is his), and
+         `captureCastingFaceScanEnabled` is itself an AND ending in
+         `captureCastingV2Enabled`, which is what the library's predicate ended
+         in too. So this answers exactly what it answered for every position
+         production has ever held. */
+      if (!captureCastingFaceScanEnabled(ctx.user.id)) {
         /* `done` on the dark answer too, so the client's "is it still reading"
            question has one shape whatever the flags say — a field that exists
            on only one branch is read as `undefined` and polls forever. */
