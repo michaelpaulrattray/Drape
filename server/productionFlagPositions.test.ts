@@ -45,10 +45,11 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { FLAG_CATALOGUE, flagCatalogue } from "../scripts/lib/lawText.mts";
+import { FLAG_CATALOGUE, flagCatalogue, statedFlagPositions } from "../scripts/lib/lawText.mts";
 
 import {
   PRODUCTION_FLAG_POSITIONS,
+  compareCatalogueToRecord,
   comparePositions,
   parseVariableLines,
   positionIsLegal,
@@ -465,5 +466,182 @@ describe("the flag catalogue and the table do not drift apart", () => {
     expect(claude.length).toBeGreaterThan(50_000);
     expect(claude, "the flag section itself").toContain("CASTING_INK_WORDS_SCOPE");
     expect(claude, "the corrections that retired those two sentences").toContain("fable-1400");
+  });
+});
+
+describe("⚠ #2747 — every catalogue entry that states a position states the right one", () => {
+  /*
+    THE DERIVED READING THAT REPLACES THE FLOOR ABOVE.
+
+    The arm above pins TWO named sentences and its own docblock says what that
+    costs: *"a third stale sentence in some other paragraph is still invisible,
+    and saying so is the honest floor."* That floor was honest, and it was also
+    where SIX live mistakes were sitting when somebody finally looked.
+
+    Five were found by #2697's sweep on 2026-10-28 and corrected in PR #2746 —
+    `CASTING_CURRENT_DESCRIPTION_SCOPE` and `CASTING_OUTFIT_EDIT_SCOPE` saying
+    UNSET while his own hand had set both to `users:1`, `CASTING_VOICE_SCOPE`
+    saying unset for 14 days, and `CASTING_RETRY_SCOPE` and
+    `CASTING_CONCEPT_UPLOAD_SCOPE` saying `users:1` for **34 days** about roads
+    his switch sitting had opened to everyone. Four of the five were wrong in
+    the direction that HIDES a live road.
+
+    ⚠ **The sixth was found by this arm, on the tree AFTER those corrections,
+    and it is the reason the arm is not merely a regression test for #2746.**
+    `CASTING_CREATIVE_REGISTER_SCOPE` is RETIRED and its variable is off the
+    service, and the tail of its 24,000-character entry still read
+    `Production: users:1 … It widens on his eye at the milestone gate and not
+    before`. #2697's sweep could not see it: that sweep compared entries the
+    record carries a ROW for, and a retired flag has none. It is struck in the
+    catalogue by the same commit as this arm.
+  */
+  const catalogue = flagCatalogue(repoRoot);
+
+  it("⚠ CONTROL — the reader found a real population, in both of its halves", () => {
+    /* FIRST, because every assertion below is vacuously true over an empty
+       read. A moved file, a renamed heading or a broken anchor all produce the
+       same clean pass otherwise — #330 moved this very catalogue once already.
+       These are FLOORS and not literals on purpose: a literal count pins the
+       fixture and goes red for a reason that is not the claim. */
+    const { stating, silent } = compareCatalogueToRecord(catalogue);
+    expect(catalogue.length, FLAG_CATALOGUE).toBeGreaterThan(50_000);
+    expect(stating.length + silent.length, "entries the bullet anchor found").toBeGreaterThan(30);
+    expect(stating.length, "entries stating a position — the population under test").toBeGreaterThan(10);
+    expect(silent.length, "entries stating nothing — the declared remainder").toBeGreaterThan(10);
+  });
+
+  it("agrees with the record the deploy rite enforces", () => {
+    const { drift } = compareCatalogueToRecord(catalogue);
+    expect(drift.join("\n"), `${FLAG_CATALOGUE} has drifted from the record`).toBe("");
+  });
+
+  it("⚠ CONTROL — it reddens when an entry's stated position is wrong, and names the flag", () => {
+    /* THE FIRING CONTROL, and it is the only one that separates a careful
+       reader from an inert one: the four arms around it all pass unchanged
+       under a reader that nominates nothing. The fixture drives the SHIPPED
+       function with a substituted record, rather than re-reading the catalogue
+       by a shorter road of its own. */
+    const sabotaged = catalogue.replace(
+      "**Production: `all` — WIDENED 2026-09-24 ON HIS CREW REPLY #204**",
+      "**Production: `users:1` — WIDENED 2026-09-24 ON HIS CREW REPLY #204**",
+    );
+    expect(sabotaged, "the anchor this control flips must exist exactly once").not.toBe(catalogue);
+    expect(catalogue.split("**Production: `all` — WIDENED 2026-09-24 ON HIS CREW REPLY #204**").length - 1).toBe(1);
+
+    const { drift } = compareCatalogueToRecord(sabotaged);
+    expect(drift).toHaveLength(1);
+    expect(drift[0]).toContain("CASTING_RETRY_SCOPE");
+    expect(drift[0], "the position the prose now claims").toContain("`users:1`");
+    expect(drift[0], "the position the record holds").toContain("`all`");
+    expect(drift[0], "where to go and fix it").toContain(`${FLAG_CATALOGUE}:`);
+  });
+
+  it("⚠ CONTROL — a QUOTATION of a retired position is not a declaration", () => {
+    /* TRAP 2, and it has now been paid three times in this repository: the
+       forbidden-sentence arm above learned it by failing on its own first run,
+       the standing orders' quiet-shift detector strips fences and quotes for
+       the same reason, and the naive last-stated-position draft of THIS reader
+       called a correct repair a mismatch — because a corrected entry states the
+       right position and then quotes the wrong one.
+
+       Both orderings are in the real file, so both are driven here: the
+       quotation BEFORE the declaration and the declaration before it. */
+    const record = { ACME_SCOPE: { position: "all", why: "a fixture" } } as const;
+
+    const quotedThenDeclared = "- `ACME_SCOPE` — this entry said *\"Production: UNSET\"* "
+      + "for eleven days and was corrected today. **Production: `all`** — his word.\n";
+    expect(compareCatalogueToRecord(quotedThenDeclared, record).drift).toEqual([]);
+
+    const declaredThenQuoted = "- `ACME_SCOPE` — **Production: `all`** — his word. "
+      + "This entry said *\"Production: UNSET — the flip is his\"* until today.\n";
+    expect(compareCatalogueToRecord(declaredThenQuoted, record).drift).toEqual([]);
+
+    /* And the struck form, which is how this catalogue retires a position it
+       once held rather than deleting it. */
+    const struck = "- `ACME_SCOPE` — ~~**Production: unset, `off`** — built dark~~ "
+      + "(read until today). **Production: `all`** — his word.\n";
+    expect(compareCatalogueToRecord(struck, record).drift).toEqual([]);
+
+    /* ⚠ THE CONTROL ON THE CONTROL. All three arms above are satisfied by a
+       reader that strips the whole entry and finds nothing, which is the shape
+       that makes a stripper worse than no stripper. So the same fixtures with
+       the DECLARATION wrong must redden. */
+    const wrong = { ACME_SCOPE: { position: "users:1", why: "a fixture" } } as const;
+    for (const [label, text] of [
+      ["quoted then declared", quotedThenDeclared],
+      ["declared then quoted", declaredThenQuoted],
+      ["struck then declared", struck],
+    ] as const) {
+      const { drift, stating } = compareCatalogueToRecord(text, wrong);
+      expect(stating, `${label}: the declaration must still be READ`).toHaveLength(1);
+      expect(drift, `${label}: and compared`).toHaveLength(1);
+      expect(drift[0]).toContain("ACME_SCOPE");
+    }
+  });
+
+  it("⚠ #2747 — reports an entry stating a position for a flag the record does not carry", () => {
+    /* THE SIXTH FINDING'S OWN SHAPE, kept as an arm because retiring a flag and
+       unsetting its variable are two separate acts and the sentence stating a
+       position outlives both. This is the first direction of this file's own
+       header: *"a paragraph saying `users:1` about a variable that is gone is
+       the same defect as one saying `off` about a variable that is set."* */
+    const orphan = "- `GONE_SCOPE` — ✅ **RETIRED.** Production: `users:1`, and it widens on his eye.\n";
+    const { drift } = compareCatalogueToRecord(orphan, { ACME_SCOPE: { position: "all", why: "a fixture" } });
+    expect(drift).toHaveLength(1);
+    expect(drift[0]).toContain("GONE_SCOPE");
+    expect(drift[0], "it must say the record has no row, not guess a position").toContain("no row");
+  });
+
+  it("⚠ #2747 — refuses to guess when an entry declares TWO positions", () => {
+    /* Picking the last one is exactly the naive reader that called a correct
+       repair a mismatch. An entry whose declaration cannot be read is a finding
+       about the entry, so it is reported rather than resolved. */
+    const twoFaced = "- `ACME_SCOPE` — **Production: `all`** — his word. Later: **Production: `off`**.\n";
+    const { drift } = compareCatalogueToRecord(twoFaced, { ACME_SCOPE: { position: "all", why: "a fixture" } });
+    expect(drift).toHaveLength(1);
+    expect(drift[0]).toContain("ACME_SCOPE");
+    expect(drift[0], "and it says what to do about it").toMatch(/cannot be read/);
+  });
+
+  it("⚠ CONTROL — the anchor is the entry's own bullet, never the name's first mention", () => {
+    /* TRAP 1, measured when this was built: the unanchored draft read
+       `CASTING_OUTFIT_EDIT_SCOPE`'s position off a NEIGHBOUR's line and missed
+       `CASTING_CONCEPT_UPLOAD_SCOPE` entirely — noisy and silent at once. A
+       flag is named inside other flags' entries constantly, and in the real
+       catalogue `CASTING_CREATIVE_REGISTER_SCOPE` is named inside
+       `CASTING_BRIEF_FIDELITY_SCOPE`'s entry, one bullet above its own. */
+    const record = { ACME_SCOPE: { position: "all", why: "a fixture" } } as const;
+    const crossReferenced = "- `OTHER_SCOPE` — its parent is `ACME_SCOPE`. **Production: `off`**.\n"
+      + "- `ACME_SCOPE` — **Production: `all`** — his word.\n";
+    const { drift, stating } = compareCatalogueToRecord(crossReferenced, record);
+    expect(stating.map((entry) => entry.name)).toEqual(["OTHER_SCOPE", "ACME_SCOPE"]);
+    expect(stating.find((entry) => entry.name === "ACME_SCOPE")?.stated).toEqual(["all"]);
+    /* `OTHER_SCOPE` has no row, so it reports as an orphan — which proves the
+       two entries were read separately rather than as one blob. */
+    expect(drift).toHaveLength(1);
+    expect(drift[0]).toContain("OTHER_SCOPE");
+  });
+
+  it("⚠ CONTROL — the stripper never blinds itself on a flag the record governs", () => {
+    /* The stated limit of `withoutMarkedHistory` is that a quoted span is
+       bounded at 400 characters, so an UNPAIRED quote blanks up to 400
+       characters after itself. That bound is what stops one stray quote
+       swallowing a whole entry; what it cannot do is tell an unpaired quote
+       from an open one.
+
+       This is the non-circular assertion that keeps it honest: if an entry's
+       RAW text states a position and the stripper removes every one of them,
+       the guard has gone silently blind — and that is only acceptable where the
+       record carries no row, which is a retired flag whose whole statement is
+       history by construction. */
+    const blinded = statedFlagPositions(catalogue).filter(
+      (entry) => entry.rawStatements > 0
+        && entry.stated.length === 0
+        && entry.name in PRODUCTION_FLAG_POSITIONS,
+    );
+    expect(
+      blinded.map((entry) => `${entry.name} (${FLAG_CATALOGUE}:${entry.line})`),
+      "entries the stripper silenced on a flag the record still governs",
+    ).toEqual([]);
   });
 });
