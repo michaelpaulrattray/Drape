@@ -928,6 +928,14 @@ squash below was proven an ancestor of **that build** with
 `git merge-base --is-ancestor`, not merely present on `main`: a merged PR has not
 shipped until the process serving traffic carries it (#296).
 
+⚠ **And the build moved while this section was being written, which is the
+ordinary case rather than a problem**: PR #2737 merged and production was serving
+`cc1eba398` by 02:06:42Z. **All eleven were re-proven against that build too**, and
+they hold for the structural reason rather than by luck — `cc1eba398` is a
+descendant of `3849af1dd`, so nothing an ancestry proof says here can be undone by
+a later deploy. The reading above keeps its own timestamp, because a claim about a
+serving build is only ever true at a time.
+
 | slice | card | merged as | at (UTC) | what it took |
 |---|---|---|---|---|
 | opening act | #2534 | `b04b62a8e` (PR #2534) | 2026-10-15 07:37 | **no code.** The population, its readers and a proposed fate for each — the card's first done-when line |
