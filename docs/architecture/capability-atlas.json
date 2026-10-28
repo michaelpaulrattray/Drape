@@ -10,8 +10,8 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:705",
-          "server/castingV2/refineDelta.ts:705"
+          "server/castingV2/refineDelta.ts:813",
+          "server/castingV2/refineDelta.ts:813"
         ]
       },
       {
@@ -21,8 +21,8 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:719",
-          "server/castingV2/refineDelta.ts:719"
+          "server/castingV2/refineDelta.ts:827",
+          "server/castingV2/refineDelta.ts:827"
         ]
       },
       {
@@ -182,9 +182,9 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:687",
+          "server/castingV2/refineDelta.ts:795",
           "server/castingV2/refineInterpreter.ts:1039",
-          "server/castingV2/refineDelta.ts:687"
+          "server/castingV2/refineDelta.ts:795"
         ]
       },
       {
@@ -196,10 +196,10 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:632",
-          "server/castingV2/refineDelta.ts:632",
-          "server/castingV2/refineDelta.ts:1834",
-          "server/castingV2/refineDelta.ts:1834",
+          "server/castingV2/refineDelta.ts:740",
+          "server/castingV2/refineDelta.ts:740",
+          "server/castingV2/refineDelta.ts:2002",
+          "server/castingV2/refineDelta.ts:2002",
           "server/castingV2/refineService.ts:2617"
         ]
       },
@@ -212,11 +212,11 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:598",
-          "server/castingV2/refineDelta.ts:598",
-          "server/castingV2/refineDelta.ts:1843",
-          "server/castingV2/refineDelta.ts:1843",
-          "server/castingV2/refineDelta.ts:598"
+          "server/castingV2/refineDelta.ts:706",
+          "server/castingV2/refineDelta.ts:706",
+          "server/castingV2/refineDelta.ts:2011",
+          "server/castingV2/refineDelta.ts:2011",
+          "server/castingV2/refineDelta.ts:706"
         ]
       },
       {
@@ -228,10 +228,10 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:605",
-          "server/castingV2/refineDelta.ts:605",
-          "server/castingV2/refineDelta.ts:1811",
-          "server/castingV2/refineDelta.ts:1811",
+          "server/castingV2/refineDelta.ts:713",
+          "server/castingV2/refineDelta.ts:713",
+          "server/castingV2/refineDelta.ts:1979",
+          "server/castingV2/refineDelta.ts:1979",
           "server/castingV2/refineService.ts:2616",
           "server/castingV2/refineService.ts:2628"
         ]
@@ -243,11 +243,11 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:624",
-          "server/castingV2/refineDelta.ts:624",
-          "server/castingV2/refineDelta.ts:1826",
-          "server/castingV2/refineDelta.ts:1826",
-          "server/castingV2/refineDelta.ts:624"
+          "server/castingV2/refineDelta.ts:732",
+          "server/castingV2/refineDelta.ts:732",
+          "server/castingV2/refineDelta.ts:1994",
+          "server/castingV2/refineDelta.ts:1994",
+          "server/castingV2/refineDelta.ts:732"
         ]
       },
       {
@@ -388,10 +388,10 @@
           "server/castingV2/readerOutageRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:686",
+          "server/castingV2/refineDelta.ts:794",
           "server/castingV2/refineInterpreter.ts:1060",
-          "server/castingV2/refineInterpreter.ts:1169",
-          "server/castingV2/refineDelta.ts:686"
+          "server/castingV2/refineInterpreter.ts:1245",
+          "server/castingV2/refineDelta.ts:794"
         ]
       },
       {
@@ -402,9 +402,9 @@
           "server/castingV2/refineInterpreterCeiling.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:661",
-          "server/castingV2/refineInterpreter.ts:1176",
-          "server/castingV2/refineDelta.ts:661"
+          "server/castingV2/refineDelta.ts:769",
+          "server/castingV2/refineInterpreter.ts:1252",
+          "server/castingV2/refineDelta.ts:769"
         ]
       },
       {
@@ -693,6 +693,7 @@
           "server/castingV2/makeupFromReference.test.ts",
           "server/castingV2/openLaneAccept.test.ts",
           "server/castingV2/openLaneKind.test.ts",
+          "server/castingV2/overlongValueRefusal.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
           "server/castingV2/refineService.test.ts"
         ],
@@ -710,9 +711,9 @@
           "server/castingV2/openLaneKind.ts:256",
           "server/castingV2/openLaneKind.ts:325",
           "server/castingV2/openLaneKind.ts:326",
-          "server/castingV2/refineDelta.ts:638",
-          "server/castingV2/refineInterpreter.ts:1178",
-          "server/castingV2/refineDelta.ts:638"
+          "server/castingV2/refineDelta.ts:746",
+          "server/castingV2/refineInterpreter.ts:1254",
+          "server/castingV2/refineDelta.ts:746"
         ]
       },
       {
@@ -784,6 +785,7 @@
         "kind": "interpreter-refusal",
         "pinnedBy": [
           "server/castingV2/colourContextDoor.test.ts",
+          "server/castingV2/overlongValueRefusal.test.ts",
           "server/castingV2/priorContextDoor.test.ts",
           "server/castingV2/referenceWordsLane.test.ts",
           "server/castingV2/refineRefusals.test.ts",
@@ -792,7 +794,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:558",
-          "server/castingV2/refineInterpreter.ts:1833",
+          "server/castingV2/refineInterpreter.ts:1909",
           "server/castingV2/refineDelta.ts:558"
         ]
       },
@@ -809,8 +811,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:499",
-          "server/castingV2/refineDelta.ts:1862",
-          "server/castingV2/refineInterpreter.ts:1831",
+          "server/castingV2/refineDelta.ts:2030",
+          "server/castingV2/refineInterpreter.ts:1907",
           "server/castingV2/refineDelta.ts:499"
         ]
       },
@@ -831,9 +833,23 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:533",
-          "server/castingV2/refineDelta.ts:1886",
-          "server/castingV2/refineInterpreter.ts:1936",
+          "server/castingV2/refineDelta.ts:2054",
+          "server/castingV2/refineInterpreter.ts:2012",
           "server/castingV2/refineDelta.ts:533"
+        ]
+      },
+      {
+        "id": "wall_too_long",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/overlongValueRefusal.test.ts",
+          "server/castingV2/refineDelta.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/refineDelta.ts:677",
+          "server/castingV2/refineDelta.ts:1672",
+          "server/castingV2/refineDelta.ts:1831",
+          "server/castingV2/refineDelta.ts:677"
         ]
       },
       {
@@ -846,7 +862,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:557",
-          "server/castingV2/refineInterpreter.ts:1943",
+          "server/castingV2/refineInterpreter.ts:2019",
           "server/castingV2/refineDelta.ts:557"
         ]
       },
@@ -865,8 +881,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:569",
-          "server/castingV2/refineDelta.ts:1587",
-          "server/castingV2/refineDelta.ts:1943",
+          "server/castingV2/refineDelta.ts:1720",
+          "server/castingV2/refineDelta.ts:2111",
           "server/castingV2/refineDelta.ts:569"
         ]
       },
@@ -2300,6 +2316,13 @@
         "message": "no corpus row reaches it: answers a replay marker naming a version that is not the predecessor — request shape — a row could reach it via: pinned by its C5 service arm"
       },
       {
+        "id": "documented:wall_too_long",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "wall_too_long",
+        "message": "no corpus row reaches it: answers a reply carrying one free-lane value, or the makeup value, longer than that subject's own cap (`FREE_SUBJECT_MAX_LENGTH`, else `MAX_FREE_LENGTH`; `MAX_MAKEUP_LENGTH` for makeup). Before #2714 this state set no wall at all: the whole delta nulled and it was delivered in `unreadable`'s words - telling somebody their clear sentence did not come through and advising them to do what they had just done. The LENGTH is a property of our own reply, so the door is ours rather than the picture or the phrasing - and for that same reason the interpreter still takes all three samplings before answering here, discarding this wall on attempts 1 and 2, because the next sampling of the same sentence may fit within the cap (the relay's finding on PR #2732). What #2714 changed is the SENTENCE, not the sampling count — a row could reach it via: deliberately never as a corpus row - the trigger is how long the model rendered its answer, so a fixture sentence probes the model rather than pinning the door. Its pin is `server/castingV2/overlongValueRefusal.test.ts`, which drives BOTH sites (the free lane and the makeup slot) through the real interpreter, including the two arms this door's cost turns on - a first-sampling-long, second-sampling-short ask must be SERVED, and three long samplings must answer in this door's words - each with a sabotage that names the arm it reddens"
+      },
+      {
         "id": "documented:whichInkToChange",
         "severity": "info",
         "kind": "documented-unreachable",
@@ -3488,6 +3511,13 @@
       "kind": "documented-unreachable",
       "subject": "version_missing",
       "message": "no corpus row reaches it: answers a replay marker naming a version that is not the predecessor — request shape — a row could reach it via: pinned by its C5 service arm"
+    },
+    {
+      "id": "documented:wall_too_long",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "wall_too_long",
+      "message": "no corpus row reaches it: answers a reply carrying one free-lane value, or the makeup value, longer than that subject's own cap (`FREE_SUBJECT_MAX_LENGTH`, else `MAX_FREE_LENGTH`; `MAX_MAKEUP_LENGTH` for makeup). Before #2714 this state set no wall at all: the whole delta nulled and it was delivered in `unreadable`'s words - telling somebody their clear sentence did not come through and advising them to do what they had just done. The LENGTH is a property of our own reply, so the door is ours rather than the picture or the phrasing - and for that same reason the interpreter still takes all three samplings before answering here, discarding this wall on attempts 1 and 2, because the next sampling of the same sentence may fit within the cap (the relay's finding on PR #2732). What #2714 changed is the SENTENCE, not the sampling count — a row could reach it via: deliberately never as a corpus row - the trigger is how long the model rendered its answer, so a fixture sentence probes the model rather than pinning the door. Its pin is `server/castingV2/overlongValueRefusal.test.ts`, which drives BOTH sites (the free lane and the makeup slot) through the real interpreter, including the two arms this door's cost turns on - a first-sampling-long, second-sampling-short ask must be SERVED, and three long samplings must answer in this door's words - each with a sabotage that names the arm it reddens"
     },
     {
       "id": "documented:whichInkToChange",

@@ -447,6 +447,21 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
   { id: "removal_uncheckable",
     reason: "needs the removal-verification reader to be unavailable mid-ask — an infrastructure failure state no fixture manufactures honestly",
     becomesReachable: "deliberately never: its pin is its service arm (C5), and manufacturing reader outages in the census would test the harness, not the product" },
+  /*
+    THE DOOR #2714 ADDED, AND IT IS OURS BY CONSTRUCTION — the
+    `concept.ran_long` argument on the refine road, which is why it sits with
+    that family rather than with the request-shape block below.
+
+    The state that reaches it is a value in OUR OWN REPLY longer than the
+    subject's storage cap. The customer's sentence is not the variable: a long
+    ask reaches this door only if the model happens to render it long, and the
+    same ask on the next sampling may file perfectly. So no fixture sentence
+    reaches it deterministically, and a corpus row that tried would be measuring
+    the model's prose length rather than the product.
+  */
+  { id: "wall_too_long",
+    reason: "answers a reply carrying one free-lane value, or the makeup value, longer than that subject's own cap (`FREE_SUBJECT_MAX_LENGTH`, else `MAX_FREE_LENGTH`; `MAX_MAKEUP_LENGTH` for makeup). Before #2714 this state set no wall at all: the whole delta nulled and it was delivered in `unreadable`'s words - telling somebody their clear sentence did not come through and advising them to do what they had just done. The LENGTH is a property of our own reply, so the door is ours rather than the picture or the phrasing - and for that same reason the interpreter still takes all three samplings before answering here, discarding this wall on attempts 1 and 2, because the next sampling of the same sentence may fit within the cap (the relay's finding on PR #2732). What #2714 changed is the SENTENCE, not the sampling count",
+    becomesReachable: "deliberately never as a corpus row - the trigger is how long the model rendered its answer, so a fixture sentence probes the model rather than pinning the door. Its pin is `server/castingV2/overlongValueRefusal.test.ts`, which drives BOTH sites (the free lane and the makeup slot) through the real interpreter, including the two arms this door's cost turns on - a first-sampling-long, second-sampling-short ask must be SERVED, and three long samplings must answer in this door's words - each with a sabotage that names the arm it reddens" },
   /* ── request-shape doors: no SENTENCE constructs these; the request does.
      Each is pinned by C5's driven service arms (opus-980), which is their
      proof — the census documents why a corpus row cannot be one. ── */

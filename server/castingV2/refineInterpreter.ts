@@ -1099,6 +1099,82 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
     const parsed = await runOnce(engine, input, instruction, "interpret", trace);
     if (parsed) {
       /*
+        AN OVER-LONG VALUE IS A FAILED SAMPLING UNTIL THE LAST ONE — the
+        relay's finding on PR #2732, and it is this loop's OWN rule rather
+        than an exception to it.
+
+        # The case this exists to keep serving
+
+        `wall_too_long` fires when ONE value in the reply is longer than the
+        drawer it files into. ⚠ **That length is a property of OUR reply, not
+        of the sentence they typed** — the same ask, sampled again at the same
+        temperature, can come back shorter and file perfectly. The card's own
+        corpus entry says so in as many words: *"a long ask reaches this door
+        only if the model happens to render it long, and the same ask on the
+        next sampling may file perfectly."*
+
+        So before this branch existed, the first sampling's wall ENDED the read
+        (`containReply` returns a set wall ahead of everything, because *a wall
+        is an answer, not a hiccup*) — and every ask whose first sampling ran
+        long and whose second would have fitted was **refused where `main`
+        serves it**. That is the trade PR #2732 made without measuring it, and
+        it is the one this branch is not willing to make.
+
+        # Why THIS wall and no other
+
+        Every other member of the union is a fact about what they ASKED for —
+        words that were not theirs, a stage with nothing behind it, a colour
+        with no feature. Those are identical on the next sampling, so
+        re-sampling them is pure spend for a certain answer. This one is a fact
+        about how verbosely we rendered their ask, which is the only cause in
+        the set that a re-sample can change. A later member of this union is
+        NOT covered by this branch and should not be added to it without the
+        same argument.
+
+        # THE LAST attempt decides, which is already written above
+
+        On attempts 1 and 2 the wall is discarded exactly as an unusable reply
+        is, and the loop re-samples. On attempt 3 it falls through and becomes
+        the answer. Nothing is held across samplings, and that is deliberate:
+        if the last sampling fails some OTHER way — a throw, our token ceiling
+        — the post-loop doors below decide, and the customer hears about that
+        failure instead. A wall remembered from attempt 1 would outrank a live
+        outage at attempt 3, which is the mixed-run coin this loop's own
+        paragraph refuses to flip.
+
+        # What it costs, said out loud (the disappearing-technology law, 3)
+
+        Up to two extra text samplings — a few cents of house money, no
+        customer credit either way, since this road refuses free. What they buy
+        is a chance of serving an ordinary paid edit that would otherwise be
+        refused. A refused edit the product could have done is the costlier
+        side of that trade, and the persistent case now costs exactly what it
+        costs on `main` (three samplings) with a TRUE sentence at the end of it
+        instead of *"didn't come through clearly"*.
+
+        # Not recorded on `trace`, and the reason is the three doors below
+
+        `trace.last` is a `ReadFailure` and is read by exact comparison at
+        three post-loop doors (`account` → `reader_down`, `threw`/`truncated` →
+        `reader_outage`, anything else → `unreadable`). A fourth member would
+        need a deliberate answer at each of them, and it could never be the
+        value there anyway — a wall on the last attempt returns from inside the
+        loop. So the fact goes in the operator log, where the diagnosis
+        actually reads it, and the type keeps meaning what it says.
+      */
+      if (!parsed.ok && parsed.refusal.reason === "wall_too_long" && attempt < 3) {
+        log.warn(
+          {
+            attempt,
+            asked: parsed.refusal.asked,
+            length: parsed.refusal.length,
+            limit: parsed.refusal.limit,
+          },
+          "[refineInterpreter] the reply ran longer than that subject stores — re-sampling",
+        );
+        continue;
+      }
+      /*
         THE ECHO PASS (D-172) — only the user's words are ever filed.
 
         Four honest instructions have now been refused because the INTERPRETER
