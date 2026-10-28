@@ -646,8 +646,8 @@ the live service on every push.
 | `CASTING_V2_SCOPE` | the whole `castingV2.*` namespace — the root of every scope chain below, and spendable surface |
 | `CASTING_SEGMENTS_SCOPE` | the segment store (segment permanence) — ✅ RETIRED (#1160); the variable is off the service |
 | `CASTING_SEGMENTS_DELIVERED_SCOPE` | cutting a segment from the delivered frame's own extent rather than the master's — ✅ RETIRED with its parent (#1160) |
-| `CASTING_REFERENCE_LIBRARY_SCOPE` | the reference library's own switch — ✅ RETIRED (#1577 slice D5, the last of the six); the variable leaves the service with that merge |
-| `CASTING_REPAINT_SCOPE` | the compositor swap itself — ✅ RETIRED (#1577 slice 4b); every refine repaints, and the variable leaves the service with that merge |
+| `CASTING_REFERENCE_LIBRARY_SCOPE` | the reference library's own switch — ✅ RETIRED (#1577 slice D5, the last of the six); the variable came off after the deploy |
+| `CASTING_REPAINT_SCOPE` | the compositor swap itself — ✅ RETIRED (#1577 slice 4b); every refine repaints, and the variable came off after the deploy |
 | `CASTING_SIDE_PHRASING_SCOPE` | whether a per-side ask also says where that side is — ✅ RETIRED (#1577 slice D2); every ask says it now |
 | `CASTING_FACE_SCAN_SCOPE` | the face panel's auto-scan |
 | `CASTING_SCAN_TABLE_SCOPE` | whether a finished scan is kept |

@@ -161,9 +161,11 @@ describe("the reference library's flag is retired (#1577 slice D5)", () => {
       variable reports a healthy position for a feature that does not exist; and
       `comparePositions` reports a governed variable with NO row, so the row
       cannot simply be dropped early either. The variable is deleted from the
-      service in the same act as the MERGE of this row — and between the merge
-      and the deletion the rite reports exactly one mismatch naming it, by
-      design, which the retirement record says in capitals.
+      service AFTER the code DEPLOYS and never in the same act as the merge of
+      this row (`scripts/lib/productionFlagPositions.mts` is the
+      authority and says it once) — and between the merge and the deletion the
+      rite reports exactly one mismatch naming it, by design, which the
+      retirement record says in capitals.
     */
     expect(Object.keys(PRODUCTION_FLAG_POSITIONS)).not.toContain(RETIRED);
   });

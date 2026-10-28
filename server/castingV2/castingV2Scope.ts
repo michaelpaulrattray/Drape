@@ -172,11 +172,12 @@ export function captureCastingV2Enabled(userId: number): boolean {
  a working negative control on the night it came out, so its OFF arm had been
  reached by no account for two months. **His word retiring it, 2026-10-15,
  verbatim and entire: _"yes approve the plan and switch off the six settings"_.**
- The code stops reading the variable in this commit and the variable leaves the
- service in the same act as the merge — in that order, and the other order is
- the expensive one: with the old build still serving, an absent variable parses
- as `off`, which would blank the face panel for every customer and stop every
- refine carrying the cast's own features.
+ The code stopped reading the variable in this commit and the variable came off
+ the service AFTER that code DEPLOYED — never in the same act as the merge
+ (`scripts/lib/productionFlagPositions.mts` is the authority and says it
+ once). The other order is the expensive one: with the old build still serving,
+ an absent variable parses as `off`, which would have blanked the face panel for
+ every customer and stopped every refine carrying the cast's own features.
 
  # THE LIBRARY IS LIVE AND IS NOT WHAT RETIRED
 
