@@ -1452,3 +1452,108 @@ describe("a found row — what the reading saw and the catalogue cannot name", (
     expect(panelOut.groups.find((group) => group.group === "open")).toBeUndefined();
   });
 });
+
+/**
+ * THE LOADER NAMES NOTHING NOBODY HAS SEEN — #2566 slice 3.
+ *
+ * His word on the first look at the discovery panel, verbatim: *"loader is
+ * still showing the default list"*. While a reading ran, the panel drew one
+ * placeholder row per catalogue entry — Eyes, Brows, Horns, Nose stud — over a
+ * cast that had several of those and not others. On the discovery road the
+ * named grace is not drawn; the panel says `pendingUnnamed` and the browser
+ * keeps the places without names.
+ *
+ * ⚠ The positive control comes first and every arm after it is the same input
+ * with one field changed, so an arm that passes cannot be passing because the
+ * fixture drew no placeholders to begin with.
+ */
+describe("the loader names nothing nobody has seen", () => {
+  const frame = { width: 1000, height: 1500 };
+  const reading = (over: { scanning?: boolean; discovering?: boolean; rows?: StoredReference[] } = {}) => facePanel({
+    rows: over.rows ?? [],
+    pronouns: SHE,
+    contentUrl: (key) => `https://bucket.example/${key}`,
+    maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+    /* A part-answered reading: the nose has landed with its picture, one found
+       thing has landed, and nothing else has answered yet. */
+    scan: {
+      frameUrl: "https://bucket.example/casting/master.jpg",
+      slots: new Map([["nose", {
+        box: { x: 400, y: 600, width: 120, height: 160, frame },
+        maskUrl: "data:image/png;base64,nose",
+      }]]),
+      discovered: [{
+        slot: "discovered:neck-tattoo#1",
+        noun: "neck tattoo",
+        instance: 1,
+        box: { x: 420, y: 900, width: 90, height: 70, frame },
+        maskUrl: "data:image/png;base64,neck",
+      }],
+    },
+    ...(over.scanning === undefined ? {} : { scanning: over.scanning }),
+    ...(over.discovering === undefined ? {} : { discovering: over.discovering }),
+  });
+  const rowsOf = (built: ReturnType<typeof facePanel>) => built.groups.flatMap((group) => group.rows);
+
+  it("⚠ POSITIVE CONTROL — off the discovery road the reading keeps NAMED places", () => {
+    /* Without this arm every one below passes against a fixture that could
+       never draw a placeholder at all. */
+    const built = reading({ scanning: true });
+    const pending = rowsOf(built).filter((row) => row.state === "pending");
+    expect(pending.length, "the catalogue road drew no placeholder rows to take away").toBeGreaterThan(3);
+    expect(pending.map((row) => row.name)).toContain("Eyes");
+    expect(built.pendingUnnamed).toBe(false);
+  });
+
+  it("on the discovery road, while it reads, no row is a placeholder — and none is named in advance", () => {
+    const built = reading({ scanning: true, discovering: true });
+    const rows = rowsOf(built);
+    expect(rows.filter((row) => row.state === "pending"), "a named placeholder survived on the discovery road").toEqual([]);
+    /* And it says so, so the browser can keep the places without names. */
+    expect(built.pendingUnnamed).toBe(true);
+    /* What is on the panel is exactly what has LANDED, by name. */
+    expect(rows.map((row) => row.name).sort()).toEqual(["Neck tattoo", "Nose"]);
+  });
+
+  it("rows land whole: every row drawn mid-reading is settled and has its picture", () => {
+    const rows = rowsOf(reading({ scanning: true, discovering: true }));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.state, `${row.name} landed as a placeholder`).toBe("settled");
+      expect(row.cutouts.length, `${row.name} landed without its picture`).toBeGreaterThan(0);
+      expect(row.regions.length, `${row.name} landed with nowhere to point`).toBeGreaterThan(0);
+    }
+  });
+
+  it("a row the library already holds stays on screen while the reading runs", () => {
+    /* The panel is INCOMPLETE while it reads, never emptied: what an edit
+       already made is still hers and still tappable. */
+    const rows = rowsOf(reading({
+      scanning: true,
+      discovering: true,
+      rows: [row({ slot: "hair", noun: "hair", words: ["a copper shag"] })],
+    }));
+    const hair = rows.find((one) => one.name === "Hair");
+    expect(hair?.state).toBe("settled");
+    expect(hair?.words).toEqual(["a copper shag"]);
+  });
+
+  it("the unnamed places end when the reading does", () => {
+    /* `pendingUnnamed` is the reading's own state, never the road's: a settled
+       reading on the discovery road keeps no place of either kind. */
+    const built = reading({ scanning: false, discovering: true });
+    expect(built.pendingUnnamed).toBe(false);
+    expect(rowsOf(built).filter((row) => row.state === "pending")).toEqual([]);
+  });
+
+  it("once settled, the discovery road's panel is the catalogue road's — only the loader differs", () => {
+    /* The settled panel must not depend on the flag at all: `discovering`
+       changes what is kept for a reading in flight and nothing about an
+       answer. */
+    expect(reading({ scanning: false, discovering: true })).toEqual(reading({ scanning: false }));
+  });
+
+  it("off the road, `discovering: false` is the panel with no such field — today's panel exactly", () => {
+    expect(reading({ scanning: true, discovering: false })).toEqual(reading({ scanning: true }));
+  });
+});
