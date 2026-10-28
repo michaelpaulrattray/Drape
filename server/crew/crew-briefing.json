@@ -1,7 +1,7 @@
 {
-  "edition": 757,
-  "updatedAt": "2026-10-28T03:09:45.000Z",
-  "shift": "THE TAP-TO-PICK SELECTOR IS DESIGNED AND ITS MOCK IS ON YOUR DESK. You ordered two roads for taking things from a reference picture; this shift wrote the design for the second one - the selector - under all three of your words from today: clothing is in its goal, nothing rides a fixed list, and it is one road with the simple attach-and-say card, never two. THE SHAPE IN ONE BREATH: the moment a picture is attached it is read, and everything found in it gets a small named dot on the picture itself. Tap what you want. Say nothing and the whole look of what you tapped applies - your own rule from August. Type, and your words narrow what is taken. The face never gets a dot and is never cut; one picture per ask, several taps on it. A tap costs nothing. WHAT THE DESIGN SETTLED: the one open tension the old design left (a tap with no words has no noun) is answered by reading the picture up front, so every dot already carries its name and your tap is the confirmation. The cutting road it needs is already built and measured; the one new measurement owed is a small house-money court on real reference photos (about a dollar or two) before the build believes its numbers, because everything so far was measured on our own renders. WHAT IS ON YOUR DESK: one picture-story in both themes - just attached, what it found, two things chosen. If the surface reads right, say so and the build is cut into slices; if anything reads wrong, say which. Nothing was spent this shift and nothing a customer sees changed.",
+  "edition": 758,
+  "updatedAt": "2026-10-28T05:20:00.000Z",
+  "shift": "THE FEATURE PANEL'S REPAIR IS MOVING AGAIN, AND NOTHING NEEDS YOU. You gave five findings on the panel on 28 October. The hard part of that repair was a decision rather than a build — how found things should be grouped — and that decision is now written and agreed, so the work is back with the builders. THE DECISION, IN ONE BREATH: the reading itself now says what each thing IS, judged from your picture rather than looked up in a list — what sort of thing it is, what it sits on, and whether it is one thing or lots of little ones. That is what lets a lip ring sit under Lips, lets the whole outfit be one row, keeps makeup out of the list, and stops freckles being cut out like an object. Your own rule held throughout: nothing is confined to a set list. WHAT SHIPPED TONIGHT: the first build piece of it — the reading now carries those three facts. Nothing you can see changes yet, on purpose: the panel is rearranged in the next piece, and a panel rearranged on half a decision would be worse than today's. Building it turned up two faults nobody had seen. One is older than tonight and would have cost you a whole reading: a character with a lot going on could have its answer cut off halfway through, and the studio would quietly fall back to asking its twelve fixed questions with nothing looking wrong. The other read \"earring\" and \"earrings\" as two different things because the two looks at the picture disagreed on the plural. Both are fixed. ALSO TONIGHT: a red that was holding up the team's own outage detector is cleared, and five finished jobs that were still sitting open on the board are closed with their receipts — including the two that stopped the studio telling you your clear sentence \"didn't come through clearly\". NOTHING IS WAITING ON YOU, except the reference-picture mock from last night if you have not looked at it yet.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -30,7 +30,7 @@
           "state": "waiting"
         },
         {
-          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest answer when something is not there. THE READER IS BUILT AND IS NOW SWITCHED ON FOR YOUR ACCOUNT, AND YOU HAVE LOOKED AT IT (#2566): one look at the picture names what is really there, so the studio stops asking twelve fixed questions of every character and can see things that were never on the list. You gave five findings on 28 October — the loading state still shows the old fixed list, freckles were read as the neck tattoo, rows doubled up with ones already on the panel, makeup does not belong there, and the outfit must be one whole thing rather than six separate rows. All five are now what has to be right before it goes wider, and the repair is a design decision about how found things are grouped, so it waits for the design seat rather than a builder. The switch stays on your account meanwhile so you can keep looking",
+          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest answer when something is not there. THE READER IS BUILT AND IS NOW SWITCHED ON FOR YOUR ACCOUNT, AND YOU HAVE LOOKED AT IT (#2566): one look at the picture names what is really there, so the studio stops asking twelve fixed questions of every character and can see things that were never on the list. You gave five findings on 28 October — the loading state still shows the old fixed list, freckles were read as the neck tattoo, rows doubled up with ones already on the panel, makeup does not belong there, and the outfit must be one whole thing rather than six separate rows. All five are now what has to be right before it goes wider. THE DESIGN DECISION THEY NEEDED IS MADE (28 October): the reading itself says what each thing IS — what sort of thing it is, what it sits on, and whether it is one thing or lots of little ones — read from your picture, never looked up in a list. That is what puts a lip ring under Lips, makes the whole outfit one row, keeps makeup out of the list and stops freckles being cut out like an object. THE FIRST BUILD PIECE IS IN REVIEW: the reading now carries those three facts. You will see nothing change from it — the panel is rearranged in the next piece, and a panel rearranged on half a decision would be worse than today's. It also fixed a fault older than the repair: a character with a lot going on could have its answer cut off halfway through, and the studio would fall back to its twelve fixed questions with nothing looking wrong. The switch stays on your account meanwhile so you can keep looking",
           "state": "waiting"
         },
         {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-28T03:10:41.669Z",
+      "readAt": "2026-10-28T04:59:57.831Z",
       "items": [
         {
           "issueNumber": 30,
@@ -11371,7 +11371,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-28T03:10:41.668Z",
+    "readAt": "2026-10-28T04:59:57.830Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11453,11 +11453,7 @@
       {
         "issueNumber": 2566,
         "title": "N3: the face reader — read what is on the cast, cut only what is there, carry it across edits (his approve 2026-10-16, design on #2532)",
-        "urgent": false,
-        "held": {
-          "state": "fable",
-          "because": "a Fable seat — a DESIGN DECISION: how found things are grouped and merged into the panel, across his five findings of 2026-10-28."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 2576,
