@@ -139,6 +139,7 @@ import {
      answer first. */
   REFINABLE_AXES,
   type RefineDelta,
+  sceneryLeftOut,
 } from "./refineDelta";
 import { sameStep } from "./railTakes";
 import { skippedOnReplay } from "./replayDoors";
@@ -276,7 +277,7 @@ import {
 import { refineRefundDescription } from "./refineRefundLedger";
 import { inkSlotOfPhrase, slotsOfPrunedStep } from "./prunedSlots";
 import {
-  attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote,
+  attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote, sceneryLeftOutNote,
   type CannotSayReason,
 } from "./cannotSayCopy";
 /* The prior question — is this ask about ink she already has, and does she
@@ -1161,6 +1162,10 @@ export async function refineCandidate(
         imageUrl: first.given.imageUrl,
         instructions: first.given.instructions,
         operationId: first.given.operationId,
+        /* The dropped-clause confession, on the only answer a dispatched
+           customer ever reads (#2695) — same reasoning as the design line
+           below, pointed at a sentence instead of a picture. */
+        ...(first.given.note ? { note: first.given.note } : {}),
         /* The design this render is carrying, named on the receipt as it is on
            a delivered answer: a customer who stopped waiting must not be the
            one customer who cannot say which design rode (fable-1156 §2e). */
@@ -1179,6 +1184,14 @@ type DispatchedReceipt = {
   operationId: string;
   imageUrl: string;
   instructions: string[];
+  /**
+   * THE CLAUSE THE READING DROPPED (#2695) — a fact of the PARSE, known before
+   * the render begins, which is what makes it honest on a receipt: it is true
+   * however the paint ends. On production every paid refine answers with a
+   * receipt and the settled result loses the race, so a confession that does
+   * not ride here reaches nobody.
+   */
+  note?: string;
   design?: RefineResult["design"];
 };
 
@@ -6293,6 +6306,39 @@ async function refineCandidateCounted(
     }
   };
 
+  /*
+    THE CLAUSE THE READING DROPPED, caught before the paint (#2695).
+
+    "Make her hair copper red in a studio" files {hairColour: "copper"} and the
+    studio reaches nobody — the stage wall runs over the PARSED value, so a
+    clause the model elided was never parsed and the honest wall_stage sentence
+    is unreachable for a mixed ask. Measured through the real entrance: 20 of 21
+    such reads render with the scenery word dropped in silence.
+
+    Derived here, from the two halves the product already holds — the sentence
+    and the final composed delta — rather than asked of the model: a prompt
+    told to also report what it discarded is a prompt whose filing behaviour
+    moves (context is not additive, measured on this very file at 0% → 8% for
+    one added line), where the code can read the same fact deterministically.
+
+    Computed ONCE, at the last point before the render where `editDelta` can no
+    longer change, because it is a fact of the READING and not of the paint —
+    which is what lets it ride the dispatch receipt below: on production every
+    paid refine answers with a receipt, the settled result loses the race, and
+    a note composed only at the landing would reach nobody (the inert-on-arrival
+    class `refineOutcomeNote.ts`'s own header records).
+
+    The unserved guard keeps one clause from being confessed twice: a word the
+    open lane already reports as named-but-not-served gets that sentence, which
+    carries more (what to do about it), and never both.
+  */
+  const sceneryDropped = sceneryLeftOut(instruction, editDelta, {
+    garmentLicensed: outfitEditServed,
+  });
+  const sceneryDroppedNote = sceneryDropped && !unservedSubjects.includes(sceneryDropped.word)
+    ? sceneryLeftOutNote(sceneryDropped)
+    : null;
+
   let delivered: RefineResult;
   try {
     /*
@@ -6329,6 +6375,10 @@ async function refineCandidateCounted(
          receipt is not a new frame and must never look like one. */
       imageUrl: storagePublicUrl(variant.baseImageKey),
       instructions,
+      /* THE DROPPED CLAUSE RIDES THE RECEIPT (#2695): it is a fact of the
+         reading, true before any paint, and the receipt is the only answer a
+         dispatched customer ever reads — the settled result loses the race. */
+      ...(sceneryDroppedNote ? { note: sceneryDroppedNote } : {}),
       ...(designAnswerFor(inkSource) ? { design: designAnswerFor(inkSource) } : {}),
     });
 
@@ -10552,6 +10602,13 @@ async function refineCandidateCounted(
            landing — and the empty set is the honest reading of it either way. */
         servedFacets: facetsWrittenBy(editDelta ?? {}),
       }),
+      /* And the scenery clause the reading dropped without filing ANYTHING —
+         not even an unserved key — which is the member the card #2695 measured
+         at 20 of 21 served reads. Composed once, before the render, because it
+         is a fact of the parse; this is the carrier for whoever is still
+         holding the request, and the receipt above is the carrier for everyone
+         who is not. */
+      sceneryDroppedNote,
       invisibleSiteNote,
     ].filter((line): line is string => line !== null);
     } catch (error) {
