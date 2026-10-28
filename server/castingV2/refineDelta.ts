@@ -799,11 +799,13 @@ export type RefineRefusal =
    *
    * Measured through the real interpreter before this was decided (text only,
    * house money, no credit, 2026-10-28): across the card's own sentences and
-   * three described brand asks — 68 runs of seven sentences — **the model
-   * filed a bare brand name in none of 108 readings** (first samplings,
-   * re-samples, re-looks and echo passes together), and every described ask
-   * (*"a Gucci dress"*, *"a Chanel red lip"*, *"Cartier earrings"*) was served
-   * with the name dropped and the description kept, 24 of 24. So a sampling that filed the bare name
+   * three described brand asks — 68 runs of six sentences, one of them both
+   * with and without the wardrobe subject served — **the model filed a bare
+   * brand name in none of 108 readings** (first samplings, re-samples,
+   * re-looks and echo passes together), and every described ask (*"a Chanel
+   * red lip"* and *"Cartier earrings"* on today's setting, *"a Gucci dress"*
+   * on an account the wardrobe subject serves) was served with the name
+   * dropped and the description kept, 24 of 24. So a sampling that filed the bare name
    * is a slip the next sampling is overwhelmingly likely not to repeat, and
    * where their sentence carries a description, that next sampling SERVES it.
    * Walling on the first such parse would refuse those asks to save cents —

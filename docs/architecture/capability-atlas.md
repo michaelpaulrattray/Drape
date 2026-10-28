@@ -69,21 +69,21 @@ _Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:943<br>server/castingV2/refineInterpreter.ts:1039<br>(+1) | 4 test(s) | guard.empty |
+| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:945<br>server/castingV2/refineInterpreter.ts:1039<br>(+1) | 4 test(s) | guard.empty |
 | `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1425<br>server/castingV2/castingIntent.ts:1462<br>(+14) | 9 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
-| `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:917<br>server/castingV2/refineInterpreter.ts:1263<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:499<br>server/castingV2/refineDelta.ts:2258<br>(+2) | 6 test(s) | guard.likeness |
+| `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:919<br>server/castingV2/refineInterpreter.ts:1263<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:499<br>server/castingV2/refineDelta.ts:2260<br>(+2) | 6 test(s) | guard.likeness |
 | `wall_content` | interpreter-refusal |  | server/castingV2/refineDelta.ts:558<br>server/castingV2/refineInterpreter.ts:1920<br>(+1) | 8 test(s) | guard.content |
-| `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:533<br>server/castingV2/refineDelta.ts:2282<br>(+2) | 10 test(s) | background.white |
+| `wall_stage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:533<br>server/castingV2/refineDelta.ts:2284<br>(+2) | 10 test(s) | background.white |
 | `wall_unbacked` | interpreter-refusal |  | server/castingV2/refineDelta.ts:557<br>server/castingV2/refineInterpreter.ts:2030<br>(+1) | 3 test(s) | wardrobe.tee, guard.stage, age.older, guard.compliment, wardrobe.colour |
-| `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:569<br>server/castingV2/refineDelta.ts:1906<br>(+2) | 8 test(s) | _documented-unreachable or gap — see findings_ |
-| `wall_too_long` | interpreter-refusal |  | server/castingV2/refineDelta.ts:677<br>server/castingV2/refineDelta.ts:1858<br>(+2) | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `wall_too_many` | interpreter-refusal |  | server/castingV2/refineDelta.ts:761<br>server/castingV2/refineDelta.ts:1987<br>(+1) | 1 test(s) | mark.nine |
-| `wall_brand_only` | interpreter-refusal |  | server/castingV2/refineDelta.ts:825<br>server/castingV2/refineDelta.ts:1753<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:854<br>server/castingV2/refineDelta.ts:854<br>(+3) | 3 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
-| `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:861<br>server/castingV2/refineDelta.ts:861<br>(+4) | 3 test(s) | ink.words.chest |
-| `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:880<br>server/castingV2/refineDelta.ts:880<br>(+3) | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:888<br>server/castingV2/refineDelta.ts:888<br>(+3) | 3 test(s) | ink.words.chest.basics |
+| `wall_unfileable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:569<br>server/castingV2/refineDelta.ts:1908<br>(+2) | 8 test(s) | _documented-unreachable or gap — see findings_ |
+| `wall_too_long` | interpreter-refusal |  | server/castingV2/refineDelta.ts:677<br>server/castingV2/refineDelta.ts:1860<br>(+2) | 3 test(s) | _documented-unreachable or gap — see findings_ |
+| `wall_too_many` | interpreter-refusal |  | server/castingV2/refineDelta.ts:761<br>server/castingV2/refineDelta.ts:1989<br>(+1) | 1 test(s) | mark.nine |
+| `wall_brand_only` | interpreter-refusal |  | server/castingV2/refineDelta.ts:827<br>server/castingV2/refineDelta.ts:1755<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `gate_ink_document` | interpreter-refusal |  | server/castingV2/refineDelta.ts:856<br>server/castingV2/refineDelta.ts:856<br>(+3) | 3 test(s) | ink.words.face, ink.words.noplace, ink.words.behind-ear, ink.transform.none |
+| `gate_ink_uncarried` | interpreter-refusal |  | server/castingV2/refineDelta.ts:863<br>server/castingV2/refineDelta.ts:863<br>(+4) | 3 test(s) | ink.words.chest |
+| `gate_ink_unkeepable` | interpreter-refusal |  | server/castingV2/refineDelta.ts:882<br>server/castingV2/refineDelta.ts:882<br>(+3) | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `gate_ink_coverage_unread` | interpreter-refusal |  | server/castingV2/refineDelta.ts:890<br>server/castingV2/refineDelta.ts:890<br>(+3) | 3 test(s) | ink.words.chest.basics |
 | `scope_unknown` | service-refusal |  | server/castingV2/refineService.ts:1449<br>server/castingV2/refineService.ts:1487 | 1 test(s) | guard.scope.unknown |
 | `scope_mismatch` | service-refusal |  | server/castingV2/refineService.ts:5136 | 1 test(s) | _documented-unreachable or gap — see findings_ |
 
