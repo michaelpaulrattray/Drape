@@ -79,6 +79,7 @@ import { readDeliveredInk } from "../castingV2/inkApplied";
 import { declaredTakes, takeShownFor } from "../castingV2/railTakes";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
 import {
+  captureCastingFaceDiscoveryEnabled,
   captureCastingFaceScanEnabled,
   captureCastingScanTableEnabled,
 } from "../castingV2/castingV2Scope";
@@ -476,9 +477,14 @@ function panelFor(
      the same reason the ink is, and empty is both "nothing was re-read" and
      "there was nothing to read". */
   carriedGeometry: ReadonlyMap<string, PanelBox> = new Map(),
+  /* Whether this account's reading asks the picture what is on it (#2566
+     slice 3). Read by the caller off the flag, and used for ONE thing: the
+     panel names no row it has not found — see `facePanel`'s `discovering`. */
+  discovering = false,
 ) {
   return facePanel({
     scanning,
+    discovering,
     carriedGeometry,
     rows: face.rows,
     pronouns: pronounsForSex(face.identitySex),
@@ -2807,6 +2813,7 @@ export const castingV2Router = router({
           captureCastingFaceScanEnabled(ctx.user.id) && ready === null,
           await inkWornBy(ctx.user.id, input.candidateId, face.anchor),
           await carriedGeometryFor(ctx.user.id, face),
+          captureCastingFaceDiscoveryEnabled(ctx.user.id),
         ),
       };
     }),
@@ -2856,6 +2863,9 @@ export const castingV2Router = router({
           capped: false,
           possessive: "their",
           groups: [],
+          /* And `pendingUnnamed` for the same reason again: nothing is being
+             read on the dark answer, so no unnamed place is kept. */
+          pendingUnnamed: false,
         };
       }
 
@@ -2973,6 +2983,7 @@ export const castingV2Router = router({
           !done,
           await inkWornBy(ctx.user.id, input.candidateId, face.anchor),
           await carriedGeometryFor(ctx.user.id, face),
+          captureCastingFaceDiscoveryEnabled(ctx.user.id),
         ),
       };
     }),
