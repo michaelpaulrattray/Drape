@@ -655,7 +655,22 @@ export function FacePanel({
                       className="dpc-face__open"
                       aria-expanded={isOpen}
                       aria-controls={`dpc-face-sides-${keyOf(row).replace(/[^a-z0-9]+/gi, "-")}`}
-                      aria-label={`${isOpen ? "Hide" : "Show"} each of ${row.spoken}`}
+                      /*
+                        ⚠ **IT READ `${…} each of ${row.spoken}` UNTIL #2566
+                        SLICE 2, AND THE RENDER IS WHAT CAUGHT IT** (working
+                        law 6 — no visual change ships without being looked at
+                        in the running app).
+
+                        That wording was right while every row with children
+                        was a PAIR: *Show each of their eyes*. The grouping
+                        gives children to singular rows too, and the screen
+                        read **"Show each of their outfit"** — not English, on
+                        an accessible name, which is the one place nobody sees
+                        it by eye. *Show more about* is grammatical for all
+                        three shapes the panel now has (their eyes, their lips,
+                        their outfit) and still says what the chevron does.
+                      */
+                      aria-label={`${isOpen ? "Show less" : "Show more"} about ${row.spoken}`}
                       onClick={() => setOpened((held) => (held.includes(keyOf(row))
                         ? held.filter((key) => key !== keyOf(row))
                         : [...held, keyOf(row)]))}

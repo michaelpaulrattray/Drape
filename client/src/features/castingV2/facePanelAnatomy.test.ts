@@ -1008,6 +1008,18 @@ describe("the pair nests, and the child is the scoping gesture again", () => {
 
     expect(panel).toContain("className=\"dpc-face__open\"");
     expect(panel).toContain("aria-expanded={isOpen}");
+    /*
+      ⚠ **AND ITS ACCESSIBLE NAME WORKS FOR A ROW THERE IS ONE OF — #2566
+      slice 2, caught at the frames and not here.** It read `each of
+      ${row.spoken}` while every row with children was a PAIR, and the grouping
+      gives children to singular rows too: the Outfit row rendered **"Show each
+      of their outfit"**, which is not English, on the one label nobody sees by
+      eye. `about` is grammatical for *their eyes*, *their lips* and *their
+      outfit* alike, and `Show less` is its symmetric open state — `Hide about
+      …` would have been the same mistake one word over.
+    */
+    expect(panel).toContain('`${isOpen ? "Show less" : "Show more"} about ${row.spoken}`');
+    expect(panel).not.toContain("each of ${row.spoken}");
     /* The row's own click is untouched: both slots, no scope — an ask about
        the pair, exactly as before the ruling. */
     expect(panel).toContain("selection.select({ slots: row.slots, name: row.name, spoken: row.spoken, prefill: row.prefill });");
