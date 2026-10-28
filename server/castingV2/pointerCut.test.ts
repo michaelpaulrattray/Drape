@@ -30,7 +30,9 @@ import {
   offListFeatures,
   placeNames,
   pointerFeatures,
+  settleByPlace,
   wordsOnlyFeatures,
+  type DiscoveredRegion,
 } from "./pointerCut";
 import { catalogueSlots } from "./referenceSlotCatalogue";
 import { scanPlan } from "./faceScan";
@@ -386,7 +388,9 @@ describe("cutDiscovered — the two calls, and what is asked on each", () => {
       async landmark() { throw new Error("not this road"); },
       async pointer({ name }) {
         await new Promise((resolve) => setTimeout(resolve, name === "jacket" ? 20 : 1));
-        return [{ x: 10, y: 10, width: 10, height: 10 }];
+        /* A place of its own per name (#2752): three nouns cut onto ONE
+           rectangle are one thing by the place rule, which is a different arm. */
+        return [{ x: 10 + order.indexOf(name) * 40, y: 10, width: 10, height: 10 }];
       },
       async regionInBox({ box }) { return maskAt(box); },
     };
@@ -599,7 +603,12 @@ describe("cutDiscovered — the grouping facts, and what it says about a name it
   const box = { x: 100, y: 200, width: 60, height: 40 };
 
   it("carries the reading's own kind and host onto every region it cuts", async () => {
-    const reader = readerWith({ detects: { jacket: [box], harness: [box] } });
+    /* The harness on a place of its own, off the jacket's pixels (#2752): an
+       accessory cut onto the jacket's own rectangle IS the jacket by the place
+       rule, which has arms of its own below. */
+    const reader = readerWith({
+      detects: { jacket: [box], harness: [{ x: 300, y: 200, width: 60, height: 40 }] },
+    });
     const out = await cutDiscovered({
       frame: FRAME,
       features: [
@@ -703,5 +712,280 @@ describe("cutDiscovered — the grouping facts, and what it says about a name it
     });
     /* The whole point of the gate, read at the wire rather than at a count. */
     expect(reader.asked.pointer).toEqual(["tattoo"]);
+  });
+});
+
+/**
+ * WHERE A FOUND THING IS DECIDES WHAT IT IS (#2752 — his eye on the live
+ * grouping, 2026-10-29: *"croissmark and scar ar the same thing>?"* and
+ * *"collar is showing up seperate to the outfit"*).
+ *
+ * Driven on synthetic masks whose overlaps are the ones measured on his
+ * screenshot crop through the real road (`output/2752/his-names.txt`, never
+ * committed): two nouns on one place shared 99.8–100% of their pixels, and the
+ * collar's cut lay 92% on the jacket's while being 60% of it.
+ *
+ * ⚠ **Every arm that says "one row" has a sibling that says "still two"**,
+ * because a place rule that merges too much is the same failure as one that
+ * merges too little, pointed the other way — and the two-instance rule (#2565
+ * §6) is the one it must not break.
+ */
+describe("the place rules — one row per place on the picture, never per spelling", () => {
+  /** A region on FRAME whose cut is exactly the given rectangles. */
+  const region = (
+    noun: string,
+    kind: DiscoveredRegion["kind"],
+    rects: PointerBox[],
+    extra: { on?: string; instance?: number } = {},
+  ): DiscoveredRegion => {
+    const data = Buffer.alloc(FRAME.width * FRAME.height, 0);
+    for (const rect of rects) {
+      for (let y = rect.y; y < rect.y + rect.height; y += 1) {
+        for (let x = rect.x; x < rect.x + rect.width; x += 1) data[y * FRAME.width + x] = 255;
+      }
+    }
+    const left = Math.min(...rects.map((r) => r.x));
+    const top = Math.min(...rects.map((r) => r.y));
+    const right = Math.max(...rects.map((r) => r.x + r.width));
+    const bottom = Math.max(...rects.map((r) => r.y + r.height));
+    return {
+      slot: discoveredSlotOf(noun, extra.instance ?? 1),
+      noun,
+      instance: extra.instance ?? 1,
+      kind,
+      on: extra.on ?? "",
+      box: {
+        x: left,
+        y: top,
+        width: right - left,
+        height: bottom - top,
+        frame: { width: FRAME.width, height: FRAME.height },
+      },
+      mask: { data, width: FRAME.width, height: FRAME.height },
+    };
+  };
+  const nouns = (regions: readonly DiscoveredRegion[]) => regions.map((one) => one.noun);
+
+  /* ---- same place, same kind ---- */
+
+  it("his cross mark and scar — two nouns cut onto one place are ONE row", () => {
+    const out = settleByPlace([
+      region("cross mark", "marking", [{ x: 100, y: 100, width: 10, height: 40 }]),
+      region("scar", "marking", [
+        { x: 100, y: 100, width: 10, height: 40 },
+        { x: 96, y: 112, width: 18, height: 3 },
+      ]),
+    ]);
+    expect(out.regions).toHaveLength(1);
+    expect(out.samePlace).toHaveLength(1);
+  });
+
+  it("the place takes the LARGER cut's noun, as the more complete picture of it", () => {
+    /* The crop's own specimen: `scar` and `cross mark` cut onto part of the
+       neck tattoo, and `neck tattoo` cut the whole of it. */
+    const out = settleByPlace([
+      region("scar", "marking", [{ x: 200, y: 100, width: 20, height: 100 }]),
+      region("neck tattoo", "marking", [{ x: 190, y: 95, width: 30, height: 110 }]),
+      region("cross mark", "marking", [{ x: 200, y: 100, width: 20, height: 100 }]),
+    ]);
+    expect(nouns(out.regions)).toEqual(["neck tattoo"]);
+    expect(out.samePlace.map((one) => one.into)).toEqual(["neck tattoo", "neck tattoo"]);
+  });
+
+  it("pixel-identical cuts keep the reading's order — the first noun names the place", () => {
+    const rect = { x: 100, y: 100, width: 10, height: 40 };
+    const out = settleByPlace([
+      region("cross mark", "marking", [rect]),
+      region("scar", "marking", [rect]),
+    ]);
+    expect(nouns(out.regions)).toEqual(["cross mark"]);
+  });
+
+  it("STILL TWO — two real scars in two places stay two rows (#2565 §6)", () => {
+    const out = settleByPlace([
+      region("scar", "marking", [{ x: 100, y: 100, width: 10, height: 40 }], { instance: 1 }),
+      region("scar", "marking", [{ x: 400, y: 100, width: 10, height: 40 }], { instance: 2 }),
+    ]);
+    expect(out.regions.map((one) => one.instance)).toEqual([1, 2]);
+    expect(out.samePlace).toEqual([]);
+  });
+
+  it("but two boxes the segmenter answered with ONE scar's pixels are one scar", () => {
+    const rect = { x: 100, y: 100, width: 10, height: 40 };
+    const out = settleByPlace([
+      region("scar", "marking", [rect], { instance: 1 }),
+      region("scar", "marking", [rect], { instance: 2 }),
+    ]);
+    expect(out.regions.map((one) => one.instance)).toEqual([1]);
+  });
+
+  it("STILL TWO — a small mark lying inside a large one is two things (a mole on a tattoo)", () => {
+    /* The large cut is mostly NOT the small one, so "mostly each other" fails
+       one way round — which is the whole reason the rule is read against the
+       LARGER cut. */
+    const out = settleByPlace([
+      region("tattoo", "marking", [{ x: 100, y: 100, width: 100, height: 100 }]),
+      region("mole", "marking", [{ x: 140, y: 140, width: 8, height: 8 }]),
+    ]);
+    expect(nouns(out.regions)).toEqual(["tattoo", "mole"]);
+  });
+
+  it("at exactly half of the larger cut it is not yet the same place — MORE than half is the rule", () => {
+    /* 400 pixels each, 200 of them shared: exactly half of either. */
+    const half = settleByPlace([
+      region("scar", "marking", [{ x: 100, y: 100, width: 20, height: 20 }]),
+      region("mark", "marking", [{ x: 110, y: 100, width: 20, height: 20 }]),
+    ]);
+    expect(nouns(half.regions)).toEqual(["scar", "mark"]);
+    /* One column more — 220 of 400 — and it is. */
+    const over = settleByPlace([
+      region("scar", "marking", [{ x: 100, y: 100, width: 20, height: 20 }]),
+      region("mark", "marking", [{ x: 109, y: 100, width: 20, height: 20 }]),
+    ]);
+    expect(nouns(over.regions)).toEqual(["scar"]);
+  });
+
+  /* ---- the garment ---- */
+
+  it("his collar — an accessory cut on a garment's own pixels IS that garment, and the garment survives", () => {
+    /* The crop's measured shape: the collar's cut lies 92% on the jacket's and
+       is 60% of it. Listed first, it still does not take the garment's place —
+       the pixels are garment pixels. */
+    const out = settleByPlace([
+      region("collar", "accessory", [{ x: 100, y: 100, width: 200, height: 120 }], { on: "neck" }),
+      region("jacket", "clothing", [{ x: 90, y: 100, width: 300, height: 140 }]),
+    ]);
+    expect(out.regions.map((one) => [one.noun, one.kind])).toEqual([["jacket", "clothing"]]);
+    expect(out.samePlace).toEqual([{ noun: "collar", into: "jacket" }]);
+  });
+
+  it("the garment survives the same place even when the accessory's cut is the larger", () => {
+    const out = settleByPlace([
+      region("neck piece", "accessory", [{ x: 100, y: 100, width: 200, height: 150 }]),
+      region("collar", "clothing", [{ x: 100, y: 100, width: 200, height: 120 }]),
+    ]);
+    expect(out.regions.map((one) => one.kind)).toEqual(["clothing"]);
+  });
+
+  it("an accessory lying mostly on a garment, but not the same place, is worn ON it", () => {
+    const out = settleByPlace([
+      region("jacket", "clothing", [{ x: 0, y: 100, width: 400, height: 300 }]),
+      region("collar", "accessory", [{ x: 150, y: 100, width: 100, height: 40 }], { on: "neck" }),
+    ]);
+    expect(out.regions.map((one) => [one.noun, one.on])).toEqual([["jacket", ""], ["collar", "jacket"]]);
+    expect(out.onGarment).toEqual([{ noun: "collar", onto: "jacket" }]);
+  });
+
+  it("CONTROL — an accessory on bare skin keeps the host the reading gave it", () => {
+    const out = settleByPlace([
+      region("jacket", "clothing", [{ x: 0, y: 300, width: 400, height: 200 }]),
+      region("choker", "accessory", [{ x: 150, y: 200, width: 100, height: 20 }], { on: "neck" }),
+    ]);
+    expect(out.regions.map((one) => one.on)).toEqual(["", "neck"]);
+    expect(out.onGarment).toEqual([]);
+  });
+
+  /* ---- his round-1 ⚠: anatomy is never folded into anything ---- */
+
+  it("⚠ body hardware is NEVER joined to a garment, however many pixels they share", () => {
+    const rect = { x: 100, y: 100, width: 120, height: 40 };
+    const out = settleByPlace([
+      region("collar", "clothing", [rect]),
+      region("neck implant", "anatomy", [rect]),
+    ]);
+    expect(out.regions.map((one) => one.kind)).toEqual(["clothing", "anatomy"]);
+    expect(out.samePlace).toEqual([]);
+  });
+
+  it("⚠ body hardware lying inside a garment's cut is never put on the garment", () => {
+    const out = settleByPlace([
+      region("jacket", "clothing", [{ x: 0, y: 100, width: 400, height: 300 }]),
+      region("shoulder implant", "anatomy", [{ x: 20, y: 120, width: 40, height: 40 }], { on: "shoulder" }),
+    ]);
+    expect(out.regions.find((one) => one.noun === "shoulder implant")?.on).toBe("shoulder");
+    expect(out.onGarment).toEqual([]);
+  });
+
+  it("a marking and a garment on the same pixels stay two rows — the picture cannot say which cut is wrong", () => {
+    const rect = { x: 100, y: 100, width: 120, height: 40 };
+    const out = settleByPlace([
+      region("scarf", "clothing", [rect]),
+      region("tattoo", "marking", [rect]),
+    ]);
+    expect(nouns(out.regions)).toEqual(["scarf", "tattoo"]);
+    /* And a marking is never put ON a garment either: it is on the skin by the
+       reading's own definition. */
+    expect(out.regions.find((one) => one.noun === "tattoo")?.on).toBe("");
+  });
+
+  /* ---- what the rule may never do ---- */
+
+  it("returns the survivors in the READING's order, never the size order it walks in", () => {
+    const out = settleByPlace([
+      region("mole", "marking", [{ x: 10, y: 10, width: 4, height: 4 }]),
+      region("jacket", "clothing", [{ x: 0, y: 100, width: 400, height: 300 }]),
+      region("neck tattoo", "marking", [{ x: 500, y: 100, width: 40, height: 100 }]),
+    ]);
+    expect(nouns(out.regions)).toEqual(["mole", "jacket", "neck tattoo"]);
+  });
+
+  it("two masks of different sizes are never the same place — refused, not resampled", () => {
+    const a = region("scar", "marking", [{ x: 10, y: 10, width: 10, height: 10 }]);
+    const small = { width: 384, height: 288 };
+    const data = Buffer.alloc(small.width * small.height, 0);
+    /* Lit exactly where a reader indexing with the OTHER mask's width would
+       look (half the width, so row y lands on row 2y): without the size check
+       the two read as the same place, which is what makes this arm able to
+       fail. */
+    for (let y = 20; y < 40; y += 1) for (let x = 10; x < 20; x += 1) data[y * small.width + x] = 255;
+    const b: DiscoveredRegion = {
+      ...a,
+      noun: "mark",
+      slot: discoveredSlotOf("mark", 1),
+      mask: { data, width: small.width, height: small.height },
+    };
+    expect(nouns(settleByPlace([a, b]).regions)).toEqual(["scar", "mark"]);
+  });
+
+  /* ---- and through the road itself ---- */
+
+  it("through cutDiscovered: his two nouns on one scar are one row, and the other is not recorded as uncut", async () => {
+    const scarBox = { x: 100, y: 100, width: 10, height: 40 };
+    const reader = readerWith({ detects: { "cross mark": [scarBox], scar: [scarBox] } });
+    const filed: string[] = [];
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [
+        feature("cross mark", 1, { kind: "marking", on: "cheek" }),
+        feature("scar", 1, { kind: "marking", on: "face" }),
+      ],
+      reader,
+      onFiled: (one) => filed.push(one.noun),
+    });
+    expect(nouns(out.regions)).toEqual(["cross mark"]);
+    /* It WAS drawn — its cut is the cross mark's place — so it is not a name
+       nothing could draw, and its words do not travel as though it were. */
+    expect(out.named).toEqual([]);
+    /* And while the reading runs, the second noun on pixels already drawn is
+       never drawn: no row appears and then vanishes. */
+    expect(filed).toHaveLength(1);
+  });
+
+  it("through cutDiscovered: the collar cut from the jacket's pixels ends in the jacket", async () => {
+    const reader = readerWith({
+      detects: {
+        jacket: [{ x: 90, y: 100, width: 300, height: 140 }],
+        collar: [{ x: 100, y: 100, width: 200, height: 120 }],
+      },
+    });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [
+        feature("collar", 1, { kind: "accessory", on: "neck" }),
+        feature("jacket", 1, { kind: "clothing" }),
+      ],
+      reader,
+    });
+    expect(out.regions.map((one) => [one.noun, one.kind])).toEqual([["jacket", "clothing"]]);
   });
 });

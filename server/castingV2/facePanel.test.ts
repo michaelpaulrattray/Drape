@@ -16,9 +16,12 @@ import {
   facePanel,
   maskFetchUrl,
   type FacePanel,
+  type PanelBox,
   type PanelInkWorn,
   type PanelRow,
 } from "./facePanel";
+import type { NamedNotCut } from "./pointerCut";
+import { catalogueSlots, slotDefinition } from "./referenceSlotCatalogue";
 import type { StoredReference } from "./referenceLibrary";
 import type { FeatureSlot } from "./recipeAssembler";
 
@@ -1563,10 +1566,12 @@ describe("the loader names nothing nobody has seen", () => {
     expect(rowsOf(built).filter((row) => row.state === "pending")).toEqual([]);
   });
 
-  it("once settled, the discovery road's panel is the catalogue road's — only the loader differs", () => {
-    /* The settled panel must not depend on the flag at all: `discovering`
-       changes what is kept for a reading in flight and nothing about an
-       answer. */
+  it("once settled, the discovery road's panel is the catalogue road's — the loader and the words-only rows differ", () => {
+    /* `discovering` changes what is kept for a reading in flight and, since
+       #2752, ONE thing about an answer: the slots that author
+       `noRowOnDiscovery` (build and skin) draw no row. This reading has
+       neither, so the two panels are identical; the arms that hold the
+       difference are under "build and skin are words alone". */
     expect(reading({ scanning: false, discovering: true })).toEqual(reading({ scanning: false }));
   });
 
@@ -2111,5 +2116,200 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       expect(row.instances).toEqual([]);
       expect(row.regions).toHaveLength(1);
     }
+  });
+});
+
+/**
+ * HIS EYE ON THE LIVE GROUPING, ROUND 2 (#2752, 2026-10-29), verbatim: *"its
+ * still picking up build, build runs in words alone remember and same with skin
+ * not neccesary to pick up"*.
+ *
+ * The fixture is shaped like his panel: the scan located a build region and a
+ * face-skin region and described both — exactly what drew *Build: narrow-
+ * shouldered, slender frame under heavy layered jacket* and *Skin: fair and
+ * even* on his screen.
+ */
+describe("build and skin are words alone on the discovery road", () => {
+  const frame = { width: 1000, height: 1500 };
+  const reading = (over: {
+    discovering?: boolean;
+    scanning?: boolean;
+    ink?: PanelInkWorn[];
+    said?: NamedNotCut[];
+    found?: { noun: string; kind: FeatureKind; on: string }[];
+  } = {}) => facePanel({
+    rows: [],
+    pronouns: SHE,
+    contentUrl: (key) => `https://bucket.example/${key}`,
+    maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+    scan: {
+      frameUrl: "https://bucket.example/casting/master.jpg",
+      slots: new Map<FeatureSlot, { box: PanelBox; maskUrl: string }>([
+        ["build", { box: { x: 100, y: 700, width: 800, height: 800, frame }, maskUrl: "data:image/png;base64,build" }],
+        ["skin", { box: { x: 300, y: 300, width: 400, height: 500, frame }, maskUrl: "data:image/png;base64,skin" }],
+        ["nose", { box: { x: 450, y: 500, width: 100, height: 120, frame }, maskUrl: "data:image/png;base64,nose" }],
+      ]),
+      words: new Map<FeatureSlot, readonly string[]>([
+        ["build", ["narrow-shouldered, slender frame under heavy layered jacket"]],
+        ["skin", ["fair and even, a slight sheen at the collarbone"]],
+      ]),
+      discovered: (over.found ?? []).map((one, at) => ({
+        slot: `discovered:${one.noun.replace(/[^a-z0-9]+/g, "-")}#1` as FeatureSlot,
+        noun: one.noun,
+        instance: 1,
+        kind: one.kind,
+        on: one.on,
+        box: { x: 100 + at * 120, y: 900, width: 80, height: 60, frame },
+        maskUrl: `data:image/png;base64,${one.noun}`,
+      })),
+      namedNotCut: over.said ?? [],
+    },
+    ...(over.ink === undefined ? {} : { ink: over.ink }),
+    ...(over.scanning === undefined ? {} : { scanning: over.scanning }),
+    ...(over.discovering === undefined ? {} : { discovering: over.discovering }),
+  });
+  const names = (built: ReturnType<typeof facePanel>) =>
+    built.groups.flatMap((group) => group.rows.map((row) => row.name));
+
+  it("⚠ POSITIVE CONTROL — off the discovery road, the same reading draws both rows with their words", () => {
+    /* Without this arm the next one passes against a fixture that could never
+       draw a Build or Skin row at all. */
+    const body = reading().groups.find((group) => group.group === "body");
+    expect(body?.rows.map((row) => [row.name, row.words])).toEqual([
+      ["Build", ["narrow-shouldered, slender frame under heavy layered jacket"]],
+      ["Skin", ["fair and even, a slight sheen at the collarbone"]],
+    ]);
+  });
+
+  it("on the discovery road, the panel draws no Build row and no Skin row — and the Body heading goes with them", () => {
+    const built = reading({ discovering: true });
+    expect(names(built)).not.toContain("Build");
+    expect(names(built)).not.toContain("Skin");
+    expect(built.groups.find((group) => group.group === "body")).toBeUndefined();
+    /* Everything else the reading found is exactly where it was. */
+    expect(names(built)).toContain("Nose");
+  });
+
+  it("holds while the reading runs, too — never a Build or Skin row, settled or in flight", () => {
+    expect(names(reading({ discovering: true, scanning: true }))).not.toContain("Build");
+    expect(names(reading({ discovering: true, scanning: true }))).not.toContain("Skin");
+  });
+
+  it("⚠ keeps a delivered TATTOO in the Body section — the rule is per slot, never the group", () => {
+    /* `ink:neck` lives in the body group, and he asked for it by name (*"i dont
+       see his neck tatto on the feature panel?"*). A rule keyed on the group
+       would have taken it with build and skin. */
+    const body = reading({ discovering: true, ink: [worn()] }).groups.find((group) => group.group === "body");
+    expect(body?.rows.map((row) => row.name)).toEqual(["Neck tattoo"]);
+  });
+
+  it("only build and skin carry the ruling — derived from the catalogue, never a list here", () => {
+    expect(catalogueSlots().filter((one) => one.noRowOnDiscovery !== undefined).map((one) => one.slot))
+      .toEqual(["build", "skin"]);
+  });
+
+  it("the ask still has somewhere to land: the build slot and its five facets are untouched", () => {
+    /* *"a build ask still works in words, exactly as it does now"* — the ask
+       files to the SLOT, and nothing about an ask reads the panel. */
+    expect(slotDefinition("build" as FeatureSlot)?.noun).toBe("build");
+    expect(catalogueSlots().find((one) => one.slot === "build")).toBeDefined();
+    expect(catalogueSlots().find((one) => one.slot === "skin")).toBeDefined();
+  });
+
+  /* ---- the knock-on he was told about: freckles have no Skin row to sit on ---- */
+
+  it("CONTROL — off the road, freckles on skin say their words on the Skin row", () => {
+    const skin = reading({
+      said: [{ noun: "freckles", on: "skin", about: "a dusting across the nose", kind: "marking", why: "scattered" }],
+    }).groups.flatMap((group) => group.rows).find((row) => row.name === "Skin");
+    expect(skin?.words).toContain("a dusting across the nose");
+  });
+
+  it("on the road, freckles on skin are on NO row — and are not dropped: the reading still carries them", () => {
+    const said: NamedNotCut[] = [
+      { noun: "freckles", on: "skin", about: "a dusting across the nose", kind: "marking", why: "scattered" },
+    ];
+    const built = reading({ discovering: true, said });
+    const everyWord = built.groups.flatMap((group) => group.rows.flatMap((row) => [
+      ...row.words,
+      ...row.instances.flatMap((one) => one.words),
+    ]));
+    expect(everyWord).not.toContain("a dusting across the nose");
+    /* The panel is a projection: it reads the channel and never empties it, so
+       what the scan KEEPS (`keptFaceScan`'s `namedNotCut`) still has them. */
+    expect(said).toHaveLength(1);
+    expect(said[0]!.about).toBe("a dusting across the nose");
+  });
+
+  it("a found thing sitting on skin keeps its own row rather than folding under a row that is not there", () => {
+    const built = reading({ discovering: true, found: [{ noun: "mole", kind: "marking", on: "skin" }] });
+    const open = built.groups.find((group) => group.group === "open");
+    expect(open?.rows.map((row) => row.name)).toEqual(["Mole"]);
+  });
+});
+
+/**
+ * ⚠ ANATOMY NEVER ENTERS THE OUTFIT, BY ANY ROAD (#2752's sweep of his round-1
+ * ⚠). The kind rule kept body hardware out of the Outfit and the `on` chain let
+ * it back in: `jaw hardware on=collar`, the collar read as clothing.
+ */
+describe("body hardware never reaches the Outfit through what it sits on", () => {
+  const frame = { width: 1000, height: 1500 };
+  const panelWith = (found: { noun: string; kind: FeatureKind; on: string }[]) => facePanel({
+    rows: [],
+    pronouns: SHE,
+    contentUrl: (key) => `https://bucket.example/${key}`,
+    maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+    scan: {
+      frameUrl: "https://bucket.example/casting/master.jpg",
+      slots: new Map(),
+      discovered: found.map((one, at) => ({
+        slot: `discovered:${one.noun.replace(/[^a-z0-9]+/g, "-")}#1` as FeatureSlot,
+        noun: one.noun,
+        instance: 1,
+        kind: one.kind,
+        on: one.on,
+        box: { x: 100 + at * 120, y: 900, width: 80, height: 60, frame },
+        maskUrl: `data:image/png;base64,${one.noun}`,
+      })),
+    },
+  });
+  const section = (built: FacePanel, group: string) => built.groups.find((one) => one.group === group) ?? null;
+
+  it("CONTROL — an accessory on the collar follows the collar into the Outfit", () => {
+    const built = panelWith([
+      { noun: "collar", kind: "clothing", on: "" },
+      { noun: "pin", kind: "accessory", on: "collar" },
+    ]);
+    expect(section(built, "outfit")!.rows[0]!.instances.map((one) => one.name)).toEqual(["Collar", "Pin"]);
+  });
+
+  it("⚠ jaw hardware sitting on the collar keeps its own row", () => {
+    const built = panelWith([
+      { noun: "collar", kind: "clothing", on: "" },
+      { noun: "jaw hardware", kind: "anatomy", on: "collar" },
+    ]);
+    expect(section(built, "outfit")!.rows[0]!.instances.map((one) => one.name)).toEqual(["Collar"]);
+    expect(section(built, "open")!.rows.map((row) => row.name)).toEqual(["Jaw hardware"]);
+  });
+
+  it("⚠ and two hops away too — hardware on a strap on a jacket", () => {
+    const built = panelWith([
+      { noun: "jacket", kind: "clothing", on: "" },
+      { noun: "strap", kind: "accessory", on: "jacket" },
+      { noun: "neck implant", kind: "anatomy", on: "strap" },
+    ]);
+    expect(section(built, "outfit")!.rows[0]!.instances.map((one) => one.name)).toEqual(["Jacket", "Strap"]);
+    expect(section(built, "open")!.rows.map((row) => row.name)).toEqual(["Neck implant"]);
+  });
+
+  it("and what sits on the hardware stays with the hardware, not the outfit", () => {
+    const built = panelWith([
+      { noun: "collar", kind: "clothing", on: "" },
+      { noun: "jaw hardware", kind: "anatomy", on: "collar" },
+      { noun: "stud", kind: "accessory", on: "jaw hardware" },
+    ]);
+    const hardware = section(built, "open")!.rows.find((row) => row.name === "Jaw hardware")!;
+    expect(hardware.instances.map((one) => one.name)).toEqual(["Stud"]);
   });
 });

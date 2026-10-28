@@ -232,6 +232,19 @@ describe("2. the closed grammar is unchanged for every non-open key", () => {
       ⚠ Unlike the 2026-08-24 entry, this one is NOT expected to move back: it
       is a founder ruling about what a row shows, not scaffolding for a path
       that was later retired.
+
+      MOVED 2026-10-29, `d7e7251bc3ee413d` → `1a56845ec4354124`, by his second
+      word on the same two rows (#2752, verbatim: *"build runs in words alone
+      remember and same with skin not neccesary to pick up"*):
+      `noRowOnDiscovery` is authored on `build` and `skin`. The reading this pin
+      asks for, taken before re-pinning: **still 25 slots** (the length
+      assertion below passed through the move); exactly those two carry the new
+      field, which `facePanel.test.ts` drives over the WHOLE catalogue rather
+      than by naming it (*"only build and skin carry the ruling"*); an ordinary
+      slot does not carry the key under any spelling, because `definitionOf`
+      spreads it conditionally exactly as it does `noThumbnail`; and the open
+      branch is, for the fifth time, not in this list to move. A founder ruling
+      about what the panel shows, so not expected to move back.
     */
     const digest = crypto
       .createHash("sha256")
@@ -239,7 +252,7 @@ describe("2. the closed grammar is unchanged for every non-open key", () => {
       .digest("hex")
       .slice(0, 16);
     expect(catalogueSlots()).toHaveLength(25);
-    expect(digest).toBe("d7e7251bc3ee413d");
+    expect(digest).toBe("1a56845ec4354124");
   });
 });
 

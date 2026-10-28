@@ -814,10 +814,17 @@ export function facePanel(input: {
    * in later."* So no catalogue row is held open here, and the panel says
    * {@link FacePanel.pendingUnnamed} instead.
    *
-   * ⚠ **Only the loader changes.** Every catalogue question is still asked —
-   * the gate the relay's second #2570 finding deleted stays deleted — and every
-   * row that has its picture lands exactly as it would off this road. Absent or
-   * false is today's panel byte for byte.
+   * ⚠ **Every catalogue question is still asked** — the gate the relay's second
+   * #2570 finding deleted stays deleted. Absent or false is today's panel byte
+   * for byte.
+   *
+   * ⚠ **AND IT CHANGES ONE SETTLED THING TOO, SINCE #2752 — this paragraph said
+   * *"only the loader changes"* until then.** His eye on the live grouping,
+   * verbatim: *"its still picking up build, build runs in words alone remember
+   * and same with skin not neccesary to pick up"*. On this road a catalogue
+   * slot that authors `noRowOnDiscovery` (build and skin, and no other) draws
+   * no row, scanning or settled. Its slot, its words and every ask that files
+   * to it are untouched; only the row goes, and only here.
    */
   discovering?: boolean;
   /**
@@ -1065,6 +1072,21 @@ export function facePanel(input: {
        slot are already gathered above, and a `none` slot is words the ask box
        reaches and the panel does not draw. */
     if (definition.panel.row !== "own") {
+      spoken.add(definition.slot);
+      continue;
+    }
+    /*
+      WORDS ALONE ON THE DISCOVERY ROAD (#2752) — build and skin, authored on
+      the catalogue beside his ruling, never listed here.
+
+      ⚠ **It goes BEFORE `push`, and that is the part that matters**: a row
+      that is never pushed records no host words, so nothing found can fold
+      under a Skin row that is not there and no scattered thing's words can be
+      written onto it. A found thing sitting `on: "skin"` keeps its own row, and
+      freckles on skin keep their words on the reading's `namedNotCut` — kept
+      with the scan, dropped by nothing (the words pass below says where).
+    */
+    if (input.discovering === true && definition.noRowOnDiscovery !== undefined) {
       spoken.add(definition.slot);
       continue;
     }
@@ -1786,9 +1808,29 @@ export function facePanel(input: {
    * is what makes that an answer rather than a loop. Driven directly, because
    * a model that usually behaves is no test of a guard (working law 3).
    */
+  /*
+    ⚠ **ANATOMY NEVER ENTERS THE OUTFIT, BY ANY ROAD — #2752's sweep of his
+    round-1 ⚠, closing a door slice 2 left open.** The guard was written as
+    *"only `kind: clothing` may enter the Outfit row"*, and the chain below let
+    anything whose `on` led to a garment in after it — so a reading that said
+    `jaw hardware on=collar`, with the collar read as clothing, would have swept
+    body hardware into the outfit through the side door, which is precisely the
+    case his ⚠ named. The bench's 4-of-4 measured the KIND; it never measured
+    the `on`. So the bar is on the destination, whatever led there: an anatomy find
+    whose chain ends in the outfit keeps its own row, and anything sitting on IT
+    folds under that row rather than following it in.
+  */
   const homeOf = (
     found: { noun: string; kind: FeatureKind; on: string },
     seen: ReadonlySet<string> = new Set(),
+  ): FoundHome => {
+    const home = homeOfAnyKind(found, seen);
+    return home.home === "outfit" && found.kind === "anatomy" ? { home: "own" } : home;
+  };
+
+  const homeOfAnyKind = (
+    found: { noun: string; kind: FeatureKind; on: string },
+    seen: ReadonlySet<string>,
   ): FoundHome => {
     if (found.kind === "clothing") return { home: "outfit" };
     const host = found.on.trim();
@@ -2222,7 +2264,13 @@ export function facePanel(input: {
     if (home.home === "child") { wordsOnto(home.parent, about); continue; }
     /* `underFound` and `own` alike: nothing on this panel can carry it, so it
        stays on the channel for the current description and the panel is silent
-       about it. */
+       about it.
+
+       ⚠ **On the discovery road this is where freckles on skin land now
+       (#2752)** — there is no Skin row to say them on, by his word, so the host
+       does not resolve and they stay on `namedNotCut`, which the scan KEEPS.
+       That is not a loss against yesterday: the Skin row's words line was
+       display, and no edit ever read it. */
   }
 
   return {
