@@ -301,20 +301,35 @@ describe("discoverFeatures — every road out of a bad provider minute", () => {
     expect(fullDied.ok).toBe(false);
   });
 
-  it("asks with a deadline of its own and no retries", async () => {
+  it("asks with a deadline above the measured tail, and no retries", async () => {
     /*
-      THE RELAY'S FOURTH FINDING, proven at the WIRE rather than at a constant
-      near it (invariant 5). It matters because of where this call sits: ahead
-      of every segmenter call in the scan and on the interpreter's shared text
-      queue, so the transport's defaults (45 s × 3) would hold a customer's
-      whole panel — and a paid roll's interpreter behind it — for over two
-      minutes on one hung provider.
+      THE RELAY'S FOURTH FINDING ON PR #2570, proven at the WIRE rather than at
+      a constant near it (invariant 5) — and the value is the relay's FIRST
+      finding on PR #2744, which is why this arm's name and reason both moved.
+
+      WHY A DEADLINE AT ALL: this call holds one of the four slots on the
+      `openrouter-text` queue, which a paid roll's interpreter draws from too,
+      so the transport's defaults (45 s × 3) would hold a slot for over two
+      minutes on one hung provider. ⚠ It does NOT hold the panel, and the
+      sentence here claimed it did — `faceScanService` starts it beside
+      `scanFace` and awaits it at settle, since #2570's second finding.
+
+      WHY 30 s AND NOT 15: the six reads in `output/2566/grouping-discovery.txt`
+      top out at **18,821 ms** (the cyberpunk cast's head crop), so at 15 s that
+      crop times out, returns null, and `discoverFeatures` refuses to gate on a
+      part-answer — the densest cast loses its WHOLE discovery, silently,
+      because this road fails open. 30 s is 1.6× the measured tail.
+
+      ⚠ **This number is load-bearing on a measurement, so it is pinned rather
+      than left to read as a round guess**: a later shift tightening it back
+      toward the tail must meet a red here and go and read the receipt.
     */
     const engine = engineSaying(ONE_FEATURE, ONE_FEATURE);
     await discoverFeatures({ crops, engine });
     expect(engine.calls).toHaveLength(2);
     for (const sent of engine.calls) {
-      expect(sent.timeoutMs).toBe(15_000);
+      expect(sent.timeoutMs, "18,821 ms was measured on a real read — 15 s loses that cast's whole discovery")
+        .toBe(30_000);
       expect(sent.retries).toBe(0);
     }
   });

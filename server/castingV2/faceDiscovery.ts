@@ -764,23 +764,48 @@ export async function discoverFeatures(input: {
         about: "discover",
         /*
           A DEADLINE OF ITS OWN, AND NO RETRIES — the relay's fourth finding on
-          PR #2570, and the reason is where this call SITS rather than how long
-          it takes.
+          PR #2570. The deadline EXISTS because of what a hung provider holds;
+          its NUMBER comes from the measured tail, and those are two facts.
 
-          It stands AHEAD of every segmenter call in the scan (`faceScanService`
-          awaits it before the first question goes out) and it shares the
-          interpreter's text queue, whose concurrency is 4. On the transport's
-          defaults that is 45 s per attempt times three retries: a hung provider
-          would hold a customer's whole panel for over two minutes, and hold a
-          paid roll's interpreter behind it on the way.
+          WHAT IT HOLDS, read at this head rather than carried: one of the FOUR
+          slots on the `openrouter-text` queue (`interpreterTextQueue`,
+          concurrency 4, depth 32), which a paid roll's interpreter draws from
+          too. On the transport's defaults that is 45 s per attempt times three
+          retries — over two minutes of one slot on one hung provider — which is
+          why the deadline and `retries: 0` are both here.
 
-          15 s is above the 8–9 s the relay measured for a real read and far
-          below the damage. ⚠ **A deadline that fires here costs nothing**: the
-          reading comes back `{ ok: false }` and the scan asks the full
-          catalogue, which is the panel the customer gets today — so trading a
-          rare timeout for a bounded wait is the cheap side of this call.
+          ⚠ **IT NO LONGER HOLDS THE PANEL, AND THIS COMMENT SAID IT DID UNTIL
+          #2566 SLICE 1'S REPAIR.** It read *"it stands AHEAD of every segmenter
+          call in the scan (`faceScanService` awaits it before the first
+          question goes out)"*, and that stopped being true at #2570's SECOND
+          finding: `faceScanService` starts this beside `scanFace` and awaits it
+          only at settle, so no question waits on it and the panel's first paint
+          reads the partial either way. The sentence outlived its road, and the
+          number bolted to it is what bit.
+
+          THE NUMBER, from `output/2566/grouping-discovery.txt` — six reads on
+          the final wording: 8,912 · 10,180 · 10,186 · 13,684 · 14,500 ·
+          **18,821 ms**, mean 12,714. **30 s is 1.6× that measured tail.**
+
+          ⚠ **15 s was already marginal BEFORE this slice, and the receipt in
+          the tree said so** — the pre-grouping run
+          (`output/2566/fullframe-discovery.txt`, the same six crops) ran
+          10,107–**13,091 ms**, so the old deadline carried 1.9 s of headroom
+          against a measured max, never the 8–9 s this comment used to claim.
+          The bigger ask then pushed the tail over the line: at 15 s the
+          cyberpunk cast's head crop times out at 18.8 s, that crop returns
+          null, and `discoverFeatures` refuses to gate on a part-answer — so the
+          customer loses the WHOLE discovery on the densest cast, silently,
+          because it fails open. A deadline set from a number no receipt
+          supported is the defect; 1 of 6 reads over the line is the measurement.
+
+          ⚠ **A deadline that fires here still costs nothing** in money or
+          correctness: the reading comes back `{ ok: false }` and the scan asks
+          the full catalogue, which is the panel the customer gets today. What
+          it costs is the saving this road exists for, and that is the trade the
+          number is chosen on.
         */
-        timeoutMs: 15_000,
+        timeoutMs: 30_000,
         retries: 0,
         /*
           A CEILING OF ITS OWN, BECAUSE THE DEFAULT ONE ALREADY BITES THIS ROAD
@@ -800,10 +825,15 @@ export async function discoverFeatures(input: {
           facts make it likelier by adding 15–40% to each answer, which is why
           the ceiling moves in the same commit rather than in a card of its own.
 
-          2,000 is the measured number: run 2 read the same dense cast at
-          **1,133 output tokens**, so this is the real worst case plus room,
-          not a round guess. It is a CEILING and not a spend — an ordinary
-          answer still costs what it costs.
+          2,000 is the measured number, and the measurement is the WHOLE
+          receipt rather than one line of it: the heaviest of the six reads in
+          `output/2566/grouping-discovery.txt` is the cyberpunk cast's head crop
+          at **1,293 output tokens** (⚠ this comment said 1,133 until #2566
+          slice 1's repair — the relay's second finding; 1,133 is the elder
+          alien's full frame, the second heaviest, so the ceiling always
+          covered the real worst case and only the sentence was wrong). It is a
+          CEILING and not a spend — an ordinary answer still costs what it
+          costs.
         */
         maxOutputTokens: 2_000,
       });
