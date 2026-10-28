@@ -271,15 +271,51 @@ export function castingSliceCredits(
  *
  * ⚠ **IT IS A LAUNCH PRICE WITH A THINNER MARGIN, AND THE MARGIN IS A BAND
  * BECAUSE ONE HALF OF THE COST IS STILL UNMEASURED.** Read off the rows rather
- * than estimated (#1689, every refine production has ever run): a Refine is one
- * picture and **five** Claude reads, the reads cost **$0.038** exactly (tokens
- * × list), and the picture is a band of **$0.015–$0.03** — its endpoint
- * (`openai/gpt-image-2.5/sunburst/edit` at the master's own size) answers fal's
- * price call in opaque units, which `FAL_MEASURED_USD_PER_IMAGE` leaves out on
- * purpose. So a first-try Refine costs us about **5–7¢** and a retried one
- * **9–12¢**, against **17–19¢** of plan revenue at 100 display — about 2.5–3.5×
- * on the first try and 1.5–2× with one retry. A Refine that fails twice is
- * refunded and is a loss at any price.
+ * than estimated — the Machinist's patrol #9, 2026-10-27 (#2697), on the four
+ * production Refines of 2026-10-17, which are the first that ever ran with
+ * today's set of reads: a Refine is one picture and **6.0 Claude reads** on
+ * average, the reads cost **$0.0397** (tokens × the provider's own published
+ * rate, read that run), the segmenter is **~$0.006**, and the picture is a band
+ * of **$0.015–$0.03** — its endpoint (`openai/gpt-image-2.5/sunburst/edit` at
+ * the master's own size) answers fal's price call in opaque units, which
+ * `FAL_MEASURED_USD_PER_IMAGE` leaves out on purpose. So a first-try Refine
+ * costs us about **6.1–7.6¢**, against **17–19¢** of plan revenue at 100
+ * display — about **2.3–3.1×**. A Refine that fails twice is refunded and is a
+ * loss at any price.
+ *
+ * ⚠ **THIS BLOCK CARRIED #1689'S PRE-RULING WORKING UNTIL 2026-10-28, AND THE
+ * REASON IT SURVIVED IS THE ONE THING WORTH READING HERE: ITS TOTAL WAS NEARLY
+ * RIGHT FOR THE WRONG REASON.** It said *"**five** Claude reads, the reads cost
+ * **$0.038**"* and put a first try at *"5–7¢ ··· about 2.5–3.5×"*. The reads
+ * figure is within a fifth of a cent of the measurement **by coincidence**:
+ * #2526 took one `verify` read out on 2026-10-15 (−$0.0084, which is what
+ * #1689's post-ruling arithmetic of *"4 reads at $0.0298"* predicted), and
+ * **#2565 slice 1 put a different read back the very next day** —
+ * `refine.describe`, `ac40083f0`, 2026-10-16 — so the read COUNT went 5 → 4 → 6
+ * while the headline dollar barely moved. **Two cards cancelled each other on
+ * the number and nobody's arithmetic was wrong; the two just never met.** The
+ * band and the margin are what actually moved, and both moved the unprofitable
+ * way. **So a figure here that looks close to a remembered one is not thereby
+ * current** — this working is dated and sourced for that reason.
+ *
+ * ⚠ **AND THE MEASUREMENT IS OF A CONFIGURATION ONLY HE IS IN.**
+ * `refine.describe` is `CASTING_CURRENT_DESCRIPTION_SCOPE`'s read and that flag
+ * stands at `users:1`, so **every account's Refine carries the sixth read the
+ * day it widens** — which is the disappearing-technology law's clause 3 (name
+ * the price beside the decision, before it). The flag's own catalogue entry
+ * carries this cost so that the number meets whoever proposes the flip; a cost
+ * that lives only on a closed card is a cost nobody has.
+ *
+ * **The honest caveats, from the card rather than softened:** n = 4 renders,
+ * one sitting, one account; the picture half is a FLOOR while `sunburst/edit`
+ * is unpriced; the census is a floor on both terms (a call still in flight
+ * contributes to the wall and nothing to the sum). The 6.0 mean is above the 5
+ * nominal because `verify` runs 1.75× and `caption` 2.25× per landed render —
+ * re-renders, which a nominal count has never included. ⚠ And
+ * `refine.describe` is the CHEAPEST read per call (822 in-tokens against
+ * `verify`'s 3,936): it is the sixth read, not an expensive one, so a flat
+ * per-read average gets this wrong in the other direction. Full working:
+ * `docs/MACHINIST_LEDGER.md`, Run 9 sections B and C.
  *
  * **It was 1,750 (350 display) from 2026-10-01 to 2026-10-15** under his
  * approved pricing (#1601 item 1), and 25 from 2026-08-03 before that, under a
