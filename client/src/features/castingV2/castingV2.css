@@ -4622,6 +4622,64 @@
   display: inline-block;
 }
 
+/*
+  THE UNNAMED PLACES — what a reading that names nothing ahead of time keeps
+  while it looks (#2566 slice 3; his *"loader is still showing the default
+  list"*).
+
+  The placeholder row above, with its name taken away: the same square, the
+  same bar, the same quiet fill, laid out on the row's own padding and gap so a
+  landed row and a kept place line up on one left edge. Nothing here is a word.
+
+  It breathes on the working line's own rhythm rather than sweeping a
+  gradient, which keeps fable-521's ruling for this panel — *"a moving gradient
+  is a second thing to look at on a panel whose whole job is to be quiet beside
+  a photograph"*. The three rows start a beat apart, so the strip reads as
+  looking rather than as three things blinking in step.
+*/
+.dpc-face__unnamed {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dpc-face__unnamedRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 8px;
+  opacity: 0.55;
+  animation: dpc-face-breathe 2.4s ease-in-out infinite;
+}
+
+.dpc-face__unnamedRow:nth-child(2) { animation-delay: 0.3s; }
+.dpc-face__unnamedRow:nth-child(3) { animation-delay: 0.6s; }
+
+.dpc-face__unnamedThumb {
+  background: color-mix(in srgb, var(--onScrim) 12%, transparent);
+  border-radius: 6px;
+}
+
+.dpc-face__unnamedBar {
+  height: 10px;
+  width: 104px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--onScrim) 12%, transparent);
+}
+
+/* Not three bars of one length — a column of identical shapes reads as a
+   template, and these are places for things that will not be alike. */
+.dpc-face__unnamedRow:nth-child(2) .dpc-face__unnamedBar { width: 80px; }
+.dpc-face__unnamedRow:nth-child(3) .dpc-face__unnamedBar { width: 92px; }
+
+/* Someone who has asked for less movement gets the places and none of it. */
+@media (prefers-reduced-motion: reduce) {
+  .dpc-face__unnamedRow { animation: none; }
+}
+
 .dpc-face__thumb--none {
   background-color: transparent;
   box-shadow: none;
