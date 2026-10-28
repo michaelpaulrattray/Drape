@@ -171,6 +171,148 @@ export function watchOutcome(input: {
 }
 
 /**
+ * THE SECOND WITNESS — WHAT THE SERVICE ITSELF SAYS, WHEN THE API IS STILL
+ * THINKING (#2763).
+ *
+ * On 2026-10-28 the rite refused a deploy that had succeeded eleven minutes
+ * earlier. Four timestamps, each read at an artifact:
+ *
+ *   · deployment `441a3f3b` created                      17:28:07Z
+ *   · production began serving the new build   17:56:04Z – 17:56:35Z
+ *     (`/api/health` polled every 30s — `uptime` fell 5,569s → 622s, so a new
+ *     process and not the old one answering 200, #296)
+ *   · Railway's API recorded SUCCESS                     18:03:50Z
+ *   · the watch gave up, reporting DEPLOYING    18:14:26Z – 18:18:08Z
+ *
+ * The deploy was genuinely slow (35m43s, against a previous slowest of 41.3
+ * min) and the 50-minute ceiling was never reached — so the length is NOT the
+ * finding. **The finding is that the API lags the service**: at 17:57:30Z, a
+ * minute after the edge had cut over, `deployment list` still answered
+ * `DEPLOYING` with an `updatedAt` of 17:44:07Z. For about seven minutes
+ * Railway's own record disagreed with the running service, and a watch that
+ * reads only the API inherits that disagreement whole.
+ *
+ * **Working law 1 settles which one to believe: the service is the artifact and
+ * the API is a claim.** `/api/health` carries `build` — `RAILWAY_GIT_COMMIT_SHA`
+ * read out of the process that is answering (`server/health.ts`, since the
+ * deploy-on-merge flip) — so a process reporting the pushed sha IS a build of
+ * that commit, taking traffic. That is not an inference about the API's state;
+ * it is the thing the API's state is about.
+ *
+ * # ⚠ THE SHA IS THE TEST AND THE UPTIME IS NEVER A CONDITION
+ *
+ * The tempting second clause is "…and a LOW uptime". It is wrong here and the
+ * reason matters: uptime answers *which* process when you cannot see the build,
+ * which was the pre-flip road. Once the sha is readable, a threshold on uptime
+ * only makes the verdict depend on how long the RITE took to get here — a slow
+ * watch would start reading a correctly-serving build as stale. So the uptime is
+ * printed as corroboration beside the sha and is never asked to decide.
+ *
+ * # ⚠ AND THIS VERDICT IS NOT ABOUT HEALTH
+ *
+ * It answers one question — *which build is answering* — and leaves *is it well*
+ * to the three readings of `productionHealthProbe.mts` that follow. A build that
+ * is serving and unhealthy must reach that probe and be refused BY it; folding
+ * the two together here would give the deploy's correctness gate two owners and
+ * let a `status` this module does not recognise quietly decide a deploy.
+ *
+ * # What it cannot do, said rather than left to be discovered
+ *
+ * It cannot help the OTHER shape of this failure, and the card's own comment
+ * says so: edition 767's deployment sat `QUEUED` for thirty minutes with
+ * `regions: []` — no builder had picked it up at all. There the service
+ * genuinely is NOT serving the new build, the watch's verdict is correct, and
+ * what this verdict buys is only that the refusal now NAMES the build that is
+ * serving instead of leaving a reader to go and look.
+ */
+export type ServedReading =
+  /** No answer at all — a dropped connection, a timeout, a DNS failure. */
+  | { kind: "silent" }
+  /** The service answered. `build` is absent when the payload carried none. */
+  | { kind: "answered"; build: string | null; uptime: number };
+
+export type ServedVerdict = {
+  /**
+   * `landed` — a process built from the pushed commit is taking traffic, so the
+   * deploy is out whatever the API has got round to recording.
+   * `not-landed` — it is not, or nothing could be read. The watch's refusal
+   * stands and these lines say what the service said.
+   */
+  readonly kind: "landed" | "not-landed";
+  /** What to print, under the watch and again in the receipt's problem block. */
+  readonly lines: readonly string[];
+};
+
+/**
+ * A commit hash matches when one is a prefix of the other and the shorter is
+ * long enough to mean it. Both sides are full shas on every road today —
+ * `git rev-parse` and `RAILWAY_GIT_COMMIT_SHA` — so this is tolerance for a
+ * field that is ever truncated rather than a case anything relies on. Seven is
+ * git's own abbreviation floor; below it a "match" is a coincidence.
+ */
+const SHA_PREFIX_FLOOR = 7;
+
+const sameCommit = (a: string, b: string): boolean => {
+  const left = a.trim().toLowerCase();
+  const right = b.trim().toLowerCase();
+  const shorter = Math.min(left.length, right.length);
+  if (shorter < SHA_PREFIX_FLOOR) return false;
+  return left.slice(0, shorter) === right.slice(0, shorter);
+};
+
+/** Judge which build is serving, from one reading of `/api/health`. */
+export function judgeServedBuild(input: {
+  readonly reading: ServedReading;
+  readonly shippedSha: string;
+  readonly baseUrl: string;
+}): ServedVerdict {
+  const { reading, shippedSha, baseUrl } = input;
+  const shortSha = shippedSha.slice(0, 8);
+
+  if (reading.kind === "silent") {
+    return {
+      kind: "not-landed",
+      lines: [
+        `${baseUrl}/api/health did not answer — the service was asked and said nothing,`,
+        "so NOTHING is known about which build is serving. That is silence, not a verdict.",
+      ],
+    };
+  }
+
+  const uptime = Number.isFinite(reading.uptime) ? `${reading.uptime.toFixed(1)}s` : "(unread)";
+
+  if (reading.build === null) {
+    return {
+      kind: "not-landed",
+      lines: [
+        `${baseUrl}/api/health answered and names no build (uptime ${uptime}),`,
+        `so it cannot be told apart from a process serving something other than ${shortSha}.`,
+      ],
+    };
+  }
+
+  if (sameCommit(reading.build, shippedSha)) {
+    return {
+      kind: "landed",
+      lines: [
+        `the SERVICE is serving ${reading.build.slice(0, 8)} — the commit this run pushed (uptime ${uptime}).`,
+        "Railway's API had not recorded an outcome yet; the service is the artifact and the",
+        "API is a claim (working law 1), so the deploy LANDED and this run carries on.",
+      ],
+    };
+  }
+
+  return {
+    kind: "not-landed",
+    lines: [
+      `the SERVICE is still serving ${reading.build.slice(0, 8)}, not ${shortSha} (uptime ${uptime}),`,
+      "so the new build is genuinely not taking traffic — the watch's verdict is right,",
+      "and nothing below may be reported as verified against this push.",
+    ],
+  };
+}
+
+/**
  * Every deployment of `railway deployment list --json`, newest first. A row
  * without a string id and status is dropped; text that is not a JSON array
  * (an older CLI's table, an error message) reads as an EMPTY listing, which

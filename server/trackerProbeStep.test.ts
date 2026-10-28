@@ -374,7 +374,7 @@ describe("the rite's own wiring — a step whose findings go nowhere is a silent
   it("the rite runs the probe AFTER the health verdict, never before it", () => {
     /* #1643: the probe's subject is the build now taking traffic, and which
        process that is has no verdict until health has answered three times. */
-    const healthAt = rite.indexOf("if (!health.ok) {");
+    const healthAt = rite.indexOf("if (health && !health.ok) {");
     const probeAt = rite.indexOf("probeInvocation({");
 
     expect(healthAt, "the health refusal could not be found — this arm is measuring nothing")
@@ -390,10 +390,38 @@ describe("the rite's own wiring — a step whose findings go nowhere is a silent
     expect(lastExit, "the rite's final exit could not be found — this arm is measuring nothing")
       .toBeGreaterThan(-1);
     const finalExit = rite.slice(lastExit);
-    expect(finalExit).toContain("tracker.problems.length");
+    expect(finalExit).toContain("tracker?.problems.length");
     /* POSITIVE CONTROL — the slice really is the exit arithmetic, not a stray
        mention, so the assertion above is a reading. */
     expect(finalExit).toContain("assets.problems.length");
+  });
+
+  it("⚠ the UNPROBED tracker cannot buy the run a 0 — it is a null, not a clean verdict (#2763)", () => {
+    /*
+      The step became skippable when the unconfirmed-deploy road landed: with no
+      health reading there is no verdict on which process is serving, so probing
+      would attribute an event to a build that had not landed. `?? 0` therefore
+      contributes nothing on that road — which would be a hole if it stood
+      alone, because "no problems" and "never asked" would exit the same.
+
+      What closes it is that the same road contributes its OWN non-zero term, so
+      both halves are asserted here together: the null-safe read, and the watch's
+      problems in the same arithmetic.
+    */
+    const finalExit = rite.slice(rite.lastIndexOf("process.exit("));
+    expect(finalExit).toContain("(tracker?.problems.length ?? 0)");
+    expect(finalExit, "the unconfirmed road contributes nothing, so a skipped probe exits 0")
+      .toContain("watchProblems.length");
+  });
+
+  it("⚠ the probe is SKIPPED rather than probed with an unknown build (#2763)", () => {
+    const step = rite.slice(rite.indexOf("4a. the error tracker"), rite.indexOf("5. the flags, OFF THE SERVICE"));
+    expect(step.length, "the step could not be sliced out — this arm is measuring nothing")
+      .toBeGreaterThan(200);
+    /* The guard is INSIDE the step, before `probeInvocation`, so the skip is the
+       step's own decision rather than something a caller must remember. */
+    expect(step).toContain("if (!healths) return null;");
+    expect(step.indexOf("if (!healths) return null;")).toBeLessThan(step.indexOf("probeInvocation({"));
   });
 
   it("does not roll the deploy back — the step has no refusal road at all", () => {

@@ -563,8 +563,17 @@ export async function autoApplyMigrations(options: {
   readonly execute: (sql: string) => Promise<void>;
   readonly listMigrations: () => readonly { readonly name: string; readonly sql: string }[];
   readonly dry: boolean;
+  /**
+   * WHY nothing was written, in the summary line's own words. Defaults to
+   * `--dry`, which was hard-coded here until #2763 gave this step a SECOND
+   * reason to plan without applying: a rite whose deploy never confirmed must
+   * not write to production, and a line reading `(--dry: nothing was written)`
+   * on a run invoked without `--dry` is a false sentence on a receipt.
+   */
+  readonly dryNote?: string;
 }): Promise<MigrationReport> {
   const { missing, readBack, execute, listMigrations, dry } = options;
+  const dryNote = options.dryNote ?? "--dry";
   const outstanding = missing.tables.length + missing.columns.length + missing.indexes.length;
   if (outstanding === 0) {
     return { lines: ["nothing pending — the service holds everything the code declares"], problems: [], blocking: [], applied: 0 };
@@ -603,7 +612,7 @@ export async function autoApplyMigrations(options: {
     for (const statement of plan.apply) lines.push(`would apply: ${statement.file} — ${summarise(statement)}`);
     lines.push(
       `${outstanding} pending · ${plan.apply.length} would apply · ${plan.refuse.length} refused `
-      + "(--dry: nothing was written)",
+      + `(${dryNote}: nothing was written)`,
     );
     return { lines, problems, blocking: [], applied: 0 };
   }
