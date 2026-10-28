@@ -1,7 +1,7 @@
 {
-  "edition": 762,
-  "updatedAt": "2026-10-28T10:41:35.862Z",
-  "shift": "THE GAP I TOLD YOU ABOUT LAST NIGHT IS CLOSED, AND IT IS THE ONLY THING THAT CHANGED TONIGHT.\n\nLast night's note ended on something we had found out about ourselves rather than about Railway: a change can be finished, approved, merged — and still not be on the live site, with nobody watching. One sat that way for 52 minutes and was noticed by accident. Everything we naturally look at agreed it had shipped, because the previous version was still running and still answering healthy.\n\nThat is now watched, and the watcher is live. The site already publishes which version it is running; something now simply asks whether that is the version we last merged. When the answer is no, a job appears on the board in plain English saying a finished change is in front of nobody and needs publishing again rather than fixing. It asks within about two minutes of a failed publish, and again every three hours in case nothing was publishing at all. It will never raise the same thing twice — the six failed builds of this morning would have been one note, not six.\n\nOne detail is worth knowing, because it is why this needed care rather than an afternoon. We could not build it on Railway's own report of whether a publish worked: theirs was wrong in both directions this morning — six failures recorded and not one success across three changes, and one of those three was the version production was actually serving. So the watcher ignores their report entirely and compares the two version numbers instead, which cannot go wrong in the direction that cries wolf. A watcher that cries wolf is how a real alarm comes to be ignored.\n\nTonight's publish worked first time, so Railway's trouble may be easing. The watcher does not depend on that either way.\n\nNOTHING ELSE WAS BUILT TONIGHT, AND TWO JOBS WERE DELIBERATELY LEFT ALONE. The first is a guard on our own feature-switch documentation, which found five places where that documentation disagreed with what is actually switched on — two of them wrong for 34 days. The guard cannot be switched on until a separate money-related change is reviewed by hand, because until that lands the guard would correctly report five faults and turn the whole building red. The second is the brand-name problem from earlier today: ask for \"Gucci\" and nothing else, and the studio answers three different wrong ways, including charging for an edit whose whole instruction is the word \"makeup\". Choosing which of those three should answer, and in what words, is a design decision rather than a fix, so it is marked for one and not guessed at.\n\nBoth were written down with the reason on them, so neither gets picked up and half-done. Nothing tonight cost you a credit, no setting was changed, and your character pictures from the photo-reference test are still below and still want your eye.",
+  "edition": 763,
+  "updatedAt": "2026-10-28T13:25:37.315Z",
+  "shift": "THE FEATURE PANEL NOW READS LIKE A PERSON DESCRIBING YOUR CHARACTER, INSTEAD OF A LIST OF EVERYTHING WE FOUND.\n\nOn your cyberpunk operative the panel used to put a lip ring beside her lips rather than\non them, give each garment a row of its own, and make a row out of eye makeup. Tonight it\nreads like this: her eyes and her lips, with the lip ring tucked under the lips where you\nwould look for it; her hair; her skin, with \"deep lines across the brow and cheeks\" written\nbeside it; one row called OUTFIT holding the robe, the scarf, the pendant, the strap and the\ncharm together, with the rough stitching noted on it; and then the two things that make her\nher — the third eye and the jaw hardware — under \"also on this character\". Makeup has no row\nat all, which is what you asked for: it is something you change with words.\n\nNothing in this is a list we wrote down. The reading itself says what each thing IS and what\nit sits on, per character, and the panel groups by that — which is your own sentence about\nnot being confined to a fixed list, built rather than quoted. It is also why the implants\nyou warned about cannot end up in the outfit: whether something is clothing is judged from\nthe picture, and body hardware never reads as clothing.\n\nTwo smaller things came with it. Freckles, stubble and stitching are no longer cut out as if\nthey were objects — they have no outline, so we stopped asking, and their words go onto the\nthing they sit on instead. And across your three test characters that means we buy twenty-five\nreadings where we used to buy twenty-nine.\n\nI looked at it in the running app before it shipped, in both the light and the dark theme, and\nit caught something no test could have: the little arrow that opens a row was announcing itself\nas \"Show each of their outfit\", which is not English. It says \"Show more about their outfit\" now.\n\nWhat is still owed on this is your eyes. Tonight's pictures were made with stand-in cut-outs to\ncheck the shape of the panel, so they say nothing about how good the cut-outs themselves are.\nThat is the last piece of this job and it comes to you on a real character.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-28T10:43:43.655Z",
+      "readAt": "2026-10-28T13:26:39.552Z",
       "items": [
         {
           "issueNumber": 30,
@@ -10933,6 +10933,13 @@
       "status": "merged",
       "prNumber": 2744,
       "note": "Merged f6f5e70a and LIVE — read at /api/health's build field on a 52-second uptime. It was unmergeable on arrival: main had gained six commits in the same area, so its green checks described a tree it would never land on. Brought into step, preflight and gate green on the merged tree."
+    },
+    {
+      "id": "face-reader-grouping-slice2-2566",
+      "title": "The panel groups what the reading found the way a person would describe it — one outfit row, piercings where piercings live, makeup out of the list (#2566)",
+      "status": "merged",
+      "prNumber": 2750,
+      "note": "Merged fd5d5176. Gate 11/11 green on a tree main had not moved under (checked). Driven in the running app in both themes before it shipped, injected at the wire so no reading was bought and no row written — and the frames caught the chevron announcing \"Show each of their outfit\". Sabotage 25 of 26 red. Still owed on #2566: his eye on a real character."
     }
   ],
   "problems": [
@@ -11446,7 +11453,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-28T10:43:43.655Z",
+    "readAt": "2026-10-28T13:26:39.552Z",
     "items": [
       {
         "issueNumber": 14,
