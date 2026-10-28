@@ -17,6 +17,7 @@ import {
   FOLLOW_BRIEF_SYSTEM,
   FOLLOW_BRIEF_TIMEOUT_MS,
   ONE_PERSON_SPECIFICS,
+  descriptionForFollow,
   droppedClauseBudget,
   followBriefUserTurn,
   introducedOnePersonSpecific,
@@ -529,6 +530,144 @@ describe("the follow brief writer", () => {
       await writeFollowBrief(engineSaying(REWRITTEN, sent), { brief: BRIEF, description: "A cyberpunk operative.", asks: [] }, 4000);
       expect(sent[0]!.signal).toBeInstanceOf(AbortSignal);
       expect(sent[0]!.signal!.aborted).toBe(false);
+    });
+  });
+
+  /*
+    ⚠ THE DESCRIPTION'S BOOKKEEPING NEVER REACHES THE CUSTOMER'S BRIEF (#2751).
+    Found by #2576's own drive: the follow writer carried the refine chain's
+    absence sentence into the box the customer reads — "…in his 40s, with no
+    horns.", "…short crop. They wear no glasses." — 12 of 16 answered rewrites
+    over dev's real versions, and a comparison against the original photograph
+    ("than it might first appear") 1 of 16. Driven through the REAL writer with
+    a recording engine, so what is proven is what the writer was ASKED (law 5).
+    The descriptions below are dev's own rows, word for word.
+  */
+  describe("the description's bookkeeping stays out of the brief (#2751)", () => {
+    const LIZARD_BRIEF = "a lizard man with emerald scales, a heavy brow and amber eyes, in his 40s";
+    const LIZARD = "A lizard man with scales a deeper emerald than their original colouring, a heavier brow than before "
+      + "and amber eyes with slit pupils, in his 40s, with a notch missing from their left ear. They have no horns.";
+    const STREET_BRIEF = "a street casting, mid 20s";
+    const STREET = "A street casting, mid 20s, with their hair cut into a short crop, with a small sparrow tattoo on the side "
+      + "of their neck, with freckles across the nose and cheeks, and pale grey eyes. They wear no glasses.";
+    const FISHER_BRIEF = "A weathered fisherman, north Atlantic, sixty.";
+    const FISHER = "A weathered fisherman from the north Atlantic, sixty years old, with grey-green eyes, a beard that is shorter "
+      + "and neater than it first appeared, and small gold hoop earrings, one in each ear. Their hair is darker, more salt than "
+      + "pepper. Their left eyebrow is unmarked, with no scar across it.";
+
+    async function askedOf(brief: string, description: string, asks: string[] = ["an edit"]): Promise<string> {
+      const sent: TextRequest[] = [];
+      await writeFollowBrief(engineSaying(brief, sent), { brief, description, asks }, 4000);
+      expect(sent).toHaveLength(1);
+      return sent[0]!.user;
+    }
+
+    it("⚠ the absence sentence is not handed to the writer, and the direction beside it is", async () => {
+      const lizard = await askedOf(LIZARD_BRIEF, LIZARD);
+      expect(lizard).not.toMatch(/\bno horns\b/i);
+      expect(lizard).not.toMatch(/\bhorn/i);
+      for (const direction of ["a deeper emerald", "a heavier brow", "amber eyes with slit pupils", "in his 40s"]) {
+        expect(lizard, direction).toContain(direction);
+      }
+
+      const street = await askedOf(STREET_BRIEF, STREET);
+      expect(street).not.toMatch(/glasses/i);
+      expect(street).toContain("with their hair cut into a short crop");
+      expect(street).toContain("and pale grey eyes.");
+
+      /* The second measured shape: a comma and "un…ed, with". */
+      const fisher = await askedOf(FISHER_BRIEF, FISHER);
+      expect(fisher).not.toMatch(/\bscar\b|unmarked/i);
+      expect(fisher).toContain("Their hair is darker, more salt than pepper.");
+    });
+
+    it("⚠ every absence shape measured on dev is set aside, one count each", () => {
+      for (const sentence of [
+        "They wear no glasses.",
+        "They have no horns.",
+        "He has no horns.",
+        "They bear no scar through their left eyebrow.",
+        "His left eyebrow bears no scar.",
+        "Their left eyebrow is unmarked, with no scar across it.",
+      ]) {
+        const result = descriptionForFollow(`A street casting, mid 20s, with a short crop. ${sentence}`, STREET_BRIEF);
+        expect(result, sentence).toEqual({ text: "A street casting, mid 20s, with a short crop.", setAside: 1 });
+      }
+    });
+
+    it("⚠ a comparison against the original photograph loses its reference and keeps its direction", async () => {
+      const lizard = await askedOf(LIZARD_BRIEF, LIZARD);
+      expect(lizard).not.toMatch(/original|than before/i);
+      expect(lizard).toContain("A lizard man with scales a deeper emerald, a heavier brow and amber eyes");
+
+      const fisher = await askedOf(FISHER_BRIEF, FISHER);
+      expect(fisher).not.toMatch(/first appeared/i);
+      expect(fisher).toContain("a beard that is shorter and neater, and small gold hoop earrings");
+
+      expect(descriptionForFollow("Scales an even deeper emerald than their original coloring, deeper still than before.", "x").text)
+        .toBe("Scales an even deeper emerald, deeper.");
+    });
+
+    it("⚠ CONTROL — a sentence that also says something else, and every other comparison, reach the writer untouched", () => {
+      /*
+        The failure direction that matters: a false strip would cost the
+        customer a direction they made. Each of these names a thing first, says
+        "no" about a part of a thing, or compares against the look itself.
+      */
+      for (const kept of [
+        "They have short hair and no beard.",
+        "They wear a long black coat with no sleeves.",
+        "They are tall, with no beard.",
+        "Their hair is not quite shoulder length.",
+        "An off-shoulder gown leaves their shoulders bare.",
+        "Their hair is darker, more salt than pepper.",
+        "Amber eyes, lighter than standard brown.",
+        "They no longer wear glasses.",
+      ]) {
+        expect(descriptionForFollow(kept, STREET_BRIEF), kept).toEqual({ text: kept, setAside: 0 });
+      }
+    });
+
+    it("⚠ an absence the BRIEF asked for the opposite of still reaches the writer, so the removal is never lost", async () => {
+      /*
+        The customer wrote the glasses into the brief and took them off the
+        cast. Set the sentence aside and the writer is never told, keeps the
+        brief's own "wire-frame glasses", and every cousin wears them.
+      */
+      const brief = "a street casting, mid 20s, in wire-frame glasses";
+      const asked = await askedOf(brief, "A street casting, mid 20s, with a short crop. They wear no glasses.");
+      expect(asked).toContain("They wear no glasses.");
+      /* The stem reads its inflections: "horns" finds a brief's "horned". */
+      expect(descriptionForFollow("A lizard man. They have no horns.", "a horned lizard man").text)
+        .toBe("A lizard man. They have no horns.");
+      /* And a brief that does not name it is the measured case, set aside. */
+      expect(descriptionForFollow("A lizard man. They have no horns.", "a lizard man").text).toBe("A lizard man.");
+    });
+
+    it("a description of nothing but an absence is no description: the asks go instead, and none means no call", async () => {
+      const sent: TextRequest[] = [];
+      await writeFollowBrief(engineSaying(BRIEF, sent), { brief: BRIEF, description: "They wear no glasses.", asks: ["make the hair platinum blonde"] }, 4000);
+      expect(sent[0]!.user).toContain("- make the hair platinum blonde");
+      expect(sent[0]!.user).not.toContain("glasses");
+
+      const none: TextRequest[] = [];
+      await expect(writeFollowBrief(engineSaying(BRIEF, none), { brief: BRIEF, description: "They wear no glasses.", asks: [] }, 4000))
+        .resolves.toMatchObject({ ok: false, reason: "no_edits" });
+      expect(none).toHaveLength(0);
+    });
+
+    it("the stored description is not what changed — the resolver hands the writer the version's own row", async () => {
+      /* End to end through `resolveFollowBrief`: the row carries the sentence,
+         the writer is not shown it, and the Follow still rewrites. */
+      const sent: TextRequest[] = [];
+      const row = editedSource({ rollBrief: LIZARD_BRIEF, description: LIZARD, asks: ["make the scales a deeper emerald"] });
+      const result = await resolveFollowBrief(
+        { userId: 7, candidatePublicId: "c1", boxText: LIZARD_BRIEF },
+        { enabled: () => true, readSource: async () => row, engine: () => engineSaying(LIZARD_BRIEF, sent) },
+      );
+      expect(result.outcome).toBe("rewritten");
+      expect(row.description).toContain("They have no horns.");
+      expect(sent[0]!.user).not.toContain("no horns");
     });
   });
 

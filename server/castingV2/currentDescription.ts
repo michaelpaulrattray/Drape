@@ -807,9 +807,140 @@ export function clauseBalance(brief: string, reply: string): { dropped: number; 
   return { dropped, added };
 }
 
+/**
+ * THE DESCRIPTION'S BOOKKEEPING STAYS OUT OF THE CUSTOMER'S BRIEF (#2751).
+ *
+ * The description is written for ONE reader, the next paid refine, which
+ * renders from the cast's untouched original photograph and has no other
+ * memory of what was done to it. Two of {@link CURRENT_DESCRIPTION_SYSTEM}'s
+ * rules exist for that reader alone:
+ *
+ *   - a removal leaves *"one plain clause stating its absence, such as \"They
+ *     wear no glasses.\""*, because without it the next edit paints the horns
+ *     back on (#2645);
+ *   - a change worded as a comparison stays one *"against how they first
+ *     looked"* ("a deeper emerald than their original colouring"), because the
+ *     refine reads it beside that original.
+ *
+ * The follow writer was handed the whole paragraph and told to invent nothing
+ * it did not say, so it carried both, faithfully, into the box the customer
+ * reads and edits: *"…in his 40s, with no horns."*, *"…short crop. They wear no
+ * glasses."* — **12 of 16 answered rewrites over dev's real versions**, measured
+ * 2026-10-29 through the real writer — and *"a beard kept shorter and neater
+ * than it might first appear"*, 1 of 16. Eight new people have no original to
+ * be compared against, and a sentence about what one face does NOT have is a
+ * note to ourselves rather than a direction for a casting call.
+ *
+ * **So both are set aside here, on the way in, and nowhere else.** The stored
+ * description keeps them, because the refine needs them; and nothing is
+ * refused on the way out, because the fallback is the box's own words and a
+ * correct fold-in would be thrown away over one trailing clause. What the
+ * cousins are cast against still shows the absence: the followed version's own
+ * frame is attached to every render (#177 Row A), and that frame has no horns.
+ *
+ * ⚠ **ONE ABSENCE IS KEPT, ON PURPOSE: one whose feature the BRIEF ITSELF
+ * names.** "Wire-frame glasses" in the brief and "They wear no glasses." in the
+ * description is the customer taking back something they asked for, and the
+ * writer can only take the brief's clause out if it is told the glasses are
+ * gone. Set that sentence aside and the brief keeps the glasses, and so does
+ * every cousin. Losing the customer's removal is worse than its wording, so
+ * that sentence reaches the writer exactly as it did before this card.
+ *
+ * ⚠ **WHAT IT DOES NOT CATCH, named:** an absence folded INSIDE a sentence that
+ * also says something else ("short hair and no beard"), and one worded without
+ * "no" ("both earlobes bare"). Each passes through as before. That is a miss
+ * and never a false strip, and it is the right way round: a false strip would
+ * cost the customer a direction they made. On dev's 139 described versions,
+ * every absence is a sentence of its own (31 of 31), and every one is caught.
+ */
+export function descriptionForFollow(
+  description: string | null,
+  brief: string,
+): { text: string; setAside: number } {
+  const text = (description ?? "").trim().replace(/\s+/g, " ");
+  if (text === "") return { text: "", setAside: 0 };
+  let setAside = 0;
+  const kept: string[] = [];
+  for (const sentence of text.split(/(?<=[.!?])\s+/)) {
+    const absent = absentFeature(sentence);
+    if (absent !== null && !briefNames(brief, absent)) {
+      setAside += 1;
+      continue;
+    }
+    kept.push(sentence.replace(AGAINST_THE_ORIGINAL, () => {
+      setAside += 1;
+      return "";
+    }));
+  }
+  return { text: kept.join(" ").trim(), setAside };
+}
+
+/**
+ * A SENTENCE THAT IS NOTHING BUT AN ABSENCE: a subject, a verb, and "no" with
+ * the feature — "They wear no glasses.", "His left eyebrow bears no scar.",
+ * "Their left eyebrow is unmarked, with no scar across it."
+ *
+ * ⚠ **Not {@link ABSENCE_WORDS}, and the reason is the question rather than
+ * taste** (derive only when the question matches). That list answers *"does a
+ * clause naming this feature say it is gone"*, so it holds "not", "never" and
+ * "bare" — and "Their hair is not quite shoulder length." or "an off-shoulder
+ * gown that leaves the shoulders bare" are facts a brief needs. This asks
+ * whether the WHOLE sentence states only an absence, so it reads one shape: the
+ * subject is a pronoun or a possessive and up to two words ("their left
+ * eyebrow"), the verb is one word, and "no" follows it at once, so a sentence
+ * that names a thing first ("a long coat with no sleeves", "short hair and no
+ * beard") never matches. The single "un…ed, with" step is the one measured
+ * second shape. The feature runs to the end and may hold no comma.
+ */
+const ABSENCE_SENTENCE =
+  /^(?:they|he|she|it|(?:their|his|her|its)(?:\s+[a-z'-]+){1,2})\s+(?!(?:and|or|but|with|no)\b)[a-z'-]+\s+(?:un[a-z]+ed,\s+with\s+)?no\s+([a-z'\s-]+)$/;
+
+/**
+ * A COMPARISON AGAINST THE ORIGINAL PHOTOGRAPH — the refine's own reference
+ * point, said in the measured ways the writer says it: "than their original
+ * colouring", "than before", "than it first appeared". Only the reference is
+ * taken; the comparison itself ("a deeper emerald", "shorter and neater") stays,
+ * because that is the direction. Comparisons against anything else ("more salt
+ * than pepper", "lighter than standard brown") are the customer's look and are
+ * untouched.
+ */
+const AGAINST_THE_ORIGINAL =
+  /\s+(?:still\s+)?than\s+(?:(?:their|his|her|its|the)\s+original(?:\s+[a-z]+)?|before|originally|at\s+first|(?:it|they|he|she)\s+(?:might\s+)?(?:first\s+)?(?:appeared|appear|looked|look|was|were|did))\b/gi;
+
+/** The feature an absence-only sentence says is missing, or null. */
+function absentFeature(sentence: string): string | null {
+  const said = sentence.toLowerCase().trim().replace(/[.!?]+$/, "").trim();
+  const match = ABSENCE_SENTENCE.exec(said);
+  return match ? match[1]!.trim() : null;
+}
+
+/**
+ * Does the brief itself name this feature? Read on the feature's head word
+ * (the last word before any place: "scar through their left eyebrow" is a
+ * scar), as a word stem, so "horns" finds "horned" and "glasses" finds
+ * "glasses". It errs toward YES — a stem that also starts another word keeps
+ * the sentence, which is the behaviour before this card, never a lost removal.
+ */
+function briefNames(brief: string, feature: string): boolean {
+  const head = feature.split(PLACE_WORDS)[0]!.trim().split(/\s+/).pop() ?? "";
+  const stemmed = head.replace(/(?:es|s)$/, "");
+  const stem = stemmed.length >= 3 ? stemmed : head;
+  if (stem === "") return false;
+  return brief.toLowerCase().split(/[^a-z'-]+/).some((word) => word.startsWith(stem));
+}
+
+/**
+ * What the follow writer is told about the edited version — set aside once,
+ * read by the turn and by the "is there anything to fold in" check alike, so
+ * the two can never disagree about whether a description was there.
+ */
+function followDescriptionOf(input: FollowBriefInput): string {
+  return descriptionForFollow(input.description, input.brief).text;
+}
+
 /** The user turn, built in one place so a test reads exactly what was asked. */
 export function followBriefUserTurn(input: FollowBriefInput): string {
-  const description = input.description?.trim() ?? "";
+  const description = followDescriptionOf(input);
   const after = description !== ""
     ? `Who the edited cast is:\n${description}`
     : `The edits they made to that cast, in order:\n${input.asks.map((ask) => `- ${ask.trim()}`).join("\n")}`;
@@ -823,7 +954,9 @@ export async function writeFollowBrief(
 ): Promise<FollowBriefResult> {
   const started = Date.now();
   if (!engine) return { ok: false, reason: "no_engine", latencyMs: 0 };
-  const hasDescription = (input.description?.trim() ?? "") !== "";
+  /* What the writer will be shown, bookkeeping set aside (#2751) — a
+     description that held nothing else falls back to the asks like none. */
+  const hasDescription = followDescriptionOf(input) !== "";
   if (!hasDescription && input.asks.filter((ask) => ask.trim() !== "").length === 0) {
     return { ok: false, reason: "no_edits", latencyMs: 0 };
   }
