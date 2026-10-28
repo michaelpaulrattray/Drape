@@ -70,6 +70,8 @@
  * the founder.
  */
 import { capitalize, type CastPronouns } from "./castPronouns";
+import type { FeatureKind } from "./faceDiscovery";
+import { normalisedName, type NamedNotCut } from "./pointerCut";
 import type { FeatureSlot } from "./recipeAssembler";
 import { liveReferences, type StoredReference } from "./referenceLibrary";
 import {
@@ -122,7 +124,22 @@ import {
  * 11.5–12.5% was still read on frames of people in a crew tee — the catalogue
  * still says so at both slots, in the paragraphs the label used to end.
  */
-export type PanelSection = SlotGroup | "open";
+/**
+ * ⚠ **AND THERE IS A THIRD ONE NOW — `outfit` (#2566 slice 2's grouping
+ * design, rule 5).**
+ *
+ * Like `open` it is a fact about this PANEL rather than about the catalogue, so
+ * it lives here for the same reason: no catalogue entry can ever carry it. It
+ * differs from `open` in what it holds — `open` is *things this cast has that
+ * the catalogue has no word for*, one row each, and `outfit` is **one row**
+ * holding the whole look, however many pieces the reading found.
+ *
+ * His own complaint is why it exists: six garment nouns became six sibling
+ * rows, and *"the outfit is ONE row"* is the design's answer. A customer
+ * looking at their cast does not have a list of garments in mind, they have an
+ * outfit — law 8, the stylist's ontology over the reader's.
+ */
+export type PanelSection = SlotGroup | "open" | "outfit";
 
 /**
  * The panel's sections, in the order they are read on a face.
@@ -144,9 +161,35 @@ export const PANEL_GROUPS: readonly { group: PanelSection; heading: string }[] =
   { group: "face", heading: "Face" },
   { group: "hair", heading: "Hair" },
   { group: "body", heading: "Body" },
+  /*
+    BETWEEN BODY AND ACCESSORIES, which is the design's own placement and reads
+    the way a person describes somebody: the face, the hair, the build, then
+    what they are wearing, then what they are wearing ON it.
+
+    An empty section already filters out below, so a close-cropped or undressed
+    cast simply has no Outfit heading — there is no "no outfit" state to design
+    and none was.
+  */
+  { group: "outfit", heading: "Outfit" },
   { group: "accessories", heading: "Accessories" },
   { group: "open", heading: "Also on this character" },
 ];
+
+/**
+ * THE ONE OUTFIT ROW'S KEY.
+ *
+ * ⚠ **It cannot collide with a found row's key and that is STRUCTURAL rather
+ * than lucky**: `discoveredSlotOf` always ends `#<instance>`, from 1, so a
+ * reading that found a thing it called *outfit* keys it `discovered:outfit#1`
+ * and this stays the row nobody found. `pointerCut.test.ts` holds the same
+ * non-collision for the catalogue and the open lane.
+ *
+ * ⚠ **AND NOTHING MAY READ A WORD OUT OF IT.** The heading is authored above —
+ * *Outfit* is the PRODUCT's word for the collection, not any customer's and not
+ * any reading's, because there is no single noun the reading gave for *all of
+ * these pieces together*. Each piece keeps its own noun as a child.
+ */
+export const OUTFIT_SLOT = "discovered:outfit" as FeatureSlot;
 
 export type PanelBox = {
   /** In the frame's own pixels — the frame it was measured on travels with it,
@@ -217,9 +260,46 @@ export type PanelScan = {
     slot: FeatureSlot;
     noun: string;
     instance: number;
+    /**
+     * WHAT THE READING SAID IT IS AND WHAT IT SITS ON — the only two facts this
+     * panel groups by (#2566 slice 2's grouping design).
+     *
+     * `kind: "clothing"` is the ONLY thing that may enter the Outfit row, and
+     * `on` is what folds a lip ring under Lips. Both are the reading's own
+     * answer about the picture, which is the whole point: his ⚠ on the finding
+     * was that the body implants were labelled *Collar*, so any rule keyed on
+     * the WORD sweeps hardware into clothing. The measured reader put body
+     * hardware in `anatomy` 4 of 4 times, and its one miss landed in
+     * `accessory` — neither of which can enter it.
+     */
+    kind: FeatureKind;
+    on: string;
     box: PanelBox;
     maskUrl: string;
   }[];
+  /**
+   * WHAT THE READING NAMED AND NOTHING CUT — words with no picture (#2566
+   * slice 2's grouping design, rules 2 and 4).
+   *
+   * A FIFTH channel, and the first one that carries no geometry at all. It
+   * exists because the design sends these words somewhere rather than dropping
+   * them, and WHERE depends on which rows this panel has: freckles sitting on
+   * skin belong on the Skin row's words line, and freckles sitting on nothing a
+   * row can carry belong to the current description instead. Only this function
+   * knows which rows exist, so only this function can answer it.
+   *
+   * ⚠ **A `makeup` entry never reaches a row, whatever it sits on** — his
+   * ruling: makeup is something you change with words, not a thing in the list.
+   *
+   * Absent on a panel built without a scan, and empty on a reading that cut
+   * everything it named. Both route nothing, which is today's panel.
+   */
+  /* ⚠ THE READER'S OWN TYPE, imported rather than restated — unlike
+     `discovered` above, which deliberately declares a SUBSET of what the store
+     holds. The panel wants every field of this one and nothing else, so a
+     second copy here would be the mirror working law 4 is about, and the Atlas
+     says so: an inline copy raised a `redeclared-shape` finding of its own. */
+  namedNotCut?: readonly NamedNotCut[];
 };
 
 /**
@@ -446,6 +526,25 @@ export type PanelInstance = {
    *  rectangle sends (`scope`), so there is one scoping mechanism with two
    *  entrances (fable-444 ruling C, fable-452). */
   slot: FeatureSlot;
+  /**
+   * MAY AN ASK BE NARROWED TO THIS CHILD — the SERVER's answer, exactly as
+   * {@link PanelRegion.scopable} is for a rectangle (#2566 slice 2).
+   *
+   * ⚠ **IT IS ADDED BECAUSE THE GROUPING GIVES A ROW CHILDREN THAT THE SCOPE
+   * DOOR REFUSES, AND THE CLIENT HAD NO WAY TO KNOW.** Every child here used to
+   * be one side of a catalogued pair, so the browser could send `scope:
+   * <child>` unconditionally and be right every time. A folded found row breaks
+   * that: a lip ring under Lips, a jacket under Outfit, keyed `discovered:…`,
+   * which `refineService`'s door answers `scope_unknown` on — driven at the
+   * code, `slotDefinition("discovered:lip-ring#1")` is `null`. A tap that
+   * dead-ends with a BAD_REQUEST is the entrance-before-the-road class with the
+   * entrance drawn by us, which is the exact failure the sibling field on
+   * `PanelRegion` was added to prevent on the photograph's side.
+   *
+   * True on a catalogued pair's sides, which is what it has always been.
+   * False on every child the reading found.
+   */
+  scopable: boolean;
   /** Bare, like every label: "Left eye" (fable-450/451). */
   name: string;
   /** How the product speaks about this one — "her left eye". */
@@ -565,6 +664,32 @@ function nounOf(definition: SlotDefinition, paired: boolean): string {
  */
 function labelOf(definition: SlotDefinition, paired: boolean): string {
   return capitalize(nounOf(definition, paired));
+}
+
+/**
+ * EVERY WORD A READING MIGHT USE FOR A CATALOGUED ROW (#2566 slice 2's
+ * grouping design, rule 3).
+ *
+ * The same five fields `pointerCut`'s `catalogueVocabulary` reads, and for a
+ * reason one step further on: that function asks *does the catalogue already
+ * buy a question for this name*, and this asks *is this name a row a found
+ * thing can sit UNDER*. Both questions are answered by the catalogue's own
+ * words, so both read the same five rather than keeping a list each.
+ *
+ * ⚠ **The displayed label alone is not enough and `skin` is why**: its row
+ * draws as *Skin*, its `display` is *face skin*, and the design's own worked
+ * example is freckles sitting on **skin**. A pair is the mirror case — the row
+ * draws as *Eyes* and the reading says *eye* or *eyes*, both of which reach it
+ * through `feature` and `question`.
+ */
+function catalogueHostWords(definition: SlotDefinition): readonly (string | null | undefined)[] {
+  return [
+    definition.noun,
+    definition.pairNoun,
+    definition.display,
+    definition.feature,
+    definition.question,
+  ];
 }
 
 /**
@@ -906,10 +1031,32 @@ export function facePanel(input: {
 
   const spoken = new Set<FeatureSlot>();
   const rowsOf = new Map<PanelSection, PanelRow[]>();
-  const push = (row: PanelRow) => {
+  /**
+   * WHAT A FOUND THING MAY SAY IT SITS ON, PER ROW (#2566 slice 2's grouping
+   * design, rule 3).
+   *
+   * Recorded as each row is pushed rather than re-derived afterwards, and that
+   * is working law 4 in the one place it would bite hardest: the only other
+   * road to this is a second walk of `catalogueSlots()` down here, which would
+   * be a parallel copy of the enumeration above and would drift from it the
+   * first time a slot's words changed.
+   *
+   * ⚠ **The DEFAULT is the row's own displayed label and that is deliberate** —
+   * a row the reading itself named, or an open kind the customer named, has
+   * exactly one word and it is the one drawn on screen. The catalogue rows pass
+   * their five, because a catalogue row's displayed label is not always the
+   * word a reading would use for it (`skin` draws as *Skin* and its `display`
+   * is *face skin*; the pair rows draw as *Eyes* and their question is *eyes*).
+   */
+  const hostNounsOfRow = new Map<PanelRow, readonly string[]>();
+  const push = (row: PanelRow, hostNouns?: readonly (string | null | undefined)[]) => {
     const held = rowsOf.get(row.group);
     if (held) held.push(row);
     else rowsOf.set(row.group, [row]);
+    const words = (hostNouns ?? [row.name])
+      .filter((word): word is string => typeof word === "string" && word.trim() !== "")
+      .map((word) => normalisedName(word));
+    if (words.length > 0) hostNounsOfRow.set(row, words);
   };
 
   for (const definition of definitions) {
@@ -955,7 +1102,7 @@ export function facePanel(input: {
           : [],
         /* There is only one of it, so there is nothing to open. */
         instances: [],
-      });
+      }, catalogueHostWords(definition));
       continue;
     }
 
@@ -1092,8 +1239,12 @@ export function facePanel(input: {
           words: wordsFor(side.feature, state.words),
           cutout: state.thumb,
           box: state.box,
+          /* A catalogued instance, which is exactly what the scope door admits
+             — the same answer this row's rectangles give, for the same reason,
+             because a child and its rectangle send one wire. */
+          scopable: side.instance !== null,
         })),
-      });
+      }, catalogueHostWords(left));
       continue;
     }
 
@@ -1211,9 +1362,25 @@ export function facePanel(input: {
     slice 3) — see `discovering`. The places are kept unnamed in the browser,
     from `pendingUnnamed` below, so the panel never names what nobody has seen.
   */
+  /*
+    AND THE OUTFIT SECTION IS OUTSIDE THE GRACE FOR THE SAME REASON `open` IS
+    (#2566 slice 2).
+
+    The grace keeps a place for an answer the CATALOGUE walk is certainly going
+    to give. There is no catalogue walk behind an Outfit row — it exists only
+    because the reading found clothing — so a contentless one held open by
+    `scanning` would be a placeholder for a read that is not running, which is
+    fable-521's own warning about a working state outliving its work.
+
+    ⚠ **It cannot fire today and is written anyway**: an Outfit row is built
+    only from pieces that have boxes, so it always has content. The clause is
+    here so that the day a piece can arrive without one, this does not quietly
+    start drawing an empty Outfit heading over a face.
+  */
   const namedGrace = input.scanning === true && input.discovering !== true;
+  const FOUND_SECTIONS: readonly PanelSection[] = ["open", "outfit"];
   const keep = (row: PanelRow): boolean => hasContent(row)
-    || (namedGrace && row.group !== "open");
+    || (namedGrace && !FOUND_SECTIONS.includes(row.group));
   const stateOfRow = (row: PanelRow): PanelRow => (
     hasContent(row) ? row : { ...row, state: "pending" }
   );
@@ -1522,6 +1689,333 @@ export function facePanel(input: {
   }
 
   /*
+    ---- THE GROUPING: WHERE EACH FOUND THING ACTUALLY GOES (#2566 slice 2,
+    the grouping design of 2026-10-28) ----
+
+    Slice 1 made the reading DECLARE what each thing is (`kind`) and what it
+    sits on (`on`), judged from the picture, per cast. This is where the panel
+    reads them, and the three destinations are exhaustive:
+
+      the one OUTFIT row    a `clothing` find, plus anything whose `on` chain
+                            ends at one. Single pieces become its children.
+      a CHILD of a row      an `on` that resolves to a row this panel already
+                            has: a lip ring under Lips, a piercing under Ears.
+      its OWN row in `open` everything else — the third eye, the jaw hardware,
+                            the neck tattoo, the mole.
+
+    # WHY THERE IS NO WORD LIST ANYWHERE IN HERE
+
+    His binding sentence: *"nothing should be confined to a set list thats the
+    old way of doing things the new way is the image is analyzed and features
+    are determined that way."* Every relation below comes out of the reading.
+    ⚠ **And his own ⚠ on the finding is why `kind` and not the noun decides
+    Outfit**: the body implants were labelled *Collar*, so a rule keyed on the
+    WORD sweeps hardware into clothing. `kind: "clothing"` is the only key to
+    that row, and the measured reader put body hardware in `anatomy` 4 of 4
+    times with its single miss landing in `accessory` — neither of which can
+    enter it.
+  */
+  /*
+    ⚠ **THE TWO FACTS ARE NORMALISED AT THE ONE DOOR THEY COME IN BY, and that
+    is belt-on-braces rather than distrust of the type.** Both are REQUIRED on
+    {@link PanelScan}, and the one road that can lack them narrows at its own
+    boundary (`keptFaceScan`, for a row written between slice 2's two landings).
+    What this line buys is that a row arriving without them degrades to TODAY'S
+    PANEL — a hostless `anatomy`, so a top-level row in *Also on this character*
+    — instead of throwing inside `trim()` and taking the whole panel with it.
+    A customer surface should not have one unreadable field as a single point of
+    failure for every row on it.
+  */
+  const foundRows = (input.scan?.discovered ?? [])
+    .filter((found) => typeof found.noun === "string" && found.noun.trim() !== "")
+    .map((found) => ({
+      ...found,
+      kind: found.kind ?? "anatomy",
+      on: typeof found.on === "string" ? found.on : "",
+    }));
+
+  /**
+   * THE ROW ONE HOST NOUN NAMES, or null.
+   *
+   * Read off the rows this panel has actually BUILT — `hostNounsOfRow` is
+   * filled by `push` — so a row that was never drawn is not a host, and nothing
+   * here has to know which loop above produced it.
+   */
+  const rowHosting = (word: string): PanelRow | null => {
+    const key = normalisedName(word);
+    for (const [row, words] of Array.from(hostNounsOfRow.entries())) {
+      if (words.includes(key)) return row;
+    }
+    return null;
+  };
+
+  /** The found thing one host noun names, or null — the chain's own step. */
+  const foundHosting = (word: string): (typeof foundRows)[number] | null => {
+    const key = normalisedName(word);
+    return foundRows.find((one) => normalisedName(one.noun) === key) ?? null;
+  };
+
+  type FoundHome =
+    | { home: "outfit" }
+    | { home: "child"; parent: PanelRow }
+    /* A child of ANOTHER FOUND THING's row — resolved in a second pass, once
+       that thing's own row has been drawn. See `homeOf`'s own paragraph. */
+    | { home: "underFound"; host: (typeof foundRows)[number] }
+    | { home: "own" };
+
+  /**
+   * WHERE ONE FOUND THING BELONGS — the whole of rules 3 and 5.
+   *
+   * ⚠ **THE CHAIN IS FOLLOWED TO ITS TOP HOST AND NOT READ ONE HOP DEEP**,
+   * which is the design's own *"chains followed to the top host (buckle on
+   * strap, strap on coat → the coat's destination)"*. It is not hypothetical:
+   * cast 2556 reads `buckle on=strap`, `strap on=coat` and `coat` clothing, so
+   * a one-hop reader puts the buckle in *Also on this character* beside an
+   * Outfit row holding the strap it is buckled to.
+   *
+   * ⚠ **IT IS RECURSIVE RATHER THAN A LOOP OVER `rowHosting`, AND THE REASON
+   * IS AN ORDERING THAT BIT THE FIRST VERSION OF THIS BLOCK: a found thing's
+   * row does not exist yet while the homes are being decided.** So a `stud on
+   * third eye` asked *is there a Third eye row* and was told no — because the
+   * Third eye row is pushed by the loop BELOW this one — and got its own row
+   * beside its host. The host's own home is the answer instead, which needs no
+   * row to exist and gives the same reply whatever order things are drawn in.
+   *
+   * ⚠ **A CYCLE IS HOSTLESS, not a hang.** A reading that answers `strap
+   * on=buckle` and `buckle on=strap` is answering nothing, and the `seen` set
+   * is what makes that an answer rather than a loop. Driven directly, because
+   * a model that usually behaves is no test of a guard (working law 3).
+   */
+  const homeOf = (
+    found: { noun: string; kind: FeatureKind; on: string },
+    seen: ReadonlySet<string> = new Set(),
+  ): FoundHome => {
+    if (found.kind === "clothing") return { home: "outfit" };
+    const host = found.on.trim();
+    if (host === "") return { home: "own" };
+    const key = normalisedName(host);
+    /* A cycle, or a thing pointing at itself: the reading has said nothing
+       about where this sits, so it is hostless and keeps its own row. */
+    if (key === normalisedName(found.noun) || seen.has(key)) return { home: "own" };
+    const step = foundHosting(host);
+    if (step !== null) {
+      /* The host's OWN destination is this one's — that is what *to the top
+         host* means. A host in the outfit takes its lodgers with it; a host
+         that folded under a row takes them to the same row, because a child
+         has no children of its own. */
+      const deeper = new Set(Array.from(seen));
+      deeper.add(key);
+      deeper.add(normalisedName(found.noun));
+      const above = homeOf(step, deeper);
+      if (above.home === "own") return { home: "underFound", host: step };
+      return above;
+    }
+    const parent = rowHosting(host);
+    if (parent !== null) return { home: "child", parent };
+    /* A name nothing drew and nothing found — `forehead`, `jaw`, `neck`,
+       `shoulder` on the real fixtures, and an UNCUT host like a strap nothing
+       could draw. It keeps its own row, which is exactly where the third eye
+       and the jaw hardware belong. ⚠ The `namedNotCut` channel knows what an
+       uncut host sat on and is deliberately NOT walked here: a chain through a
+       thing with no picture would fold a visible row under an invisible one,
+       and the design says a thing that cannot be cut gets no row at all. */
+    return { home: "own" };
+  };
+
+  /** One found thing as a child of whatever it sits on. */
+  const foundChild = (found: (typeof foundRows)[number]): PanelInstance => {
+    const noun = found.noun.trim();
+    const spokenName = `${input.pronouns.possessive} ${noun}`;
+    return {
+      slot: found.slot,
+      name: capitalize(noun),
+      spoken: spokenName,
+      prefill: prefillFor(spokenName),
+      /* What the reading SAID about it is prose for the current description,
+         not a line under its own picture — the found row's own rule, and a
+         child is that same row one level in. */
+      words: [],
+      cutout: {
+        contentUrl: input.scan?.frameUrl ?? "",
+        maskUrl: found.maskUrl,
+        crop: found.box,
+      },
+      box: found.box,
+      /* NEVER — `refineService`'s scope door answers `scope_unknown` on a
+         `discovered:` key, driven at the code. See
+         {@link PanelInstance.scopable}. */
+      scopable: false,
+    };
+  };
+
+  /** Its rectangle on the photograph, named, the way a pair's sides are. */
+  const foundChildRegion = (found: (typeof foundRows)[number]): PanelRegion => {
+    const noun = found.noun.trim();
+    const spokenName = `${input.pronouns.possessive} ${noun}`;
+    return {
+      box: found.box,
+      /* NAMED, exactly as a pair's rectangles are and for the identical reason:
+         the row above speaks the person's ontology ("their lips") while this
+         rectangle is a promise about these pixels, so it says which thing it
+         is. Bare, because a tag is a label (founder, fable-451). */
+      name: capitalize(noun),
+      spoken: spokenName,
+      prefill: prefillFor(spokenName),
+      slot: found.slot,
+      scopable: false,
+    };
+  };
+
+  /* ---- the folds and the outfit's pieces, decided before anything is drawn ---- */
+  const outfitPieces: (typeof foundRows)[number][] = [];
+  const foldedUnder = new Map<PanelRow, (typeof foundRows)[number][]>();
+  /* The lodgers of a found thing, keyed by that thing's own row-to-be. They
+     cannot be attached until the own-row loop below has drawn it. */
+  const foldedUnderFound = new Map<(typeof foundRows)[number], (typeof foundRows)[number][]>();
+  const ownRows: (typeof foundRows)[number][] = [];
+  for (const found of foundRows) {
+    const home = homeOf(found);
+    if (home.home === "outfit") { outfitPieces.push(found); continue; }
+    if (home.home === "child") {
+      const held = foldedUnder.get(home.parent) ?? [];
+      held.push(found);
+      foldedUnder.set(home.parent, held);
+      continue;
+    }
+    if (home.home === "underFound") {
+      const held = foldedUnderFound.get(home.host) ?? [];
+      held.push(found);
+      foldedUnderFound.set(home.host, held);
+      continue;
+    }
+    ownRows.push(found);
+  }
+
+  /**
+   * ONE ROW REPLACED IN PLACE, keeping its host words with it.
+   *
+   * ⚠ **The host-word entry has to MOVE or the next write to the same row finds
+   * nothing.** `hostNounsOfRow` is keyed on the row OBJECT, and both the fold
+   * below and the words pass further down replace that object — so a second
+   * fold onto one parent, or a words line onto a row that already took a child,
+   * would silently land nowhere. It is one line and it is the only thing about
+   * this helper that is not obvious.
+   */
+  const replaceRow = (row: PanelRow, fresh: PanelRow): void => {
+    const held = rowsOf.get(row.group);
+    if (held === undefined) return;
+    const at = held.indexOf(row);
+    if (at < 0) return;
+    held[at] = fresh;
+    const words = hostNounsOfRow.get(row);
+    if (words !== undefined) {
+      hostNounsOfRow.delete(row);
+      hostNounsOfRow.set(fresh, words);
+    }
+  };
+
+  /**
+   * ONE LINE OF WORDS ONTO A ROW, deduplicated by the sentence itself.
+   *
+   * The same rule `foldedWords` already follows for a folded catalogue slot:
+   * two crops of one face can report the same scattered thing, and a row that
+   * said it twice would read as the product repeating itself.
+   */
+  const wordsOnto = (row: PanelRow, said: string): void => {
+    if (row.words.includes(said)) return;
+    replaceRow(row, { ...row, words: [...row.words, said] });
+  };
+
+  /*
+    ---- A FOUND THING FOLDS UNDER THE ROW IT SITS ON (rule 3) ----
+
+    His own sentence: a lip ring goes under Lips, an ear piercing under Ears.
+    The grammar is already here — the pair rows' children — so it is REUSED
+    rather than invented, which is the design's instruction in its own words.
+
+    ⚠ **THE TWO-INSTANCE RULE SURVIVES THE FOLD**: two piercings are two
+    children with two cuts, never a union (#2565 §6). They arrive from the
+    pointer road as two rows already, so nothing here has to preserve it — what
+    this paragraph prevents is a later hand merging them *because they share a
+    noun*.
+
+    ⚠ **AND THE PARENT'S OWN `slots` DOES NOT GROW.** Tapping Lips is an ask
+    about the lips, not about a ring on them, and a row whose `slots` quietly
+    included its lodgers would send an edit meaning both. The child carries its
+    own tap and its rectangle carries its own name.
+  */
+  for (const [parent, children] of Array.from(foldedUnder.entries())) {
+    replaceRow(parent, {
+      ...parent,
+      regions: [...parent.regions, ...children.map(foundChildRegion)],
+      instances: [...parent.instances, ...children.map(foundChild)],
+    });
+  }
+
+  /*
+    ---- THE OUTFIT IS ONE ROW (rule 5) ----
+
+    ⚠ **HIS COMPLAINT WAS SIX ROWS FOR ONE OUTFIT, and the answer is not fewer
+    garments, it is one row.** A customer looking at their cast has an outfit in
+    mind, not a list of garments — law 8, the stylist's ontology over the
+    reader's.
+
+    The picture is the frame cropped to the UNION of the pieces' boxes: the
+    dressed figure, no stencil, which is the ink rows' own `maskUrl: null`
+    shape. Each piece stays real underneath as a child with its own cut, so
+    *"change the strap"* is one tap deeper and the edit still names the strap in
+    words.
+
+    ⚠ **The row's `slots` DOES hold every piece, unlike a folded parent's**, and
+    the difference is the noun: *outfit* IS the collection, so tapping it is an
+    ask about all of it and lighting every piece on the photograph is the truth.
+    *Lips* is not a collection of a lip and a ring.
+  */
+  if (outfitPieces.length > 0) {
+    const boxes = outfitPieces.map((piece) => piece.box);
+    const union: PanelBox = {
+      x: Math.min(...boxes.map((box) => box.x)),
+      y: Math.min(...boxes.map((box) => box.y)),
+      width: Math.max(...boxes.map((box) => box.x + box.width)) - Math.min(...boxes.map((box) => box.x)),
+      height: Math.max(...boxes.map((box) => box.y + box.height)) - Math.min(...boxes.map((box) => box.y)),
+      /* Every box on a reading was measured on the one frame the reading was
+         taken from, so the first piece's frame is the union's frame — a box
+         without its frame is a rectangle in an unknown space. */
+      frame: boxes[0]!.frame,
+    };
+    const spokenName = `${input.pronouns.possessive} outfit`;
+    push({
+      state: "settled",
+      slots: [OUTFIT_SLOT, ...outfitPieces.map((piece) => piece.slot)],
+      group: "outfit",
+      /* The PRODUCT's word for the collection, authored here and in
+         {@link PANEL_GROUPS}'s heading. No reading gave a noun for *all of
+         these pieces together*, so there is none of anybody's to use. */
+      name: "Outfit",
+      spoken: spokenName,
+      /* Filled by the words pass below: a scattered piece — rough stitching,
+         fraying, a leather patch — contributes words here rather than a child. */
+      words: [],
+      absent: null,
+      from: null,
+      prefill: prefillFor(spokenName),
+      cutouts: [{
+        contentUrl: input.scan?.frameUrl ?? "",
+        /* NO STENCIL: the picture is the dressed figure in a window, not a
+           shape cut out of it. A union of several masks would be several
+           disconnected islands with the body showing between them, which is
+           not what anybody means by an outfit. */
+        maskUrl: null,
+        crop: union,
+      }],
+      /* One rectangle per PIECE rather than the union: a union rectangle over a
+         dressed figure is the whole figure, which points at nothing. */
+      regions: outfitPieces.map(foundChildRegion),
+      instances: outfitPieces.map(foundChild),
+    }, ["outfit"]);
+  }
+
+  /*
     ---- WHAT THE READING FOUND THAT NOBODY CATALOGUED (#2566 slice 2's pointer
     road, under the design he approved on #2532) ----
 
@@ -1569,14 +2063,29 @@ export function facePanel(input: {
     row above refuses by name. So each instance is its own row, and its label is
     the noun it was found under.
   */
-  for (const found of input.scan?.discovered ?? []) {
+  /*
+    ---- AND SINCE SLICE 2'S GROUPING, NOT EVERY FOUND THING COMES HERE ----
+
+    ⚠ **UNTIL THE GROUPING LANDED THIS LOOP DREW EVERY FOUND THING AS A
+    TOP-LEVEL SIBLING, and his eye found five separate defects in that one
+    fact.** The panel knew WHAT the reading had named and nothing about what
+    each named thing IS, so the only grouping instrument on the road was a
+    spelling test (`coveredByCatalogue`): "lip ring" became a sibling of Lips,
+    "eye makeup" became a row at all, six garment nouns became six rows.
+
+    Slice 1 answered it at the source — the reading DECLARES `kind` and `on` per
+    feature, judged from the picture, per cast. The grouping block above reads
+    them and this loop now draws only what is left: the third eye, the jaw
+    hardware, the neck tattoo, the mole. Everything in the paragraphs below
+    still holds of those rows, word for word.
+  */
+  /* The row each own-row found thing became, so its lodgers can be attached
+     once it exists — see `foldedUnderFound`. */
+  const rowOfFound = new Map<(typeof foundRows)[number], PanelRow>();
+  for (const found of ownRows) {
     const noun = found.noun.trim();
-    /* An unusable noun is SKIPPED rather than drawn under a made-up name — the
-       same refusal the ink loop makes for an unreadable slot, for the same
-       reason: a row is a promise that tapping it edits that thing. */
-    if (noun === "") continue;
     const spokenName = `${input.pronouns.possessive} ${noun}`;
-    push({
+    const row: PanelRow = {
       state: "settled",
       slots: [found.slot],
       group: "open",
@@ -1604,9 +2113,116 @@ export function facePanel(input: {
         crop: found.box,
       }],
       regions: [openRegion(found.slot, found.box)],
-      /* One cut instance, so there is nothing to open. */
+      /* One cut instance of ITSELF; anything the reading said sits on it is
+         attached by the pass below. */
       instances: [],
+    };
+    push(row);
+    rowOfFound.set(found, row);
+  }
+
+  /*
+    ---- AND A FOUND THING THAT SITS ON ANOTHER FOUND THING, once that one has
+    a row (#2566 slice 2) ----
+
+    A stud on the third eye, a charm on a strap that is not clothing. It is a
+    second pass for one reason and the reason is ordering: the homes are decided
+    before any found row is drawn, so there is nothing to fold under yet.
+    `homeOf` answers `underFound` there and this is where that answer is spent.
+  */
+  for (const [host, children] of Array.from(foldedUnderFound.entries())) {
+    const parent = rowOfFound.get(host);
+    /* A host that resolved to its own row is in `ownRows`, so this cannot miss
+       — but a host that somehow never drew leaves its lodgers where they were
+       rather than dropping them, which is a row each in `open`. */
+    if (parent === undefined) {
+      for (const child of children) {
+        const noun = child.noun.trim();
+        const spokenName = `${input.pronouns.possessive} ${noun}`;
+        push({
+          state: "settled",
+          slots: [child.slot],
+          group: "open",
+          name: capitalize(noun),
+          spoken: spokenName,
+          words: [],
+          absent: null,
+          from: null,
+          prefill: prefillFor(spokenName),
+          cutouts: [{
+            contentUrl: input.scan?.frameUrl ?? "",
+            maskUrl: child.maskUrl,
+            crop: child.box,
+          }],
+          regions: [openRegion(child.slot, child.box)],
+          instances: [],
+        });
+      }
+      continue;
+    }
+    replaceRow(parent, {
+      ...parent,
+      regions: [...parent.regions, ...children.map(foundChildRegion)],
+      instances: [...parent.instances, ...children.map(foundChild)],
     });
+  }
+
+  /*
+    ---- THE WORDS WITH NO PICTURE (#2566 slice 2's rules 2 and 4) ----
+
+    ⚠ **A SCATTERED THING IS NEVER CUT AND IS NOT THEREBY FORGOTTEN.** Freckles
+    are scattered across skin and rough stitching across a coat; the detector is
+    never asked for a thing that has no outline — which removes the
+    freckles-cut-to-the-tattoo class at its source — and the words go to the row
+    it sits on. Here is where *the row it sits on* is answered, because this is
+    the only place that knows which rows exist.
+
+    ⚠ **MAKEUP GETS NO ROW AND NO WORDS ON ONE, whatever it sits on** — his
+    ruling, and the one entry here that is skipped rather than routed. Eyeliner
+    on eyes must not write a line onto the Eyes row: a row's words line is a
+    description of the feature the row IS, and makeup is something you change
+    with words rather than a thing in the list.
+
+    ⚠ **AND WHAT IS NOT BUILT IS DECLARED: THE CURRENT DESCRIPTION IS NOT
+    WRITTEN FROM HERE.** The design sends a hostless scattered thing, and every
+    makeup, to the current description (#2565 §2) — and that paragraph is
+    written at REFINE time from the previous description plus the one edit being
+    made (`currentDescription.ts`), with no entrance from a scan at all. Wiring
+    one is a new road and #2565's rather than this slice's, and folding it in
+    here is exactly the *half-built feature shipping under another card's name*
+    his ruling of 2026-09-24 forbids. **What this slice does instead is stop
+    throwing the words away**: they ride on {@link PanelScan.namedNotCut} and
+    are KEPT with the reading, so the consumer #2565 builds will have them for
+    every frame already read, with no re-scan and no second reading bought.
+  */
+  const outfitRow = (): PanelRow | null => (rowsOf.get("outfit") ?? [])[0] ?? null;
+  for (const said of input.scan?.namedNotCut ?? []) {
+    /* His ruling: makeup is a refine subject, not a feature of the cast. */
+    if (said.why === "makeup") continue;
+    /*
+      A thing the detector WAS asked about and could not find has no host
+      question to answer: what is missing is its own row, not a line on
+      somebody else's, and writing its words onto the host would describe the
+      host with a sentence about something that is not drawn. It travels on the
+      channel and nowhere else, and the next edit to that area asks again.
+    */
+    if (said.why === "uncut") continue;
+    const about = said.about.trim();
+    if (about === "" || said.on.trim() === "") continue;
+    /* The same question `homeOf` answers for a region, asked the same way: a
+       scattered PIECE OF CLOTHING, and anything sitting on one, says its words
+       on the Outfit row. `kind` is the thing's own, which is why a scattered
+       garment reaches the outfit with no special case here. */
+    const home = homeOf({ noun: said.noun, kind: said.kind, on: said.on });
+    if (home.home === "outfit") {
+      const row = outfitRow();
+      if (row !== null) wordsOnto(row, about);
+      continue;
+    }
+    if (home.home === "child") { wordsOnto(home.parent, about); continue; }
+    /* `underFound` and `own` alike: nothing on this panel can carry it, so it
+       stays on the channel for the current description and the panel is silent
+       about it. */
   }
 
   return {

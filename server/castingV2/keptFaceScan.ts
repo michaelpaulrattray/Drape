@@ -53,6 +53,8 @@ import { createModuleLogger } from "../logging/logger";
 import { storagePut, storageReadBytes } from "../storage";
 import type { FeatureSlot } from "./recipeAssembler";
 import type { PanelBox } from "./facePanel";
+import { cleanKind, type FeatureKind } from "./faceDiscovery";
+import type { NamedNotCut } from "./pointerCut";
 
 const log = createModuleLogger("castingV2/keptFaceScan");
 
@@ -68,6 +70,11 @@ export type KeptDiscoveredRow = {
   slot: FeatureSlot;
   noun: string;
   instance: number;
+  /** The panel's grouping grammar — see `StoredDiscoveredSlot.kind`, which
+   *  carries why a row written before slice 2's grouping restores as a
+   *  hostless `anatomy` and therefore as today's panel exactly. */
+  kind: FeatureKind;
+  on: string;
   box: PanelBox;
   maskUrl: string;
 };
@@ -96,6 +103,18 @@ export type KeptScanShape = {
    * apart — both draw no found rows, which is today's panel.
    */
   discovered?: readonly KeptDiscoveredRow[];
+  /**
+   * WHAT THE READING NAMED AND NOTHING CUT — kept for `discovered`'s own
+   * reason, said about words instead of pictures (#2566 slice 2).
+   *
+   * Without it a kept reading loses the freckles' words off the Skin row on the
+   * second look at an unchanged frame, which is the same once-and-never-again
+   * defect the field above is kept against.
+   *
+   * Optional and absent in the ordinary case, exactly as above. There is no
+   * stencil and no object here, so it costs the cleanup manifest nothing.
+   */
+  namedNotCut?: readonly NamedNotCut[];
 };
 
 export type KeptScanDependencies = {
@@ -228,10 +247,18 @@ export async function keepScan(input: {
             slot: one.slot,
             noun: one.noun,
             instance: one.instance,
+            kind: one.kind,
+            on: one.on,
             box: one.box,
             maskKey: one.key,
           })),
         }
+        : {}),
+      /* Absent rather than empty for the sibling field's reason, and the
+         reading is unaffected either way: an absent list and an empty one both
+         route no words. */
+      ...((input.scan.namedNotCut ?? []).length > 0
+        ? { namedNotCut: (input.scan.namedNotCut ?? []).map((one) => ({ ...one })) }
         : {}),
     };
     await write({
@@ -362,6 +389,23 @@ export async function serveKeptScan(input: {
         slot: row.slot as FeatureSlot,
         noun: row.noun,
         instance: row.instance,
+        /*
+          ⚠ **A ROW WRITTEN BEFORE THE GROUPING RESTORES AS TODAY'S PANEL, not
+          as a guess** (#2566 slice 2) — `StoredDiscoveredSlot.kind` carries the
+          argument. `anatomy` can never enter the Outfit row and an empty host
+          resolves to nothing, so every found row on such a reading is a
+          top-level sibling in *Also on this character*, which is exactly where
+          it was drawn before this slice.
+
+          ⚠ **AND THE CAST IS NARROWED RATHER THAN TRUSTED.** The column is
+          JSON, so `kind` is whatever was written there, and a value outside the
+          five would reach the panel's `clothing` test as a string nobody
+          checked. `FEATURE_KINDS` is the reading's own vocabulary and
+          `cleanKind` is the one reader of it (shared with `parseDiscovery`, so
+          a sixth kind cannot be admitted here and refused there).
+        */
+        kind: cleanKind(row.kind),
+        on: typeof row.on === "string" ? row.on : "",
         box: row.box,
         maskUrl: `data:image/png;base64,${stencil.bytes.toString("base64")}`,
       });
@@ -378,6 +422,30 @@ export async function serveKeptScan(input: {
          a reading with no found rows is byte for byte the shape this module
          served before the field existed. */
       ...(discovered.length > 0 ? { discovered } : {}),
+      /*
+        THE WORDS WITH NO PICTURE, read back under the same narrowing the kinds
+        above get and for the same reason: the column is JSON, so `why` is
+        whatever was written. A row whose `why` is not one of the three is
+        DROPPED rather than admitted as an unknown reason — the panel branches
+        on it (makeup never reaches a row), and a fourth value would take a
+        branch nobody wrote. Dropping one entry costs its words; admitting it
+        costs a destination nobody chose.
+      */
+      ...(() => {
+        const said: NamedNotCut[] = [];
+        for (const one of kept.geometry.namedNotCut ?? []) {
+          if (one.why !== "scattered" && one.why !== "makeup" && one.why !== "uncut") continue;
+          if (typeof one.noun !== "string" || one.noun.trim() === "") continue;
+          said.push({
+            noun: one.noun,
+            on: typeof one.on === "string" ? one.on : "",
+            about: typeof one.about === "string" ? one.about : "",
+            kind: cleanKind(one.kind),
+            why: one.why,
+          });
+        }
+        return said.length > 0 ? { namedNotCut: said } : {};
+      })(),
     };
   } catch (error) {
     log.warn(

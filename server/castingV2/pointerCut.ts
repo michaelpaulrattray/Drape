@@ -99,7 +99,7 @@
 import { boundsOf } from "./segmentCuts";
 import { catalogueSlots } from "./referenceSlotCatalogue";
 import { createModuleLogger } from "../logging/logger";
-import type { DiscoveredFeature } from "./faceDiscovery";
+import type { DiscoveredFeature, FeatureKind } from "./faceDiscovery";
 import type { Mask } from "./maskedComposite";
 import type { PanelBox } from "./facePanel";
 import type { PointerBox, RegionReader } from "./maskedRefine";
@@ -153,8 +153,74 @@ export type DiscoveredRegion = {
   /** Which instance of that noun, from 1 — so a row can say so if it ever
    *  needs to, and so two rows of one noun are legibly two. */
   instance: number;
+  /**
+   * WHAT THE READING SAID THIS THING IS, and WHAT IT SITS ON — carried, never
+   * re-derived (#2566 slice 2, the grouping design of 2026-10-28).
+   *
+   * The panel groups by these two and by nothing else: `clothing` is what may
+   * enter the one Outfit row, and `on` is what folds a lip ring under Lips.
+   * They ride on the region rather than being looked up again downstream
+   * because the only other road to them is a word table, and a word table is
+   * the failure this pass exists to remove — his own ⚠ is that the body
+   * implants were labelled *Collar*, so any rule keyed on the WORD sweeps
+   * hardware into clothing.
+   *
+   * `coverage` is deliberately NOT here: a `scattered` thing never reaches the
+   * detector at all ({@link pointerFeatures}), so every region that exists is
+   * `single` and a field saying so could only ever disagree with itself.
+   */
+  kind: FeatureKind;
+  /** The bare noun of what it sits on, or `""` — the reading's own word. */
+  on: string;
   box: PanelBox;
   mask: Mask;
+};
+
+/**
+ * ONE THING THE READING NAMED AND NOTHING CUT — its words, and where they go.
+ *
+ * His ruling, through the approved design: *a feature that can be named but not
+ * cut gets no row*. It is not thereby FORGOTTEN — the design's rules 2 and 4
+ * both send its words somewhere a later edit can reach them, which is the one
+ * thing that makes "no row" an answer rather than a loss.
+ *
+ * ⚠ **THIS TYPE EXISTS BECAUSE THE CLAIM WAS ALREADY IN THIS FILE AND THE CODE
+ * DID NOT SUPPORT IT.** `cutDiscovered`'s declined branch has said *"the words
+ * still reach the current description (#2565 §2) and the next edit to that area
+ * asks again"* since slice 2's first landing, and `declined` was returned to a
+ * caller that threw it away — read at the bytes 2026-10-28: `faceScanService`
+ * took `cut.regions` and nothing else, and no other module in the product read
+ * the field. A comment describing a road nobody built is law 1's own shape.
+ */
+export type NamedNotCut = {
+  /** The reading's own bare noun. */
+  noun: string;
+  /** The bare noun of what it sits on, or `""`. The panel resolves it. */
+  on: string;
+  /** What the reading said about it — the words themselves. */
+  about: string;
+  /**
+   * WHAT THE READING SAID IT IS, carried for the reason the cut rows carry it:
+   * the panel routes these words by the same two facts it groups rows by, and
+   * a scattered PIECE OF CLOTHING says its words on the Outfit row.
+   *
+   * ⚠ **It is not a mirror of {@link NamedNotCut.why}** even though a `makeup`
+   * thing always has `why: "makeup"`. `why` is about the ROAD — why there is no
+   * row — and this is about the THING; an `uncut` entry can be any kind at all,
+   * which is most of the population here.
+   */
+  kind: FeatureKind;
+  /**
+   * WHY there is no row, because the three answers are not interchangeable:
+   *
+   * `scattered` — it has no outline to cut (freckles, stubble, stitching), so
+   *     the detector was never asked. Its words belong to the thing it sits on.
+   * `makeup` — his ruling: makeup is a refine subject, not a feature of the
+   *     cast. No row, no cut, and it is never retried.
+   * `uncut` — the detector was asked and produced nothing usable, so this one
+   *     is the only kind that is worth asking about again.
+   */
+  why: "scattered" | "makeup" | "uncut";
 };
 
 /**
@@ -234,6 +300,161 @@ export function offListFeatures(
   return features.filter((feature) => !coveredByCatalogue(feature.name));
 }
 
+/**
+ * EVERY NAME SOMETHING ELSE SAYS IT SITS ON, normalised.
+ *
+ * The reading's own graph, read off the reading: `charm on=strap`, `strap
+ * on=robe`, `teeth on=mouth`. It is what {@link placeNames} and the panel's
+ * fold both ask, and it is derived here once so the two cannot disagree about
+ * what a host is (working law 4).
+ *
+ * ⚠ **A thing does not host ITSELF.** A reading that answers `on` with its own
+ * noun — `skin on=skin` — is saying nothing, and counting it would make every
+ * such find a place for itself and take its row away.
+ */
+export function hostedNames(
+  features: readonly DiscoveredFeature[],
+): ReadonlySet<string> {
+  const hosts = new Set<string>();
+  for (const feature of features) {
+    const on = feature.on.trim();
+    if (on === "") continue;
+    const host = normalisedName(on);
+    if (host === normalisedName(feature.name)) continue;
+    hosts.add(host);
+  }
+  return hosts;
+}
+
+/**
+ * A PLACE, NOT A FEATURE — the design's own narrow sibling rule.
+ *
+ * Verbatim from the grouping design: *"an off-list **anatomy** name that other
+ * finds name as their `on` host — 'head', 'mouth' on these fixtures — is a
+ * PLACE, not a feature: it draws no row and buys no cut. Things are left
+ * pointing at it; it does not become a 'Head' row."*
+ *
+ * Measured on the design's own three production fixtures, merged across both
+ * crops (`output/2566/grouping-discovery.json`): **exactly one find is a place
+ * — `head` on cast 2472** — and it is a place only AFTER the merge, because the
+ * full-frame crop named `head` while the head crop was the one that said `ears
+ * on=head`. A rule applied per crop would have missed it.
+ *
+ * ⚠ **THE KIND RESTRICTION IS LOAD-BEARING AND IT IS WHY `strap` SURVIVES.**
+ * `charm on=strap` makes `strap` a host on cast 2472, and `buckle on=strap`
+ * does the same on 2556 — but a strap is `accessory`, so it keeps its row and
+ * its cut. Only an ANATOMY find is ever demoted to a place.
+ *
+ * ⚠ **AND HERE IS THE HAZARD THIS RULE CARRIES, DECLARED RATHER THAN
+ * DISCOVERED LATER: a genuine anatomy feature that something sits ON loses its
+ * row.** If a reading ever says `stud on=third eye`, the third eye — the
+ * headline find of this whole card — becomes a place and draws nothing. It does
+ * NOT happen on the three fixtures (0 of 6 arms, and 0 of 3 merged casts: the
+ * host names are `face forehead head jaw mouth neck robe shoulder strap`, none
+ * of which is a non-place anatomy FIND), and the flag is at `users:1` with his
+ * eye as the gate — so the rule ships as the design wrote it rather than being
+ * quietly tightened here.
+ *
+ * **The repair, if his eye ever meets it, is named so nobody has to re-derive
+ * it**: on these fixtures a place is also a find that sits on NOTHING (`head`,
+ * `on=""`), where the third eye sits on a forehead — so *hosts something and is
+ * hosted by nothing* is a tighter rule available from the same reading, with no
+ * word list. It is not built, because choosing between the two is a design
+ * decision and this slice is execution.
+ */
+export function placeNames(
+  features: readonly DiscoveredFeature[],
+): ReadonlySet<string> {
+  const hosts = hostedNames(features);
+  const places = new Set<string>();
+  for (const feature of features) {
+    if (feature.kind !== "anatomy") continue;
+    const name = normalisedName(feature.name);
+    if (hosts.has(name)) places.add(name);
+  }
+  return places;
+}
+
+/**
+ * WHICH ROAD ONE FOUND THING TAKES — one answer, read in one place.
+ *
+ * Four roads and they are exhaustive, which is the point: before this slice
+ * there were two (`coveredByCatalogue` said catalogue or pointer) and every
+ * name that was not literally a catalogue word was cut and became a top-level
+ * row. The two new ones are where the design's spend gating lives.
+ *
+ *   `catalogue` — the scan is already buying a question for it.
+ *   `place`     — it is somewhere things sit, not a thing. Nothing at all.
+ *   `words`     — no outline to cut (`scattered`), or makeup. Its words travel.
+ *   `pointer`   — detect, then cut inside the box. A row with a picture.
+ */
+export type FoundRoad = "catalogue" | "place" | "words" | "pointer";
+
+export function foundRoadOf(
+  feature: DiscoveredFeature,
+  places: ReadonlySet<string>,
+): FoundRoad {
+  if (coveredByCatalogue(feature.name)) return "catalogue";
+  if (places.has(normalisedName(feature.name))) return "place";
+  /* Makeup before coverage, because makeup is his ruling about the FEATURE and
+     holds whether the reading called it single or scattered. */
+  if (feature.kind === "makeup") return "words";
+  if (feature.coverage === "scattered") return "words";
+  return "pointer";
+}
+
+/**
+ * THE NAMES THE DETECTOR IS ACTUALLY ASKED ABOUT.
+ *
+ * {@link offListFeatures} answers *has the catalogue got a question for this*;
+ * this answers *is there anything here to point at*, which is a different
+ * question and the one that decides the spend. Measured on the three production
+ * fixtures: **29 names today, 25 after the gate** — `wrinkles`, `head`,
+ * `leather patch` and `stitching` — so four `detect` calls and the box calls
+ * under them are not bought.
+ *
+ * ⚠ **THE SAVING IS NOT WHY IT EXISTS and the numbers say so** — four names of
+ * twenty-nine is a courtesy, not an optimisation. What it removes is a CLASS:
+ * the detector is never asked for a thing that has no outline, which is the
+ * source of the freckles-cut-like-an-object defect his eye found. The spend
+ * falling is a consequence.
+ */
+export function pointerFeatures(
+  features: readonly DiscoveredFeature[],
+): readonly DiscoveredFeature[] {
+  const places = placeNames(features);
+  return features.filter((feature) => foundRoadOf(feature, places) === "pointer");
+}
+
+/**
+ * THE NAMES THAT TRAVEL AS WORDS BECAUSE NOTHING WILL BE CUT FOR THEM.
+ *
+ * The `scattered` and `makeup` halves — known before any call is made. The
+ * third kind (`uncut`: asked, and nothing usable came back) can only be known
+ * after the asking, so {@link cutDiscovered} adds those to its own answer.
+ *
+ * A `place` contributes NOTHING here, deliberately: its words describe a head
+ * or a mouth, which is not a feature of this cast, and routing them would put
+ * the reader's own scaffolding into the customer's description.
+ */
+export function wordsOnlyFeatures(
+  features: readonly DiscoveredFeature[],
+): readonly NamedNotCut[] {
+  const places = placeNames(features);
+  const said: NamedNotCut[] = [];
+  for (const feature of features) {
+    if (foundRoadOf(feature, places) !== "words") continue;
+    said.push({
+      noun: feature.name,
+      on: feature.on,
+      about: feature.about,
+      kind: feature.kind,
+      why: feature.kind === "makeup" ? "makeup" : "scattered",
+    });
+  }
+  return said;
+}
+
 /** Do two rectangles share any pixel at all. */
 function overlaps(a: PointerBox, b: PointerBox): boolean {
   return a.x < b.x + b.width
@@ -266,22 +487,45 @@ export async function cutDiscovered(input: {
   features: readonly DiscoveredFeature[];
   reader: RegionReader;
   onFiled?: (region: DiscoveredRegion) => void;
-}): Promise<{ regions: DiscoveredRegion[]; asked: number; declined: string[]; failed: string[] }> {
+}): Promise<{
+  regions: DiscoveredRegion[];
+  asked: number;
+  declined: string[];
+  failed: string[];
+  /**
+   * EVERYTHING THE READING NAMED THAT HAS NO ROW, with its words — the three
+   * `why`s of {@link NamedNotCut} gathered in one list (#2566 slice 2).
+   *
+   * Two of them are known before any call (`scattered`, `makeup`) and one only
+   * after (`uncut`), which is why this is assembled here rather than beside
+   * {@link wordsOnlyFeatures}: a caller handed two lists would have to know
+   * that the second completes the first.
+   */
+  named: NamedNotCut[];
+}> {
   const { pointer, regionInBox } = input.reader;
   const regions: DiscoveredRegion[] = [];
   const declined: string[] = [];
   const failed: string[] = [];
   let asked = 0;
 
+  /* Known without asking anybody: no outline to cut, or makeup. Gathered before
+     the capability check below so a reader that cannot point still carries the
+     words — the words were never the detector's to give. */
+  const named: NamedNotCut[] = [...wordsOnlyFeatures(input.features)];
+
   /* A reader without the capability produces no rows, which is today's panel.
      It is checked once here rather than per name so the log says it once. */
   if (pointer === undefined || regionInBox === undefined) {
     log.warn({}, "this reader cannot point at a thing it has no word for — no found rows");
-    return { regions, asked, declined, failed };
+    return { regions, asked, declined, failed, named };
   }
 
   const frame = { width: input.frame.width, height: input.frame.height };
-  const population = offListFeatures(input.features);
+  /* ⚠ `pointerFeatures`, NOT `offListFeatures`: a scattered thing, a makeup and
+     a place-name are off the catalogue's list and are still never asked about.
+     The two functions answer different questions and the header says which. */
+  const population = pointerFeatures(input.features);
   asked = population.length;
 
   const perName = await Promise.all(population.map(async (feature) => {
@@ -342,6 +586,8 @@ export async function cutDiscovered(input: {
             slot: discoveredSlotOf(feature.name, index + 1),
             noun: feature.name,
             instance: index + 1,
+            kind: feature.kind,
+            on: feature.on,
             box: { ...bounds, frame },
             mask,
           } satisfies DiscoveredRegion,
@@ -367,10 +613,32 @@ export async function cutDiscovered(input: {
   /* Gathered in the READING's own order, never in the order the provider
      happened to answer in: a panel that re-orders itself between two readings
      of one frame is the instability slice 1 was held on. */
-  for (const one of perName) {
+  for (let at = 0; at < perName.length; at += 1) {
+    const one = perName[at]!;
     if (one.declined) declined.push(one.name);
     if (one.broke) failed.push(one.name);
     for (const region of one.regions) regions.push(region);
+    /*
+      ASKED, AND NOTHING CAME BACK THAT COULD BE DRAWN — the third `why`, and
+      the only one of the three worth asking about again.
+
+      ⚠ **It is keyed on ROWS and not on `declined`**, which is the whole
+      difference between this list and that one: a name the detector answered
+      and the segmenter then failed on — no mask, no pixels, outside its own
+      rectangle — is `declined: false, broke: false` and has no row either.
+      Keying on the refusal would have silently dropped exactly the specimen
+      this module's header is written about (the three-eyed cast's discarded
+      cut), which is the direction that hides work.
+    */
+    if (one.regions.length > 0) continue;
+    const feature = population[at]!;
+    named.push({
+      noun: feature.name,
+      on: feature.on,
+      about: feature.about,
+      kind: feature.kind,
+      why: "uncut",
+    });
   }
 
   /*
@@ -404,12 +672,27 @@ export async function cutDiscovered(input: {
       rows: regions.map((region) => ({
         noun: region.noun,
         instance: region.instance,
+        kind: region.kind,
+        on: region.on === "" ? null : region.on,
         area: Number(
           ((region.box.width * region.box.height) / (frame.width * frame.height)).toFixed(4),
         ),
       })),
+      /*
+        WHAT THE GATE DECIDED, so a reading can be judged without re-driving it.
+
+        `named` counted by its reason is the one number that says whether the
+        gate is doing anything on real casts — on the design's three fixtures it
+        is 4 across 29 names, and a cast where it is suddenly most of them is a
+        finding about the READING rather than about this module.
+      */
+      gated: {
+        scattered: named.filter((one) => one.why === "scattered").length,
+        makeup: named.filter((one) => one.why === "makeup").length,
+        uncut: named.filter((one) => one.why === "uncut").length,
+      },
     },
     "pointer road",
   );
-  return { regions, asked, declined, failed };
+  return { regions, asked, declined, failed, named };
 }

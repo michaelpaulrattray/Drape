@@ -1008,6 +1008,18 @@ describe("the pair nests, and the child is the scoping gesture again", () => {
 
     expect(panel).toContain("className=\"dpc-face__open\"");
     expect(panel).toContain("aria-expanded={isOpen}");
+    /*
+      ⚠ **AND ITS ACCESSIBLE NAME WORKS FOR A ROW THERE IS ONE OF — #2566
+      slice 2, caught at the frames and not here.** It read `each of
+      ${row.spoken}` while every row with children was a PAIR, and the grouping
+      gives children to singular rows too: the Outfit row rendered **"Show each
+      of their outfit"**, which is not English, on the one label nobody sees by
+      eye. `about` is grammatical for *their eyes*, *their lips* and *their
+      outfit* alike, and `Show less` is its symmetric open state — `Hide about
+      …` would have been the same mistake one word over.
+    */
+    expect(panel).toContain('`${isOpen ? "Show less" : "Show more"} about ${row.spoken}`');
+    expect(panel).not.toContain("each of ${row.spoken}");
     /* The row's own click is untouched: both slots, no scope — an ask about
        the pair, exactly as before the ruling. */
     expect(panel).toContain("selection.select({ slots: row.slots, name: row.name, spoken: row.spoken, prefill: row.prefill });");
@@ -1019,10 +1031,36 @@ describe("the pair nests, and the child is the scoping gesture again", () => {
     /* The row's slots, scoped to this instance — the shape `FaceRegions`
        builds when she clicks that instance's rectangle. Two entrances, one
        mechanism; a second way to say "this eye" is a second thing to get
-       wrong. */
-    expect(panel).toContain("scope: instance.slot,");
-    expect(panel).toContain("slots: row.slots,");
+       wrong.
+
+       ⚠ **BOTH HALVES ARE NOW CONDITIONAL ON `scopable` AND THAT IS THE
+       ASSERTION** (#2566 slice 2). The grouping gives a row children the scope
+       door REFUSES — a lip ring under Lips, a jacket under Outfit, keyed
+       `discovered:…`, which `refineService` answers `scope_unknown` on — so a
+       `scope: instance.slot` sent unconditionally is a BAD_REQUEST on a tap we
+       drew. A pair's side is unchanged: it still sends the row's slots scoped
+       to itself. */
+    expect(panel).toContain("slots: scopable ? row.slots : [instance.slot],");
+    expect(panel).toContain("...(scopable ? { scope: instance.slot } : {}),");
     expect(panel).toContain("prefill: instance.prefill,");
+  });
+
+  it("never offers a narrow edit on a child the server says it may not narrow to", async () => {
+    const panel = withoutProse(await readFile(PANEL, "utf8"));
+
+    /*
+      ⚠ **THE ANSWER COMES FROM THE SERVER AND IS NEVER DERIVED FROM THE KEY**
+      — `PanelRegion.scopable`'s own rule, one surface over, and the reason it
+      exists there: the picture used to decide this itself from the shape of the
+      key, which was true of every key that existed when it was written and
+      stopped being true the day the panel drew an uncatalogued thing.
+
+      ⚠ **ABSENT READS AS SCOPABLE**, which is what every child was before this
+      field existed — so a payload from an older server reaching a newer bundle
+      behaves exactly as it did. `!== false` is that sentence, and `=== true`
+      would silently stop scoping every pair's sides on such a payload.
+    */
+    expect(panel).toContain("const scopable = instance.scopable !== false;");
   });
 
   it("lights per INSTANCE, so the picture and the list agree about which eye", async () => {
@@ -1033,8 +1071,13 @@ describe("the pair nests, and the child is the scoping gesture again", () => {
 
     /* A child is active only while the ask is scoped to it, and a rectangle is
        lit for the instance its pixels ARE. Both halves, because either one
-       alone lets the list and the photograph disagree about the subject. */
-    expect(panel).toContain("const scoped = selection.selected?.scope === instance.slot;");
+       alone lets the list and the photograph disagree about the subject.
+
+       ⚠ A child the product may not narrow to sends no scope, so it is active
+       by its own SLOT instead — otherwise an unscopable child could never read
+       as selected at all, and tapping it would light nothing. */
+    expect(panel).toContain("? selection.selected?.scope === instance.slot");
+    expect(panel).toContain(": selection.isSelected(instance.slot);");
     expect(panel).toContain("selection.hover([instance.slot])");
     expect(regions).toContain("const lit = selection.isHovered(region.slot);");
     expect(regions).toContain("selection.hover([region.slot])");

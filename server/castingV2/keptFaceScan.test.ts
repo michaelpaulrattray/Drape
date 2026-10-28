@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import type { FeatureKind } from "./faceDiscovery";
+
 import { keepScan, serveKeptScan, type KeptScanShape } from "./keptFaceScan";
 import type { FeatureSlot } from "./recipeAssembler";
 import type { PanelBox } from "./facePanel";
@@ -426,10 +428,20 @@ describe("the full cycle — a kept scan survives the cleanup worker", () => {
  * reader's.
  */
 describe("the rows the reading found that nobody catalogued", () => {
-  const foundRow = (slot: string, noun: string, instance: number) => ({
+  const foundRow = (
+    slot: string,
+    noun: string,
+    instance: number,
+    /* The grouping's two facts, defaulted to what a row written before #2566
+       slice 2 restores as — a hostless `anatomy`, which is today's panel. An
+       arm about the round trip passes its own. */
+    over: { kind?: FeatureKind; on?: string } = {},
+  ) => ({
     slot: slot as FeatureSlot,
     noun,
     instance,
+    kind: over.kind ?? ("anatomy" as FeatureKind),
+    on: over.on ?? "",
     box: box(instance * 100),
     maskUrl: dataUrl,
   });

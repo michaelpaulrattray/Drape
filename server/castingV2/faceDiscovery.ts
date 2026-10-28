@@ -482,7 +482,7 @@ const FEATURE_KINDS: readonly FeatureKind[] = [
  * ⚠ It does NOT drop the feature. A parse rule that deletes a feature is the
  * exact mistake the relay's finding on PR #2570 was about, one field over.
  */
-function cleanKind(raw: unknown): FeatureKind {
+export function cleanKind(raw: unknown): FeatureKind {
   if (typeof raw !== "string") return "anatomy";
   const kind = raw.trim().toLowerCase();
   return FEATURE_KINDS.find((known) => known === kind) ?? "anatomy";
