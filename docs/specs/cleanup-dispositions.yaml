@@ -228,13 +228,13 @@
 - symbol: CROSS_AXIS_IMPLICATIONS
   file: server/castingV2/axisRegistry.ts
   verdict: KEEP
-  why: the axis sweep the suite drives over really-composed prompts, with sabotage arms that redden the right axis
+  why: the rule table the completeness block pins DIRECTLY — 1 hard rule to sex, 2 soft to ageBand/facialHair (axisRegistry.test.ts:109,118); driven, but never by the sweep
   argued: 17
 
 - symbol: suppressorsFor
   file: server/castingV2/axisRegistry.ts
   verdict: KEEP
-  why: the axis sweep the suite drives over really-composed prompts, with sabotage arms that redden the right axis
+  why: reached only from the sweep arms deleted context helper, so 0 importers tree-wide since #2766; kept on #1490 act 1 reasoning, the class parked at #30
   argued: 17
 
 - symbol: axesOnShelf
@@ -246,7 +246,7 @@
 - symbol: sweepComposedPrompt
   file: server/castingV2/axisRegistry.ts
   verdict: KEEP
-  why: the axis sweep the suite drives over really-composed prompts, with sabotage arms that redden the right axis
+  why: no driver anywhere since #1490 act 1 took its ten arms with the house road — 0 importers by design; kept on that commit own decision, the class parked at #30
   argued: 17
 
 - symbol: isTasteWritable
@@ -258,7 +258,7 @@
 - symbol: AXIS_REGISTRY_BINDINGS
   file: server/castingV2/axisRegistry.ts
   verdict: KEEP
-  why: the axis sweep the suite drives over really-composed prompts, with sabotage arms that redden the right axis
+  why: its own comment: it holds the compile-time bindings against a linter stripping them — never imported by the suite, before the arms fell or after
   argued: 17
 
 - symbol: catalogueBornWorn
