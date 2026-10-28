@@ -196,6 +196,12 @@ export type SlotDefinition = {
    */
   noThumbnail?: { why: string };
   /**
+   * ON THE DISCOVERY ROAD THIS SLOT DRAWS NO ROW — see
+   * {@link CatalogueEntry.noRowOnDiscovery}. Absent on every slot but `build`
+   * and `skin`, and absent is today's panel.
+   */
+  noRowOnDiscovery?: { why: string };
+  /**
    * WHY THIS SLOT HAS A QUESTION AND NO GUARD — the open lane's carve-out.
    *
    * Present on open slots ONLY, and never on a catalogued one. The invariant
@@ -429,7 +435,46 @@ type CatalogueEntry = {
    * under somebody else's word.
    */
   noThumbnail?: { why: string };
+  /**
+   * ON THE DISCOVERY ROAD THIS SLOT DRAWS NO ROW — it is words alone (#2752,
+   * his eye on the live grouping, 2026-10-29).
+   *
+   * His words, verbatim: *"its still picking up build, build runs in words alone
+   * remember and same with skin not neccesary to pick up"*. On the road where
+   * the panel is built from what the picture shows (`CASTING_FACE_DISCOVERY_SCOPE`),
+   * a row is a claim that this is a THING on the cast, and a build or a skin is
+   * not a thing you point at: it is how the whole person looks, and it carries
+   * in the words of an ask (`BODY_ROW_DESIGN_NOTE.md` §4: *"build joins facial
+   * structure and skin in the word stack"*).
+   *
+   * # What it does NOT touch, which is most of the slot
+   *
+   * The slot, its facets, its question, its mint and its words are all exactly
+   * where they were: *"make them more athletic"* files to `build` the way it
+   * always has, because nothing about an ask reads the panel. Only the ROW goes,
+   * and only for an account on the discovery road. Off it, the panel is today's
+   * byte for byte — the catalogue road still draws both rows.
+   *
+   * ⚠ **AUTHORED PER SLOT, BESIDE THE RULING, AND NEVER DERIVED FROM THE BODY
+   * GROUP.** The body group also holds every delivered TATTOO (`ink:neck`, from
+   * the delivery-crop store), which is a thing you point at and which he asked
+   * for by name (*"i dont see his neck tatto on the feature panel?"*). A rule
+   * keyed on the group would take those rows with it.
+   */
+  noRowOnDiscovery?: { why: string };
 };
+
+/**
+ * THE ONE SENTENCE BOTH WORDS-ONLY ROWS CARRY — his ruling of 2026-10-29
+ * (#2752), quoted rather than paraphrased, so the two entries cannot drift into
+ * two different reasons for one decision.
+ */
+const WORDS_ON_THE_DISCOVERY_ROAD = {
+  why:
+    "on the discovery road the panel shows the things on this cast, and this is not a thing you point at — "
+    + "it carries in the words of an ask. Founder, 2026-10-29 (#2752): \"build runs in words alone "
+    + "remember and same with skin not neccesary to pick up\"",
+} as const;
 
 const STRUCTURE_IS_WORDS = (part: string): PanelPlacement => ({
   row: "none",
@@ -808,6 +853,14 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
         + "shows her CLOTHES, not her build. Founder, 2026-09-26 (#1341): \"build should carry as "
         + "text only\". The box, the words and the ask are untouched, and the crop is still minted",
     },
+    /*
+      AND ON THE DISCOVERY ROAD, NO ROW AT ALL — his second word on the same
+      row, 2026-10-29 (#2752), after looking at the live grouping: *"its still
+      picking up build, build runs in words alone remember"*. The tile went on
+      #1341; the row goes now, on the road where the panel lists what is ON the
+      cast. The slot and every ask that files to it are untouched.
+    */
+    noRowOnDiscovery: WORDS_ON_THE_DISCOVERY_ROAD,
   },
   {
     feature: "skin",
@@ -876,6 +929,19 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       rather than discovered by somebody later.
     */
     display: "face skin",
+    /*
+      ON THE DISCOVERY ROAD, NO ROW — the same ruling as build's, in the same
+      breath (#2752, 2026-10-29): *"and same with skin not neccesary to pick
+      up"*. ⚠ **A scattered thing the reading found on the skin (freckles) has
+      no Skin row to say its words on, and they are NOT dropped**: they stay on
+      the reading's `namedNotCut` and are kept with the scan, exactly where a
+      hostless scattered thing's words have been since slice 2. ⚠ Nothing reads
+      them for an edit YET — that consumer is #2565 §2's current description,
+      unbuilt — and the Skin row's words line never reached an edit either: a
+      scan's words are display (`PanelScan.words`). So no edit loses anything it
+      had; the customer's own words still reach skin as they always have.
+    */
+    noRowOnDiscovery: WORDS_ON_THE_DISCOVERY_ROAD,
   },
   {
     /*
@@ -1238,6 +1304,10 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
        author it, so "draws a thumbnail" stays the default and a row loses its
        tile only where somebody wrote down why. */
     ...(entry.noThumbnail ? { noThumbnail: entry.noThumbnail } : {}),
+    /* Same discipline again (#2752): carried only where his ruling was written
+       down, so every other row is drawn on the discovery road exactly as it is
+       off it. */
+    ...(entry.noRowOnDiscovery ? { noRowOnDiscovery: entry.noRowOnDiscovery } : {}),
     ...(entry.instances.of === "perSide" ? { pairNoun: entry.instances.pairNoun } : {}),
   };
 

@@ -170,7 +170,13 @@ export type DiscoveredRegion = {
    * `single` and a field saying so could only ever disagree with itself.
    */
   kind: FeatureKind;
-  /** The bare noun of what it sits on, or `""` — the reading's own word. */
+  /**
+   * The bare noun of what it sits on, or `""` — the reading's own word, with
+   * ONE exception the picture decides (#2752): an accessory whose cut lies
+   * mostly on a garment's cut sits on THAT garment, whatever the reading said
+   * (`settleByPlace`). On his screenshot crop the collar was read as sitting on
+   * the neck, and 92% of its cut lay on the jacket's pixels.
+   */
   on: string;
   box: PanelBox;
   mask: Mask;
@@ -463,6 +469,207 @@ function overlaps(a: PointerBox, b: PointerBox): boolean {
     && b.y < a.y + a.height;
 }
 
+/*
+  ---- WHERE A FOUND THING IS DECIDES WHAT IT IS (#2752, his eye on the live
+  grouping, 2026-10-29) ----
+
+  His words, verbatim: *"croissmark and scar ar the same thing>?"* and *"collar
+  is showing up seperate to the outfit"*. Two rows, `Cross mark` and `Scar`,
+  were cut onto one cross-shaped scar on the cheek; a third, `Collar`, was cut
+  onto the garment's own collar and drawn outside the Outfit.
+
+  ⚠ **THE CLASS IS IDENTITY DECIDED BY SPELLING, ONE STEP DOWNSTREAM OF WHERE
+  ROUND 1 REPAIRED IT.** Every found thing travels under its own noun, and
+  until this block nothing on the road ever asked whether two nouns had been cut
+  onto the SAME PIXELS. `mergeDiscoveries` joins two crops' answers by
+  `normalisedName`, so `cross mark` and `scar` are two features; each is handed
+  to the detector by name; each comes back as a row. Measured on his screenshot
+  crop through this very road (`output/2752/his-names.txt`, never committed):
+  the two nouns' cuts share **99.8% and 100%** of their pixels on two runs.
+
+  So the answer is read off the picture, here, where the masks are in hand —
+  never off the words, which is the N3 principle (*"the image is analyzed and
+  features are determined that way"*). Two rules, and the third clause is the
+  guard his own ⚠ of round 1 set:
+
+    SAME PLACE   two cuts that each lie mostly on the other's pixels are ONE
+                 thing, and one row is drawn for it. "Mostly" is more than half
+                 of the LARGER cut's pixels, so it holds both ways round.
+    ON A GARMENT an accessory whose cut lies mostly on a garment's pixels is
+                 worn on that garment, so it sits on it (`on`), and the panel's
+                 chain puts it in the one Outfit row.
+    ANATOMY      is never folded into anything by either rule. Body hardware
+                 reads `anatomy` (the bench: 4 of 4), and an implant fused to the
+                 jaw or neck is never "the same thing" as a collar or "worn on" a
+                 jacket — whatever its pixels touch.
+
+  # WHY MORE THAN HALF, AND WHY IT IS NOT A TUNED NUMBER
+
+  The grouping design declined *"geometry-overlap dedupe … a tuned threshold
+  wearing a rule's clothes"*, and that sentence is why this one says what its
+  number is. It is the MAJORITY — *most of these pixels are that thing's* — and
+  the measurement says how far the real pairs sit from it, on the crop:
+
+    the same thing, two nouns      cross mark/scar 0.998–1.000 · collar/jacket
+                                   0.605 · scar/neck tattoo 0.782
+    two things, kinds it may join  shoulder pads/jacket 0.013 · strap/jacket
+                                   0.014–0.025
+    two things, kinds it may not   collarbone/tattoo 0.25–0.33 (anatomy and a
+                                   marking: never joined whatever the number)
+
+  ⚠ **What it does NOT merge, declared**: a small cut lying inside a large one
+  of the same kind (a mole on a tattoo, a belt inside a jacket's cut) is two
+  things, because the large one is mostly NOT the small one. That is the
+  two-instance rule (#2565 §6) holding: two real scars in two places share no
+  pixels and stay two rows; two boxes the segmenter answered with the same
+  pixels are one scar.
+
+  ⚠ **And the kinds it will join**: equal kinds, or a garment and an accessory
+  (the garment's row survives, because the pixels are garment pixels). A
+  marking and a garment on the same pixels are NOT joined — a marking is on the
+  skin by the reading's own definition, so one of the two cuts is wrong and the
+  picture cannot say which; both rows stay, exactly as before this block.
+*/
+
+/** The pixels a cut claims — the same predicate `boundsOf` draws its box round
+ *  (`> 0`), counted inside that box because no claimed pixel lies outside it. */
+function claimedPixels(region: DiscoveredRegion): number {
+  const { mask, box } = region;
+  let count = 0;
+  for (let y = box.y; y < box.y + box.height; y += 1) {
+    const row = y * mask.width;
+    for (let x = box.x; x < box.x + box.width; x += 1) {
+      if (mask.data[row + x]! > 0) count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * How many pixels two cuts both claim.
+ *
+ * Counted inside the intersection of their two boxes, which is the only place a
+ * shared pixel can be. ⚠ **Two masks of different sizes share nothing**, rather
+ * than being resampled into agreement: every cut on one reading is of one frame,
+ * so a size mismatch is a fault upstream, and the answer that cannot remove a
+ * row is "not the same place".
+ */
+function sharedPixels(a: DiscoveredRegion, b: DiscoveredRegion): number {
+  if (a.mask.width !== b.mask.width || a.mask.height !== b.mask.height) return 0;
+  const left = Math.max(a.box.x, b.box.x);
+  const top = Math.max(a.box.y, b.box.y);
+  const right = Math.min(a.box.x + a.box.width, b.box.x + b.box.width);
+  const bottom = Math.min(a.box.y + a.box.height, b.box.y + b.box.height);
+  let shared = 0;
+  for (let y = top; y < bottom; y += 1) {
+    const row = y * a.mask.width;
+    for (let x = left; x < right; x += 1) {
+      if (a.mask.data[row + x]! > 0 && b.mask.data[row + x]! > 0) shared += 1;
+    }
+  }
+  return shared;
+}
+
+/**
+ * MAY TWO CUTS BE ONE THING AT ALL — the kinds the same-place rule will join.
+ *
+ * Equal kinds, or a garment and an accessory. Never anatomy with anything else
+ * (his ⚠ of round 1: body hardware must not be swept into clothing), never a
+ * marking with a garment (see the block above).
+ */
+function joinable(a: FeatureKind, b: FeatureKind): boolean {
+  if (a === b) return true;
+  const pair = new Set([a, b]);
+  return pair.has("clothing") && pair.has("accessory");
+}
+
+/** Measured once per cut, so a reading with a dozen rows counts each mask once. */
+type Placed = { region: DiscoveredRegion; at: number; pixels: number };
+
+function samePlace(a: Placed, b: Placed): boolean {
+  if (!joinable(a.region.kind, b.region.kind)) return false;
+  return sharedPixels(a.region, b.region) * 2 > Math.max(a.pixels, b.pixels);
+}
+
+/**
+ * ONE ROW PER PLACE ON THE PICTURE — the whole of the two rules above, as one
+ * pure function so it can be driven without a reader.
+ *
+ * Deterministic whatever order the provider answered in, which is the pointer
+ * road's own law (*"a panel that re-orders itself between two readings of one
+ * frame is the instability slice 1 was held on"*):
+ *
+ *   WHICH ONE SURVIVES   a garment over an accessory (the pixels are garment
+ *                        pixels); otherwise the LARGER cut, because it is the
+ *                        more complete picture of that place; otherwise the
+ *                        reading's own order. The survivor keeps its own noun,
+ *                        kind, host and cut — nothing is blended.
+ *   THE ORDER RETURNED   the reading's, never the size order the rule walks in.
+ *
+ * ⚠ **A survivor's noun is the picture's best guess and not a certainty**: on
+ * the crop the detector boxed the NECK TATTOO for `scar` and `cross mark`, so
+ * three nouns met on one place and the largest cut's noun — `neck tattoo` —
+ * named it. Where two nouns' cuts are pixel-identical nothing on the road can
+ * say which noun was meant, and the reading's order decides; that is declared
+ * here rather than dressed up as knowledge.
+ */
+export function settleByPlace(regions: readonly DiscoveredRegion[]): {
+  regions: DiscoveredRegion[];
+  /** Every cut that turned out to be another one's place, by noun. */
+  samePlace: { noun: string; into: string }[];
+  /** Every accessory the picture put on a garment, by noun. */
+  onGarment: { noun: string; onto: string }[];
+} {
+  const placed: Placed[] = regions.map((region, at) => ({
+    region,
+    at,
+    pixels: claimedPixels(region),
+  }));
+  const walk = [...placed].sort((a, b) => {
+    const garment = Number(b.region.kind === "clothing") - Number(a.region.kind === "clothing");
+    if (garment !== 0) return garment;
+    if (b.pixels !== a.pixels) return b.pixels - a.pixels;
+    return a.at - b.at;
+  });
+  const kept: Placed[] = [];
+  const merged: { noun: string; into: string }[] = [];
+  for (const one of walk) {
+    /* Against the KEPT ones only, and each of those was walked before this one
+       — so it is the garment, or the larger, or the earlier, and survives. */
+    const home = kept.find((held) => samePlace(held, one));
+    if (home === undefined) {
+      kept.push(one);
+      continue;
+    }
+    merged.push({ noun: one.region.noun, into: home.region.noun });
+  }
+
+  const garments = kept.filter((one) => one.region.kind === "clothing");
+  const rehosted: { noun: string; onto: string }[] = [];
+  const settled = kept.map((one): Placed => {
+    if (one.region.kind !== "accessory" || one.pixels === 0) return one;
+    let best: { garment: Placed; shared: number } | null = null;
+    for (const garment of garments) {
+      const shared = sharedPixels(one.region, garment.region);
+      if (shared * 2 <= one.pixels) continue;
+      if (best === null || shared > best.shared || (shared === best.shared && garment.at < best.garment.at)) {
+        best = { garment, shared };
+      }
+    }
+    if (best === null) return one;
+    const onto = best.garment.region.noun;
+    if (normalisedName(one.region.on) === normalisedName(onto)) return one;
+    rehosted.push({ noun: one.region.noun, onto });
+    return { ...one, region: { ...one.region, on: onto } };
+  });
+
+  return {
+    regions: settled.sort((a, b) => a.at - b.at).map((one) => one.region),
+    samePlace: merged,
+    onGarment: rehosted,
+  };
+}
+
 /**
  * Cut every off-list thing the reading named.
  *
@@ -527,6 +734,26 @@ export async function cutDiscovered(input: {
      The two functions answer different questions and the header says which. */
   const population = pointerFeatures(input.features);
   asked = population.length;
+
+  /*
+    WHAT HAS BEEN DRAWN ON THE PANEL SO FAR, so a second noun cut onto pixels
+    already drawn is never drawn twice while the reading runs (#2752).
+
+    ⚠ **This is the courtesy road and `settleByPlace` below is the authority.**
+    Rows land in the order the provider answers, so the row drawn first is not
+    always the one the settled reading keeps — the settled answer may relabel
+    that place (the larger cut's noun) or move an accessory into the Outfit once
+    the garment it is worn on has landed. What this prevents is the one thing a
+    customer would read as broken: the same picture appearing as two rows and
+    one of them vanishing.
+  */
+  const drawn: Placed[] = [];
+  const draw = (region: DiscoveredRegion): void => {
+    const one: Placed = { region, at: drawn.length, pixels: claimedPixels(region) };
+    if (drawn.some((held) => samePlace(held, one))) return;
+    drawn.push(one);
+    input.onFiled?.(region);
+  };
 
   const perName = await Promise.all(population.map(async (feature) => {
     const mine: DiscoveredRegion[] = [];
@@ -605,7 +832,7 @@ export async function cutDiscovered(input: {
       if (one.broke) broke = true;
       if (one.region === null) continue;
       mine.push(one.region);
-      input.onFiled?.(one.region);
+      draw(one.region);
     }
     return { name: feature.name, regions: mine, declined: false, broke };
   }));
@@ -642,6 +869,15 @@ export async function cutDiscovered(input: {
   }
 
   /*
+    ONE ROW PER PLACE, decided after every cut is in hand (#2752). Each name's
+    own rows were gathered above exactly as before — which is what keeps the
+    `uncut` record honest: a name whose cut turned out to be another noun's
+    place WAS drawn, so it is not "named and not cut", and it is logged below
+    under the place it joined rather than written into `named`.
+  */
+  const settled = settleByPlace(regions);
+
+  /*
     ⚠ `found` IS ROWS, NOT CALLS, AND THE DIFFERENCE IS THE COST (the relay's
     note on PR #2692, #2566).
 
@@ -663,13 +899,13 @@ export async function cutDiscovered(input: {
   log.info(
     {
       asked,
-      found: regions.length,
+      found: settled.regions.length,
       declined: declined.length,
       failed: failed.length,
       /* The noun and the share of the frame each row covers, so the flip can be
          judged at the frames rather than at a count — the loose-cut question the
          header declares is open is exactly what this line is for. */
-      rows: regions.map((region) => ({
+      rows: settled.regions.map((region) => ({
         noun: region.noun,
         instance: region.instance,
         kind: region.kind,
@@ -691,8 +927,28 @@ export async function cutDiscovered(input: {
         makeup: named.filter((one) => one.why === "makeup").length,
         uncut: named.filter((one) => one.why === "uncut").length,
       },
+      /*
+        ⚠ AND BY NOUN, BECAUSE A COUNT COULD NOT ANSWER HIS FIFTH FINDING (#2752).
+
+        His neck tattoo got no row, and the first question about that is WHICH
+        road lost it: the reading called it scattered, the detector found
+        nothing, a call failed, or the reading never named it at all. Read off
+        this line until now, all four were a number. The nouns are the
+        reading's own bare nouns — the same ones `rows` above already carries —
+        and never the `about` prose, which stays out of every log.
+      */
+      wordsOnly: {
+        scattered: named.filter((one) => one.why === "scattered").map((one) => one.noun),
+        uncut: named.filter((one) => one.why === "uncut").map((one) => one.noun),
+      },
+      declinedNouns: declined,
+      failedNouns: failed,
+      /* What the place rules decided, so a merged or moved row can be traced to
+         the pixels that decided it rather than looking like a lost one. */
+      samePlace: settled.samePlace,
+      onGarment: settled.onGarment,
     },
     "pointer road",
   );
-  return { regions, asked, declined, failed, named };
+  return { regions: settled.regions, asked, declined, failed, named };
 }

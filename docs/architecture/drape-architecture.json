@@ -14499,6 +14499,10 @@
       "path": "server/castingV2/facePanelTextOnlyRow.test.ts"
     },
     {
+      "id": "test:server/castingV2/faceReaderLogNouns.test.ts",
+      "path": "server/castingV2/faceReaderLogNouns.test.ts"
+    },
+    {
       "id": "test:server/castingV2/faceScan.test.ts",
       "path": "server/castingV2/faceScan.test.ts"
     },
@@ -42681,10 +42685,17 @@
       "message": "Names 2 of TiltReading's 4 fields (server/castingV2/canthalTilt.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1790",
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1824",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:1790",
+      "subject": "server/castingV2/facePanel.ts:1824",
+      "message": "Names 3 of NamedNotCut's 5 fields (server/castingV2/pointerCut.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1832",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/facePanel.ts:1832",
       "message": "Names 3 of NamedNotCut's 5 fields (server/castingV2/pointerCut.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

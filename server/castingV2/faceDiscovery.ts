@@ -889,6 +889,17 @@ export async function discoverFeatures(input: {
          paragraph has stopped working and the saving is quietly going with
          it — measured 0 of 69 on the fixtures the day this was written. */
       unusable: merged.unusable.length,
+      /*
+        AND WHICH NAMES, because a count could not answer his fifth finding
+        (#2752): his neck tattoo got no row, and one of the four roads that
+        loses a thing is the READING never naming it usably — a caption the
+        bare-noun rule refused, or a thing it said it could not see. Those two
+        lists are kept nowhere else (the kept scan holds only what was named and
+        cut, or named and not cut), so without the nouns here that road is
+        unreadable after the fact. Nouns only; `about` and `why` stay out.
+      */
+      unusableNames: merged.unusable,
+      cannotSeeNames: merged.cannotSee.map((one) => one.name),
       tokensIn: got.reduce((sum, answer) => sum + (answer.tokens?.in ?? 0), 0),
       tokensOut: got.reduce((sum, answer) => sum + (answer.tokens?.out ?? 0), 0),
     },
