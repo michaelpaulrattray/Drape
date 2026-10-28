@@ -21,6 +21,9 @@ import {
   isBareNoun,
   mergeDiscoveries,
   parseDiscovery,
+  DISCOVERY_SCHEMA,
+  DISCOVERY_SYSTEM_PROMPT,
+  type DiscoveredFeature,
   type FaceDiscovery,
 } from "./faceDiscovery";
 import type { TextEngine, TextRequest, TextResult } from "../providers/types";
@@ -168,23 +171,31 @@ describe("parseDiscovery", () => {
   });
 });
 
+/* One place a discovered feature is built in this suite (#2566). The three
+   grouping facts take the parse's own fallbacks, so an arm about counts or
+   unions reads exactly as it did before they existed — and the arms that ARE
+   about the facts say so by passing them. */
+const found = (name: string, count = 1, extra: Partial<DiscoveredFeature> = {}): DiscoveredFeature => (
+  { name, count, about: "", kind: "anatomy", on: "", coverage: "single", ...extra }
+);
+
 describe("mergeDiscoveries — the two crops", () => {
   it("keeps the larger count when both crops see the same thing", () => {
     /* The crop that can see only one of a pair is the one that is wrong about
        how many there are. */
     const merged = mergeDiscoveries([
-      { features: [{ name: "earring", count: 1, about: "" }], cannotSee: [] },
-      { features: [{ name: "earring", count: 2, about: "" }], cannotSee: [] },
+      { features: [found("earring")], cannotSee: [] },
+      { features: [found("earring", 2)], cannotSee: [] },
     ]);
-    expect(merged.features).toEqual([{ name: "earring", count: 2, about: "" }]);
+    expect(merged.features).toEqual([found("earring", 2)]);
   });
 
   it("is the union, so a feature only one crop can see survives", () => {
     /* Measured: the head crop names the nose the full frame misses, and the
        full frame names the sash the head crop cannot see. */
     const merged = mergeDiscoveries([
-      { features: [{ name: "nose", count: 1, about: "" }], cannotSee: [] },
-      { features: [{ name: "sash", count: 1, about: "" }], cannotSee: [] },
+      { features: [found("nose")], cannotSee: [] },
+      { features: [found("sash")], cannotSee: [] },
     ]);
     expect(merged.features.map((f) => f.name).sort()).toEqual(["nose", "sash"]);
   });
@@ -192,7 +203,7 @@ describe("mergeDiscoveries — the two crops", () => {
   it("does not call something unseen when the other crop named it", () => {
     const merged = mergeDiscoveries([
       { features: [], cannotSee: [{ name: "ears", why: "under the hood" }] },
-      { features: [{ name: "ears", count: 2, about: "" }], cannotSee: [] },
+      { features: [found("ears", 2)], cannotSee: [] },
     ]);
     expect(merged.cannotSee).toEqual([]);
     expect(merged.features.map((f) => f.name)).toEqual(["ears"]);
@@ -208,7 +219,7 @@ describe("mergeDiscoveries — the two crops", () => {
     */
     const merged = mergeDiscoveries([
       { features: [], cannotSee: [], unusable: ["dangling gold earrings"] },
-      { features: [{ name: "earring", count: 2, about: "" }], cannotSee: [], unusable: ["long black hair"] },
+      { features: [found("earring", 2)], cannotSee: [], unusable: ["long black hair"] },
     ]);
     expect([...merged.unusable].sort()).toEqual(["dangling gold earrings", "long black hair"]);
   });
@@ -217,7 +228,7 @@ describe("mergeDiscoveries — the two crops", () => {
     /* `unusable` is optional on the INPUT on purpose: every caller inside this
        module passes it, and the field is young enough that a crop shape from
        elsewhere should degrade to "nothing was rejected" rather than throw. */
-    expect(mergeDiscoveries([{ features: [{ name: "hair", count: 1, about: "" }], cannotSee: [] }]).unusable)
+    expect(mergeDiscoveries([{ features: [found("hair")], cannotSee: [] }]).unusable)
       .toEqual([]);
   });
 });
@@ -252,6 +263,16 @@ describe("discoverFeatures — every road out of a bad provider minute", () => {
     expect(sent.jsonSchema?.name).toBe("discovery");
     /* A hint is not a schema — #2196 measured the difference. */
     expect(sent.jsonSchema?.schema).toBeDefined();
+    /*
+      AND THE CEILING, ON THE WIRE (#2566). This call passed nothing, so it took
+      the transport's default of 900 and the bench's dense-cast answer was cut
+      off mid-JSON — which on this road discards the crop and loses the whole
+      discovery, silently, because it fails open. Asserted here rather than on
+      the constant: a default this road never set is exactly the kind of fact a
+      constant near the call site cannot prove.
+    */
+    expect(sent.maxOutputTokens, "a dense cast's answer must not be cut off at the default 900")
+      .toBe(2_000);
   });
 
   it("fails OPEN when one crop fails and the other answers", async () => {
@@ -407,5 +428,211 @@ describe("discoveryCropsOf", () => {
       height: 1536,
     });
     expect(crops).toEqual([]);
+  });
+});
+
+describe("the three grouping facts — what each named thing IS (#2566)", () => {
+  /*
+    His binding sentence is why these are ASKED rather than looked up: *"nothing
+    should be confined to a set list thats the old way of doing things the new
+    way is the image is analyzed and features are determined that way."* So
+    nothing here asserts a vocabulary — these arms hold the CONTRACT (the facts
+    arrive, a bad one can never cost a feature, and two crops reconcile the way
+    the design says), never a list of which feature is which kind.
+  */
+
+  describe("the prompt and the schema carry the MEASURED ask", () => {
+    /*
+      ⚠ THESE ARMS GUARD A MEASURED ARTIFACT, WHICH IS AN UNUSUAL THING FOR A
+      TEST TO DO AND IS THE POINT. The grouping paragraph is byte-identical to
+      the bench's (`scripts/_2566-grouping-discovery-disposable.mts`), and the
+      bench is what makes the design decision-grade: run 1 said "spread across
+      an area" and the model called a CONNECTED chest tattoo spread, which would
+      have demoted the tattoo row he liked to words. A later shift re-wording
+      either clause would silently invalidate the only evidence this road has,
+      and would watch nothing go red.
+    */
+    it("asks for the hardware call his warning turns on, in the words that measured 4 of 4", () => {
+      expect(DISCOVERY_SYSTEM_PROMPT).toContain(
+        "'anatomy' for a part of the body — INCLUDING anything fixed to or embedded in the",
+      );
+      expect(DISCOVERY_SYSTEM_PROMPT).toContain("body hardware or a prosthetic, whatever word names it");
+    });
+
+    it("distinguishes one CONNECTED piece from many scattered bits, which run 1 did not", () => {
+      expect(DISCOVERY_SYSTEM_PROMPT).toContain("one thing or one connected piece you could draw one tight");
+      expect(DISCOVERY_SYSTEM_PROMPT).toContain("many separate");
+      /* The failed wording must not come back. */
+      expect(DISCOVERY_SYSTEM_PROMPT).not.toContain("spread across an area");
+    });
+
+    it("makes the provider enforce the two closed facts, and leaves `on` open on purpose", () => {
+      const feature = DISCOVERY_SCHEMA.schema.properties.features.items;
+      expect([...feature.required]).toEqual(["name", "count", "about", "kind", "on", "coverage"]);
+      expect([...feature.properties.kind.enum])
+        .toEqual(["anatomy", "clothing", "accessory", "marking", "makeup"]);
+      expect([...feature.properties.coverage.enum]).toEqual(["single", "scattered"]);
+      /* `on` is a NOUN the reading chose. A closed list of hosts would be the
+         fixed list this whole repair exists to remove, wearing a new name. */
+      expect(feature.properties.on).not.toHaveProperty("enum");
+    });
+  });
+
+  describe("the parse reads them, and an unreadable one never costs a feature", () => {
+    const parse = (feature: Record<string, unknown>) =>
+      parseDiscovery(JSON.stringify({
+        features: [{ name: "x", count: 1, about: "", ...feature }],
+        cannotSee: [],
+      }))?.features[0];
+
+    it("carries the three facts off a good answer", () => {
+      expect(parse({ name: "lip ring", kind: "accessory", on: "lips", coverage: "single" })).toEqual({
+        name: "lip ring", count: 1, about: "",
+        kind: "accessory", on: "lips", coverage: "single",
+      });
+    });
+
+    it("reads freckles as scattered, which is what stops them being cut", () => {
+      expect(parse({ name: "freckles", kind: "marking", on: "skin", coverage: "scattered" })?.coverage)
+        .toBe("scattered");
+    });
+
+    it.each([
+      ["missing", {}],
+      ["an invented word", { kind: "cybernetic" }],
+      ["the wrong type", { kind: 7 }],
+    ])("falls back to anatomy on %s kind, never to clothing", (_why, feature) => {
+      /*
+        THE ONE RULE: an unreadable grouping fact leaves the feature exactly
+        where today's panel puts it. `clothing` and `makeup` are the only two
+        values that take a row away — one folds it into the Outfit row, the
+        other draws nothing — so they are the two an unreadable answer must
+        never become. `clothing` is his own warning: his cast's body implants
+        were labelled "Collar".
+      */
+      expect(parse(feature)?.kind).toBe("anatomy");
+    });
+
+    it("falls back to single coverage, because scattered is the value that means never cut", () => {
+      expect(parse({ coverage: "sprinkled" })?.coverage).toBe("single");
+      expect(parse({})?.coverage).toBe("single");
+    });
+
+    it("drops a host that is not a bare noun, because `on` becomes a lookup key", () => {
+      /* A caption could never match a row noun, so accepting one would only
+         make a wrong fold look like a considered one. */
+      expect(parse({ on: "the lips of the character" })?.on).toBe("");
+      expect(parse({ on: "lips, upper" })?.on).toBe("");
+      expect(parse({ on: "lips" })?.on).toBe("lips");
+    });
+
+    it("refuses a thing that sits on ITSELF, so the fold cannot meet a one-link cycle", () => {
+      expect(parse({ name: "hair", on: "hair" })?.on).toBe("");
+    });
+
+    it("KEEPS the feature when every grouping fact is rubbish", () => {
+      /*
+        The relay's finding on PR #2570, one field over: a parse rule that
+        deletes a feature is how a reading comes to take features away.
+      */
+      expect(parse({ kind: "nonsense", on: 42, coverage: null })).toEqual({
+        name: "x", count: 1, about: "", kind: "anatomy", on: "", coverage: "single",
+      });
+    });
+  });
+
+  describe("the merge reconciles two crops that saw different things", () => {
+    it("folds a singular and a plural into ONE row, which the raw noun did not", () => {
+      /*
+        The two crops are two readings. On the raw noun `earring` and `earrings`
+        were two merged rows each holding half the facts, and slice 2's fold
+        would have treated them as two different features.
+      */
+      const merged = mergeDiscoveries([
+        { features: [found("earring", 1, { on: "ear" })], cannotSee: [] },
+        { features: [found("earrings", 2)], cannotSee: [] },
+      ]);
+      expect(merged.features).toHaveLength(1);
+      /* The HELD noun — the head crop is asked first. */
+      expect(merged.features[0]!.name).toBe("earring");
+      expect(merged.features[0]!.count).toBe(2);
+      expect(merged.features[0]!.on).toBe("ear");
+    });
+
+    it("lets a named host beat silence, because a crop that cannot see the host says nothing", () => {
+      const merged = mergeDiscoveries([
+        { features: [found("lip ring")], cannotSee: [] },
+        { features: [found("lip ring", 1, { on: "lips" })], cannotSee: [] },
+      ]);
+      expect(merged.features[0]!.on).toBe("lips");
+    });
+
+    it("refuses to guess between TWO different hosts", () => {
+      /* No fold is honest; a guessed fold puts a lip ring under a nose. */
+      const merged = mergeDiscoveries([
+        { features: [found("ring", 1, { on: "lips" })], cannotSee: [] },
+        { features: [found("ring", 1, { on: "nose" })], cannotSee: [] },
+      ]);
+      expect(merged.features[0]!.on).toBe("");
+    });
+
+    it("never lets clothing or makeup win a disagreement about kind", () => {
+      /*
+        The bench measured one real disagreement — the alien's neck hardware
+        read `anatomy` on the full frame and `accessory` on the head crop — and
+        both of those keep their own row, so that one is cosmetic. The
+        disagreement that is NOT cosmetic is a body feature read as a garment,
+        which is the failure he named; it resolves away from `clothing`
+        whichever crop said it.
+      */
+      const garmentSecond = mergeDiscoveries([
+        { features: [found("collar", 1, { kind: "anatomy" })], cannotSee: [] },
+        { features: [found("collar", 1, { kind: "clothing" })], cannotSee: [] },
+      ]);
+      expect(garmentSecond.features[0]!.kind).toBe("anatomy");
+      const garmentFirst = mergeDiscoveries([
+        { features: [found("collar", 1, { kind: "clothing" })], cannotSee: [] },
+        { features: [found("collar", 1, { kind: "anatomy" })], cannotSee: [] },
+      ]);
+      expect(garmentFirst.features[0]!.kind, "and it is not an order effect").toBe("anatomy");
+      const asMakeup = mergeDiscoveries([
+        { features: [found("scar", 1, { kind: "makeup" })], cannotSee: [] },
+        { features: [found("scar", 1, { kind: "marking" })], cannotSee: [] },
+      ]);
+      expect(asMakeup.features[0]!.kind, "makeup draws no row at all").toBe("marking");
+    });
+
+    it("keeps the HELD kind when both are own-row kinds, so the answer is deterministic", () => {
+      const merged = mergeDiscoveries([
+        { features: [found("neck hardware", 1, { kind: "anatomy" })], cannotSee: [] },
+        { features: [found("neck hardware", 1, { kind: "accessory" })], cannotSee: [] },
+      ]);
+      expect(merged.features[0]!.kind).toBe("anatomy");
+    });
+
+    it("calls a thing scattered only when BOTH crops say so", () => {
+      const disagreed = mergeDiscoveries([
+        { features: [found("stubble", 1, { coverage: "scattered" })], cannotSee: [] },
+        { features: [found("stubble", 1, { coverage: "single" })], cannotSee: [] },
+      ]);
+      expect(disagreed.features[0]!.coverage, "scattered is the value that means never cut")
+        .toBe("single");
+      const agreed = mergeDiscoveries([
+        { features: [found("stubble", 1, { coverage: "scattered" })], cannotSee: [] },
+        { features: [found("stubble", 1, { coverage: "scattered" })], cannotSee: [] },
+      ]);
+      expect(agreed.features[0]!.coverage).toBe("scattered");
+    });
+
+    it("matches an unseen name against the features on the SAME folded key", () => {
+      /* On the raw noun a `cannotSee` row saying `earrings` sat beside a named
+         `earring`, and the panel was told both at once. */
+      const merged = mergeDiscoveries([
+        { features: [], cannotSee: [{ name: "earrings", why: "behind the hair" }] },
+        { features: [found("earring", 2)], cannotSee: [] },
+      ]);
+      expect(merged.cannotSee).toEqual([]);
+      expect(merged.features.map((f) => f.name)).toEqual(["earring"]);
+    });
   });
 });

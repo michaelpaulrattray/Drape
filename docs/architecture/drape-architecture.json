@@ -29608,6 +29608,11 @@
     },
     {
       "from": "module:server/castingV2/faceDiscovery.ts",
+      "to": "module:server/castingV2/pointerCut.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceDiscovery.ts",
       "to": "module:server/logging/logger.ts",
       "kind": "imports"
     },

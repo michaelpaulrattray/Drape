@@ -88,7 +88,16 @@ function readerWith(input: {
   };
 }
 
-const feature = (name: string, count = 1): DiscoveredFeature => ({ name, count, about: "" });
+/* The three grouping facts default to the values the parse falls back to
+   (#2566), so an arm that is not about them reads as it did before they
+   existed; `extra` is how slice 2's arms will say what they ARE about. */
+const feature = (
+  name: string,
+  count = 1,
+  extra: Partial<DiscoveredFeature> = {},
+): DiscoveredFeature => (
+  { name, count, about: "", kind: "anatomy", on: "", coverage: "single", ...extra }
+);
 
 describe("coveredByCatalogue — which road cuts a name, derived from the catalogue itself", () => {
   /*
