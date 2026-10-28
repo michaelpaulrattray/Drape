@@ -1,7 +1,7 @@
 {
-  "edition": 754,
-  "updatedAt": "2026-10-27T23:25:00.000Z",
-  "shift": "NOTHING COST ANYTHING TONIGHT AND NOTHING NEEDS YOU. One sentence we fixed yesterday turned out to stop working after about five tries, three jobs that looked like they were moving were actually stuck, and three more were already finished and nobody had said so.\n\nTHE MAIN ONE. Yesterday morning our own account with the company that reads pictures and words for us was switched off, and for hours everything we asked it was refused. Last night's work gave that case an honest sentence: \"The studio can't read pictures just now — that's something at our end, not your picture. Nothing was charged. Try again later.\" It was right, and a customer would have read it for about the first five tries of the outage and then stopped.\n\nWHY IT STOPPED. After five refusals in a row the product steps back from the reader for half a minute, to avoid hammering something that is clearly unwell. That is sensible. What it also did was forget WHY it had stepped back — so from the sixth try onward a customer was told the old thing again: \"I couldn't read that picture just now — try again in a moment.\" Which blames the photograph they chose, when their photograph was never even looked at, and asks them to retry something that cannot work. They swap the picture, it fails again, and we have blamed them twice.\n\nAND IT WAS NOT A BRIEF WOBBLE. The product lets one attempt through every half minute to see if the reader has recovered; during a real outage that attempt fails too and the half minute starts again. So after the first five tries, the wrong sentence is simply what you get for the rest of the outage. Yesterday's outage ran for hours.\n\nWHAT IT DOES NOW. It remembers that the reason was our own account, and keeps saying so for as long as that is true. Every other reason — a slow moment, a dropped connection — still gets the old \"try again in a moment\", because for those it is true. The fix also brings back something that had quietly stopped working: when our account is the problem, a sheet of eight characters stops trying the remaining ones instead of spending on faces that cannot arrive.\n\nI tested it the only way that proves anything: I broke it on purpose, twice, in both directions, and checked the tests went red each time and red in different places. One of those tests disproved a note I had written about my own work, so I corrected the note rather than the test. It is written and waiting on our own review before it goes live.\n\nTHREE JOBS WERE STUCK AND THIS PAGE SAID THEY WERE MOVING. Three finished pieces of work were sitting in a state where they could not go anywhere at all, and — this is the awkward part — they could not even be checked or reviewed while stuck, though their status looked green. Nothing was wrong with any of the work. It is a bookkeeping clash about an automatically generated map of the product that every job updates. I brought each one up to date; nothing inside them changed by a single word, and all three can now be reviewed and go live. That also freed two smaller repairs that were waiting behind one of them.\n\nAND THREE JOBS WERE ALREADY DONE. Rather than take something new, I read three open jobs against the actual code and found all three finished and shipped: the picture-reader wording from yesterday, the eleven known security holes in our own build tools (there are now none — I checked the count myself rather than trusting the note), and a change to the crew's own instructions that I could confirm because the tool printed the new wording at me when I started tonight. All three closed with their evidence.\n\nONE THING I DID NOT DO. The remaining jobs on the board tonight are a design question, a measurement that asks for nothing, and a note for the weekly process review that is not due yet. I did not invent work to fill the night.",
+  "edition": 755,
+  "updatedAt": "2026-10-28T00:52:00.000Z",
+  "shift": "NOTHING COST ANYTHING TONIGHT AND NOTHING NEEDS YOU. One piece of work that was waiting for review turned out to have a cost nobody had priced, so it got fixed before it shipped. Three jobs on the board were already finished and closed with their evidence. And one instruction we were about to follow would have been harmful if followed tonight, so it is now a job with the reasoning written down.\n\nTHE MAIN ONE, AND IT IS A CATCH RATHER THAN A FIX. Yesterday a change was written for this case: somebody types a perfectly clear instruction, and the product throws the whole thing away and tells them it did not come through clearly. That was wrong and the change fixed the sentence. But the change also made the refusal instant, and presented that as saving us money. It does the opposite. The thing that is too long is OUR OWN answer, not what the customer typed - when the product reads an instruction it writes down what it understood, and sometimes it writes that down far more verbosely than it needs to. Ask the same question again and the answer usually comes back shorter and fits. So the product today reads it up to three times and quietly succeeds on the second or third try. Making the refusal instant would have REFUSED edits that work right now, to save two reads costing a fraction of a cent. A paid edit we could have done and did not is much more expensive than that.\n\nWHAT IT DOES NOW. It still reads up to three times, exactly as it always has. If the last read is still too long, the customer gets the new honest sentence instead of the old one that blamed their typing. If any read fits, the edit simply goes ahead and they never know anything happened. Four places in the written record claimed the instant refusal was a saving, and all four are crossed out with what they said and why it was wrong, rather than quietly deleted.\n\nHOW I KNOW IT WORKS. I broke it on purpose three times and checked that the right test went red each time, and that the three went red in different places rather than all together. The sharpest one: if you take out the single line that counts the attempts, the product goes straight back to telling customers their clear sentence did not come through - the exact fault the original job was filed about. So that one line is holding the whole thing up, and there is now a test that says so.\n\nTHREE JOBS WERE ALREADY DONE. Rather than start something new I read three open jobs against the real code and all three were finished, shipped and live. The one worth naming: when somebody asks for two things at once - change the hair AND change the backdrop - the product can only do the person, not the room, and it used to do the hair and say nothing at all about the backdrop. It now says which part it left alone and why. I followed that sentence all the way from where it is written to where it appears on screen, because there is a known fault on that road where messages composed too late reach nobody, and I wanted to be sure this one was not caught by it. It is not. The other two were a warning on our own map of the product, and a whole class of one-character typo that used to be caught only after work had already merged - I re-broke that one on purpose to check it is now caught beforehand.\n\nTHE ONE THING I DID NOT DO, AND WHY. A leftover setting on the live service needs removing now that its work has merged. The handover note said to do it the moment that happened. Read tonight, that would have been the wrong moment: the new version had merged but was still being built, so the version actually serving customers was still using that setting. Removing it then would have put every customer back on the slower road. It is now a job with the readings attached and a first step that checks the new version is genuinely running, rather than trusting that a merge means it is live. Changing settings on the live service is not a night shift's to do, so it waits for a hand.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-27T23:21:40.424Z",
+      "readAt": "2026-10-28T00:32:13.657Z",
       "items": [
         {
           "issueNumber": 14,
@@ -7553,12 +7553,12 @@
       "title": "An over-long ask says so, instead of telling a customer their clear sentence was unclear (#2714)",
       "status": "in-review",
       "prNumber": 2732,
-      "note": "Held for the relay by hand: it changes a sentence a customer reads, but on a server file, which the automatic check cannot see (it only watches screen files). Gate run on the head."
+      "note": "Reviewed by hand and HELD with a finding, then repaired the same night: making the refusal instant would have refused edits the product serves today, because the over-long thing is our own answer and the next read usually fits. Now refuses only if the LAST read is still too long. Gate green on the repaired version, all ten checks. Waiting on review again."
     },
     {
       "id": "refine-dispatch-flag-1577-d4",
       "title": "Every edit answers straight away, and the switch that could turn that off is gone (#1577 slice D4)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2728,
       "note": "Gate green (5.2m), CLEAN. Held for the relay: it touches a money/auth file, and triage agreed on its own and said so on the pull request."
     },
@@ -7579,7 +7579,7 @@
     {
       "id": "scenery-note-2695",
       "title": "Refine says which half of your sentence named the shoot and was dropped (#2695)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2712,
       "note": "Customer-visible, so it waits on the relay's hand verdict; gate green, frames posted in both themes."
     },
@@ -10844,6 +10844,13 @@
       "status": "in-review",
       "prNumber": 2729,
       "note": "The sixth and last of the six settings he approved retiring. Gate green (4.2m, all eleven checks), CLEAN, held for the relay: it touches a money/auth file and a customer-visible one, and triage agreed on its own reading. The full suite ran because this is a deletion — 1,202 files, 21,118 tests, 0 failures. The one thing lost is declared: the boot refusal over the storage cleaner, which every surviving child still asks for itself."
+    },
+    {
+      "id": "overlong-account-sentence-2733",
+      "title": "An outage at our end keeps saying so, instead of blaming the customer's picture after five tries (#2733)",
+      "status": "in-review",
+      "prNumber": 2734,
+      "note": "Gate green in 4.5 minutes. Waiting on review; no shift merges it."
     }
   ],
   "problems": [
@@ -11350,7 +11357,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-27T23:21:40.423Z",
+    "readAt": "2026-10-28T00:32:13.656Z",
     "items": [
       {
         "issueNumber": 1577,
