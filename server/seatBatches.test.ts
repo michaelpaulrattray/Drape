@@ -29,6 +29,7 @@ import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 vi.setConfig({ testTimeout: CHILD_PROCESS_TEST_TIMEOUT_MS });
 
 import {
+  annotationWithLandedWork,
   areaOfLabel,
   areaOfPath,
   buildAreaIndex,
@@ -143,9 +144,82 @@ function population(
   switches = ALL_ON,
   board = CLEAN_BOARD,
   focusRung: string | null = null,
+  landedCommitsFor?: (card: number) => readonly string[],
 ) {
-  return seatPopulation({ cards, switches, board, areaIndex: INDEX, focusRung });
+  return seatPopulation({ cards, switches, board, areaIndex: INDEX, focusRung, landedCommitsFor });
 }
+
+/* ── #2680 · WORK ALREADY ON main, AS A POINTER ────────────────────────────── */
+
+describe("#2680 — a card whose work is already on main is annotated, never held", () => {
+  const LANDED = "abc1234 fix(casting): the thing (Card: #31) (#2636)";
+
+  it("says nothing at all when no commit names the card", () => {
+    /* THE NEGATIVE CONTROL, and it is the one that matters: with no reading,
+       every card must annotate exactly as it did before this existed. */
+    expect(annotationWithLandedWork(null, [])).toBeNull();
+    expect(annotationWithLandedWork("not built — the body is wrong", [])).toBe(
+      "not built — the body is wrong",
+    );
+  });
+
+  it("names the commits, and says plainly that they may be earlier slices", () => {
+    const note = annotationWithLandedWork(null, [LANDED]);
+    expect(note).toContain("ALREADY ON main");
+    expect(note).toContain("abc1234");
+    /* ⚠ The sentence must NOT claim the card is finished. 22 of 73 open cards
+       carried such a commit the day this landed and most were legitimately
+       open, so a note that read as a verdict would be wrong a quarter of the
+       time. It points; the seat reads the card. */
+    expect(note).toContain("may be finished");
+    expect(note).toContain("earlier slices");
+  });
+
+  it("keeps the board's own phrase beside the reading rather than replacing it", () => {
+    /* A refused card that also has landed work must still hand the seat its
+       refusal — losing it is how a seat rediscovers a decision already made. */
+    const note = annotationWithLandedWork("not built — the body is wrong", [LANDED]);
+    expect(note).toContain("not built — the body is wrong");
+    expect(note).toContain("ALREADY ON main");
+  });
+
+  it("caps a long list rather than handing a seat forty commit subjects", () => {
+    const many = Array.from({ length: 13 }, (_, i) => `sha${i} feat: slice ${i} (Card: #31)`);
+    const note = annotationWithLandedWork(null, many)!;
+    expect(note).toContain("13 commit(s)");
+    expect(note).toContain("+10 more");
+    expect(note).not.toContain("slice 12");
+  });
+
+  it("TAKES the card — the reading is a pointer and must never hold it", () => {
+    /* ⚠ THE WHOLE SAFETY OF THIS FEATURE IS THIS ARM. On the board the day it
+       landed, 22 of 73 open cards had a commit naming them; a hold on this
+       signal would have frozen a quarter of the queue. All 22 sat in the HELD
+       half, so the reading was silent on every takeable card — but that is a
+       property of today's board, not a guarantee, and this arm is what keeps
+       the pointer a pointer when it is not. */
+    const { takeable, skipped } = population([card(31, ["bug"])], ALL_ON, CLEAN_BOARD, null, () => [LANDED]);
+    expect(takeable.map((c) => c.number)).toEqual([31]);
+    expect(skipped).toEqual([]);
+    expect(takeable[0]!.annotation).toContain("ALREADY ON main");
+  });
+
+  it("reaches HIS ORDERED lane too, not only the background one", () => {
+    /* Both lanes set `annotation` from their own call, so a repair wired into
+       one of them is invisible in the other — the shape of #1496 exactly. */
+    const band = orderedBandForSeats({
+      cards: [card(32, ["founder-ordered", "bug"]), card(33, ["founder-ordered", "bug"])],
+      board: CLEAN_BOARD,
+      areaIndex: INDEX,
+      switches: ALL_ON,
+      independenceOf: () => ({ kind: "independent" as const, cites: [] }),
+      focusRung: null,
+      landedCommitsFor: (n) => (n === 32 ? ["def5678 feat: it (Card: #32) (#2655)"] : []),
+    });
+    expect(band.focus!.number).toBe(32);
+    expect(band.focus!.annotation).toContain("ALREADY ON main");
+  });
+});
 
 /* ── THE AREA INDEX ────────────────────────────────────────────────────────── */
 

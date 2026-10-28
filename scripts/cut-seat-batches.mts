@@ -758,11 +758,74 @@ for (const card of candidates) {
   }
 }
 
+/**
+ * WHICH CARDS ALREADY HAVE WORK ON `main` (#2680 finding 1).
+ *
+ * ONE `git log` for the whole board rather than one per card: the card proposed
+ * a per-item call, and at 73 open cards that is 73 process spawns where a single
+ * read of 90 days of subjects is 524 KB and one spawn. The map is built once and
+ * handed to both lanes.
+ *
+ * ⚠ **THE PATTERN IS `([^0-9]|$)` AND NOT `\b`, AND THAT IS THE BUG THIS SHIFT
+ * NEARLY SHIPPED ITS MEASUREMENT ON.** Git honours a word boundary in neither
+ * grep engine, and passing one through the Git Bash boundary silently DROPS the
+ * backslash — so the pattern degrades to a prefix match in which `Card: #14`
+ * matches `Card: #1469`, with nothing anywhere saying so. Here the subjects are
+ * parsed in JS instead, where the boundary is real.
+ *
+ * It FAILS OPEN. A repository with no `origin/main`, a git that is not there, a
+ * read that times out — all return an empty map, and every card annotates
+ * exactly as it did before this existed. The cut must never die on a pointer.
+ */
+const LANDED_WORK_WINDOW = "90.days";
+const CARD_IN_SUBJECT = /Card: #(\d+)/g;
+
+function readLandedCommits(): Map<number, string[]> {
+  const byCard = new Map<number, string[]>();
+  let out: string;
+  try {
+    out = execFileSync(
+      "git",
+      ["log", "origin/main", `--since=${LANDED_WORK_WINDOW}`, "--format=%h %s"],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: GH_READ_TIMEOUT_MS,
+        maxBuffer: GH_READ_MAX_BUFFER,
+      },
+    );
+  } catch {
+    return byCard;
+  }
+  for (const line of out.split("\n")) {
+    const subject = line.trim();
+    if (subject === "") continue;
+    CARD_IN_SUBJECT.lastIndex = 0;
+    /* A commit may name several cards (`(Card: #2626, #2621)`); each gets it. */
+    const seen = new Set<number>();
+    let match: RegExpExecArray | null;
+    while ((match = CARD_IN_SUBJECT.exec(subject)) !== null) {
+      const card = Number(match[1]);
+      if (!Number.isInteger(card) || seen.has(card)) continue;
+      seen.add(card);
+      const rows = byCard.get(card) ?? [];
+      /* Newest first, which is how `git log` hands them over. */
+      if (rows.length < 8) rows.push(subject.slice(0, 120));
+      byCard.set(card, rows);
+    }
+  }
+  return byCard;
+}
+
+const landedCommits = readLandedCommits();
+const landedCommitsFor = (card: number): readonly string[] => landedCommits.get(card) ?? [];
+
 const ordered = orderedBandForSeats({
   cards: candidates,
   board,
   areaIndex,
   switches,
+  landedCommitsFor,
   independenceOf: (card) => resolvedIndependence.get(card.number) ?? { kind: "unclear", cites: [] },
   focusRung,
   facts: managerFacts,
@@ -770,6 +833,7 @@ const ordered = orderedBandForSeats({
 
 const background = seatPopulation({
   cards: candidates.filter((card) => !card.labels.includes(ORDERED_LABEL)),
+  landedCommitsFor,
   /*
     THE MILESTONE, so the background lane applies the same gate the ordered lane
     does (#1496) — and since #1541 it is literally the same VALUE, read once from

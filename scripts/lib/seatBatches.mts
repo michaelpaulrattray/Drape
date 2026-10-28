@@ -215,6 +215,43 @@ export interface SeatBuildBoard {
   readonly phraseFor: (card: number) => string | null;
 }
 
+/**
+ * WORK THAT IS ALREADY ON `main` UNDER THIS CARD'S NAME — a POINTER, never a hold.
+ *
+ * #2680 finding 1. One builder seat was handed a batch of three in which two
+ * cards' work was **already an ancestor of the seat's own starting tree**: both
+ * lines were in its `git log --oneline -5` at launch, each naming its card, and
+ * the cards were still open only because the hand-close lagged the merge by
+ * about twelve minutes. Nothing compared the batch against the tree, and a full
+ * Opus session produced one comment.
+ *
+ * ⚠ **IT REPORTS AND MUST NEVER HOLD, and that is measured rather than
+ * cautious.** On the board the day this landed, **22 of 73 open cards had a
+ * commit naming them** — a multi-slice card whose first slice merged is
+ * legitimately open, and holding on this signal would freeze a quarter of the
+ * queue. What makes the pointer safe is WHERE it runs: all 22 of those hits sat
+ * in the HELD half, so the reading was silent on all three cards a seat could
+ * actually have been handed. The cutter's existing walls do the filtering; this
+ * only speaks about a card that already passed them.
+ *
+ * The honest limit, stated in the sentence itself: a commit naming a card does
+ * not mean the card is done. The seat still reads the card at the code — §2z
+ * already requires that — and this tells it where to look first.
+ */
+export function annotationWithLandedWork(
+  boardPhrase: string | null,
+  landed: readonly string[],
+): string | null {
+  if (landed.length === 0) return boardPhrase;
+  const shown = landed.slice(0, 3).join("; ");
+  const more = landed.length > 3 ? ` (+${landed.length - 3} more)` : "";
+  const note =
+    `ALREADY ON main — ${landed.length} commit(s) name this card: ${shown}${more}. ` +
+    `Read them before you build: the card may be finished and merely not closed yet (#2680), ` +
+    `or these may be earlier slices of work that genuinely continues.`;
+  return boardPhrase === null ? note : `${boardPhrase} · ${note}`;
+}
+
 /** A card as `gh issue list --json number,title,labels,body,createdAt` hands it over. */
 export interface SeatCandidateCard {
   readonly number: number;
@@ -924,6 +961,13 @@ export function seatPopulation(input: {
   readonly board: SeatBuildBoard;
   readonly areaIndex: SeatAreaIndex;
   /**
+   * Commit subjects on `main` that already name a card (#2680 finding 1) —
+   * supplied by `cut-seat-batches.mts`, which is the only caller that reads the
+   * world. Absent, every card annotates exactly as it did before this existed.
+   */
+  readonly landedCommitsFor?: (card: number) => readonly string[];
+
+  /**
    * The manager's fact sheet for this pass, when there is a usable one (#1658).
    *
    * ⚠ **TWO OF ITS FOUR COLUMNS REACH THIS LANE, AND THE OTHER TWO DO NOT —
@@ -1064,7 +1108,7 @@ export function seatPopulation(input: {
       area: placed.area,
       areaFrom: placed.areaFrom,
       managerReason: placed.managerReason,
-      annotation: input.board.phraseFor(card.number),
+      annotation: annotationWithLandedWork(input.board.phraseFor(card.number), input.landedCommitsFor?.(card.number) ?? []),
     });
   }
 
@@ -1438,6 +1482,13 @@ export function orderedBandForSeats(input: {
   readonly switches: CrewWorkSwitchState;
   readonly independenceOf: (card: SeatCandidateCard) => IndependenceReading;
   /**
+   * Commit subjects on `main` that already name a card (#2680 finding 1) —
+   * supplied by `cut-seat-batches.mts`, which is the only caller that reads the
+   * world. Absent, every card annotates exactly as it did before this existed.
+   */
+  readonly landedCommitsFor?: (card: number) => readonly string[];
+
+  /**
    * The rung he has opened, from `focusRungFromLadder` — `null` holds every rung
    * card.
    *
@@ -1587,7 +1638,7 @@ export function orderedBandForSeats(input: {
     area: topPlaced.area,
     areaFrom: topPlaced.areaFrom,
     managerReason: topPlaced.managerReason,
-    annotation: input.board.phraseFor(top.number),
+    annotation: annotationWithLandedWork(input.board.phraseFor(top.number), input.landedCommitsFor?.(top.number) ?? []),
   };
   held.push({
     number: top.number,
@@ -1651,7 +1702,7 @@ export function orderedBandForSeats(input: {
         area,
         areaFrom: placed.areaFrom,
         managerReason: placed.managerReason,
-        annotation: input.board.phraseFor(card.number),
+        annotation: annotationWithLandedWork(input.board.phraseFor(card.number), input.landedCommitsFor?.(card.number) ?? []),
       });
       continue;
     }
@@ -1691,7 +1742,7 @@ export function orderedBandForSeats(input: {
       area,
       areaFrom: placed.areaFrom,
       managerReason: placed.managerReason,
-      annotation: input.board.phraseFor(card.number),
+      annotation: annotationWithLandedWork(input.board.phraseFor(card.number), input.landedCommitsFor?.(card.number) ?? []),
     });
   }
 
