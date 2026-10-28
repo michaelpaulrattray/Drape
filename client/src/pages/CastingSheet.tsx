@@ -2334,10 +2334,13 @@ export default function CastingSheet() {
           not about whether a sentence was drawn.
         */
         /*
-          A RECEIPT IS NOT AN OUTCOME (Landing C, behind
-          `CASTING_REFINE_DISPATCH_SCOPE`).
+          A RECEIPT IS NOT AN OUTCOME (Landing C). ⚠ This said *behind
+          `CASTING_REFINE_DISPATCH_SCOPE`* until that flag retired (#1577 slice
+          D4); it had stood at `all` since 2026-08-25, so this branch has been
+          the ONLY road a customer takes for two months and is no longer behind
+          anything.
 
-          When the paid half stops holding the request, the mutation resolves in
+          The paid half does not hold the request: the mutation resolves in
           milliseconds with the row it just dispatched — the render has not
           happened, so there is nothing on this screen yet that came from the
           server about how it went. Two consequences, and both are the reason

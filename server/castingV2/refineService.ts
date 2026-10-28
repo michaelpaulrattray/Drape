@@ -293,7 +293,6 @@ import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referen
 import { capitalize, pronounsForSex } from "./castPronouns";
 import {
   captureCastingReferenceLibraryEnabled,
-  captureCastingRefineDispatchEnabled,
   captureCastingHairReferenceEnabled,
   captureCastingInkReferenceEnabled,
   captureCastingInkTransformEnabled,
@@ -897,9 +896,10 @@ export type RefineServiceDependencies = {
    * THE CUSTOMER.** Until this field existed the only way to get the awaited
    * road was to set `CASTING_REFINE_DISPATCH_SCOPE = "off"` inside the script's
    * own process — borrowing a CUSTOMER feature switch to describe a fact about
-   * the caller, and a switch that is being retired (#1577 slice D4, which waits
-   * on this). A browser can take a receipt and a script cannot; that is a
-   * difference between callers, so it is stated by the caller.
+   * the caller. **That switch is now RETIRED (#1577 slice D4), which this field
+   * is what made possible: the retirement could not happen while the awaited
+   * road had no door of its own.** A browser can take a receipt and a script
+   * cannot; that is a difference between callers, so it is stated by the caller.
    *
    * ⚠ **AND IT LIVES IN THE DEPENDENCIES AND NEVER IN `RefineInput`, WHICH IS
    * THE WHOLE OF ITS SAFETY.** `RefineInput` is built from procedure input at
@@ -912,10 +912,11 @@ export type RefineServiceDependencies = {
    *
    * The claim, the charge, the refund pair, the census and every row write are
    * the SAME on both roads and must stay so — this is about *when the function
-   * answers*, never about what it does. It is read at exactly one line, beside
-   * the flag, and the only consequence is that `attempt.dispatched` is never
-   * set: the announce site is already a no-op when it is unset, which is the
-   * entire difference between the two roads.
+   * answers*, never about what it does. It is read at exactly one line, which
+   * since the flag retired is the WHOLE of the decision, and the only
+   * consequence is that `attempt.dispatched` is never set: the announce site is
+   * already a no-op when it is unset, which is the entire difference between
+   * the two roads.
    */
   cannotTakeAReceipt?: boolean;
 };
@@ -1063,42 +1064,65 @@ export async function refineCandidate(
   /*
     LANDING C — WHO IS STILL WAITING WHEN THE RENDER STARTS.
 
-    Off (everywhere, at landing), `dispatched` is never set, nothing announces
-    anything, and the two lines below are the two lines that shipped: one
-    attempt, awaited whole, priced and answered on the request.
-
-    On, the attempt announces its receipt the moment the row is dispatched, and
-    this function races that announcement against the settled render. Whichever
+    The attempt announces its receipt the moment the row is dispatched, and this
+    function races that announcement against the settled render. Whichever
     arrives first is what the customer is handed; the census and the pricing
     below run at SETTLEMENT either way, which is the bound the cost lane needs —
     a dispatched refine must never be read as a 200 ms render.
+
+    ⚠ **THIS IS THE ONLY CUSTOMER ROAD NOW — `CASTING_REFINE_DISPATCH_SCOPE` IS
+    RETIRED (#1577 slice D4, his word of 2026-10-15: _"yes approve the plan and
+    switch off the six settings"_).** The flag stood at `all` on production from
+    2026-08-25, so the arm it chose between was reached by nobody and this cut
+    changes no customer's behaviour by a byte. What it removes is a second gate
+    on a paid path whose off arm was the measured defect the flag was raised to
+    fix — 1.7% of refines answering past the ~305 s gateway wall, the money safe
+    and the REASON lost.
   */
   let announce: ((receipt: DispatchedReceipt) => void) | null = null;
   const receipt = new Promise<DispatchedReceipt>((resolve) => { announce = resolve; });
-  /* Nothing is ever awaited on this promise when the flag is off, so it is
-     never settled and never observed — an ordinary unresolved promise, not a
-     leak. */
+  /* Nothing is ever awaited on this promise for a caller that cannot take a
+     receipt, so it is never settled and never observed — an ordinary unresolved
+     promise, not a leak. */
   /*
-    AND A CALLER THAT CANNOT TAKE A RECEIPT TAKES THE HELD ROAD WHATEVER THE
-    FLAG SAYS (#2560).
+    AND A CALLER THAT CANNOT TAKE A RECEIPT TAKES THE HELD ROAD (#2560).
 
-    Read here and nowhere else, beside the flag, because the two questions meet
-    in exactly one place: the flag asks whether THIS CUSTOMER's refine may
-    answer early, and this asks whether THIS CALLER is able to receive that
-    answer at all. A script that is handed a receipt exits with the render it
-    paid for still running — so where it says it cannot take one, `dispatched`
-    stays unset and the two lines below are the two lines that shipped before
-    Landing C existed: one attempt, awaited whole, priced and answered on the
-    request.
+    The one question left here, and the only thing that decides which road a
+    refine takes: is THIS CALLER able to receive an early answer at all. A
+    script that is handed a receipt exits with the render it paid for still
+    running — so where it says it cannot take one, `dispatched` stays unset and
+    the two lines below are the two lines that shipped before Landing C existed:
+    one attempt, awaited whole, priced and answered on the request.
 
-    ⚠ The flag is still READ when the caller can take a receipt, so a customer
-    outside the scope is unaffected by this field existing, and a caller that
-    says nothing is today's behaviour byte for byte.
+    ⚠ It is a property of the CALLER and never of the customer, which is why it
+    outlived the flag rather than dying with it: the retirement took away the
+    question *may this account answer early*, and left the question *can this
+    caller hear the answer*. A caller that says nothing dispatches, which is
+    what every customer-facing road already did.
+
+    ⚠ **THE RETIREMENT TOOK A SECOND READ WITH IT AND THAT IS DECLARED RATHER
+    THAN QUIET.** `captureCastingRefineDispatchEnabled` was an AND: the dispatch
+    scope *and* `captureCastingV2Enabled(userId)`. Deleting the predicate
+    deletes both halves, so the parent read went too — and it could never have
+    answered differently here, read at the bytes rather than argued:
+    `refineCandidate` has exactly ONE production caller
+    (`server/routes/castingV2.ts:1711`, `refineCandidate({}, …)`), and the
+    statement above it is `requireCastingV2(ctx.user.id)`, which is literally
+    `if (!captureCastingV2Enabled(userId)) throw`. The same predicate, asked
+    twice, two statements apart. Keeping it would also have left a CUSTOMER
+    scope question in front of the receipt, which is the thing this slice
+    removes.
+
+    ⚠ **WHAT IT WAS LOAD-BEARING FOR IS THE TEST HARNESS, AND THAT TURNED OUT
+    TO BE #2710'S CLASS ONE STEP OVER.** Almost no arm in
+    `refineService.test.ts` sets either scope, so that AND was quietly giving
+    nearly four hundred receipt-blind arms the held road they never asked for;
+    235 of them reddened in one run when it went. They declare it once now, at
+    their own import, the way the sixteen scripts of #2710 do at their call
+    sites. The guard there cannot see a `.test.ts` by construction — its
+    population is `git ls-files -- scripts` — and that file says so.
   */
-  if (
-    dependencies.cannotTakeAReceipt !== true
-    && captureCastingRefineDispatchEnabled(input.userId)
-  ) {
+  if (dependencies.cannotTakeAReceipt !== true) {
     attempt.dispatched = (given) => announce?.(given);
   }
 
@@ -1271,8 +1295,9 @@ function answerOnTheRequest(
  * would have re-indented all of them for a change that is really one sentence —
  * *answer now, finish afterwards*. So the attempt announces the receipt at the
  * first moment it is TRUE, and the entry point decides whether anyone is still
- * waiting on the request. Absent when the flag is off, which is when nothing
- * about this path differs from the one that shipped.
+ * waiting on the request. Absent only for a caller that said it cannot take a
+ * receipt (#2560) — which is when nothing about this path differs from the one
+ * that shipped before Landing C.
  */
 type RefineAttempt = {
   claimed: boolean;
@@ -6332,13 +6357,16 @@ async function refineCandidateCounted(
 
       Not one line earlier: this is where the row the panel's pending list draws
       says `dispatched`, so a customer handed a receipt before it would be told
-      her edit is running by a surface that cannot yet see it. And not one line
-      later either — everything below is the render, which is the whole thing
-      she has stopped waiting on.
+      their edit is running by a surface that cannot yet see it. And not one
+      line later either — everything below is the render, which is the whole
+      thing they have stopped waiting on.
 
-      A no-op when the flag is off, and that is the entire difference between
-      the two roads: the same claim, the same charge, the same paint, the same
-      rows. What moves is who is still holding the socket while it happens.
+      A no-op for a caller that cannot take a receipt (#2560), and that is the
+      entire difference between the two roads: the same claim, the same charge,
+      the same paint, the same rows. What moves is who is still holding the
+      socket while it happens. ⚠ It used to be a no-op for a customer outside
+      `CASTING_REFINE_DISPATCH_SCOPE` as well; that flag is retired (#1577
+      slice D4) and it had stood at `all`, so no customer was ever on that arm.
     */
     attempt.dispatched?.({
       variantId: variant.publicId,
