@@ -2197,8 +2197,11 @@ describe("build and skin are words alone on the discovery road", () => {
 
   it("⚠ keeps a delivered TATTOO in the Body section — the rule is per slot, never the group", () => {
     /* `ink:neck` lives in the body group, and he asked for it by name (*"i dont
-       see his neck tatto on the feature panel?"*). A rule keyed on the group
-       would have taken it with build and skin. */
+       see his neck tatto on the feature panel?"*). A rule that hid the Body
+       SECTION on this road would have taken it with build and skin — measured:
+       that sabotage reddens this arm. (Keying the catalogue loop's skip on the
+       group instead cannot reach it at all — ink rows are built beside that
+       loop, not in it — so that form is inert and proves nothing.) */
     const body = reading({ discovering: true, ink: [worn()] }).groups.find((group) => group.group === "body");
     expect(body?.rows.map((row) => row.name)).toEqual(["Neck tattoo"]);
   });
