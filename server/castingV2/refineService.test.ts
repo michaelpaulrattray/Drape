@@ -11267,6 +11267,23 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
     return { release };
   };
 
+  /**
+   * LET A HELD PAINT FINISH AND LAND EVEN WHEN THE ARM WENT RED — for the
+   * receipt arms' `finally`.
+   *
+   * A receipt arm returns while its render is still running, so an arm that
+   * fails before its own release-and-wait leaves a DETACHED render behind, and
+   * that render lands inside the NEXT arm. Measured on #2713's own sabotage:
+   * one deleted carrier line reddened the receipt arms AND "lands a background
+   * failure DURABLY" below them, which passes alone — one defect reading as
+   * two. The wait swallows its own timeout because the arm's real failure is
+   * already in flight and must be the one reported.
+   */
+  const landEvenOnRed = async (render: { release: () => void }) => {
+    render.release();
+    await vi.waitFor(() => expect(landedVariant).not.toBeNull()).catch(() => undefined);
+  };
+
   const censusLines = () =>
     logged.filter((line) => line.message.includes("what this edit cost in calls and seconds"));
 
@@ -11380,21 +11397,23 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
        does since #1577 slice D4 retired the variable this arm used to set. */
     const render = latch();
 
-    const result = await refineCandidate(
-      {
-        interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }),
-        cannotTakeAReceipt: false,
-      },
-      { ...input, instruction: "make her hair copper red in a studio" },
-    );
+    try {
+      const result = await refineCandidate(
+        {
+          interpret: async () => ({ ok: true as const, delta: { hairColour: "copper" as const } }),
+          cannotTakeAReceipt: false,
+        },
+        { ...input, instruction: "make her hair copper red in a studio" },
+      );
 
-    expect(result.kind).toBe("dispatched");
-    expect(result.note, "said before any paint exists").toContain(
-      "The studio part of your ask wasn't changed",
-    );
-
-    render.release();
-    await vi.waitFor(() => expect(landedVariant, "and the picture still lands").not.toBeNull());
+      expect(result.kind).toBe("dispatched");
+      expect(result.note, "said before any paint exists").toContain(
+        "The studio part of your ask wasn't changed",
+      );
+    } finally {
+      await landEvenOnRed(render);
+    }
+    expect(landedVariant, "and the picture still lands").not.toBeNull();
   });
 
   it("CONTROL — a receipt for a whole-person ask carries no note", async () => {
@@ -11407,6 +11426,144 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
 
     render.release();
     await vi.waitFor(() => expect(landedVariant).not.toBeNull());
+  });
+
+  /*
+    ---- THE REST OF THE READING'S SENTENCES RIDE THE RECEIPT TOO ----
+
+    Card #2713. The dropped clause above was one member of a list of seven, and
+    six of the seven are settled before the paint begins — read at their
+    assignments in `refineCandidateCounted`, not at a table. Composed only at the
+    landing, every one of those six was production-silent for every dispatched
+    refine, because the settled result loses the race and is discarded.
+
+    Each arm asserts while the latch is still SHUT, so the sentence is provably
+    the reading's and not a fast render's.
+  */
+  describe("the rest of the reading's sentences ride the receipt too", () => {
+    /* Reset here rather than inside an arm, so a red arm cannot leave its
+       picture resolving for the arm after it. */
+    afterEach(() => { resolveAskReferenceMock.mockReset(); });
+
+    const ATTACHED = {
+      id: 7,
+      storageKey: "casting-v2/reference/attached.png",
+      provenance: "consented" as const,
+      digest: "d".repeat(64),
+      mime: "image/png",
+      width: 120,
+      height: 100,
+    };
+
+    it("⚠ EVERY SENTENCE THE READING KNOWS RIDES ONE RECEIPT — joined as the landing joins them", async () => {
+      /*
+        Three members in one breath: a likeness comparison set aside, a subject
+        that reached no lane, and a scenery clause dropped. One `note` field, so
+        the members are joined — and the arm's second half is the reason for the
+        shape: the SAME ask on the held road (a caller that cannot take a
+        receipt) must say the same words in the same order, or the two carriers
+        have become two products.
+      */
+      const asked = {
+        interpret: async () => ({
+          ok: true as const,
+          delta: { free: { lips: "a soft nude lip gloss" } },
+          unserved: ["orb"],
+          droppedReference: true,
+        }),
+      };
+      const sentence = {
+        ...input,
+        instruction: "give them a soft nude lip gloss like a famous singer, and a glowing red orb, in a studio",
+      };
+      const render = latch();
+      let said = "";
+      try {
+        const receipt = await refineCandidate({ ...asked, cannotTakeAReceipt: false }, sentence);
+
+        expect(receipt.kind).toBe("dispatched");
+        expect(landedVariant, "the latch is shut, so this is the reading's sentence").toBeNull();
+        said = receipt.note ?? "";
+        const likeness = said.indexOf("Refining can't copy a real person's features");
+        const orb = said.indexOf("The orb isn't something I can do yet");
+        const studio = said.indexOf("The studio part of your ask wasn't changed");
+        expect(likeness, "the likeness confession rides the receipt").toBeGreaterThanOrEqual(0);
+        expect(orb, "the named-but-not-served half rides the receipt").toBeGreaterThan(likeness);
+        expect(studio, "the dropped clause rides it too, in the landing's order").toBeGreaterThan(orb);
+      } finally {
+        await landEvenOnRed(render);
+      }
+      expect(landedVariant, "and the picture still lands").not.toBeNull();
+
+      landedVariant = null;
+      const held = await refineCandidate(asked, sentence);
+      expect(held.kind, "the control road: a caller that holds the request").toBe("rendered");
+      expect(held.note, "the receipt and the landing say the same words in the same order").toBe(said);
+    });
+
+    it("⚠ THE PICTURE NOTHING COULD TAKE FROM RIDES THE RECEIPT — and says what it could not take", async () => {
+      /*
+        THE FOUNDER'S OWN TEST, 2026-10-28: a photograph of an outfit, and an ask
+        for the outfit. The founder's account is on the hair road (so the hair branch runs,
+        reads a take, finds the ask is not about hair, and cuts nothing); no road
+        takes clothing from a picture. The picture went unused — and the sentence
+        that said so told the founder the change "didn't ask for anything I could
+        take from it", which is false of exactly this ask. It never reached anyone,
+        because it was landing-only. Now it reaches the customer, so it has to be true.
+      */
+      resolveAskReferenceMock.mockResolvedValue(ATTACHED);
+      const render = latch();
+
+      try {
+        const result = await refineCandidate(
+          {
+            hairReferenceEnabled: () => true,
+            interpret: async () => ({
+              ok: true as const,
+              fromReference: true,
+              delta: { free: { wardrobe: "the outfit in the attached picture" } },
+            }),
+            cannotTakeAReceipt: false,
+          },
+          { ...input, instruction: "put them in the outfit from this picture", referenceId: "ref-public" },
+        );
+
+        expect(result.kind).toBe("dispatched");
+        expect(landedVariant, "said before any paint exists").toBeNull();
+        expect(result.note).toBe(
+          "I can't take the wardrobe from a picture yet, so your picture wasn't used — "
+            + "the change went ahead from your words.",
+        );
+        expect(result.note, "the false clause is gone").not.toContain("didn't ask for anything");
+        expect(result.note?.toLowerCase(), "a paid take never says nothing was charged")
+          .not.toContain("nothing was charged");
+      } finally {
+        await landEvenOnRed(render);
+      }
+      expect(landedVariant, "and the picture still lands").not.toBeNull();
+    });
+
+    it("CONTROL — a picture riding an ask about something else keeps the sentence it always had", async () => {
+      /* The reading never pointed at the picture, so the original sentence is
+         the true one — and it rides the receipt now as well. */
+      resolveAskReferenceMock.mockResolvedValue(ATTACHED);
+      const render = latch();
+
+      try {
+        const result = await refineCandidate(
+          { ...greenEyes, cannotTakeAReceipt: false },
+          { ...input, referenceId: "ref-public" },
+        );
+
+        expect(result.kind).toBe("dispatched");
+        expect(result.note).toBe(
+          "The picture you attached wasn't used — this change didn't ask for anything I could take from it.",
+        );
+      } finally {
+        await landEvenOnRed(render);
+      }
+      expect(landedVariant).not.toBeNull();
+    });
   });
 
   it("lands a background failure DURABLY — on the rows, where the surface reads it", async () => {
@@ -12301,6 +12458,33 @@ describe("the picture she attached becomes the carrier that rides", () => {
     expect(minted).toHaveLength(0);
   });
 
+  it("an OPEN road that could not use the picture never says it cannot take that subject", async () => {
+    /*
+      Card #2713's third case. The hair road is open for this account and the
+      ask IS about hair and DID point at the picture — the take simply could
+      not be read. "I can't take the hair cut from a picture yet" would be
+      specific and wrong for an account that can, and the original "this change
+      didn't ask for anything I could take from it" is wrong too: it asked. So
+      it says only what happened.
+    */
+    const result = await refineCandidate(carrierRoad({
+      hairTake: async () => null,
+      interpret: async () => ({
+        ok: true as const,
+        fromReference: true,
+        delta: { free: { hairCut: "the hair in the attached picture" } },
+      }),
+    }), {
+      ...input,
+      instruction: "copy the colour and the cut",
+      referenceId: "ref-public",
+    });
+
+    expect(minted).toHaveLength(0);
+    expect(result.note).toBe("Your picture wasn't used this time — the change went ahead from your words.");
+    expect(result.note).not.toContain("I can't take");
+  });
+
   it("carries NOTHING of the person in her photograph — the containment bound, at the wire", async () => {
     /*
       Proved on the bytes that were dispatched rather than on the cutter's
@@ -13067,6 +13251,28 @@ describe("the picture she attached becomes the carrier that rides", () => {
     would pass a naive "did it dispatch" check and would be the unscoped
     reference the whole source vocabulary exists to prevent.
   */
+  it("⚠ A TATTOO TAKEN FROM THE ATTACHED PICTURE NEVER SAYS THE PICTURE WENT UNUSED — both roads open", async () => {
+    /*
+      Card #2713's sweep, and the sibling it found. `carrierRoad` opens the HAIR
+      road and `inkRoad` adds the INK road, so this is the founder's own
+      account: both flags stand at `users:1` on production. A tattoo asked out
+      of the attached picture walked into the hair branch too, met a take that
+      was not about hair, and was marked "unused" — while the picture rode as
+      the ink document on the same render. Composed only at the landing, that
+      false sentence reached nobody; on the receipt it would have reached the founder.
+      The verdict is now derived from what the picture BECAME (a hair carrier
+      or an ink document), and this arm is the one that says so.
+    */
+    const design = inkDesignRow({ digest: TINY_MASTER_SHA });
+    const result = await refineCandidate(inkRoad({ listInkDesigns: async () => [design] }), {
+      ...input, instruction: "use this tattoo design on my left sleeve", referenceId: "ref-public",
+    });
+
+    expect(result.kind).toBe("rendered");
+    expect(painted[0]!.references, "the picture's design rode the render").toHaveLength(2);
+    expect(result.note ?? "", "a picture that rode was called unused").not.toContain("wasn't used");
+  });
+
   it("RIDES the design she has at the place she named", async () => {
     const design = inkDesignRow({ digest: TINY_MASTER_SHA });
     await refineCandidate(inkRoad({ listInkDesigns: async () => [design] }), {

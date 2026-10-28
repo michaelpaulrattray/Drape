@@ -32,10 +32,12 @@ export type RefineOutcomeLike = {
     #2695 a receipt CAN carry a note: the dropped-clause confession is a fact of
     the reading, true before any paint, and on production the receipt is the
     only answer a dispatched customer ever reads (the settled result loses the
-    race). The rule below held without an edit, exactly as this comment's first
-    version predicted it would for a future confession — a note said whatever
-    kind carries it. What the receipt still never carries is the render's own
-    OUTCOME, which stays owed to the surface when the picture lands.
+    race). Since #2713 it carries every sentence the reading settles before the
+    paint, joined as a delivered take's are. The rule below held without an
+    edit both times, exactly as this comment's first version predicted it would
+    for a future confession — a note said whatever kind carries it. What the
+    receipt still never carries is the render's own OUTCOME, which stays owed
+    to the surface when the picture lands.
   */
   kind?: "rendered" | "selected" | "asked" | "dispatched";
   note?: string;

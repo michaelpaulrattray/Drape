@@ -709,8 +709,61 @@ export function likenessSetAsideNote(input: { subjects: readonly string[] }): st
  * It names no feature deliberately: what is true here is that the ATTACHMENT
  * went unused, and a sentence guessing at which feature she meant would be the
  * hardcoded "the eyes" defect wearing a different hat.
+ *
+ * # ⚠ AND THAT SENTENCE WAS ONE OF THREE TRUTHS WEARING ONE VOICE (#2713)
+ *
+ * *"…this change didn't ask for anything I could take from it"* is true of a
+ * picture riding an ask about something else, and it is the only case its
+ * first version was written for. The founder's own test (2026-10-28) was the
+ * other case: a photograph of an outfit, and an ask FOR the outfit. No
+ * reference road takes clothing, so the picture went unused — and the second
+ * clause told the customer they had not asked for the very thing they asked
+ * for. It never reached the founder only because the note was landing-only and the
+ * dispatch receipt won the race; #2713 is what puts it on the receipt, so the
+ * day it first reaches a customer it has to be true of every case.
+ *
+ * So the caller says WHY the picture went unused, and each reason is read off
+ * the request rather than guessed:
+ *
+ * - `nothing` — the reading never pointed at the picture (the interpreter's own
+ *   `fromReference` bit, the one every reference road gates on). The original
+ *   sentence, byte for byte.
+ * - `unservable` — it pointed at the picture for something no road open to
+ *   this account takes from a picture. The thing is named from what the
+ *   reading FILED, through `filedSubjectsOf` (the reader the chips and the
+ *   likeness sentence above are both labelled from), and never from a list
+ *   kept here of what a picture cannot give: *"nothing should be confined to a
+ *   set list"*. One filed subject is named; with two or more the sentence
+ *   cannot know which one the picture was for, so it names none — the
+ *   likeness sentence's NO SUBJECT, NO CLAIM rule, one function up.
+ * - `untaken` — a road for that subject IS open and still did not take this
+ *   picture (a take it could not read). Saying *"I can't take hair from a
+ *   picture"* to an account that can would be specific and wrong, so it says
+ *   only what happened.
+ *
+ * None of them mentions money: this rides a PAID take, and the owed-note
+ * family's standing rule is that a paid take says what it did not do and says
+ * nothing about the charge. No engine, no pipeline word, no number.
  */
-export function attachedPictureUnusedNote(): string {
+export type AttachedPictureUnused =
+  | { asked: "nothing" }
+  | { asked: "unservable"; filed: readonly string[] }
+  | { asked: "untaken" };
+
+export function attachedPictureUnusedNote(
+  why: AttachedPictureUnused = { asked: "nothing" },
+): string {
+  if (why.asked === "untaken") {
+    return "Your picture wasn't used this time — the change went ahead from your words.";
+  }
+  if (why.asked === "unservable") {
+    const said = why.filed
+      .map((subject) => subject.trim().toLowerCase())
+      .filter((subject) => subject.length > 0);
+    const what = said.length === 1 ? `the ${said[0]}` : "that";
+    return `I can't take ${what} from a picture yet, so your picture wasn't used — `
+      + "the change went ahead from your words.";
+  }
   return "The picture you attached wasn't used — this change didn't ask for anything I could take from it.";
 }
 

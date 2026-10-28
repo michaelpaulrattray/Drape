@@ -278,7 +278,7 @@ import { refineRefundDescription } from "./refineRefundLedger";
 import { inkSlotOfPhrase, slotsOfPrunedStep } from "./prunedSlots";
 import {
   attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote, sceneryLeftOutNote,
-  type CannotSayReason,
+  type AttachedPictureUnused, type CannotSayReason,
 } from "./cannotSayCopy";
 /* The prior question — is this ask about ink she already has, and does she
    want it changed or gone (opus-940 §2, countersigned fable-1274 §2). */
@@ -1162,9 +1162,9 @@ export async function refineCandidate(
         imageUrl: first.given.imageUrl,
         instructions: first.given.instructions,
         operationId: first.given.operationId,
-        /* The dropped-clause confession, on the only answer a dispatched
-           customer ever reads (#2695) — same reasoning as the design line
-           below, pointed at a sentence instead of a picture. */
+        /* What the customer is owed about this take, on the only answer a dispatched
+           customer ever reads (#2695, #2713) — same reasoning as the design
+           line below, pointed at a sentence instead of a picture. */
         ...(first.given.note ? { note: first.given.note } : {}),
         /* The design this render is carrying, named on the receipt as it is on
            a delivered answer: a customer who stopped waiting must not be the
@@ -1185,11 +1185,16 @@ type DispatchedReceipt = {
   imageUrl: string;
   instructions: string[];
   /**
-   * THE CLAUSE THE READING DROPPED (#2695) — a fact of the PARSE, known before
-   * the render begins, which is what makes it honest on a receipt: it is true
-   * however the paint ends. On production every paid refine answers with a
-   * receipt and the settled result loses the race, so a confession that does
-   * not ride here reaches nobody.
+   * WHAT THE CUSTOMER IS OWED THAT THE READING ALREADY KNOWS — every
+   * sentence of the owed list decided before the paint, joined exactly as the
+   * landing joins them (#2695 brought the dropped clause, #2713 the other five:
+   * the likeness confession, the unused picture, the second view, the
+   * out-of-frame half and the named-but-not-served half). Each is a fact of the
+   * READING, known before the render begins, which is what makes it honest on
+   * a receipt: it is true however the paint ends. On production every paid
+   * refine answers with a receipt and the settled result loses the race, so a
+   * confession that does not ride here reaches nobody. The one that cannot is
+   * the invisible-site sentence, decided inside the render.
    */
   note?: string;
   design?: RefineResult["design"];
@@ -5759,7 +5764,13 @@ async function refineCandidateCounted(
   }
 
   let hairSource: { key: string; sha: string; scope: string } | null = null;
-  let attachedPictureUnused = false;
+  /*
+    THE HAIR ROAD WAS OPEN, THE ASK WAS ABOUT HAIR, AND THIS PICTURE STILL WAS
+    NOT TAKEN (#2713) — the one case where "I can't take that from a picture"
+    would be false, because for this account the road exists. Read below,
+    where the unused picture is classified, and nowhere else.
+  */
+  let hairAskedButNotTaken = false;
   /*
     ⚠ WHICH SUBJECTS THIS STEP TOOK FROM A PICTURE — recorded here, at the one
     moment the answer is known, and read by `identityDetailsOf` so a placeholder
@@ -5801,9 +5812,10 @@ async function refineCandidateCounted(
     AND IF THE ROAD IS SHUT, HER PICTURE IS STILL ACCOUNTED FOR. `inkSource`
     is the other thing an attachment can have been used for; with neither, the
     picture rode along and did nothing, and she is told so in the same list
-    every other half-served ask is confessed in.
+    every other half-served ask is confessed in. ⚠ That verdict is DERIVED
+    after this branch now, from the two things a picture can become — see
+    `pictureUnused` below (#2713).
   */
-  if (reference && !hairRoadOpen && inkSource === null) attachedPictureUnused = true;
   if (reference && hairRoadOpen) {
     const take = await (dependencies.hairTake ?? resolveHairTake)({ instruction });
     /*
@@ -5827,7 +5839,7 @@ async function refineCandidateCounted(
     if (!wantsCrop || !asksAboutHair) {
       /* Not a failure and not free-of-charge news either: she is TOLD, in the
          same list every other half-served ask is confessed in. */
-      attachedPictureUnused = true;
+      hairAskedButNotTaken = asksAboutHair;
       log.info(
         { userId: input.userId, candidate: input.candidatePublicId, take, asksAboutHair },
         "[refineService] the attached picture was not used — nothing was cut and nothing was spent",
@@ -5937,6 +5949,35 @@ async function refineCandidateCounted(
       if (cut.carrier.secondViewUnused) secondViewNote = SECOND_VIEW_UNUSED_NOTE;
     }
   }
+
+  /*
+    DID THE ATTACHED PICTURE GET USED, AND IF NOT, WHY (#2713).
+
+    DERIVED from the only two things an attached picture can become on this
+    road — a hair carrier (`hairSource`) or an ink document (`inkSource`) —
+    rather than set by hand at each exit that leaves it unused. The hand-set
+    form had two such exits and missed a third road: an account on BOTH the
+    hair and the ink road, asking for a tattoo out of its picture, walked into
+    the hair branch above, met a take that was not a crop, and was marked
+    unused while its picture was riding as the ink document. Composed only at
+    the landing that sentence reached nobody; on the receipt it would have told
+    the founder the tattoo picture was ignored on the very render it drew.
+
+    And WHY it went unused is three different sentences, each read off this
+    request (`attachedPictureUnusedNote`'s docblock has the whole argument):
+    the reading never pointed at it; it pointed at it for something no open
+    road takes from a picture; or the road was open and this take could not be
+    used. `pointedAtThePicture` is the same bit every reference road gates on.
+  */
+  const pictureUnused: AttachedPictureUnused | null = reference !== null
+    && hairSource === null
+    && inkSource === null
+    ? (!pointedAtThePicture
+      ? { asked: "nothing" }
+      : hairAskedButNotTaken
+        ? { asked: "untaken" }
+        : { asked: "unservable", filed: filedSubjectsOf(editDelta) })
+    : null;
 
   /* ---- the claim ---- */
 
@@ -6332,12 +6373,85 @@ async function refineCandidateCounted(
     open lane already reports as named-but-not-served gets that sentence, which
     carries more (what to do about it), and never both.
   */
-  const sceneryDropped = sceneryLeftOut(instruction, editDelta, {
-    garmentLicensed: outfitEditServed,
-  });
-  const sceneryDroppedNote = sceneryDropped && !unservedSubjects.includes(sceneryDropped.word)
-    ? sceneryLeftOutNote(sceneryDropped)
-    : null;
+  /*
+    ⚠ AND IT WAS ONE OF SIX, NOT THE ONLY ONE — #2713.
+
+    Every sentence below is a fact of the READING, settled before this line and
+    never touched by the paint, read at the assignments rather than at a table:
+    the likeness flag and the unserved keys come off the parse; the out-of-frame
+    half is stripped before `admit`; the unused picture and the second view are
+    decided before the claim; `editDelta`'s last write is above all of them. So
+    they are composed ONCE, HERE, in the order the landing has always said them
+    in, and they ride BOTH carriers: the receipt below, which is the only
+    answer a dispatched customer ever reads, and the landing, for the caller
+    that holds the request. Exactly one of those two answers reaches any one
+    request, so no sentence is ever said twice.
+
+    The one member that cannot come here is `invisibleSiteNote`: it is decided
+    inside the removal's own read of the render, after the paint has begun, and
+    it stays landing-only — production-silent on the dispatch road until the
+    note is persisted (filed as its own card with this one).
+
+    FENCED, for #873's reason one step earlier: these builders are pure and a
+    throw from one is improbable, but this line sits after the charge, and a
+    sentence about the take is never worth failing the take over. A lost note
+    costs the note and nothing else — the render goes ahead without it, and
+    both carriers simply carry nothing.
+  */
+  let owedBeforeThePaint: string[] = [];
+  try {
+    const sceneryDropped = sceneryLeftOut(instruction, editDelta, {
+      garmentLicensed: outfitEditServed,
+    });
+    owedBeforeThePaint = [
+      /*
+        AND IT NAMES WHAT IT ACTUALLY FILED (fable-490 §1b).
+
+        This sentence hardcoded "the eyes" — written for the green-eyes case,
+        and asserted about the founder's SKIN ask on a face whose eyes nobody
+        had mentioned. A confession that names the wrong feature is worse than a
+        generic one: it is specific and wrong, in his own product voice.
+
+        The subjects come from the delta this take filed, through the same
+        reader the chips are labelled from — never a second account of what was
+        asked for.
+      */
+      droppedReference
+        ? likenessSetAsideNote({ subjects: filedSubjectsOf(editDelta) })
+        : null,
+      /* Her attachment went unused — the same law as the line above, about the
+         other kind of reference — and, since #2713, saying WHY: an ask that
+         pointed at the picture for something no road takes is told that, not
+         that it asked for nothing. */
+      pictureUnused ? attachedPictureUnusedNote(pictureUnused) : null,
+      /* And the second view of a two-panel reference, said plainly rather than
+         dropped in silence (ruled fable-1093 §1). */
+      secondViewNote,
+      outOfFrameNote,
+      /* And the half she named that reached no lane at all — the same class as
+         the line above, and the same rule: a paid take says what it did not do,
+         and says nothing about money because money moved. */
+      namedButNotServedNote({
+        unserved: unservedSubjects,
+        instruction: input.instruction,
+        /* Everything this render wrote, closed lane included. Null cannot reach
+           here — a delta that composed to nothing refused long before this
+           line — and the empty set is the honest reading of it either way. */
+        servedFacets: facetsWrittenBy(editDelta ?? {}),
+      }),
+      /* And the scenery clause the reading dropped without filing ANYTHING —
+         not even an unserved key — which is the member the card #2695 measured
+         at 20 of 21 served reads. */
+      sceneryDropped && !unservedSubjects.includes(sceneryDropped.word)
+        ? sceneryLeftOutNote(sceneryDropped)
+        : null,
+    ].filter((line): line is string => line !== null);
+  } catch (error) {
+    log.warn(
+      { err: error, operationId, variant: variant.publicId },
+      "[refineService] could not compose what the customer is owed before the paint — the render goes ahead without the note",
+    );
+  }
 
   let delivered: RefineResult;
   try {
@@ -6375,10 +6489,13 @@ async function refineCandidateCounted(
          receipt is not a new frame and must never look like one. */
       imageUrl: storagePublicUrl(variant.baseImageKey),
       instructions,
-      /* THE DROPPED CLAUSE RIDES THE RECEIPT (#2695): it is a fact of the
+      /* WHAT THE CUSTOMER IS OWED, ON THE RECEIPT (#2695 for the dropped clause, #2713
+         for the rest of the reading's sentences): each is a fact of the
          reading, true before any paint, and the receipt is the only answer a
-         dispatched customer ever reads — the settled result loses the race. */
-      ...(sceneryDroppedNote ? { note: sceneryDroppedNote } : {}),
+         dispatched customer ever reads — the settled result loses the race.
+         One field, joined exactly as the landing joins it, so a receipt and a
+         landing for the same ask say the same words in the same order. */
+      ...(owedBeforeThePaint.length > 0 ? { note: owedBeforeThePaint.join(" ") } : {}),
       ...(designAnswerFor(inkSource) ? { design: designAnswerFor(inkSource) } : {}),
     });
 
@@ -10577,46 +10694,15 @@ async function refineCandidateCounted(
     try {
       owedAboutThisTake = [
       /*
-        AND IT NAMES WHAT IT ACTUALLY FILED (fable-490 §1b).
-
-        This sentence hardcoded "the eyes" — written for the green-eyes case,
-        and asserted about the founder's SKIN ask on a face whose eyes nobody
-        had mentioned. A confession that names the wrong feature is worse than a
-        generic one: it is specific and wrong, in his own product voice.
-
-        The subjects come from the delta this take filed, through the same
-        reader the chips are labelled from — never a second account of what was
-        asked for.
+        THE READING'S SENTENCES, composed once before the paint (#2713) — the
+        likeness confession, the unused picture, the second view, the
+        out-of-frame half, the named-but-not-served half and the dropped
+        clause, in that order. They were composed HERE until #2713, and here
+        reached only the caller still holding the request; the receipt above
+        carries the same list to everyone who is not. Spread rather than
+        re-composed, so the two carriers cannot come to say different things.
       */
-      droppedReference
-        ? likenessSetAsideNote({ subjects: filedSubjectsOf(editDelta) })
-        : null,
-      /* Her attachment went unused — the same law as the line above, about the
-         other kind of reference. Nothing was cut and nothing was spent, which is
-         exactly when a product stays quiet and lets her assume it was used. */
-      attachedPictureUnused ? attachedPictureUnusedNote() : null,
-      /* And the second view of a two-panel reference, said plainly rather than
-         dropped in silence (ruled fable-1093 §1). */
-      secondViewNote,
-      outOfFrameNote,
-      /* And the half she named that reached no lane at all — the same class as
-         the line above, and the same rule: a paid take says what it did not do,
-         and says nothing about money because money moved. */
-      namedButNotServedNote({
-        unserved: unservedSubjects,
-        instruction: input.instruction,
-        /* Everything this render wrote, closed lane included. Null cannot reach
-           here — a delta that composed to nothing refused long before the
-           landing — and the empty set is the honest reading of it either way. */
-        servedFacets: facetsWrittenBy(editDelta ?? {}),
-      }),
-      /* And the scenery clause the reading dropped without filing ANYTHING —
-         not even an unserved key — which is the member the card #2695 measured
-         at 20 of 21 served reads. Composed once, before the render, because it
-         is a fact of the parse; this is the carrier for whoever is still
-         holding the request, and the receipt above is the carrier for everyone
-         who is not. */
-      sceneryDroppedNote,
+      ...owedBeforeThePaint,
       invisibleSiteNote,
     ].filter((line): line is string => line !== null);
     } catch (error) {

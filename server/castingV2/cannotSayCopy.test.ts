@@ -452,3 +452,68 @@ describe("the likeness confession names what it filed, and nothing else", () => 
     }
   });
 });
+
+/**
+ * THE UNUSED PICTURE SAYS WHY (card #2713).
+ *
+ * The founder attached a photograph of an outfit and asked for the outfit. No
+ * reference road takes clothing, so the picture went unused — and the only
+ * sentence the product had for that said the change "didn't ask for anything I
+ * could take from it". It had asked for exactly that. Three reasons now, each
+ * with its own sentence, and the original kept byte for byte for the one case
+ * it was always true of.
+ */
+describe("the unused picture says why it went unused", () => {
+  const ORIGINAL =
+    "The picture you attached wasn't used — this change didn't ask for anything I could take from it.";
+
+  it("keeps the original sentence, byte for byte, for a picture nothing was asked of", async () => {
+    const { attachedPictureUnusedNote } = await import("./cannotSayCopy");
+    expect(attachedPictureUnusedNote({ asked: "nothing" })).toBe(ORIGINAL);
+    /* And the bare call — the shape every caller used before the reasons. */
+    expect(attachedPictureUnusedNote()).toBe(ORIGINAL);
+  });
+
+  it("names what the reading filed when the picture was pointed at for something no road takes", async () => {
+    const { attachedPictureUnusedNote } = await import("./cannotSayCopy");
+    expect(attachedPictureUnusedNote({ asked: "unservable", filed: ["WARDROBE"] })).toBe(
+      "I can't take the wardrobe from a picture yet, so your picture wasn't used — "
+        + "the change went ahead from your words.",
+    );
+  });
+
+  it("names NOTHING when it cannot know which filed subject the picture was for", async () => {
+    /* The likeness sentence's NO SUBJECT, NO CLAIM rule: with two subjects
+       filed, naming either one could name the half that came from their words. */
+    const { attachedPictureUnusedNote } = await import("./cannotSayCopy");
+    for (const filed of [[], ["WARDROBE", "HAIR COLOUR"]]) {
+      const said = attachedPictureUnusedNote({ asked: "unservable", filed });
+      expect(said, filed.join(",")).toBe(
+        "I can't take that from a picture yet, so your picture wasn't used — "
+          + "the change went ahead from your words.",
+      );
+    }
+  });
+
+  it("never claims a road is missing when the road was open and the take could not be used", async () => {
+    const { attachedPictureUnusedNote } = await import("./cannotSayCopy");
+    const said = attachedPictureUnusedNote({ asked: "untaken" });
+    expect(said).toBe("Your picture wasn't used this time — the change went ahead from your words.");
+    expect(said).not.toContain("can't take");
+  });
+
+  it("never says the false clause to anyone who pointed at the picture — and never mentions money", async () => {
+    const { attachedPictureUnusedNote } = await import("./cannotSayCopy");
+    for (const why of [
+      { asked: "unservable" as const, filed: ["WARDROBE"] },
+      { asked: "unservable" as const, filed: [] },
+      { asked: "untaken" as const },
+    ]) {
+      const said = attachedPictureUnusedNote(why).toLowerCase();
+      expect(said, why.asked).not.toContain("didn't ask for anything");
+      /* A paid take: the owed-note family never says nothing was charged. */
+      expect(said, why.asked).not.toContain("charged");
+      expect(said, why.asked).not.toMatch(/\d/);
+    }
+  });
+});
