@@ -1,0 +1,221 @@
+# Is production serving the commit on `main`? (#2748)
+#
+# `deploy-verify` already answers this on every push and answers it fast — read
+# at the runs of 2026-10-28, it went red on `72d56cc0` in 132 seconds. **Its
+# verdict reached no reader.** For 52 minutes the record said a merged, green,
+# reviewed change was live and it was not, and it was found by a shift that
+# only looked because its own deploy rite refused. That is invariant 7 from the
+# other end: the control is invoked, it fires correctly, and nothing reads it.
+#
+# So this job is the READER, and the card it files is where the verdict lands —
+# on the board, which his Desk draws from GitHub every thirty seconds, rather
+# than in an Actions tab nobody opens.
+#
+# ⚠ IT ASKS `/api/health`, NEVER `deploy-verify`'S CONCLUSION OR RAILWAY'S OWN
+# STATE. Both of those can be stale in the GOOD direction, which for a reader
+# is worse than being wrong in the bad one: measured on 2026-10-28, the GitHub
+# Deployment for `709536f4` carries `failure` as its NEWEST status while
+# production was serving that very commit. A reader built on it would have
+# called a healthy, current production broken. The decision and every verdict
+# live in `scripts/lib/productionCurrency.mts`, which is where they are driven.
+#
+# It is a READING, not a gate on anything: it blocks no merge, retries no
+# deploy, restarts nothing, and changes no state beyond filing one card.
+#
+# ⚠ AND IT DOES NOT RETRY, WHICH WAS CONSIDERED AND REFUSED ON THE CARD. Of
+# the six build attempts that morning five failed on a provider build daemon;
+# an auto-retry loop would have hammered it and still told nobody. The thing
+# that was missing was KNOWING, not retrying.
+#
+# One command, so a hand reading and a triggered one cannot disagree — the
+# knip nightly's rule and `team-silence.yml`'s:
+#
+#   npx tsx scripts/production-currency-check.mts
+#   gh workflow run production-currency.yml
+
+name: Production currency
+
+on:
+  # ⚠ THE PROMPT TO GO AND LOOK. `deploy-verify` concluding failure is the
+  # earliest honest signal that something did not ship — about two minutes, on
+  # the day this card was filed — so it is what gets this reader there fastest.
+  # A `cancelled` conclusion is deliberately NOT one of them: per
+  # `deploy-verify`'s own header, a cancelled run was replaced while queued by
+  # a newer push, and the newer run verifies a tree containing it.
+  #
+  # ⚠ workflow_run DOES NOT FIRE UNTIL THIS FILE IS ON THE DEFAULT BRANCH, so
+  # the pull request that adds it cannot demonstrate this road. The command is
+  # driven by `server/productionCurrency.test.ts`, and the schedule below fires
+  # within three hours of the merge either way.
+  workflow_run:
+    workflows: [deploy-verify]
+    types: [completed]
+  # The net, for everything a push-shaped trigger cannot see: a production that
+  # falls BACK to an older build with no push at all, a push Railway never
+  # picked up while the verify run was cancelled, and a build that fails long
+  # after its window closed. Three hours matches `team-silence.yml`; the
+  # cadence only decides how soon such a state is seen, never whether it is.
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      grace:
+        description: "Override the still-building grace in minutes (default 60)"
+        required: false
+        type: string
+
+# A hand-dispatched run beside a scheduled one, or two `workflow_run`s from a
+# merge burst, would read the same facts twice; let the later one wait
+# (zizmor concurrency-limits, #35). Never cancel-in-progress: a run that has
+# already decided to file must not be killed between the verdict and the card.
+concurrency:
+  group: production-currency
+  cancel-in-progress: false
+
+# Least privilege at the workflow level (zizmor excessive-permissions, #35):
+# nothing here may write, and the one job that files a card declares that
+# beside its reason.
+permissions:
+  contents: read
+
+jobs:
+  reading:
+    name: reading
+    # ⚠ A `workflow_run` ROAD IS ONLY TAKEN ON A FAILED VERIFY. Every other
+    # conclusion — success, cancelled, skipped (the `DEPLOY_ON_MERGE` gate) —
+    # is a push that needs no reader. A schedule or a hand dispatch always runs.
+    if: ${{ github.event_name != 'workflow_run' || contains(fromJSON('["failure","timed_out"]'), github.event.workflow_run.conclusion) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # the tree this command lives in, checked out at `main`
+      issues: write # `gh issue create` files at most ONE production-behind card, and `gh label create` makes that label on its first real run
+    steps:
+      # zizmor: ignore[dangerous-triggers] — `workflow_run` is dangerous when it
+      # checks out or executes the TRIGGERING ref, because that ref can come
+      # from a fork. Neither applies here: `deploy-verify` fires only on
+      # `push: branches: [main]`, so there is no fork in the picture at all,
+      # and this job pins `ref: main` rather than reading anything from the
+      # event. No input from the triggering run reaches a shell below.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          # The reading needs the tree (this command and its library); `gh`
+          # uses GH_TOKEN below. Nothing here pushes.
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Read whether production is serving the commit on main
+        id: read
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRODUCTION_CURRENCY_GRACE_MINUTES: ${{ inputs.grace }}
+        run: |
+          set +e
+          npx tsx scripts/production-currency-check.mts > reading.txt 2>&1
+          STATUS=$?
+          set -e
+          cat reading.txt
+          # 0 current or still shipping · 2 the finding · 1 could not read.
+          # Anything else is the command itself having fallen over, which is
+          # also "could not read" and must not file a card.
+          if [ "$STATUS" -eq 0 ]; then
+            echo "verdict=ok" >> "$GITHUB_OUTPUT"
+          elif [ "$STATUS" -eq 2 ]; then
+            echo "verdict=behind" >> "$GITHUB_OUTPUT"
+          else
+            echo "verdict=unreadable" >> "$GITHUB_OUTPUT"
+          fi
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Production currency"
+            echo
+            echo '```'
+            sed -n '1,3p' reading.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      # ⚠ AT MOST ONE OPEN CARD, EVER, and a second firing adds a LINE to it.
+      # A detector that filed a row per failed build would have filed six that
+      # morning and buried the board it is trying to protect — and an alarm
+      # that fires routinely is the state this card is about, arriving by the
+      # opposite road. The dedupe is the `production-behind` label on an OPEN
+      # card; the label is created if missing, so this needs no hand act before
+      # its first real run.
+      - name: File one card, or add a line to the one that is open
+        if: ${{ steps.read.outputs.verdict == 'behind' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create production-behind --color B60205 --description "A merged commit is not the commit production is serving (#2748)" || echo "the production-behind label already exists"
+          # The title is printed by the command rather than cut out of its prose
+          # (see `productionCurrencyCardTitle`), so rewording the sentence
+          # cannot silently retitle the card or leave it called nothing.
+          TITLE=$(sed -n 's/^\[production-currency\] title: //p' reading.txt | head -n 1)
+          if [ -z "$TITLE" ]; then
+            echo "::error::the reading printed no title line — not filing a card named nothing"
+            exit 1
+          fi
+          OPEN=$(gh issue list --label production-behind --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$OPEN" ]; then
+            # Already raised. Say what this run read, once per distinct title —
+            # a long outage then reads as a running tally on one row instead of
+            # twenty rows, and a repeat of the same state adds nothing.
+            if gh issue view "$OPEN" --json title,body,comments --jq '[.title, .body, (.comments[].body)] | join("\n")' | grep -Fq "$TITLE"; then
+              echo "card #$OPEN is already open and already says this — nothing to add"
+              exit 0
+            fi
+            {
+              echo "**Still behind, read again by \`production-currency.yml\`.**"
+              echo
+              echo '```'
+              sed -n '1,3p' reading.txt
+              echo '```'
+            } > comment.md
+            gh issue comment "$OPEN" --body-file comment.md
+            echo "added a line to the open card #$OPEN"
+            exit 0
+          fi
+          # The body is assembled in a FILE from a tracked template rather than
+          # inline: a quoting mistake in a step that only ever runs during an
+          # outage is a mistake nobody would find until the one moment it
+          # mattered.
+          cp .github/production-behind-card.md card.md
+          {
+            echo ""
+            echo "## What this run read"
+            echo ""
+            echo '```'
+            sed -n '1,3p' reading.txt
+            echo '```'
+          } >> card.md
+          gh issue create --title "$TITLE" --label production-behind --label bug --body-file card.md
+
+      # The red belongs in the Actions tab too — but it is deliberately NOT the
+      # reader. The card is.
+      - name: Fail on the finding, or on a reading that did not happen
+        if: ${{ steps.read.outputs.verdict != 'ok' }}
+        env:
+          VERDICT: ${{ steps.read.outputs.verdict }}
+          STATUS: ${{ steps.read.outputs.status }}
+        run: |
+          if [ "$VERDICT" = "behind" ]; then
+            echo "::error::production is not serving the commit on main — a production-behind card is open on the board"
+          else
+            # ⚠ NEITHER CRYING WOLF NOR GOING QUIET: a reading that did not
+            # happen files NO card — it could not tell a lag from a healthy
+            # service, so any card it wrote would be a guess — and fails, so
+            # the silence is visible without being asserted.
+            echo "::error::whether production is current could not be judged (exit $STATUS) — no card filed, because a lag cannot be told from a current service on this reading"
+          fi
+          exit 1
