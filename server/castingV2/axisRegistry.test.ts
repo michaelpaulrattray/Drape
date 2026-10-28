@@ -9,21 +9,12 @@ import {
   applyTasteWrite,
   axesOnShelf,
   lockStateOf,
-  hairRegion,
-  sweepComposedPrompt,
-  suppressorsFor,
-  type AxisContext,
   type AxisKey,
-  type RollTreatments,
 } from "./axisRegistry";
-import { castingBriefCompiler } from "./briefCompiler";
-import { ARCHETYPES, LOOK_KEYS, type ResolvedIdentity } from "./castingIntent";
 import { REALIZED_AXIS_KEYS } from "../../shared/castingRealization";
-import { briefStatesHair } from "./cohortPhotorealHuman";
-import type { TextEngine } from "../providers/types";
 
 /**
- * Slice zero's two mechanical guarantees.
+ * Slice zero's mechanical guarantees — and the one this file stopped proving.
  *
  * The first is that the registry is COMPLETE — every axis in the identity space
  * is registered, and the union is checked from every direction the registry
@@ -32,22 +23,16 @@ import type { TextEngine } from "../providers/types";
  * axis nothing produces) and the pinning of the sets that are policy rather
  * than derivation.
  *
- * The second is the SWEEP, which is the whole reason the registry exists: for
- * every axis, in every tier, a persisted value must leave a footprint in the
- * composed prompt or be excused for a named reason. Five founder-caught
- * defects are the argument that this cannot stay a discipline.
+ * ⚠ The second WAS the SWEEP — for every axis, in every tier, a persisted
+ * value must leave a footprint in the composed prompt or be excused for a
+ * named reason, with five founder-caught defects as the argument that it could
+ * not stay a discipline — and THIS FILE HAS NOT PROVED IT SINCE #1490 act 1,
+ * which took the house road that composed the per-slice prompts it swept. The
+ * record at the foot of this file is where that loss is written down and where
+ * the class now sits (#1125, #30); read it before believing anything here
+ * sweeps. What this file proves today is the first guarantee, the shelves, the
+ * taste writes and the lock states.
  */
-
-function engine(intent: Record<string, unknown>): TextEngine {
-  return {
-    id: "stub",
-    complete: async () => ({
-      text: JSON.stringify({ cohort: "photoreal_human", ...intent }),
-      latencyMs: 1,
-      provenance: { provider: "openrouter" as const, model: "t", servedModel: "t" },
-    }),
-  } as unknown as TextEngine;
-}
 
 /* ----------------------------------------------------------- completeness */
 
@@ -231,129 +216,6 @@ describe("lock states", () => {
 
 /* ---------------------------------------------------------------- the sweep */
 
-/**
- * Build the sweep's context for one compiled candidate.
- *
- * Deliberately assembled from the PERSISTED record and the user's own words,
- * never from anything the composer computed — the whole assertion is that the
- * record and the prompt agree, and reusing the composer's own decisions on both
- * sides would prove only that it agrees with itself.
- */
-function contextFor(input: {
-  identity: ResolvedIdentity;
-  treatments: RollTreatments;
-  statedText: string;
-  lookLocked: boolean;
-}): AxisContext {
-  const identity = input.identity;
-  const tier = identity.stylingResolution ?? "prescribe";
-  return {
-    identity,
-    treatments: input.treatments,
-    tier,
-    suppressed: suppressorsFor({
-      tier,
-      lookVaries: identity.look != null && !input.lookLocked,
-      cutNamesWornState: identity.realized.hairStyle?.worn != null,
-    }),
-  };
-}
-
-type CompiledSheet = {
-  candidates: Array<{ prompt: string; resolvedIdentity: ResolvedIdentity }>;
-  compiledBrief: { archetype: string; intent: { look: string | null } };
-};
-
-async function sweepBrief(input: {
-  briefText: string;
-  rollSeed: string;
-  intent: Record<string, unknown>;
-  followIdentity?: unknown;
-}) {
-  const compiled = (await castingBriefCompiler({
-    briefText: input.briefText,
-    candidateCount: 8,
-    rollSeed: input.rollSeed,
-    followIdentity: input.followIdentity,
-    engine: engine(input.intent),
-  } as never)) as unknown as CompiledSheet;
-
-  const archetype = compiled.compiledBrief.archetype as keyof typeof ARCHETYPES;
-  const treatments: RollTreatments = {
-    archetype,
-    skinFinish: ARCHETYPES[archetype].finish,
-    variationAxis: null,
-  };
-  const statedText = [
-    input.briefText,
-    (input.intent.role as string) ?? "",
-    (input.intent.characterNotes as string) ?? "",
-  ].join(" ");
-
-  return compiled.candidates.flatMap((candidate) =>
-    sweepComposedPrompt(
-      candidate.prompt,
-      contextFor({
-        identity: candidate.resolvedIdentity,
-        treatments,
-        statedText,
-        lookLocked: compiled.compiledBrief.intent.look != null,
-      }),
-    ),
-  );
-}
-
-/**
- * The compiled candidates of a followed sheet, for assertions the SWEEP cannot
- * make.
- *
- * The sweep compares the record against the prompt, so an inheritance that
- * silently dropped an axis leaves both saying null and the sweep finds nothing
- * — green for the exact regression it exists to catch. Reading the candidates
- * directly is the only way to assert a value actually travelled.
- */
-async function followedCandidates(input: {
-  briefText: string;
-  rollSeed: string;
-  intent: Record<string, unknown>;
-  followIdentity: unknown;
-}) {
-  const compiled = (await castingBriefCompiler({
-    briefText: input.briefText,
-    candidateCount: 8,
-    rollSeed: input.rollSeed,
-    followIdentity: input.followIdentity,
-    engine: engine(input.intent),
-  } as never)) as unknown as CompiledSheet;
-  return compiled.candidates;
-}
-
-/** A refined parent: what a refinement wrote, on its way into a follow. */
-const FOLLOWED_WITH_SHAPE = {
-  sex: "female",
-  ageBand: "20s",
-  agePhase: "early",
-  heritage: [{ heritage: "Nordic", pct: 100 }],
-  energy: "warm",
-  hair: { family: "long", colour: "blonde" },
-  look: "severe minimal",
-  realized: {
-    eyeColour: "blue",
-    /* What a refine writes, and what the follow must carry through. */
-    eyeShape: "hooded",
-    /* Free text on the same never-drawn footing — registered so the sweep can
-       see it, and set only by a refinement. */
-    makeup: "a red lip",
-    hairStyle: { name: "low bun", family: "long", worn: "worn up" },
-    facialHair: null,
-    hairTexture: "straight",
-    hairModifiers: null,
-    wornState: "worn up",
-    browStyle: "feathered",
-    skinCharacter: "plain",
-  },
-};
-
 /*
   ⚠ `describe("the unowned-axis sweep")` STOOD HERE — TEN ARMS — AND IT IS
   DELETED WITH THE HOUSE ROAD (#1490 act 1). It is NOT re-pointed, and the
@@ -379,6 +241,24 @@ const FOLLOWED_WITH_SHAPE = {
   question — did the delivered picture carry what she asked for — is #30's, a
   detector reading a FRAME rather than a prompt string. The five founder-caught
   defects that argued for the sweep are on that card, not lost here.
+
+  ⚠ **THE ARMS' SCAFFOLDING IS GONE TOO, AND IT TOOK A SECOND EXPORT DARK
+  WITH IT (#2766).** The arms fell in #1490 act 1 and their helpers did not:
+  `sweepBrief`, `contextFor`, `followedCandidates`, `FOLLOWED_WITH_SHAPE`,
+  `CompiledSheet`, the `engine` stub and eleven imports all survived with no
+  caller — so `grep sweepComposedPrompt` answered with a call inside a
+  `.test.ts` file and read as *"the suite still drives it"*. It did not, and
+  #1125's own body had already carried that mis-reading once.
+
+  ⚠ **SO BOTH `sweepComposedPrompt` AND `suppressorsFor` NOW HAVE ZERO
+  IMPORTERS ANYWHERE IN THE TREE, AND THAT IS THE INTENDED STATE RATHER THAN
+  TWO DEATHS TO REPAIR.** `suppressorsFor` was reached only from the deleted
+  `contextFor`, and neither export has an internal caller in `axisRegistry.ts`
+  (read at `:454` and `:1132`, 2026-10-28). Both are kept on exactly the
+  reasoning above — the class is #30's, and deleting either would fold a
+  capability decision into a cleanup, which his ruling of 2026-09-24 forbids.
+  An uncalled-export sweep or an importer-count differ that flags them is
+  reading this file correctly; this paragraph is the answer to it.
 
   The registry's own guarantees — completeness, the shelves, the taste writes,
   the lock states — are untouched above and are what this file still proves.
