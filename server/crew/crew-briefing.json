@@ -1,7 +1,7 @@
 {
-  "edition": 764,
-  "updatedAt": "2026-10-28T14:34:21.065Z",
-  "shift": "THE FOLLOW YOU ASKED FOR ON 16 OCTOBER HAS NOW ACTUALLY BEEN TRIED, AND IT WORKS.\n\nIt has been switched on for your account for thirteen days and nobody had ever put it\nthrough the real thing. Tonight I did, on a test account, with real pictures and real money\nof ours — not a simulation.\n\nWhat it is meant to do: you edit a character, then press Follow to get more people like\nthem. The words the new casting is made from get quietly rewritten so they carry the\ndirection your edits took, instead of the paragraph you started with a dozen edits ago.\n\nI took a lizard man who had been given deeper emerald scales, slit pupils and a heavier\nbrow, and whose horns had been taken off. Pressed Follow. Eight new lizard men came back.\nI looked at all eight myself:\n\n  · every one of them has the deep emerald scales, the slit pupils and the heavy brow —\n    so the direction carried, which is the whole point;\n  · not one of them has the notch that was missing from that one lizard man's left ear —\n    so the thing belonging to a single face was correctly left behind;\n  · they are eight different people, not eight copies — different skulls, crests, muzzles.\n\nI also checked the opposite case, because one result on its own proves nothing: followed a\ncharacter with NO edits, in the same casting, with everything else the same. Its words came\nback untouched, letter for letter. That is what it is supposed to do.\n\nONE THING IS NOT RIGHT, AND IT IS ABOUT WORDS RATHER THAN PICTURES.\n\nThe rewritten brief sometimes ends with a sentence you never wrote, saying what the\ncharacter does NOT have — \"with no horns.\", or on another character \"They wear no\nglasses.\" It happened on two of the three I tried. It comes from a note the studio keeps\nto itself so that the next edit does not put the horns back on, and that note is right\nwhere it lives — it has just followed the words out onto your screen, into the box you can\nread and type in. Nobody writes a casting brief that way.\n\nI checked whether it does any harm to the pictures and it does not: those eight lizard men\ncame from exactly that brief and not one of them grew horns. So it is a tidying job, not a\nfault, and it is filed as its own job rather than quietly bundled in with tonight's.\n\nNothing changed in the product tonight. This was going and looking.",
+  "edition": 765,
+  "updatedAt": "2026-10-28T16:06:30.192Z",
+  "shift": "THE PAGE THAT TELLS US WHERE EVERY SWITCH STANDS WAS NEVER CHECKED AGAINST THE RECORD.\nNOW IT IS — AND IT WAS WRONG IN SIX PLACES.\n\nThere is a page the crew opens to answer one question: is this feature on, off, or on\nfor your account only? And there is a separate record that the deploy checks against the\nlive site every single time we ship. Nothing had ever compared the two. So the page\ndrifted, quietly, and nobody could see it drift.\n\nFive of those were found yesterday and fixed. Tonight's job was to build the thing that\ncompares them, so it cannot happen again. It found a sixth that yesterday's sweep could\nnot see: a switch that was retired weeks ago, whose variable is long gone from the live\nsite, and whose page still said it was on for your account and still said it 'widens on\nhis eye at the milestone gate and not before'. An instruction about something that does\nnot exist. That one is struck out now.\n\nTwo of the five had been wrong for 34 days, and both in the worse direction — they told\nevery shift that two features live for everyone were on your account alone.\n\nI then tried to break the new check nine different ways, and it caught eight. The ninth\nshowed me a hole and I filled it: one piece of the reading had no test behind it at all,\nbecause after yesterday's fixes no page entry happens to use the wording that exercises\nit. It had been used by three entries as recently as last week.\n\nONE THING I DID WRONG TONIGHT, AND IT IS WORTH YOU KNOWING.\n\nSeparately, I put a question on your desk about a different job — the brief that was\ntelling you what your character does NOT have. I should not have: another agent had\nalready claimed that job, built it and had it live forty minutes earlier, and its answer\nis better than the one I was going to ask you for. I had read the job's description and\nits labels, but not its messages, which is where the claim was. Everything I added is\nremoved and the job reads exactly as it did before I touched it. It is filed as evidence\nfor the process review, because a shift did almost exactly this a week ago.\n\nNothing a customer touches changed tonight.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-28T14:33:21.166Z",
+      "readAt": "2026-10-28T16:08:16.686Z",
       "items": [
         {
           "issueNumber": 30,
@@ -7610,6 +7610,13 @@
   ],
   "pipeline": [
     {
+      "id": "flag-catalogue-drift-2747",
+      "title": "The page saying where every switch stands is now checked against the record we deploy against (#2747)",
+      "status": "merged",
+      "prNumber": 2756,
+      "note": "Six stale positions before it, one after yesterday's five were fixed, none after striking the sixth — a retired switch whose entry still stated a position and an instruction. Nine sabotage cases, eight caught first time; the ninth found the UNSET reading untested and its arm was added. Preflight green (480 files, 8,574 tests), gate green on all ten checks, triage declined a review on both surface readings, squash 89228877 live on production on a 29-second uptime."
+    },
+    {
       "id": "production-currency-reader-2748",
       "title": "A merged change that did not ship now gets noticed, not just a red run nobody reads (#2748)",
       "status": "merged",
@@ -10946,9 +10953,9 @@
     {
       "id": "follow-brief-absence-2751",
       "severity": "warning",
-      "state": "open",
-      "title": "After you edit a character and press Follow, your own brief can gain a line you never wrote (#2751)",
-      "detail": "Live on your account. The new casting's words can end with a sentence saying what the character does NOT have — \"with no horns.\", \"They wear no glasses.\" — which came from a note the studio keeps to itself so a later edit does not undo your removal. It is in the box you can read and type in, and nobody writes a brief that way. Measured tonight on two of three characters. It does NOT spoil the pictures: the eight that came back from exactly that brief had no horns. Tidying, not a fault."
+      "state": "resolved",
+      "title": "Fixed — after you edit a character and press Follow, your own brief no longer gains a line you never wrote (#2751)",
+      "detail": "Fixed and live on your account. The new casting's words no longer end with a sentence\nsaying what the character does NOT have.\n\nThe note itself was right where it lived: a paid edit keeps one description of the\ncharacter, written for one reader — the NEXT edit, which starts from the untouched\noriginal and remembers nothing else. Saying \"they have no horns\" is how that reader knows\nnot to put the horns back. The problem was that the whole paragraph was then handed to the\nwriter that makes your brief, so a note we keep for ourselves walked out onto your screen.\n\nIt is now set aside on the way into that writer and nowhere else, so the next edit still\nremembers. One absence is deliberately kept: one whose feature you named yourself. If you\ntyped \"wire-frame glasses\" and then took them off, the writer still has to be told the\nglasses are gone, or it keeps your own words."
     },
     {
       "id": "team-stopped-unseen-2719",
@@ -11460,7 +11467,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-28T14:33:21.166Z",
+    "readAt": "2026-10-28T16:08:16.686Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11584,6 +11591,11 @@
           "state": "blocked",
           "because": "YOU — your eye on tonight's court frames: build the photo-take road or stop? RECOMMENDATION: BUILD. Three strips are on your page."
         }
+      },
+      {
+        "issueNumber": 2752,
+        "title": "N3 face reader, his eye round 2: no Build or Skin row, the collar into the Outfit, one row per mark, and the neck tattoo lost",
+        "urgent": false
       }
     ]
   }
