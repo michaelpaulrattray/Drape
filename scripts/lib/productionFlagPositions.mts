@@ -120,6 +120,7 @@
  */
 
 import { BOOT_GOVERNED_ENV_NAMES } from "./governedBootSettings.mts";
+import { FLAG_CATALOGUE, statedFlagPositions, type StatedPosition } from "./lawText.mts";
 
 /**
  * Absent from the service means off — every scope paragraph says so.
@@ -1004,4 +1005,123 @@ export function comparePositions(readings: readonly FlagReading[]): PositionVerd
   }
 
   return { block, mismatches };
+}
+
+export type CatalogueDrift = {
+  /** One line per entry whose stated position disagrees with this record. */
+  readonly drift: string[];
+  /** Entries that state a position at all — the population the drift is counted against. */
+  readonly stating: readonly StatedPosition[];
+  /** Entries that state nothing: the honest remainder, reported and never guessed at. */
+  readonly silent: readonly string[];
+};
+
+/**
+ * Compare what the FLAG CATALOGUE's prose SAYS production holds against what
+ * this record DECLARES it holds.
+ *
+ * # Why this exists (#2747)
+ *
+ * `docs/architecture/FEATURE_FLAGS.md` is the page a seat opens to answer
+ * *"where does this flag stand?"*, and until 2026-10-28 **nothing compared its
+ * sentences to this table.** So the prose drifted silently, and it had drifted
+ * **six times** when it was first read — five found by #2697's sweep
+ * (`CASTING_CURRENT_DESCRIPTION_SCOPE`, `CASTING_OUTFIT_EDIT_SCOPE`,
+ * `CASTING_VOICE_SCOPE`, `CASTING_RETRY_SCOPE`,
+ * `CASTING_CONCEPT_UPLOAD_SCOPE`) and corrected by PR #2746, and **a sixth that
+ * sweep could not see** — `CASTING_CREATIVE_REGISTER_SCOPE`, a RETIRED flag
+ * whose entry still stated `users:1` and still carried the instruction *"It
+ * widens on his eye at the milestone gate and not before"* about a variable
+ * that is off the service. Two of the five had been wrong for 34 days, telling
+ * every shift that two roads live for every customer were on his account alone.
+ *
+ * ⚠ **This is the same defect this file's own header is about, one surface
+ * over.** That header names two `CLAUDE.md` paragraphs that read as
+ * PROHIBITIONS on positions the founder had already authorised, and it says the
+ * lesson has *"now been paid twice by one flag: a paragraph saying `users:1`
+ * about a variable that is gone is the same defect as one saying `off` about a
+ * variable that is set."* The sixth finding is precisely that first shape. The
+ * arm that already guarded it pinned **two named sentences** and said so in its
+ * own docblock — *"a third stale sentence in some other paragraph is still
+ * invisible, and saying so is the honest floor."* That floor was honest and it
+ * was also where six live mistakes were sitting; this is the derived reading
+ * that replaces it.
+ *
+ * # The two directions, and the one it refuses to guess
+ *
+ *   the entry disagrees with a row    the prose went stale, or a flip was never
+ *                                     written down. One line to fix.
+ *   the entry states a position for
+ *   a flag this record does not       the flag retired and its page did not
+ *   carry                             notice. The sixth finding's exact shape.
+ *   the entry states TWO positions    REFUSED rather than resolved. Picking the
+ *                                     last one is the naive reader that called a
+ *                                     correct repair a mismatch; an entry whose
+ *                                     declaration cannot be read is a finding
+ *                                     about the entry.
+ *
+ * # What it deliberately does not ask
+ *
+ * **25 of the 40 entries state no position at all** (measured 2026-10-28) —
+ * they cannot be wrong and they cannot be read either. So the scope is *an
+ * entry that states a position states the right one*, and `silent` carries the
+ * rest by name rather than by a count. Whether a silent entry should be made to
+ * state one is a separate question nobody has asked, and it is not answered
+ * here by writing 25 sentences.
+ *
+ * `positions` is a parameter so a fixture drives this same function rather than
+ * a shorter road of its own — a control that re-reads the subject by another
+ * path passes when the thing under test is blinded.
+ */
+export function compareCatalogueToRecord(
+  catalogue: string,
+  positions: Readonly<Record<string, FlagPosition>> = PRODUCTION_FLAG_POSITIONS,
+): CatalogueDrift {
+  const read = statedFlagPositions(catalogue);
+  const stating = read.filter((entry) => entry.stated.length > 0);
+  const silent = read.filter((entry) => entry.stated.length === 0).map((entry) => entry.name);
+  const drift: string[] = [];
+
+  for (const entry of stating) {
+    const where = `${FLAG_CATALOGUE}:${entry.line}`;
+    if (entry.stated.length > 1) {
+      drift.push(
+        `${entry.name}: the entry states ${entry.stated.length} positions after its marked history is `
+        + `stripped (${entry.stated.map((s) => `\`${s}\``).join(", ")}) — which of them is the `
+        + `declaration cannot be read, so mark the retired one with ~~ or quote it (${where})`,
+      );
+      continue;
+    }
+
+    /* `UNSET` is this record's own word for `off` — the catalogue writes it in
+       prose and the mapping is declared here, where the record is. */
+    const spelt = entry.stated[0]!;
+    const stated = spelt.toLowerCase() === "unset" ? UNSET : spelt;
+    const row = positions[entry.name];
+
+    if (row === undefined) {
+      drift.push(
+        `${entry.name}: the entry says production holds \`${spelt}\`, and this record carries no row `
+        + `for it at all — so either the flag retired and its page did not notice, or the row went `
+        + `missing. A paragraph stating a position for a variable that is gone is the same defect as `
+        + `one stating \`off\` for a variable that is set (${where})`,
+      );
+      continue;
+    }
+
+    if (stated !== row.position) {
+      /* The row's `why` is an essay — several are over 2,000 characters — so the
+         message POINTS at the row and quotes only its opening. A finding nobody
+         can read is a finding nobody acts on, and the first run of this printed
+         six of them at 2 KB each. */
+      const lead = row.why.length > 140 ? `${row.why.slice(0, 140).trimEnd()}…` : row.why;
+      drift.push(
+        `${entry.name}: the entry says production holds \`${spelt}\`, this record says `
+        + `\`${row.position}\` — the page a seat reads first disagrees with the table the deploy `
+        + `rite enforces (${where}; the row's reason begins "${lead}")`,
+      );
+    }
+  }
+
+  return { drift, stating, silent };
 }
