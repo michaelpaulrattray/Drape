@@ -331,7 +331,11 @@ describe("the rite drains on the refusal road, and only there", () => {
 
   it("the health refusal settles before it exits", () => {
     const rite = read(RITE);
-    const branch = rite.indexOf("if (!health.ok) {");
+    /* The anchor was `if (!health.ok) {` until #2763 made the probe skippable:
+       the unconfirmed-deploy road takes no reading at all, so `health` is now
+       `HealthProbeVerdict | null`. The DRAIN and its ordering are untouched —
+       only the shape of the guard around them moved. */
+    const branch = rite.indexOf("if (health && !health.ok) {");
     const settle = rite.indexOf("await settleSockets(", branch);
     const exit = rite.indexOf("die(health.why);", branch);
     expect(branch).toBeGreaterThan(-1);
@@ -398,10 +402,44 @@ describe("die() stays synchronous, and the reason is recorded", () => {
     const rite = read(RITE);
     expect(rite).toContain("const die: (why: string) => never = (why: string): never => {");
     expect(rite).not.toContain("=> Promise<never>");
-    /* The narrowing this protects is really relied upon, so the arm fails if
-       somebody adds a non-null assertion and quietly makes the sync form
-       unnecessary — at which point this arm should be re-argued, not deleted. */
-    expect(rite).toContain("if (!deployment) {");
-    expect(rite).toContain("deployment.status");
+    /*
+      The narrowing this protects is really relied upon, so the arm fails if
+      somebody adds a non-null assertion and quietly makes the sync form
+      unnecessary — at which point this arm should be re-argued, not deleted.
+
+      ⚠ RE-ARGUED 2026-10-29 (#2763), WHICH IS WHAT THAT SENTENCE ASKS FOR.
+      The witness was `if (!deployment) { die(…) }` followed by
+      `deployment.status`. That `die()` is gone — a watch that ran its whole
+      ceiling without Railway creating a row now carries its refusal to the
+      receipt instead of ending the run — and `deployment.status` is reached
+      through a ternary, which narrows without `die` having to return `never`.
+      **So the arm lost its witness and not its subject**, and deleting it
+      would have retired a live control over a moved line.
+
+      The witness is now the rite LOCK, and it is a stronger one. `lock.note`
+      exists only on the `ok: true` member of `RiteLockOutcome`, so reaching it
+      after `if (!lock.ok) die(lock.why);` is a type error the moment `die`
+      stops being a synchronous `never` — DRIVEN rather than reasoned, which is
+      the whole difference between a witness and a hopeful one: `die` was made
+      `async (why): Promise<never>` against the real tree and
+      `tsc -p tsconfig.scripts.json` answered
+
+          scripts/deploy-rite.mts(365,12): error TS2339:
+            Property 'note' does not exist on type 'RiteLockOutcome'.
+
+      ⚠ AND THE REF LANDING BELOW IS **NOT** A SECOND NARROWING WITNESS, which
+      is what that same drive showed: with `die` async, `landing.shipped`
+      produced NO error at all, because the `advanced` member is reached by its
+      own `kind ===` comparison and never by elimination through `die`. It is
+      kept as a reading of the refusal SHAPE — that the unreadable and diverged
+      roads still refuse rather than being carried, which #2763 deliberately did
+      not change — and it is labelled so nobody later cites it for the narrowing
+      claim it cannot support.
+    */
+    expect(rite).toContain("if (!lock.ok) die(lock.why);");
+    expect(rite).toContain("if (lock.note) say(");
+    /* Shape only — see above. */
+    expect(rite).toContain('if (landing.kind === "unreadable") die(unreadableRefMessage(landing));');
+    expect(rite).toContain("landing.shipped");
   });
 });
