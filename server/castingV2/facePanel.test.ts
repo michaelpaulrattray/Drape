@@ -1792,6 +1792,62 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     expect(ears.instances.map((one) => one.name)).toEqual(["Left ear", "Right ear", "Ear piercing"]);
   });
 
+  /*
+    ⚠ **THESE TWO ARMS EXIST BECAUSE THE SABOTAGE ROUND SURVIVED WITHOUT THEM.**
+    Deleting `catalogueHostWords` from either catalogue push left all 154 arms
+    green, because the rows the earlier arms fold onto (*Skin*, *Lips*, *Ears*)
+    happen to normalise from their own displayed label. The catalogue's other
+    four words only earn their keep where the label and the reading's word are
+    genuinely different — and the real readings have both cases.
+  */
+  it("reaches a row by a word the catalogue uses and the label does not", () => {
+    /* `display: "face skin"` against a row that draws as *Skin*. The design's
+       worked example is freckles on skin, and a reading that says *face skin*
+       — which is the catalogue's own display string — must land in the same
+       place. */
+    const panel = panelOf({
+      catalogued: ["skin"],
+      said: [{ noun: "freckles", on: "face skin", about: "a dusting of freckles", kind: "marking", why: "scattered" }],
+    });
+    const skin = sectionOf(panel, "body")!.rows.find((row) => row.name === "Skin")!;
+    expect(skin.words).toEqual(["a dusting of freckles"]);
+  });
+
+  it("reaches a PAIR row by the question the scan asks, not by the row's label", () => {
+    /* The brows row draws as *Brows* and the scan's question is *eyebrows* —
+       and `eyebrows` is exactly what the reading answered on two of the three
+       production fixtures. `normalisedName` folds *Brows* to `brow` and
+       *eyebrows* to `eyebrow`, so the label alone cannot reach it. */
+    const panel = panelOf({
+      catalogued: ["brow@left", "brow@right"],
+      found: [{ noun: "brow piercing", kind: "accessory", on: "eyebrows" }],
+    });
+    expect(sectionOf(panel, "open")).toBeNull();
+    const brows = sectionOf(panel, "face")!.rows.find((row) => row.name === "Brows")!;
+    expect(brows.instances.map((one) => one.name)).toEqual([
+      "Left brow", "Right brow", "Brow piercing",
+    ]);
+  });
+
+  /*
+    ⚠ **AND THIS ONE EXISTS FOR THE SAME REASON: NOTHING WROTE TO ONE ROW
+    TWICE.** `replaceRow` builds a NEW row object and has to carry that row's
+    host words across with it, because `hostNounsOfRow` is keyed on the object.
+    Deleting that one migration left every arm green — a row that took a child
+    and then a words line silently lost the words, which is the second write
+    landing nowhere.
+  */
+  it("takes a child AND a words line on one row, in either order", () => {
+    const panel = panelOf({
+      catalogued: ["lips"],
+      found: [{ noun: "lip ring", kind: "accessory", on: "lips" }],
+      said: [{ noun: "chapping", on: "lips", about: "dry and chapped", kind: "marking", why: "scattered" }],
+    });
+    const lips = sectionOf(panel, "face")!.rows.find((row) => row.name === "Lips")!;
+    expect(lips.instances.map((one) => one.name)).toEqual(["Lip ring"]);
+    expect(lips.words).toEqual(["dry and chapped"]);
+  });
+
   it("keeps a parent's own ask about the parent — the fold does not widen it", () => {
     const panel = panelOf({
       catalogued: ["lips"],
