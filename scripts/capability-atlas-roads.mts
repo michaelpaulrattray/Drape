@@ -174,6 +174,7 @@ export const ROADS: readonly Road[] = [
     doors: [
       "empty", "unreadable", "reader_outage",
       "wall_likeness", "wall_content", "wall_stage", "wall_unbacked", "wall_unfileable",
+      "wall_too_long", "wall_too_many", "wall_brand_only",
       "gate_ink_document", "gate_ink_uncarried", "gate_ink_unkeepable",
       "gate_ink_coverage_unread", "scope_unknown", "scope_mismatch",
     ],
@@ -192,6 +193,7 @@ export const ROADS: readonly Road[] = [
       "gate_ink_uncarried is a place the product can SEE and cannot KEEP (a covered chest): render would land, the mint could not crop, the tattoo would die on the next edit — his own find-and-crop condition enforced.",
       "item 7a split that gate three ways, because its two reasons only COINCIDED while the product had one outfit: gate_ink_uncarried = a garment is over it; gate_ink_unkeepable = the surface is bare and the road still cannot crop a result there (a shirtless Basics chest); gate_ink_coverage_unread = nobody has read this outfit's coverage, which fails closed and says so in its OWN words rather than borrowing the covering's.",
       "unreadable = a reply CAME BACK and could not be read, and rephrasing is real advice for it; reader_outage = nothing came back at all (the transport threw, the deadline passed, the text account is overdrawn, or no engine is configured), where telling her to rephrase is advice she cannot follow. The roll road has drawn this line since #126; the refine road drew it 2026-08-30.",
+      "wall_too_long, wall_too_many and wall_brand_only are the three ways a reply that was UNDERSTOOD cannot be stored as filed — one value longer than its drawer (#2714), more items under one set subject than a set keeps (#2730), or a value that was nothing but a brand name the customer typed (#2731). Each used to null the whole delta with no wall and arrive as `unreadable`. All three are facts about OUR rendering, so each carries `resampled: true` in `REFINE_REFUSALS` and the interpreter re-samples it on attempts 1 and 2; the last sampling answers. The all-or-nothing rule stays: none of the sentence is applied, and each sentence says so.",
       "A tapped rectangle (scope) outranks the words and the memory — the tap is the customer's freshest act; a scope naming nothing the instruction writes refuses free (scope_mismatch).",
     ],
   },

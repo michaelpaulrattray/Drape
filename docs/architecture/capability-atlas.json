@@ -10,8 +10,8 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:813",
-          "server/castingV2/refineDelta.ts:813"
+          "server/castingV2/refineDelta.ts:961",
+          "server/castingV2/refineDelta.ts:961"
         ]
       },
       {
@@ -21,8 +21,8 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:827",
-          "server/castingV2/refineDelta.ts:827"
+          "server/castingV2/refineDelta.ts:975",
+          "server/castingV2/refineDelta.ts:975"
         ]
       },
       {
@@ -182,9 +182,9 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:795",
+          "server/castingV2/refineDelta.ts:943",
           "server/castingV2/refineInterpreter.ts:1039",
-          "server/castingV2/refineDelta.ts:795"
+          "server/castingV2/refineDelta.ts:943"
         ]
       },
       {
@@ -196,10 +196,10 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:740",
-          "server/castingV2/refineDelta.ts:740",
-          "server/castingV2/refineDelta.ts:2002",
-          "server/castingV2/refineDelta.ts:2002",
+          "server/castingV2/refineDelta.ts:888",
+          "server/castingV2/refineDelta.ts:888",
+          "server/castingV2/refineDelta.ts:2230",
+          "server/castingV2/refineDelta.ts:2230",
           "server/castingV2/refineService.ts:2617"
         ]
       },
@@ -212,11 +212,11 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:706",
-          "server/castingV2/refineDelta.ts:706",
-          "server/castingV2/refineDelta.ts:2011",
-          "server/castingV2/refineDelta.ts:2011",
-          "server/castingV2/refineDelta.ts:706"
+          "server/castingV2/refineDelta.ts:854",
+          "server/castingV2/refineDelta.ts:854",
+          "server/castingV2/refineDelta.ts:2239",
+          "server/castingV2/refineDelta.ts:2239",
+          "server/castingV2/refineDelta.ts:854"
         ]
       },
       {
@@ -228,10 +228,10 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:713",
-          "server/castingV2/refineDelta.ts:713",
-          "server/castingV2/refineDelta.ts:1979",
-          "server/castingV2/refineDelta.ts:1979",
+          "server/castingV2/refineDelta.ts:861",
+          "server/castingV2/refineDelta.ts:861",
+          "server/castingV2/refineDelta.ts:2207",
+          "server/castingV2/refineDelta.ts:2207",
           "server/castingV2/refineService.ts:2616",
           "server/castingV2/refineService.ts:2628"
         ]
@@ -243,11 +243,11 @@
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:732",
-          "server/castingV2/refineDelta.ts:732",
-          "server/castingV2/refineDelta.ts:1994",
-          "server/castingV2/refineDelta.ts:1994",
-          "server/castingV2/refineDelta.ts:732"
+          "server/castingV2/refineDelta.ts:880",
+          "server/castingV2/refineDelta.ts:880",
+          "server/castingV2/refineDelta.ts:2222",
+          "server/castingV2/refineDelta.ts:2222",
+          "server/castingV2/refineDelta.ts:880"
         ]
       },
       {
@@ -388,10 +388,10 @@
           "server/castingV2/readerOutageRefusal.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:794",
+          "server/castingV2/refineDelta.ts:942",
           "server/castingV2/refineInterpreter.ts:1060",
-          "server/castingV2/refineInterpreter.ts:1245",
-          "server/castingV2/refineDelta.ts:794"
+          "server/castingV2/refineInterpreter.ts:1256",
+          "server/castingV2/refineDelta.ts:942"
         ]
       },
       {
@@ -402,9 +402,9 @@
           "server/castingV2/refineInterpreterCeiling.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineDelta.ts:769",
-          "server/castingV2/refineInterpreter.ts:1252",
-          "server/castingV2/refineDelta.ts:769"
+          "server/castingV2/refineDelta.ts:917",
+          "server/castingV2/refineInterpreter.ts:1263",
+          "server/castingV2/refineDelta.ts:917"
         ]
       },
       {
@@ -688,6 +688,7 @@
         "id": "unreadable",
         "kind": "interpreter-refusal",
         "pinnedBy": [
+          "server/castingV2/brandOnlyAndTooManyRefusal.test.ts",
           "server/castingV2/creativeRegisterScope.test.ts",
           "server/castingV2/hairColourFromReference.test.ts",
           "server/castingV2/makeupFromReference.test.ts",
@@ -711,9 +712,9 @@
           "server/castingV2/openLaneKind.ts:256",
           "server/castingV2/openLaneKind.ts:325",
           "server/castingV2/openLaneKind.ts:326",
-          "server/castingV2/refineDelta.ts:746",
-          "server/castingV2/refineInterpreter.ts:1254",
-          "server/castingV2/refineDelta.ts:746"
+          "server/castingV2/refineDelta.ts:894",
+          "server/castingV2/refineInterpreter.ts:1265",
+          "server/castingV2/refineDelta.ts:894"
         ]
       },
       {
@@ -781,9 +782,23 @@
         ]
       },
       {
+        "id": "wall_brand_only",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/brandOnlyAndTooManyRefusal.test.ts",
+          "server/castingV2/overlongValueRefusal.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/refineDelta.ts:825",
+          "server/castingV2/refineDelta.ts:1753",
+          "server/castingV2/refineDelta.ts:825"
+        ]
+      },
+      {
         "id": "wall_content",
         "kind": "interpreter-refusal",
         "pinnedBy": [
+          "server/castingV2/brandOnlyAndTooManyRefusal.test.ts",
           "server/castingV2/colourContextDoor.test.ts",
           "server/castingV2/overlongValueRefusal.test.ts",
           "server/castingV2/priorContextDoor.test.ts",
@@ -794,7 +809,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:558",
-          "server/castingV2/refineInterpreter.ts:1909",
+          "server/castingV2/refineInterpreter.ts:1920",
           "server/castingV2/refineDelta.ts:558"
         ]
       },
@@ -811,8 +826,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:499",
-          "server/castingV2/refineDelta.ts:2030",
-          "server/castingV2/refineInterpreter.ts:1907",
+          "server/castingV2/refineDelta.ts:2258",
+          "server/castingV2/refineInterpreter.ts:1918",
           "server/castingV2/refineDelta.ts:499"
         ]
       },
@@ -833,8 +848,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:533",
-          "server/castingV2/refineDelta.ts:2054",
-          "server/castingV2/refineInterpreter.ts:2012",
+          "server/castingV2/refineDelta.ts:2282",
+          "server/castingV2/refineInterpreter.ts:2023",
           "server/castingV2/refineDelta.ts:533"
         ]
       },
@@ -842,14 +857,27 @@
         "id": "wall_too_long",
         "kind": "interpreter-refusal",
         "pinnedBy": [
+          "server/castingV2/brandOnlyAndTooManyRefusal.test.ts",
           "server/castingV2/overlongValueRefusal.test.ts",
           "server/castingV2/refineDelta.test.ts"
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:677",
-          "server/castingV2/refineDelta.ts:1672",
-          "server/castingV2/refineDelta.ts:1831",
+          "server/castingV2/refineDelta.ts:1858",
+          "server/castingV2/refineDelta.ts:2059",
           "server/castingV2/refineDelta.ts:677"
+        ]
+      },
+      {
+        "id": "wall_too_many",
+        "kind": "interpreter-refusal",
+        "pinnedBy": [
+          "server/castingV2/brandOnlyAndTooManyRefusal.test.ts"
+        ],
+        "sites": [
+          "server/castingV2/refineDelta.ts:761",
+          "server/castingV2/refineDelta.ts:1987",
+          "server/castingV2/refineDelta.ts:761"
         ]
       },
       {
@@ -862,7 +890,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:557",
-          "server/castingV2/refineInterpreter.ts:2019",
+          "server/castingV2/refineInterpreter.ts:2030",
           "server/castingV2/refineDelta.ts:557"
         ]
       },
@@ -881,8 +909,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:569",
-          "server/castingV2/refineDelta.ts:1720",
-          "server/castingV2/refineDelta.ts:2111",
+          "server/castingV2/refineDelta.ts:1906",
+          "server/castingV2/refineDelta.ts:2339",
           "server/castingV2/refineDelta.ts:569"
         ]
       },
@@ -1124,6 +1152,15 @@
         "state": "master",
         "expect": "would-render",
         "why": "the freckle court's class"
+      },
+      {
+        "id": "mark.nine",
+        "ask": "give her freckles across her nose, a mole on her left cheek, a small scar on her chin, a birthmark on her neck, a beauty mark above her lip, a scar through her right eyebrow, a mole on her jaw, freckles on her shoulders, and a small scar on her forehead",
+        "subject": "marks",
+        "verb": "add",
+        "state": "master",
+        "expect": "refused:wall_too_many",
+        "why": "#2730: more separate marks than a set keeps — named, free, and never `unreadable`; the same sentence with eight files every one"
       },
       {
         "id": "acc.earrings.add",
@@ -1657,6 +1694,9 @@
           "wall_stage",
           "wall_unbacked",
           "wall_unfileable",
+          "wall_too_long",
+          "wall_too_many",
+          "wall_brand_only",
           "gate_ink_document",
           "gate_ink_uncarried",
           "gate_ink_unkeepable",
@@ -1674,6 +1714,7 @@
           "gate_ink_uncarried is a place the product can SEE and cannot KEEP (a covered chest): render would land, the mint could not crop, the tattoo would die on the next edit — his own find-and-crop condition enforced.",
           "item 7a split that gate three ways, because its two reasons only COINCIDED while the product had one outfit: gate_ink_uncarried = a garment is over it; gate_ink_unkeepable = the surface is bare and the road still cannot crop a result there (a shirtless Basics chest); gate_ink_coverage_unread = nobody has read this outfit's coverage, which fails closed and says so in its OWN words rather than borrowing the covering's.",
           "unreadable = a reply CAME BACK and could not be read, and rephrasing is real advice for it; reader_outage = nothing came back at all (the transport threw, the deadline passed, the text account is overdrawn, or no engine is configured), where telling her to rephrase is advice she cannot follow. The roll road has drawn this line since #126; the refine road drew it 2026-08-30.",
+          "wall_too_long, wall_too_many and wall_brand_only are the three ways a reply that was UNDERSTOOD cannot be stored as filed — one value longer than its drawer (#2714), more items under one set subject than a set keeps (#2730), or a value that was nothing but a brand name the customer typed (#2731). Each used to null the whole delta with no wall and arrive as `unreadable`. All three are facts about OUR rendering, so each carries `resampled: true` in `REFINE_REFUSALS` and the interpreter re-samples it on attempts 1 and 2; the last sampling answers. The all-or-nothing rule stays: none of the sentence is applied, and each sentence says so.",
           "A tapped rectangle (scope) outranks the words and the memory — the tap is the customer's freshest act; a scope naming nothing the instruction writes refuses free (scope_mismatch)."
         ]
       },
@@ -2314,6 +2355,13 @@
         "kind": "documented-unreachable",
         "subject": "version_missing",
         "message": "no corpus row reaches it: answers a replay marker naming a version that is not the predecessor — request shape — a row could reach it via: pinned by its C5 service arm"
+      },
+      {
+        "id": "documented:wall_brand_only",
+        "severity": "info",
+        "kind": "documented-unreachable",
+        "subject": "wall_brand_only",
+        "message": "no corpus row reaches it: answers a reply whose free-lane value, or the makeup value, was NOTHING BUT a brand name the customer's own sentence named — `scrubBrands` emptied it, and `bareBrandWall` found every removed mark in their words. Before #2731 this state set no wall: the whole delta nulled, the neighbouring changes died with it, and it was delivered in `unreadable`'s words. A brand the MODEL introduced keeps that old road on purpose, because this door's sentence tells somebody to stop naming one. The bare-name value is a slip of our rendering against the prompt's own instruction, so the interpreter re-samples it on attempts 1 and 2 and answers here only if the last sampling is still bare (`REFINE_REFUSALS.wall_brand_only.resampled`) — a row could reach it via: deliberately never as a corpus row - the trigger is the model filing the bare name it was told to drop (measured 0 of 108 readings, 2026-10-28), so a fixture sentence probes the model rather than pinning the door. Its pin is `server/castingV2/brandOnlyAndTooManyRefusal.test.ts`, which drives both sites through the real reader and the re-sample through the real interpreter, each arm with a sabotage that names the arm it reddens"
       },
       {
         "id": "documented:wall_too_long",
@@ -3513,6 +3561,13 @@
       "message": "no corpus row reaches it: answers a replay marker naming a version that is not the predecessor — request shape — a row could reach it via: pinned by its C5 service arm"
     },
     {
+      "id": "documented:wall_brand_only",
+      "severity": "info",
+      "kind": "documented-unreachable",
+      "subject": "wall_brand_only",
+      "message": "no corpus row reaches it: answers a reply whose free-lane value, or the makeup value, was NOTHING BUT a brand name the customer's own sentence named — `scrubBrands` emptied it, and `bareBrandWall` found every removed mark in their words. Before #2731 this state set no wall: the whole delta nulled, the neighbouring changes died with it, and it was delivered in `unreadable`'s words. A brand the MODEL introduced keeps that old road on purpose, because this door's sentence tells somebody to stop naming one. The bare-name value is a slip of our rendering against the prompt's own instruction, so the interpreter re-samples it on attempts 1 and 2 and answers here only if the last sampling is still bare (`REFINE_REFUSALS.wall_brand_only.resampled`) — a row could reach it via: deliberately never as a corpus row - the trigger is the model filing the bare name it was told to drop (measured 0 of 108 readings, 2026-10-28), so a fixture sentence probes the model rather than pinning the door. Its pin is `server/castingV2/brandOnlyAndTooManyRefusal.test.ts`, which drives both sites through the real reader and the re-sample through the real interpreter, each arm with a sabotage that names the arm it reddens"
+    },
+    {
       "id": "documented:wall_too_long",
       "severity": "info",
       "kind": "documented-unreachable",
@@ -3574,6 +3629,13 @@
       "kind": "unreached",
       "subject": "gate_ink_coverage_unread",
       "message": "a corpus row expects \"gate_ink_coverage_unread\" and the drive never produced it — the door may be unreachable"
+    },
+    {
+      "id": "unreached-driven:wall_too_many",
+      "severity": "warn",
+      "kind": "unreached",
+      "subject": "wall_too_many",
+      "message": "a corpus row expects \"wall_too_many\" and the drive never produced it — the door may be unreachable"
     },
     {
       "id": "unreached:absorbed",
