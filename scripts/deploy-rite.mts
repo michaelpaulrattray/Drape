@@ -93,7 +93,14 @@ import { sweepStaleRiteWorktrees } from "./lib/staleRiteWorktrees.mts";
 import { closeWithin } from "./lib/boundedClose.mts";
 import { openDatabase } from "./lib/dbConnection.mts";
 import { productionDatabaseUrl, readFounderActivity } from "./lib/founderActivity.mts";
-import { decideWatch, foreignServiceContext, listedRows, watchOutcome } from "./lib/deployWatch.mts";
+import {
+  decideWatch,
+  foreignServiceContext,
+  judgeServedBuild,
+  listedRows,
+  type ServedReading,
+  watchOutcome,
+} from "./lib/deployWatch.mts";
 import { comparePositions, parseVariableLines } from "./lib/productionFlagPositions.mts";
 import {
   DECLARED_BUT_UNMIGRATED,
@@ -1581,12 +1588,30 @@ for (let attempt = 0; Date.now() - started < WATCH_CEILING_MS; attempt += 1) {
   }
   await wait(WATCH_POLL_MS);
 }
-if (!deployment) {
-  die(priorDeployment
-    ? `Railway never created a deployment of ${shippedShort} newer than ${priorDeployment.slice(0, 8)}. The push LANDED and no build of it was seen — nothing here may be reported as deployed.`
-    : "no deployment row could be read at all");
-}
 const elapsed = Math.round((Date.now() - started) / 1000);
+/*
+  ⚠ NO ROW AT ALL IS THE SAME CLASS AS AN UNSETTLED WATCH, AND IT USED TO
+  `die()` HERE — found by #2763's own law-7 sweep rather than by the incident.
+
+  The sentence was right and the exit was the defect: *"the push LANDED and no
+  build of it was seen"* is the unsettled road's situation exactly — the push is
+  out of our hands and what the rite does next is a question about the RECEIPT.
+  So this refusal joins that road: the service is asked, and if it is serving
+  this commit the listing was simply late or unreadable; if it is not, the
+  refusal is carried to the receipt and the read-only half still runs.
+
+  ⚠ It CANNOT be folded into `watchOutcome` and that is deliberate: that verdict
+  is a pure function of (did the loop settle, what did the last ROW say), and
+  there is no row here to say anything. Widening it to take a fourth, row-less
+  road would make `status` optional on a verdict whose three sentences all quote
+  it. So the composition happens here and `watchOutcome` keeps its contract.
+*/
+const noDeploymentRow = deployment
+  ? null
+  : (priorDeployment
+      ? `Railway never created a deployment of ${shippedShort} newer than ${priorDeployment.slice(0, 8)} within ${elapsed}s. `
+        + "The push LANDED and no build of it was seen — nothing here may be reported as deployed."
+      : `no deployment row could be read at all within ${elapsed}s`);
 /*
   ⚠ THE EXHAUSTION CASE IS ITS OWN OUTCOME WITH ITS OWN WORDS (#1519), AND IT IS
   NOT A STATUS AT ALL.
@@ -1608,7 +1633,8 @@ const elapsed = Math.round((Date.now() - started) / 1000);
   id and the elapsed time are the two things a reader needs to go and look,
   whichever outcome follows.
 */
-say(`  deployment ${deployment.id.slice(0, 8)} → ${deployment.status} after ${elapsed}s`);
+if (deployment) say(`  deployment ${deployment.id.slice(0, 8)} → ${deployment.status} after ${elapsed}s`);
+else say(`  ${noDeploymentRow}`);
 /*
   THE VERDICT IS `scripts/lib/deployWatch.mts`'s, not written out here — the same
   split, for the same reason, as `productionHealthProbe.mts` two sections below:
@@ -1617,7 +1643,7 @@ say(`  deployment ${deployment.id.slice(0, 8)} → ${deployment.status} after ${
   function of (did the loop settle, what did the last row say), and
   `server/riteWatchOutcome.test.ts` drives all three roads including the sentences.
 */
-const outcome = watchOutcome({
+const outcome = !deployment ? null : watchOutcome({
   settled: watchSettled,
   status: deployment.status,
   elapsedSeconds: elapsed,
@@ -1631,7 +1657,89 @@ const outcome = watchOutcome({
   service: SERVICE,
   baseUrl: BASE,
 });
-if (outcome.kind !== "success") die(outcome.why);
+/*
+  A TERMINAL NON-SUCCESS STILL REFUSES ON THE SPOT, and that is deliberately NOT
+  the road below. `FAILED`, `CRASHED`, `REMOVED` mean the build is over and the
+  OLD process is still serving, so there is nothing about this push for the
+  checks under here to be true of. The unsettled road is the opposite case: the
+  push landed, the build is out of our hands, and what the rite does next is a
+  question about the RECEIPT rather than about production.
+*/
+if (outcome?.kind === "failed") die(outcome.why);
+
+/* ── 3a. the SECOND WITNESS, and the refusal that keeps its receipt (#2763) ─ */
+
+/*
+  ⚠ THE WATCH RAN OUT OF PATIENCE ELEVEN MINUTES AFTER THE ANSWER EXISTED, AND
+  EXITED BEFORE WRITING ANY OF ITS RECEIPT.
+
+  2026-10-28: production began serving the new build between 17:56:04Z and
+  17:56:35Z, Railway's API recorded SUCCESS at 18:03:50Z, and the watch gave up
+  reporting DEPLOYING at about 18:15Z. The deploy was real, slow (35m43s) and
+  inside the 50-minute ceiling — so neither the length nor the ceiling is the
+  finding. `judgeServedBuild`'s header carries the whole reading.
+
+  Two things are repaired here and they answer two different cases, which is the
+  card's own point: a repair for one would have done nothing for the other.
+
+  **1 · THE SERVICE IS ASKED.** `/api/health` carries the answering process's
+  own `RAILWAY_GIT_COMMIT_SHA`, so a reading of the pushed sha is the deploy
+  LANDED — an artifact, where the API's state is a claim about it (working
+  law 1). On that road the run carries straight on and the receipt is whole;
+  nothing is skipped and nothing is weakened, because the deploy really is out.
+
+  **2 · AND WHEN THE SERVICE AGREES WITH THE WATCH, THE RUN STILL WRITES ITS
+  RECEIPT BEFORE REFUSING.** Edition 767's deployment sat `QUEUED` for thirty
+  minutes with no builder — there the old build genuinely is serving and the
+  refusal is correct. What was wrong is that `die()` here threw away the flag
+  comparison, the migration plan, the table and index counts and the static
+  asset check, every one of which reads the SERVICE, the production database or
+  the bucket and none of which depends on this push having landed. That is the
+  rite's own argument at its foot — *"dying at step 5 would destroy the receipt
+  and change nothing about production"* — and it holds one step earlier.
+
+  ⚠ **WHAT THE UNCONFIRMED ROAD MAY NOT DO, and each of these is a wall:**
+  it never reads health or probes the tracker (both are claims ABOUT the build
+  now taking traffic, and on this road that is the OLD one — #296's trap
+  exactly); it never applies a migration, only plans one; its receipt never
+  prints the word SUCCESS; and it always exits non-zero.
+*/
+const servedVerdict = outcome === null || outcome.kind === "unsettled"
+  ? judgeServedBuild({
+      reading: await (async (): Promise<ServedReading> => {
+        try {
+          /* The same timeout and the same cleared handle as the health probe
+             below, for `exitSafeFetch.mts`'s reason: a host that accepts and
+             never answers stalls a bare fetch for 306.6s (#1177). */
+          const response = await fetchWithClearedTimeout(`${BASE}/api/health`, {}, 10_000);
+          const body = (await response.json().catch(() => null)) as any;
+          if (body === null) return { kind: "silent" };
+          return {
+            /* ⚠ A 503 is still an ANSWER about WHICH build is answering, which
+               is the only question this verdict asks — health is the probe
+               below's question and it is not pre-empted here. */
+            kind: "answered",
+            build: typeof body.build === "string" && body.build.trim() !== "" ? body.build.trim() : null,
+            uptime: Number(body.uptime ?? NaN),
+          };
+        } catch {
+          return { kind: "silent" };
+        }
+      })(),
+      shippedSha,
+      baseUrl: BASE,
+    })
+  : null;
+if (servedVerdict) for (const line of servedVerdict.lines) say(`  ${line}`);
+/** Did a build of this push demonstrably take traffic? Everything below asks. */
+const served = outcome?.kind === "success" || servedVerdict?.kind === "landed";
+/** The watch's refusal, carried to the receipt instead of ending the run. */
+const watchProblems: readonly string[] = served
+  ? []
+  : [
+      noDeploymentRow ?? (outcome?.kind === "unsettled" ? outcome.why : "the watch reached no verdict"),
+      ...(servedVerdict?.lines ?? []).map((line) => `  ${line}`),
+    ];
 
 /* ── 4. health, THREE TIMES — a deploy reporting SUCCESS is a claim ─────── */
 
@@ -1651,7 +1759,11 @@ if (outcome.kind !== "success") die(outcome.why);
   24, undici's `headersTimeout`); ten seconds is the eye-frame pass's figure and
   the same argument.
 */
-const health = await probeProductionHealth({
+/* ⚠ NOT READ AT ALL on the unconfirmed road (#2763): on it the process that
+   would answer is the OLD build, and three 200s off the old build with its own
+   uptime anchor is #296's trap written into a receipt as a verification. An
+   unread health check is stated as unread; it is never inferred. */
+const health = !served ? null : await probeProductionHealth({
   wait,
   read: async () => {
     try {
@@ -1668,7 +1780,7 @@ const health = await probeProductionHealth({
     }
   },
 });
-if (!health.ok) {
+if (health && !health.ok) {
   /* The same insurance on the same road, for the reason in the eye-frame block
      above and in `scripts/lib/exitSafeFetch.mts` (#1517): the refusal has already
      been decided, so a quarter second costs nothing, and the exit code is the
@@ -1676,11 +1788,12 @@ if (!health.ok) {
   await settleSockets("the production health probes");
   die(health.why);
 }
-const healths = health.readings;
-const latencies = healths.map((entry) => entry.db);
+/** The three readings, or null when the deploy never confirmed and none was taken. */
+const healths = health ? health.readings : null;
+const latencies = healths ? healths.map((entry) => entry.db) : null;
 // Both terms from the same reading — this loop sleeps, and the local clock is
 // not a party to the subtraction. See scripts/lib/uptimeAnchor.mts.
-const anchor = uptimeAnchor(healths[0]!);
+const anchor = healths ? uptimeAnchor(healths[0]!) : null;
 
 /* ── 4a. the error tracker, PROBED (#1643 — the remainder of #1542) ─────── */
 
@@ -1718,7 +1831,13 @@ const anchor = uptimeAnchor(healths[0]!);
   only runs inside the script that pushes to production is a judgement nothing
   can drive.
 */
-const tracker = ((): { line: string; problems: readonly string[]; confirmation: string } => {
+const tracker = ((): { line: string; problems: readonly string[]; confirmation: string } | null => {
+  /* ⚠ AND IT IS NOT PROBED AT ALL ON THE UNCONFIRMED ROAD (#2763), for its own
+     stated reason one block up: the probe's whole subject is the build now
+     taking traffic, and without the three readings there is no verdict on which
+     process that is. Probing anyway would attribute an event to a build that
+     had not landed — the exact mis-attribution that ordering exists to stop. */
+  if (!healths) return null;
   /* The SERVING build, from the artifact this run just read three times — not
      from `sha`, which is what was PUSHED. They are the same commit on a normal
      night and are exactly what the uptime anchor exists to tell apart. */
@@ -1812,7 +1931,19 @@ const autoApply = (
   readBack,
   execute: async (sql) => { await connection.query(sql); },
   listMigrations: () => migrationFilesFrom(readdirSync, (file) => readFileSync(file, "utf8")),
-  dry: DRY,
+  /*
+    ⚠ AND IT PLANS WITHOUT APPLYING WHEN THE DEPLOY NEVER CONFIRMED (#2763).
+    A run that cannot say which build is serving must not write to production,
+    and the cost of not writing is close to nothing — read at the code rather
+    than assumed: since #508 `scripts/predeploy-migrate.mts` runs as the
+    service's OWN pre-deploy command on every road, between the build and the
+    cutover, applying the same additive statements through this same lib. This
+    step is the backstop for the rite's road, not the only applier. So the plan
+    is printed, the receipt says why nothing was written, and a shift that wants
+    it applied re-runs the rite once the deploy has resolved.
+  */
+  dry: DRY || !served,
+  dryNote: DRY ? "--dry" : "the deploy never confirmed",
 });
 
 /* ── 5b. the SCHEMA, off the same service ───────────────────────────────── */
@@ -1943,12 +2074,31 @@ say("─".repeat(72));
 /* The custody block quotes THIS line, so it states the tip production is
    serving and says plainly when that is not the commit the checks ran on
    (#1726) — `origin/main == HEAD` was unconditional and is false on that road. */
-say(`\`${shippedShort}\` · ${shippedSha === sha
+const custody = `\`${shippedShort}\` · ${shippedSha === sha
   ? "origin/main == HEAD"
-  : `origin/main advanced past the checked ${shortSha}`} · deploy SUCCESS · health ×3 — 200 ·`);
-say(`healthy · db ${latencies.map((value) => value.toFixed(2)).join(" / ")} ms ·`);
-say(`paid work at push: ${inFlight}`);
-say(`**UPTIME ANCHOR ${anchor}** (uptime ${healths[0]!.uptime.toFixed(1)} s)`);
+  : `origin/main advanced past the checked ${shortSha}`}`;
+/*
+  ⚠ THE HEAD LINE STATES WHAT WAS PROVEN AND NEVER MORE (#2763).
+
+  `deploy SUCCESS · health ×3 — 200` was unconditional, so a run that reached
+  the receipt had already said it. There are now three honest heads: the API
+  said SUCCESS; the API never answered but the SERVICE is serving this commit,
+  which is a landing proven at the artifact and not a SUCCESS anybody recorded;
+  and the deploy never confirmed, where there is no health reading to quote
+  because none was taken.
+*/
+if (healths && latencies && anchor) {
+  say(`${custody} · deploy ${outcome?.kind === "success"
+    ? "SUCCESS"
+    : "SERVING (Railway's API never settled; the service's own build says it landed)"} · health ×3 — 200 ·`);
+  say(`healthy · db ${latencies.map((value) => value.toFixed(2)).join(" / ")} ms ·`);
+  say(`paid work at push: ${inFlight}`);
+  say(`**UPTIME ANCHOR ${anchor}** (uptime ${healths[0]!.uptime.toFixed(1)} s)`);
+} else {
+  say(`${custody} · deploy NOT CONFIRMED — the watch gave up and the service is not serving it ·`);
+  say("health NOT READ and the tracker NOT PROBED — on this road they would read the OLD build (#296) ·");
+  say(`paid work at push: ${inFlight}`);
+}
 /* OUR OWN MONEY, beside the deploy that will spend it. At zero the
    interpreter fails and every paid roll and refine dies at dispatch, so a
    deploy is exactly the moment to look. Read here, never remembered. */
@@ -2052,16 +2202,35 @@ if (assets.problems.length === 0) {
   for (const problem of assets.problems) say(`  ! ${problem}`);
 }
 say("");
-say(`ERROR TRACKER, probed through the real crash path (#1643): ${tracker.line}`);
-if (tracker.problems.length === 0) {
-  /* The tick says what the probe PROVED, at its own strength (#2514) — an event
-     still being indexed is not one that "reached" the feed. */
-  say(`  ${tracker.confirmation}`);
+if (tracker === null) {
+  say("ERROR TRACKER: not probed — this run never confirmed which build is serving (#2763).");
 } else {
-  say(`  *** ERROR TRACKER PROBLEM — ${tracker.problems.length} ***`);
-  for (const problem of tracker.problems) say(`  ! ${problem}`);
-  say("  The deploy is NOT rolled back for this — a tracker that is down is no reason to keep");
-  say("  an old build serving. What it costs is the claim that errors are being reported.");
+  say(`ERROR TRACKER, probed through the real crash path (#1643): ${tracker.line}`);
+  if (tracker.problems.length === 0) {
+    /* The tick says what the probe PROVED, at its own strength (#2514) — an event
+       still being indexed is not one that "reached" the feed. */
+    say(`  ${tracker.confirmation}`);
+  } else {
+    say(`  *** ERROR TRACKER PROBLEM — ${tracker.problems.length} ***`);
+    for (const problem of tracker.problems) say(`  ! ${problem}`);
+    say("  The deploy is NOT rolled back for this — a tracker that is down is no reason to keep");
+    say("  an old build serving. What it costs is the claim that errors are being reported.");
+  }
+}
+/*
+  AND THE WATCH'S OWN REFUSAL, LAST, SO IT IS THE THING A READER LEAVES WITH
+  (#2763). It sits at the FOOT rather than at the head on purpose: the blocks
+  above it are the receipt this run exists to leave, and a refusal printed over
+  the top of them reads as though they were never taken.
+*/
+if (watchProblems.length > 0) {
+  say("");
+  say("  *** THE DEPLOY NEVER CONFIRMED ***");
+  for (const line of watchProblems) say(`  ! ${line}`);
+  say("  Everything above was read off the SERVICE, the production database and the bucket,");
+  say("  so it is true of production as it stands — and NOTHING above is a claim about this");
+  say("  push having landed. Re-run the rite once the deploy has resolved to apply the");
+  say("  migration plan and take a health reading.");
 }
 say("─".repeat(72));
 /*
@@ -2072,7 +2241,14 @@ say("─".repeat(72));
   `RITE EXIT STATUS: OK`.
 */
 process.exit(
-  positions.mismatches.length + schema.problems.length + assets.problems.length + tracker.problems.length === 0
+  positions.mismatches.length
+    + schema.problems.length
+    + assets.problems.length
+    /* ⚠ `?? 0` is the UNPROBED tracker and NOT a clean one (#2763) — the
+       unconfirmed road contributes its own non-zero term one line down, so a
+       run that skipped the probe can never exit 0 on the strength of it. */
+    + (tracker?.problems.length ?? 0)
+    + watchProblems.length === 0
     ? 0
     : 1,
 );

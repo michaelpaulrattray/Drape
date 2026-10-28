@@ -123,6 +123,65 @@ describe("#1726 · the lock refuses a second rite in the same checkout", () => {
     expect(readHolder(RITE_LOCK_PATH, fs)?.pid).toBe(43552);
   });
 
+  it("⚠ it says HOW LONG the holder has held it, and bounds the figure (#2763)", () => {
+    /*
+      On 2026-10-28 a rite whose watch had outlived its answer by twenty-five
+      minutes held this lock for the whole of them, and the next rite read
+      "another deploy rite is already running" - correct, and silent about the
+      one thing a reader needed: it had been running for most of an hour.
+
+      ⚠ THE FIGURE IS A READING AND NEVER A VERDICT. A long-held lock is an
+      ordinary slow deploy far more often than a stuck rite - the slowest deploy
+      measured is 41.3 minutes (#1519) and the watch's ceiling is 50 - so the
+      message states the elapsed time, states what bounds it, and stops.
+    */
+    const started = "2026-10-28T17:24:25.000Z";
+    const why = riteLockRefusal(
+      holderAt(43552, { startedAt: started }),
+      RITE_LOCK_PATH,
+      new Date("2026-10-28T18:15:00.000Z"),
+    );
+    expect(why).toContain("held for 50 minutes");
+    expect(why).toContain("41.3 minutes");
+    expect(why).toContain("50-minute ceiling");
+    /* ⚠ AND IT STILL MAY NOT INVITE A DELETE ON A DURATION. That is the
+       whole risk of printing an elapsed figure beside a lock, so the arm that
+       guards it reads the same sentence this one adds to. */
+    expect(why).toContain("reading rather than a reason to clear anything");
+    expect(why).toContain("Wait for that");
+  });
+
+  it("one minute is singular, and a minute-zero holder still gets the clause", () => {
+    const why = riteLockRefusal(
+      holderAt(43552, { startedAt: "2026-10-28T17:24:25.000Z" }),
+      RITE_LOCK_PATH,
+      new Date("2026-10-28T17:25:30.000Z"),
+    );
+    expect(why).toContain("held for 1 minute");
+    expect(why).not.toContain("held for 1 minutes");
+  });
+
+  it("⚠ an unreadable or future startedAt adds NOTHING rather than guessing", () => {
+    /*
+      `readHolder` keeps an unparseable `startedAt` as the literal string
+      "(unrecorded)", and a clock skew between two machines sharing a checkout
+      can put a holder in the future. Printing "held for 0 minutes" over either
+      would be a manufactured number on the one message whose job is to stop
+      somebody deleting a live rite's lock.
+    */
+    for (const startedAt of ["(unrecorded)", "not a date", "2026-10-28T19:00:00.000Z"]) {
+      const why = riteLockRefusal(
+        holderAt(43552, { startedAt }),
+        RITE_LOCK_PATH,
+        new Date("2026-10-28T18:15:00.000Z"),
+      );
+      expect(why, `"${startedAt}" produced an elapsed clause`).not.toContain("held for");
+      /* POSITIVE CONTROL - the refusal itself is still the refusal, so the arm
+         above is reading an absent clause and not an absent message. */
+      expect(why).toContain("another deploy rite is already running");
+    }
+  });
+
   it("takes over a STALE lock whose pid is gone, and says whose it was", () => {
     const fs = fakeFs();
     expect(acquire(fs, 43552, () => true).ok).toBe(true);

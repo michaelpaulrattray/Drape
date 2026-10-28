@@ -45,7 +45,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { watchOutcome } from "../scripts/lib/deployWatch.mts";
+import { judgeServedBuild, watchOutcome } from "../scripts/lib/deployWatch.mts";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const read = (relative: string): string => readFileSync(resolve(ROOT, relative), "utf8");
@@ -210,7 +210,12 @@ describe("the rite's watch is a deadline, and it is wide enough", () => {
        shape this repository has been bitten by most. */
     expect(statement("watchOutcome({")).toContain("watchOutcome({");
     expect(statement("settled: watchSettled")).toContain("settled: watchSettled");
-    expect(statement('if (outcome.kind !== "success") die(outcome.why);')).toBeTruthy();
+    /* ⚠ THIS READ `if (outcome.kind !== "success") die(outcome.why);` UNTIL
+       #2763 SPLIT THE TWO NON-SUCCESS ROADS APART. A terminal non-SUCCESS still
+       refuses here; the unsettled road is carried to the receipt instead, and
+       its own arms are in the describe below. */
+    expect(statement('if (outcome?.kind === "failed") die(outcome.why);')).toBeTruthy();
+    expect(statement("judgeServedBuild({")).toBeTruthy();
     /* And the sentence is not ALSO written out at the call site, or the two would
        drift and the tested one would be the copy nobody reads. */
     const written = lines.filter((line) => line.includes("die(`the deploy ended"));
@@ -223,5 +228,295 @@ describe("the rite's watch is a deadline, and it is wide enough", () => {
        loop knows which exit it took. */
     expect(statement("let watchSettled = false;")).toBeTruthy();
     expect(statement("watchSettled = true;")).toBeTruthy();
+  });
+});
+
+/**
+ * #2763 — THE WATCH OUTLIVED THE ANSWER BY ELEVEN MINUTES, AND LOST THE RECEIPT.
+ *
+ * On 2026-10-28 the rite refused a deploy that had succeeded. Each timestamp was
+ * read at an artifact rather than inferred:
+ *
+ *   · deployment `441a3f3b` created                      17:28:07Z
+ *   · production began serving it           17:56:04Z – 17:56:35Z
+ *     (`/api/health` every 30s; `uptime` fell 5,569s → 622s, so a new process
+ *     and not the old one answering 200 — #296)
+ *   · Railway's API recorded SUCCESS                     18:03:50Z
+ *   · the watch gave up, reporting DEPLOYING    18:14:26Z – 18:18:08Z
+ *
+ * The deploy was real and slow (35m43s) and the 50-minute ceiling was never
+ * reached, so neither the length nor the window is the finding — #1519 already
+ * answered those. **The finding is that Railway's API lags its own service**: at
+ * 17:57:30Z, a minute after the edge had cut over, `deployment list` still said
+ * `DEPLOYING` with an `updatedAt` of 17:44:07Z.
+ *
+ * Working law 1 decides which to believe: the service is the artifact, the API
+ * is a claim about it. `/api/health` carries the answering process's own
+ * `RAILWAY_GIT_COMMIT_SHA`, so a reading of the pushed sha is not an inference
+ * about the API's state — it is the thing that state is about.
+ *
+ * # ⚠ Two cases, and a repair for one does nothing for the other
+ *
+ * The card's own comment is explicit about this and these arms are written to
+ * it. Edition 767's deployment sat `QUEUED` for thirty minutes with
+ * `regions: []` — no builder had taken it at all. There the service genuinely is
+ * NOT serving the new build and the watch's verdict is RIGHT, so no amount of
+ * asking the service helps. What that road needed was the other half: the run
+ * writes the post-deploy part of its receipt (the flag comparison, the migration
+ * plan, the table and index counts, the static-asset check — every one of them a
+ * read of the service, the production database or the bucket) BEFORE refusing.
+ */
+describe("judgeServedBuild — the service as the second witness", () => {
+  const SHIPPED = "606e1df25a1b3c4d5e6f708192a3b4c5d6e7f809";
+  const CONTEXT = { shippedSha: SHIPPED, baseUrl: "https://drape-production-0232.up.railway.app" };
+
+  it("⚠ the pushed sha answering IS the deploy landed — the whole card", () => {
+    const verdict = judgeServedBuild({
+      ...CONTEXT,
+      reading: { kind: "answered", build: SHIPPED, uptime: 622 },
+    });
+    expect(verdict.kind).toBe("landed");
+    const said = verdict.lines.join(" ");
+    /* It says WHY it outranks the API, in words that make the reasoning
+       checkable rather than as an assertion of authority. */
+    expect(said).toContain("606e1df2");
+    expect(said).toContain("the service is the artifact");
+    expect(said).toContain("working law 1");
+    /* And the real uptime, as corroboration beside the sha. */
+    expect(said).toContain("622.0s");
+  });
+
+  it("⚠ a LOW uptime is NOT a condition — a slow rite must not read a live build as stale", () => {
+    /*
+      The tempting second clause is "…and the uptime is low". It is wrong once
+      the sha is readable: uptime answers *which process* only when the build
+      cannot be seen, which was the pre-#508 road. A threshold on it would make
+      this verdict depend on how long the RITE took to arrive — the slower the
+      watch, the likelier it would call a correctly-serving build stale, which is
+      backwards for a verdict whose whole population is slow watches.
+
+      5,569s is the uptime the OLD process reported in the real incident, used
+      here as the most hostile value available: on the pushed sha it still has to
+      read as landed.
+    */
+    const verdict = judgeServedBuild({
+      ...CONTEXT,
+      reading: { kind: "answered", build: SHIPPED, uptime: 5569 },
+    });
+    expect(verdict.kind).toBe("landed");
+  });
+
+  it("⚠ ANOTHER sha answering is not landed — the QUEUED case, where the watch is right", () => {
+    /* Edition 767: the deployment never started, so the old build is serving and
+       refusing is correct. The verdict's job here is only to NAME what is
+       serving, so a reader does not have to go and look. */
+    const verdict = judgeServedBuild({
+      ...CONTEXT,
+      reading: { kind: "answered", build: "8ac31864f0a1b2c3d4e5f60718293a4b5c6d7e8f", uptime: 5569 },
+    });
+    expect(verdict.kind).toBe("not-landed");
+    const said = verdict.lines.join(" ");
+    expect(said).toContain("8ac31864");
+    expect(said).toContain("606e1df2");
+    expect(said).toContain("not taking traffic");
+  });
+
+  it("silence is not a verdict, and says so in those words", () => {
+    /* `productionHealthProbe.mts`'s distinction, and it matters more here: a
+       dropped connection says nothing about which build is serving, and reading
+       it as "not landed" would be a claim built out of nothing. The refusal
+       stands either way — what changes is what the receipt may say. */
+    const verdict = judgeServedBuild({ ...CONTEXT, reading: { kind: "silent" } });
+    expect(verdict.kind).toBe("not-landed");
+    const said = verdict.lines.join(" ");
+    expect(said).toContain("said nothing");
+    expect(said).toContain("NOTHING is known");
+    expect(said).toContain("silence, not a verdict");
+  });
+
+  it("a payload with no build at all is not landed either (invariant 7's shape)", () => {
+    /* `readingOf` keeps an absent `build` absent rather than stringifying it,
+       and a process that cannot say which commit it is cannot prove it is mine —
+       the same rule `decideWatch` applies to an unattributed deployment row. */
+    const verdict = judgeServedBuild({
+      ...CONTEXT,
+      reading: { kind: "answered", build: null, uptime: 12 },
+    });
+    expect(verdict.kind).toBe("not-landed");
+    expect(verdict.lines.join(" ")).toContain("names no build");
+  });
+
+  it("an unreadable uptime is stated as unread, never printed as a number", () => {
+    const verdict = judgeServedBuild({
+      ...CONTEXT,
+      reading: { kind: "answered", build: SHIPPED, uptime: Number.NaN },
+    });
+    expect(verdict.kind).toBe("landed");
+    expect(verdict.lines.join(" ")).toContain("(unread)");
+    expect(verdict.lines.join(" ")).not.toContain("NaN");
+  });
+
+  it("a truncated build field still matches, and seven characters is the floor", () => {
+    /*
+      Both sides are full shas on every road today, so this is tolerance rather
+      than something anything relies on. The floor is the point: below git's own
+      abbreviation length a prefix match is a coincidence, and a verdict that
+      accepted one could call an unrelated build "mine".
+    */
+    expect(judgeServedBuild({ ...CONTEXT, reading: { kind: "answered", build: "606e1df", uptime: 1 } }).kind)
+      .toBe("landed");
+    expect(judgeServedBuild({ ...CONTEXT, reading: { kind: "answered", build: "606e1d", uptime: 1 } }).kind)
+      .toBe("not-landed");
+    /* NEGATIVE CONTROL at the same length — seven characters that are not the
+       pushed sha's seven must not match, or the arm above passes on length. */
+    expect(judgeServedBuild({ ...CONTEXT, reading: { kind: "answered", build: "8ac3186", uptime: 1 } }).kind)
+      .toBe("not-landed");
+  });
+
+  it("case does not decide it", () => {
+    expect(judgeServedBuild({
+      ...CONTEXT,
+      reading: { kind: "answered", build: SHIPPED.toUpperCase(), uptime: 1 },
+    }).kind).toBe("landed");
+  });
+
+  it("⚠ it never answers the HEALTH question, on any road", () => {
+    /*
+      It asks WHICH build is answering and leaves IS IT WELL to the three
+      readings that follow. Folding them together would give the deploy's
+      correctness gate two owners, and a `status` this module does not recognise
+      would quietly decide a deploy. So no road of this verdict may use the
+      vocabulary of health at all.
+    */
+    const readings = [
+      { kind: "answered" as const, build: SHIPPED, uptime: 10 },
+      { kind: "answered" as const, build: "8ac31864f0a1b2c3d4e5f60718293a4b5c6d7e8f", uptime: 10 },
+      { kind: "answered" as const, build: null, uptime: 10 },
+      { kind: "silent" as const },
+    ];
+    for (const reading of readings) {
+      const said = judgeServedBuild({ ...CONTEXT, reading }).lines.join(" ").toLowerCase();
+      for (const word of ["healthy", "unhealthy", "503", "latency"]) {
+        expect(said, `a ${reading.kind} reading now judges health: "${word}"`).not.toContain(word);
+      }
+    }
+  });
+});
+
+describe("#2763 · the unconfirmed road keeps its receipt, and claims nothing", () => {
+  const rite = read("scripts/deploy-rite.mts");
+  const lines = rite.split(/\r?\n/);
+  const statement = (contains: string): string => {
+    const found = lines.filter((line) => line.includes(contains) && !line.trim().startsWith("*"));
+    expect(found, `no statement contains "${contains}" — this arm is measuring nothing`).toHaveLength(1);
+    return found[0]!;
+  };
+
+  it("⚠ the watch no longer ENDS the run on the unsettled road", () => {
+    /*
+      The arm that is the second half of the card. `die()` at the watch threw
+      away the flag comparison, the migration plan, the schema counts and the
+      asset check — every one of which reads the SERVICE, the production database
+      or the bucket, and none of which depends on this push having landed. It is
+      the rite's own argument at its foot, one step earlier: *"dying at step 5
+      would destroy the receipt and change nothing about production."*
+    */
+    expect(rite, "the old unconditional refusal is back")
+      .not.toContain('if (outcome.kind !== "success") die(outcome.why);');
+    expect(statement('if (outcome?.kind === "failed") die(outcome.why);')).toBeTruthy();
+    /* And the refusal is CARRIED rather than dropped: a road that printed
+       nothing at all would be worse than the die() it replaced. */
+    expect(statement("const watchProblems: readonly string[] = served")).toBeTruthy();
+  });
+
+  it("⚠ the unconfirmed road is in the exit arithmetic — it can never exit 0", () => {
+    const finalExit = rite.slice(rite.lastIndexOf("process.exit("));
+    expect(finalExit).toContain("watchProblems.length");
+    /* POSITIVE CONTROL — the slice is the exit arithmetic and not a stray
+       mention, so the reading above is a reading. */
+    expect(finalExit).toContain("positions.mismatches.length");
+  });
+
+  it("⚠ health is NOT READ on it, so no old process can pass as the new one (#296)", () => {
+    /* Three 200s off the OLD build, with its own uptime anchor, is #296's trap
+       written into a receipt as a verification. An unread check is stated as
+       unread; it is never inferred. */
+    expect(statement("const health = !served ? null : await probeProductionHealth({")).toBeTruthy();
+    expect(statement("const healths = health ? health.readings : null;")).toBeTruthy();
+  });
+
+  it("⚠ its receipt never prints the word SUCCESS, and says what WAS read", () => {
+    /* `deploy SUCCESS · health ×3 — 200` was unconditional, so a run that
+       reached the receipt had already said it, whatever it had actually seen. */
+    const receipt = rite.slice(rite.indexOf("6. the receipt"));
+    expect(receipt.length, "the receipt could not be sliced out — this arm is measuring nothing")
+      .toBeGreaterThan(200);
+    expect(receipt).toContain("deploy NOT CONFIRMED");
+    expect(receipt).toContain("health NOT READ and the tracker NOT PROBED");
+    expect(receipt).toContain("*** THE DEPLOY NEVER CONFIRMED ***");
+    /* AND THE WITNESS ROAD IS ITS OWN WORD TOO — the API never said SUCCESS
+       there either, so neither may the receipt. */
+    expect(receipt).toContain("SERVING (Railway's API never settled");
+  });
+
+  it("⚠ NO DEPLOYMENT ROW joins the same road — #2763's own law-7 sweep", () => {
+    /*
+      THE SIBLING THE SWEEP FOUND, and it was not the incident's own road.
+
+      `if (!deployment) die(…)` fired when the watch ran its whole ceiling
+      without Railway ever creating a row for the pushed commit. Its sentence
+      was already right — *"the push LANDED and no build of it was seen"* — and
+      that is the unsettled road's situation word for word: the push is out of
+      our hands, so what the rite does next is a question about the RECEIPT and
+      not about production. The exit was the defect, not the words.
+
+      So the row-less road asks the service too (the listing may simply have
+      been late or unreadable while the build was serving all along) and carries
+      its refusal to the receipt when the service agrees with it.
+    */
+    expect(rite, "the row-less refusal is an early exit again")
+      .not.toContain('die(priorDeployment');
+    expect(statement("const noDeploymentRow = deployment")).toBeTruthy();
+    /* It is in the carried problems, so it still costs the run its exit code —
+       a refusal that printed and exited 0 would be worse than the die(). */
+    const carried = rite.slice(rite.indexOf("const watchProblems"), rite.indexOf("4. health, THREE TIMES"));
+    expect(carried.length, "the carried block could not be sliced out — this arm is measuring nothing")
+      .toBeGreaterThan(80);
+    expect(carried).toContain("noDeploymentRow ??");
+  });
+
+  it("⚠ and it asks the SERVICE on that road too, not only on the unsettled one", () => {
+    /* A sweep that moved the exit without moving the witness would leave the
+       row-less road refusing while production served the commit — the exact
+       false refusal this card is about, one branch over. */
+    expect(statement("const servedVerdict = outcome === null || outcome.kind === \"unsettled\"")).toBeTruthy();
+  });
+
+  it("⚠ `watchOutcome` keeps its three roads — the row-less case is NOT folded in", () => {
+    /*
+      That verdict is a pure function of (did the loop settle, what did the last
+      ROW say). There is no row here to say anything, so a fourth road would
+      make `status` optional on a verdict all three of whose sentences quote it.
+      The composition belongs at the call site, and the module's contract is
+      asserted here so a later tidy-up cannot quietly widen it.
+    */
+    const watch = read("scripts/lib/deployWatch.mts");
+    const kinds = watch.match(/kind: "(success|failed|unsettled)"/g) ?? [];
+    expect(kinds.length, "watchOutcome's roads could not be counted — this arm is measuring nothing")
+      .toBeGreaterThan(2);
+    expect(watch).not.toContain("status?: string");
+  });
+
+  it("⚠ the witness reads the service with a TIMEOUT it clears (#1177, #1517)", () => {
+    /* A bare fetch against a host that accepts and never answers measured 306.6
+       seconds. This read sits after the push and before the receipt, which is
+       the worst place in the script to stall. */
+    const block = rite.slice(rite.indexOf("3a. the SECOND WITNESS"), rite.indexOf("4. health, THREE TIMES"));
+    expect(block.length, "the witness block could not be sliced out — this arm is measuring nothing")
+      .toBeGreaterThan(200);
+    expect(block).toContain("fetchWithClearedTimeout(`${BASE}/api/health`, {}, 10_000)");
+    /* And it is asked ONCE: this is not a second health probe, and a retry here
+       would be a second owner of the question `probeProductionHealth` owns. */
+    expect(block.match(/fetchWithClearedTimeout\(/g) ?? []).toHaveLength(1);
   });
 });

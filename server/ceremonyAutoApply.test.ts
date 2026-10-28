@@ -33,6 +33,7 @@ import {
   type MissingObjects,
   type ParsedStatement,
   applyPlan,
+  autoApplyMigrations,
   classifyStatement,
   planApply,
   statementsFrom,
@@ -454,7 +455,26 @@ describe("the rite is the only caller, and it is wired", () => {
        carries its own `DRY` branch as the second guard. */
     expect(RITE.indexOf("DRY RUN — stopping before the watch"))
       .toBeLessThan(RITE.indexOf("5a-bis"));
-    expect(RITE).toContain("dry: DRY,");
+    expect(RITE).toContain("dry: DRY || !served,");
+  });
+
+  it("⚠ AND A DEPLOY THAT NEVER CONFIRMED PLANS WITHOUT APPLYING — the THIRD guard (#2763)", () => {
+    /*
+      The rite stopped dying at its watch, so the migration step is now reachable
+      on a road where nothing knows which build is serving. A run in that state
+      must not write to production: it cannot say what its write is for.
+
+      ⚠ The cost of not writing is close to nothing and that is read at the code
+      rather than assumed — `scripts/predeploy-migrate.mts` runs as the service's
+      own pre-deploy command on EVERY road since #508, applying these same
+      additive statements through this same lib before the cutover. This step is
+      the rite road's backstop, not the only applier.
+    */
+    expect(RITE).toContain("dry: DRY || !served,");
+    /* AND THE LINE SAYS WHICH REASON IT WAS. `(--dry: nothing was written)` was
+       hard-coded in the applier, so the unconfirmed road would have printed a
+       sentence about a flag the operator never passed. */
+    expect(RITE).toContain('dryNote: DRY ? "--dry" : "the deploy never confirmed",');
   });
 
   it("⚠ a refusal or a failure becomes a PROBLEM, which is what costs the run its exit code", () => {
@@ -462,5 +482,74 @@ describe("the rite is the only caller, and it is wired", () => {
        would be a warning nobody reads on the one road where the consequence is
        a production database. */
     expect(RITE).toContain("...migration.problems");
+  });
+});
+
+
+/**
+ * #2763 — WHY NOTHING WAS WRITTEN, IN THE LINE'S OWN WORDS.
+ *
+ * `(--dry: nothing was written)` was hard-coded in the summary, which was true
+ * while `--dry` was the only reason to plan without applying. The rite now has
+ * a second: a run whose watch gave up cannot say which build is serving, so it
+ * must not write to production — and on that run the operator passed no `--dry`
+ * at all, so the old sentence would have been a false statement on a receipt.
+ *
+ * ⚠ THIS BLOCK EXISTS BECAUSE SABOTAGE FOUND THE HOLE, and the hole is worth
+ * recording: the rite-side arm above reads that the rite PASSES `dryNote`, and
+ * reverting the APPLIER to ignore it left every suite green. A caller proven to
+ * pass an argument nothing proves is read is invariant 7 one layer in.
+ */
+describe("#2763 · the dry summary names its own reason", () => {
+  const PENDING: MissingObjects = { tables: ["t"], columns: [], indexes: [] };
+  const SQL = "CREATE TABLE `t` (\n`id` int NOT NULL\n);";
+
+  const drivePlanOnly = async (dryNote?: string) => {
+    const sent: string[] = [];
+    const report = await autoApplyMigrations({
+      missing: PENDING,
+      readBack: async () => ({ tables: [], columns: [], indexes: [] }),
+      execute: async (sql) => { sent.push(sql); },
+      listMigrations: () => [{ name: "0001_fixture.sql", sql: SQL }],
+      dry: true,
+      ...(dryNote === undefined ? {} : { dryNote }),
+    });
+    return { report, sent };
+  };
+
+  it("⚠ CONTROL — the fixture really has something to apply, so the summary is a reading", async () => {
+    const { report } = await drivePlanOnly();
+    expect(report.lines.join(" ")).toContain("would apply");
+    expect(report.applied).toBe(0);
+  });
+
+  it("the caller's reason reaches the line, in its own words", async () => {
+    const { report, sent } = await drivePlanOnly("the deploy never confirmed");
+    const said = report.lines.join(" ");
+    expect(said).toContain("(the deploy never confirmed: nothing was written)");
+    /* AND IT IS NOT ALSO CALLED `--dry` — the whole point is that no `--dry` was
+       passed on the road this reason exists for. */
+    expect(said, "the line still claims --dry on a run that had none").not.toContain("--dry");
+    /* A planned write is a write that did not happen. */
+    expect(sent).toEqual([]);
+  });
+
+  it("`--dry` stays the default, so the flag road reads exactly as it did", async () => {
+    const { report, sent } = await drivePlanOnly();
+    expect(report.lines.join(" ")).toContain("(--dry: nothing was written)");
+    expect(sent).toEqual([]);
+  });
+
+  it("⚠ the note changes the WORDS and never the behaviour", async () => {
+    /* A reason string that could switch a plan into a write would be the worst
+       possible shape for this argument, so both roads are compared whole. */
+    const flagged = await drivePlanOnly();
+    const reasoned = await drivePlanOnly("the deploy never confirmed");
+    expect(reasoned.report.applied).toBe(flagged.report.applied);
+    expect(reasoned.report.problems).toEqual(flagged.report.problems);
+    expect(reasoned.report.blocking).toEqual(flagged.report.blocking);
+    expect(reasoned.report.lines).toHaveLength(flagged.report.lines.length);
+    expect(reasoned.sent).toEqual([]);
+    expect(flagged.sent).toEqual([]);
   });
 });
