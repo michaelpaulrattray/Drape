@@ -1,7 +1,7 @@
 {
-  "edition": 763,
-  "updatedAt": "2026-10-28T13:25:37.315Z",
-  "shift": "THE FEATURE PANEL NOW READS LIKE A PERSON DESCRIBING YOUR CHARACTER, INSTEAD OF A LIST OF EVERYTHING WE FOUND.\n\nOn your cyberpunk operative the panel used to put a lip ring beside her lips rather than\non them, give each garment a row of its own, and make a row out of eye makeup. Tonight it\nreads like this: her eyes and her lips, with the lip ring tucked under the lips where you\nwould look for it; her hair; her skin, with \"deep lines across the brow and cheeks\" written\nbeside it; one row called OUTFIT holding the robe, the scarf, the pendant, the strap and the\ncharm together, with the rough stitching noted on it; and then the two things that make her\nher — the third eye and the jaw hardware — under \"also on this character\". Makeup has no row\nat all, which is what you asked for: it is something you change with words.\n\nNothing in this is a list we wrote down. The reading itself says what each thing IS and what\nit sits on, per character, and the panel groups by that — which is your own sentence about\nnot being confined to a fixed list, built rather than quoted. It is also why the implants\nyou warned about cannot end up in the outfit: whether something is clothing is judged from\nthe picture, and body hardware never reads as clothing.\n\nTwo smaller things came with it. Freckles, stubble and stitching are no longer cut out as if\nthey were objects — they have no outline, so we stopped asking, and their words go onto the\nthing they sit on instead. And across your three test characters that means we buy twenty-five\nreadings where we used to buy twenty-nine.\n\nI looked at it in the running app before it shipped, in both the light and the dark theme, and\nit caught something no test could have: the little arrow that opens a row was announcing itself\nas \"Show each of their outfit\", which is not English. It says \"Show more about their outfit\" now.\n\nWhat is still owed on this is your eyes. Tonight's pictures were made with stand-in cut-outs to\ncheck the shape of the panel, so they say nothing about how good the cut-outs themselves are.\nThat is the last piece of this job and it comes to you on a real character.",
+  "edition": 764,
+  "updatedAt": "2026-10-28T14:34:21.065Z",
+  "shift": "THE FOLLOW YOU ASKED FOR ON 16 OCTOBER HAS NOW ACTUALLY BEEN TRIED, AND IT WORKS.\n\nIt has been switched on for your account for thirteen days and nobody had ever put it\nthrough the real thing. Tonight I did, on a test account, with real pictures and real money\nof ours — not a simulation.\n\nWhat it is meant to do: you edit a character, then press Follow to get more people like\nthem. The words the new casting is made from get quietly rewritten so they carry the\ndirection your edits took, instead of the paragraph you started with a dozen edits ago.\n\nI took a lizard man who had been given deeper emerald scales, slit pupils and a heavier\nbrow, and whose horns had been taken off. Pressed Follow. Eight new lizard men came back.\nI looked at all eight myself:\n\n  · every one of them has the deep emerald scales, the slit pupils and the heavy brow —\n    so the direction carried, which is the whole point;\n  · not one of them has the notch that was missing from that one lizard man's left ear —\n    so the thing belonging to a single face was correctly left behind;\n  · they are eight different people, not eight copies — different skulls, crests, muzzles.\n\nI also checked the opposite case, because one result on its own proves nothing: followed a\ncharacter with NO edits, in the same casting, with everything else the same. Its words came\nback untouched, letter for letter. That is what it is supposed to do.\n\nONE THING IS NOT RIGHT, AND IT IS ABOUT WORDS RATHER THAN PICTURES.\n\nThe rewritten brief sometimes ends with a sentence you never wrote, saying what the\ncharacter does NOT have — \"with no horns.\", or on another character \"They wear no\nglasses.\" It happened on two of the three I tried. It comes from a note the studio keeps\nto itself so that the next edit does not put the horns back on, and that note is right\nwhere it lives — it has just followed the words out onto your screen, into the box you can\nread and type in. Nobody writes a casting brief that way.\n\nI checked whether it does any harm to the pictures and it does not: those eight lizard men\ncame from exactly that brief and not one of them grew horns. So it is a tidying job, not a\nfault, and it is filed as its own job rather than quietly bundled in with tonight's.\n\nNothing changed in the product tonight. This was going and looking.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-28T13:26:39.552Z",
+      "readAt": "2026-10-28T14:33:21.166Z",
       "items": [
         {
           "issueNumber": 30,
@@ -10944,6 +10944,13 @@
   ],
   "problems": [
     {
+      "id": "follow-brief-absence-2751",
+      "severity": "warning",
+      "state": "open",
+      "title": "After you edit a character and press Follow, your own brief can gain a line you never wrote (#2751)",
+      "detail": "Live on your account. The new casting's words can end with a sentence saying what the character does NOT have — \"with no horns.\", \"They wear no glasses.\" — which came from a note the studio keeps to itself so a later edit does not undo your removal. It is in the box you can read and type in, and nobody writes a brief that way. Measured tonight on two of three characters. It does NOT spoil the pictures: the eight that came back from exactly that brief had no horns. Tidying, not a fault."
+    },
+    {
       "id": "team-stopped-unseen-2719",
       "severity": "warning",
       "state": "open",
@@ -11453,7 +11460,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-28T13:26:39.552Z",
+    "readAt": "2026-10-28T14:33:21.166Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11543,7 +11550,7 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "its own done-when drive and frames — a seat, not his word. ~~#2582 and #2578, the two must-fixes before this flag widens~~ are BOTH CLOSED (2026-10-16, `forema…"
+          "because": "the relay's eye on the frames — nothing else, and not his word."
         }
       },
       {
