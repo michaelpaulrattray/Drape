@@ -348,9 +348,14 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "same 'widen the pair' word) — the keeper makes every later look free",
   },
   CASTING_FACE_DISCOVERY_SCOPE: {
-    position: UNSET,
+    position: "users:1",
     why:
-      "built dark 2026-10-16 (#2566 slice 1, the reader half of the design he "
+      "users:1 since 2026-10-28, HIS ACCOUNT ONLY, set by the relay for his eye "
+      + "on real panels -- his word in chat, verbatim: 'yes obviously i need to "
+      + "chekc it right', and 'never ask me to switch things on for my account "
+      + "just do it'. Widening past his account is still his word. The record "
+      + "before that flip follows unchanged: "
+      + "built dark 2026-10-16 (#2566 slice 1, the reader half of the design he "
       + "approved on #2532). It has never been on for any account. It changes "
       + "what the panel draws as well as what a reading costs, so the flip is "
       + "his eye on real panels — judged beside #2565's twelve-edit chains, "
