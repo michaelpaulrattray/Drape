@@ -47,7 +47,15 @@ on:
   # the pull request that adds it cannot demonstrate this road. The command is
   # driven by `server/productionCurrency.test.ts`, and the schedule below fires
   # within three hours of the merge either way.
-  workflow_run:
+  #
+  # ⚠ THE SUPPRESSION BELOW IS AT ITS LINE AND CARRIES ITS REASON, which is the
+  # workflow lint's own rule (`scripts/workflow-lint.sh`, zizmor on the pedantic
+  # persona). `workflow_run` is dangerous when a job checks out or executes the
+  # TRIGGERING ref, because that ref can come from a fork. Neither applies here:
+  # `deploy-verify` fires only on `push: branches: [main]`, so no fork is ever in
+  # the picture, this job pins `ref: main` rather than reading a ref off the
+  # event, and nothing from the triggering run reaches a shell below.
+  workflow_run: # zizmor: ignore[dangerous-triggers] — see the reason above: no fork can trigger deploy-verify, and this job checks out `main`, never the event's ref
     workflows: [deploy-verify]
     types: [completed]
   # The net, for everything a push-shaped trigger cannot see: a production that
@@ -91,12 +99,11 @@ jobs:
       contents: read # the tree this command lives in, checked out at `main`
       issues: write # `gh issue create` files at most ONE production-behind card, and `gh label create` makes that label on its first real run
     steps:
-      # zizmor: ignore[dangerous-triggers] — `workflow_run` is dangerous when it
-      # checks out or executes the TRIGGERING ref, because that ref can come
-      # from a fork. Neither applies here: `deploy-verify` fires only on
-      # `push: branches: [main]`, so there is no fork in the picture at all,
-      # and this job pins `ref: main` rather than reading anything from the
-      # event. No input from the triggering run reaches a shell below.
+      # ⚠ `ref: main` IS LOAD-BEARING AND NOT A DEFAULT. On a `workflow_run`
+      # event the checkout would otherwise follow the event's own sha; pinning
+      # `main` is what makes the trigger safe (see the suppression on it above)
+      # and is also simply correct — the question is about the tip of `main`, so
+      # the tooling that asks it should be the tip's.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: main

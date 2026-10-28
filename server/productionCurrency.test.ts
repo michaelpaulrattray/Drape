@@ -452,10 +452,33 @@ const executable = workflow
 
 describe("the workflow is what invokes it", () => {
   it("fires off a finished deploy-verify, on a schedule, and by hand", () => {
-    expect(executable).toMatch(/workflow_run:\s*\n\s*workflows:\s*\[deploy-verify\]/);
+    /* `[^\n]*` because the trigger line carries a trailing zizmor suppression,
+       which the comment strip above deliberately leaves alone — it strips whole
+       comment LINES only, since a cleverer strip would mangle a `#` inside a
+       bash string. */
+    expect(executable).toMatch(/workflow_run:[^\n]*\n\s*workflows:\s*\[deploy-verify\]/);
     expect(executable).toContain("types: [completed]");
     expect(executable).toMatch(/schedule:\s*\n\s*- cron:/);
     expect(executable).toContain("workflow_dispatch:");
+  });
+
+  /*
+    ⚠ THE ONE SECURITY-RELEVANT SUPPRESSION IN THIS FILE, PINNED TO THE FACT
+    THAT JUSTIFIES IT. zizmor's `dangerous-triggers` audit is right in general:
+    a `workflow_run` job that checks out the TRIGGERING ref can be handed a
+    fork's code. The suppression's whole reason is that this job checks out
+    `main` instead — so the two are asserted together, and a later edit that
+    drops `ref: main` while keeping the ignore has to argue with this arm.
+  */
+  it("⚠ suppresses the dangerous-trigger finding at its line, and earns it with `ref: main`", () => {
+    const trigger = /^\s*workflow_run:.*$/m.exec(executable);
+    expect(trigger, "the workflow_run trigger moved").not.toBeNull();
+    expect(trigger![0]).toContain("zizmor: ignore[dangerous-triggers]");
+    /* The reason travels with it — the lint script's own rule. */
+    expect(trigger![0].length).toBeGreaterThan("  workflow_run: # zizmor: ignore[dangerous-triggers]".length);
+    const checkout = /- uses: actions\/checkout@[\s\S]{0,400}?persist-credentials: false/.exec(executable);
+    expect(checkout, "the checkout step moved").not.toBeNull();
+    expect(checkout![0]).toContain("ref: main");
   });
 
   it("⚠ takes the workflow_run road ONLY on a failed verify, never on a cancelled one", () => {
