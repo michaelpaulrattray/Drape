@@ -1,7 +1,7 @@
 {
-  "edition": 756,
-  "updatedAt": "2026-10-28T02:20:00.000Z",
-  "shift": "NOTHING NEEDS YOU AND NOTHING COST ANYTHING. The opening act of the current rung is FINISHED. Cleaning the old studio's machinery out of the paid edit road is done, and tonight the written record of the whole job was finished, checked against the real code and the live service, and closed.\n\nWHAT THAT MEANS IN PLAIN TERMS. Over the last fortnight thirteen pieces of old machinery came out of the road a paid edit travels, and the last six on/off settings that guarded them were retired one at a time on your word of 15 October. Every one of those settings is now gone from the code AND gone from the live service — I read all six off the service by name, and asked for four settings that ARE switched on in the same breath, because a filter that quietly fails reads exactly like a setting that is not there. The four came back; the six came back empty. Nothing a customer can see changed in any of it, which was the point.\n\nAND I CHECKED THAT EACH PIECE IS ACTUALLY LIVE, NOT JUST APPROVED. There are eleven pieces of work behind this job. For each one I proved the version serving customers right now genuinely contains it, rather than trusting that it was signed off. That matters here: a job can be approved and merged and still not be running, and we have been bitten by exactly that before. Nine of the eleven were also read by eye before they shipped; the two that were not changed only a document and a piece of code nothing anywhere called, and neither touched a single screen.\n\nTWO THINGS THE CHECKING CAUGHT, BOTH IN OUR OWN RECORDS. First, six of the pieces had been removed on 16 October and our list still said they were waiting to be done — so anyone reading it to see what was left got the wrong answer for twelve days. Second, one of those retired settings still read like a live setting in our reference book: you had to get three thousand characters into its entry before it said it was gone, and what came first was a description of it working, plus a rule pointing at another setting that is also retired. Both are fixed, and I checked all six retired entries now say so up front rather than buried.\n\nONE THING I DID NOT FIX, ON PURPOSE. Eight places in our notes say that a setting is removed from the live service 'in the same act' as the code being approved. That is wrong and it is the dangerous way round: the setting must come off only once the new version is genuinely running, because the service treats a missing setting as 'off' and would put every customer straight back on the road we just retired. Every one of those eight notes then contradicts itself a sentence later, so the mistake is only in the headline — which is the half anyone actually acts on. It already cost us a job last night. It reaches real code and our own reference document, so it is its own job with its own review rather than something I slip into a records tidy-up.\n\nTHE TWO JOBS AT THE TOP OF YOUR LIST NEED A DESIGN DECISION, NOT BUILDING. Taking anything out of a reference picture, and the tap-to-pick selector, both say in their own bodies that a design pass comes first. They were not marked that way, so the system kept offering them to an ordinary builder, who may not make that call — and that is how one job burned seven sessions earlier this month. Both are marked now, and I proved it works: before the mark the launcher said 'an ordinary shift can take this', after it says 'this needs the design seat'. Nothing about your order or what they do has changed.\n\nAND YOUR FIVE FINDINGS ON THE FACE PANEL ARE NOW VISIBLE ON THIS PAGE. You looked at the panel tonight and gave five — the loading list, the freckles read as the tattoo, the doubled-up rows, makeup not belonging there, and the outfit needing to be one whole thing. The reason that job is held was written in a comment underneath it rather than in the job itself, and this page only reads the job itself, so it could not show you anything. Moved across, in the exact words it was written in. The panel stays switched on for your account so you can keep looking, and your five are still what has to be right before it goes any wider.",
+  "edition": 757,
+  "updatedAt": "2026-10-28T03:09:45.000Z",
+  "shift": "THE TAP-TO-PICK SELECTOR IS DESIGNED AND ITS MOCK IS ON YOUR DESK. You ordered two roads for taking things from a reference picture; this shift wrote the design for the second one - the selector - under all three of your words from today: clothing is in its goal, nothing rides a fixed list, and it is one road with the simple attach-and-say card, never two. THE SHAPE IN ONE BREATH: the moment a picture is attached it is read, and everything found in it gets a small named dot on the picture itself. Tap what you want. Say nothing and the whole look of what you tapped applies - your own rule from August. Type, and your words narrow what is taken. The face never gets a dot and is never cut; one picture per ask, several taps on it. A tap costs nothing. WHAT THE DESIGN SETTLED: the one open tension the old design left (a tap with no words has no noun) is answered by reading the picture up front, so every dot already carries its name and your tap is the confirmation. The cutting road it needs is already built and measured; the one new measurement owed is a small house-money court on real reference photos (about a dollar or two) before the build believes its numbers, because everything so far was measured on our own renders. WHAT IS ON YOUR DESK: one picture-story in both themes - just attached, what it found, two things chosen. If the surface reads right, say so and the build is cut into slices; if anything reads wrong, say which. Nothing was spent this shift and nothing a customer sees changed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-28T02:09:28.949Z",
+      "readAt": "2026-10-28T03:10:41.669Z",
       "items": [
         {
           "issueNumber": 30,
@@ -7539,13 +7539,33 @@
           "caption": "THE LIZARD, which is the hardest of the three. A suit; a denim jacket over the jerkin with the chest strap still visible under it; the jerkin and strap taken off leaving the shirt beneath; and the jerkin in oxblood. The scales, the ridges and the tail are untouched in all four."
         }
       ]
+    },
+    {
+      "id": "reference-selector-mock-14",
+      "title": "Taking things from a picture — the selector's surface, three moments, your eye before any build",
+      "question": "WHAT YOU ARE LOOKING AT — the mock of the tap-to-pick selector (#14), not a live screen. Three moments, left to right: the picture just attached and being read; the things it found, each with a named dot on the picture; and two things chosen — hair and earrings, your own example — with the box saying that nothing typed means the full look of both.\n\nThe photo is a stand-in (one of our own generated test pictures), and the dots are placed by hand to show the surface — in the real thing they come from reading the picture, whatever it holds, never from a menu.\n\nWHAT I AM ASKING: does this surface read right? Three things worth your eye: (1) dots on the picture with names — is that how you want to choose, or too busy on a crowded photo? (2) the 'Whole outfit' affordance beside per-piece dots — right call? (3) the no-words line under the box — plain enough? If it reads right, reply on the card and the build is cut into slices (a small court on real reference photos runs first, house money). If anything reads wrong, say which and the design moves before anything is built.",
+      "state": "open",
+      "filedAt": "2026-10-28T03:09:45.000Z",
+      "issueNumber": 14,
+      "frames": [
+        {
+          "key": "crew-eye/16ff1654-4182-45f0-ba15-f5799c609b4e.png",
+          "arm": "light",
+          "caption": "LIGHT THEME. Left: just attached — while it reads, the only words are what is happening, never a list of guesses. Middle: what it found — named dots on the hair, the earrings, the necklace and the top, with a quiet Whole-outfit chip; the face gets no dot. Right: hair and earrings chosen — chips above the box, and nothing typed takes the full look of both."
+        },
+        {
+          "key": "crew-eye/bbdfe4cd-a244-4200-8bf0-54119fd66329.png",
+          "arm": "dark",
+          "caption": "DARK THEME. The same three moments. The dots and name tags sit on the photograph itself so they read identically in both themes; the panel, chips and button follow the theme."
+        }
+      ]
     }
   ],
   "pipeline": [
     {
       "id": "overlong-value-refusal-2714",
       "title": "An over-long ask says so, instead of telling a customer their clear sentence was unclear (#2714)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2732,
       "note": "Reviewed by hand and HELD with a finding, then repaired the same night: making the refusal instant would have refused edits the product serves today, because the over-long thing is our own answer and the next read usually fits. Now refuses only if the LAST read is still too long. Gate green on the repaired version, all ten checks. Waiting on review again."
     },
@@ -10842,7 +10862,7 @@
     {
       "id": "overlong-account-sentence-2733",
       "title": "An outage at our end keeps saying so, instead of blaming the customer's picture after five tries (#2733)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2734,
       "note": "Gate green in 4.5 minutes. Waiting on review; no shift merges it."
     }
@@ -11351,15 +11371,15 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-28T02:09:28.949Z",
+    "readAt": "2026-10-28T03:10:41.668Z",
     "items": [
       {
         "issueNumber": 14,
         "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
         "urgent": false,
         "held": {
-          "state": "fable",
-          "because": "a Fable seat — a DESIGN DECISION: the build design, then a mock for his eye before any build."
+          "state": "blocked",
+          "because": "YOU — your eye on the mock (eye item `reference-selector-mock-14` on your Desk, both themes). The build design is written: `docs/specs/REFERENCE_SELECTOR_BUILD…"
         }
       },
       {
