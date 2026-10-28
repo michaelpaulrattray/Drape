@@ -163,16 +163,41 @@ export type FacePanelRow = {
   instances: readonly FacePanelInstance[];
 };
 
-/** One side of a pair, as a row of its own inside its parent. */
+/** One side of a pair, or one thing folded under the row it sits on. */
 export type FacePanelInstance = {
   slot: string;
   /** Bare, like every label: "Left eye". */
   name: string;
-  /** How the product speaks about this one — "her left eye". */
+  /** How the product speaks about this one — "their left eye". */
   spoken: string;
   prefill: string;
   words: readonly string[];
   cutout: FacePanelCutout | null;
+  /**
+   * MAY AN ASK BE NARROWED TO THIS CHILD — the SERVER's answer, never this
+   * side's guess (#2566 slice 2, and `PanelRegion.scopable`'s own rule one
+   * surface over).
+   *
+   * ⚠ **Every child used to be one side of a catalogued pair, so sending
+   * `scope` unconditionally was right every time. The grouping breaks that**: a
+   * lip ring folded under Lips, or a jacket under Outfit, is keyed
+   * `discovered:…`, and the refine door answers that `scope_unknown` — a
+   * BAD_REQUEST on a tap we drew. The fact therefore travels from the side that
+   * knows it, exactly as it already does for a rectangle on the photograph.
+   *
+   * ⚠ **Optional, and absent reads as SCOPABLE, which is what every child was
+   * before this field existed.** This server always sends it; what the optional
+   * covers is the other direction of deploy skew — a payload shaped by an older
+   * server reaching a newer bundle — and in that payload every child IS one
+   * side of a pair, so scopable is the correct answer rather than a lenient
+   * one. **The skew that this cannot cover is the opposite one and it is named
+   * rather than hidden**: an in-flight OLDER bundle receiving a folded found
+   * child sends `scope` and gets one BAD_REQUEST on that tap until the page
+   * reloads. The discovery road is `users:1`, so that is one person for one
+   * deploy, and the alternative — holding the grouping back until a bundle
+   * cannot be stale — holds a whole slice for a single refresh.
+   */
+  scopable?: boolean;
 };
 
 /**
@@ -651,7 +676,20 @@ export function FacePanel({
                           entrances, one scoping mechanism — a second way to say
                           "this eye" is a second thing to get wrong.
                         */
-                        const scoped = selection.selected?.scope === instance.slot;
+                        /*
+                          ⚠ **A CHILD THE PRODUCT MAY NOT NARROW TO SENDS NO
+                          SCOPE, AND IS THEREFORE SELECTED BY ITS SLOT RATHER
+                          THAN BY ITS SCOPE** (#2566 slice 2). A found child —
+                          a lip ring under Lips, a jacket under Outfit — is an
+                          ask about that thing in WORDS, so its selection is
+                          about that one child and the parent's row is not lit;
+                          a pair's side still sends the row's slots scoped to
+                          this one, which is what it has always done.
+                        */
+                        const scopable = instance.scopable !== false;
+                        const scoped = scopable
+                          ? selection.selected?.scope === instance.slot
+                          : selection.isSelected(instance.slot);
                         return (
                           <li key={instance.slot}>
                             <button
@@ -667,11 +705,11 @@ export function FacePanel({
                               onBlur={() => selection.hover(null)}
                               onClick={() => {
                                 selection.select({
-                                  slots: row.slots,
+                                  slots: scopable ? row.slots : [instance.slot],
                                   name: instance.name,
                                   spoken: instance.spoken,
                                   prefill: instance.prefill,
-                                  scope: instance.slot,
+                                  ...(scopable ? { scope: instance.slot } : {}),
                                 });
                                 onScope(instance.prefill);
                               }}

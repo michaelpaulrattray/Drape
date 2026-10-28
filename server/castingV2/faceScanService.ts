@@ -68,9 +68,9 @@ import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
 import { captureCastingFaceDiscoveryEnabled, captureCastingScanTableEnabled } from "./castingV2Scope";
-import { discoverFeatures, discoveryCropsOf, type FaceDiscovery } from "./faceDiscovery";
+import { discoverFeatures, discoveryCropsOf, type FaceDiscovery, type FeatureKind } from "./faceDiscovery";
 import { keepScan, serveKeptScan, type KeptScanShape } from "./keptFaceScan";
-import { cutDiscovered, type DiscoveredRegion } from "./pointerCut";
+import { cutDiscovered, type DiscoveredRegion, type NamedNotCut } from "./pointerCut";
 import { cropMask } from "./segmentCuts";
 import sharp from "sharp";
 
@@ -138,6 +138,21 @@ export type ScannedFace = {
    * panel is then what it is today.
    */
   discovered: readonly DiscoveredPanelRow[];
+  /**
+   * WHAT THE READING NAMED AND NOTHING CUT — words with no picture (#2566
+   * slice 2's grouping design, rules 2, 3 and 4).
+   *
+   * Three different things with one shape, and the design sends each somewhere:
+   * a SCATTERED thing has no outline to cut, so its words belong to whatever it
+   * sits on (freckles on skin → the Skin row's words line); MAKEUP gets no row
+   * at all, by his ruling, and travels only as words; and an UNCUT thing was
+   * asked about and produced nothing drawable.
+   *
+   * ⚠ **Empty is the ordinary answer and does NOT mean the reading was thin** —
+   * the flag may be off, or every name may have been cut. It is a record, never
+   * a count of failures.
+   */
+  namedNotCut: readonly NamedNotCut[];
 };
 
 /**
@@ -149,6 +164,17 @@ export type DiscoveredPanelRow = {
   /** The reading's own bare noun. Never derived from the slot. */
   noun: string;
   instance: number;
+  /**
+   * WHAT THE READING SAID IT IS, AND WHAT IT SITS ON — the panel's whole
+   * grouping grammar (#2566 slice 2).
+   *
+   * They travel here because the panel is where the grouping happens and the
+   * panel has no reader: `clothing` is what may enter the one Outfit row, and
+   * `on` is what folds a lip ring under Lips. Neither is ever re-derived from
+   * the noun, which is the rule his ⚠ about the *Collar* implants is about.
+   */
+  kind: FeatureKind;
+  on: string;
   box: PanelBox;
   maskUrl: string;
 };
@@ -266,6 +292,11 @@ async function displayOf(
      panel draws, so a found row and a catalogued one cannot end up two
      different kinds of picture (#2566 slice 2). */
   found: readonly DiscoveredRegion[] = [],
+  /* The words of everything the reading named and nothing cut, carried through
+     for the reason `found` is: one function assembles what the panel reads, so
+     a row's picture and a row's words cannot be built by two different hands
+     (#2566 slice 2). */
+  namedNotCut: readonly NamedNotCut[] = [],
 ): Promise<ScannedFace> {
   const slots = new Map<FeatureSlot, { box: PanelBox; maskUrl: string }>();
   let stencilBytes = 0;
@@ -290,6 +321,8 @@ async function displayOf(
       slot: region.slot,
       noun: region.noun,
       instance: region.instance,
+      kind: region.kind,
+      on: region.on,
       box: region.box,
       maskUrl: `data:image/png;base64,${stencil.toString("base64")}`,
     });
@@ -312,6 +345,7 @@ async function displayOf(
     stencilBytes,
     sides: sidesOf(slots),
     discovered,
+    namedNotCut,
   };
 }
 
@@ -455,6 +489,11 @@ function readingFromKept(kept: KeptScanShape, frameUrl: string): ScannedFace {
       same thing: no found rows, which is today's panel.
     */
     discovered: kept.discovered ?? [],
+    /* The same sentence about words: a kept reading that dropped these would
+       lose the freckles' words off the Skin row on the second look at an
+       unchanged frame. `?? []` is the pre-grouping row and the flag-off row
+       alike, and both route no words, which is today's panel. */
+    namedNotCut: kept.namedNotCut ?? [],
   };
 }
 
@@ -700,6 +739,8 @@ export async function scannedFace(input: {
           slot: region.slot,
           noun: region.noun,
           instance: region.instance,
+          kind: region.kind,
+          on: region.on,
           box: region.box,
           maskUrl: `data:image/png;base64,${stencil.toString("base64")}`,
         }];
@@ -715,11 +756,46 @@ export async function scannedFace(input: {
           stencilBytes: (entry.partial?.stencilBytes ?? 0) + stencil.length,
           sides: sidesOf(slots),
           discovered,
+          /* Read off the entry rather than reset, for `discovered`'s own
+             reason: the words-only names land in ONE write at the end of the
+             pointer road, and a partial that cleared them would drop them if a
+             catalogue row happened to file afterwards. */
+          namedNotCut: entry.partial?.namedNotCut ?? [],
         };
       } catch {
         /* A partial is a courtesy on top of a courtesy — the settled reading
            cuts the same stencil from the same mask a moment later. */
       }
+    };
+
+    /**
+     * THE WORDS WITH NO PICTURE, ONTO THE PARTIAL (#2566 slice 2).
+     *
+     * `fileToPartial`'s sibling, written the same way and for the same reason:
+     * it reads every other field off `entry.partial` and writes a whole new
+     * object, so neither writer has to know the other exists and neither can
+     * clobber the other's half. Single-threaded JavaScript is what makes that
+     * safe — each of these runs to completion between awaits.
+     *
+     * It cuts no stencil and touches no storage, so unlike its sibling it has
+     * nothing that can throw; the shape is kept identical anyway, because the
+     * next hand to add a field here will add it to whichever one it is reading.
+     */
+    const fileWordsToPartial = (said: readonly NamedNotCut[]): void => {
+      const slots = new Map(entry.partial?.slots ?? []);
+      entry.partial = {
+        frameUrl: url,
+        slots,
+        words: entry.partial?.words ?? new Map(),
+        asked: scanPlan().length,
+        found: slots.size,
+        empty: [],
+        failed: [],
+        stencilBytes: entry.partial?.stencilBytes ?? 0,
+        sides: sidesOf(slots),
+        discovered: entry.partial?.discovered ?? [],
+        namedNotCut: said,
+      };
     };
 
     /*
@@ -742,11 +818,24 @@ export async function scannedFace(input: {
     const discover = input.dependencies?.discover === undefined
       ? defaultDiscoverer(input.userId)
       : input.dependencies.discover;
-    const discovering: Promise<readonly DiscoveredRegion[]> = discover === null
-      ? Promise.resolve([])
+    /*
+      BOTH HALVES OF THE READING'S ANSWER, in ONE promise (#2566 slice 2).
+
+      The pointer road produces rows with pictures AND words with none, and the
+      second half only exists because the first one declined to cut something.
+      Two promises would be two things to await and a shape in which one can
+      land without the other — and the settled reading is what gets KEPT, so a
+      reading written down with its rows and without its words is a reading that
+      lost the freckles for good on that frame.
+    */
+    const discovering: Promise<{
+      regions: readonly DiscoveredRegion[];
+      namedNotCut: readonly NamedNotCut[];
+    }> = discover === null
+      ? Promise.resolve({ regions: [], namedNotCut: [] })
       : discover({ bytes: frame.bytes, width: metadata.width, height: metadata.height })
         .then(async (discovery) => {
-          if (!discovery.ok) return [];
+          if (!discovery.ok) return { regions: [], namedNotCut: [] };
           const cut = await cutDiscovered({
             frame: {
               bytes: frame.bytes,
@@ -763,9 +852,14 @@ export async function scannedFace(input: {
                differently. */
             onFiled: (region) => { void fileToPartial(region); },
           });
-          return cut.regions;
+          /* Onto the partial in ONE write, once, because nothing streams here:
+             two of the three `why`s are known before the first call and the
+             third only at the end, so a per-name write would show a flickering
+             list of reasons on a panel that is already drawing pictures. */
+          if (cut.named.length > 0) fileWordsToPartial(cut.named);
+          return { regions: cut.regions, namedNotCut: cut.named };
         })
-        .catch(() => []);
+        .catch(() => ({ regions: [], namedNotCut: [] }));
     const scan = await scanFace({
       frame: { bytes: frame.bytes, width: metadata.width, height: metadata.height, url },
       reader,
@@ -803,6 +897,7 @@ export async function scannedFace(input: {
                  landed first is not wiped by the next catalogue row —
                  `fileToPartial` above preserves `slots` the same way. */
               discovered: entry.partial?.discovered ?? [],
+              namedNotCut: entry.partial?.namedNotCut ?? [],
             };
           }
         })().catch(() => {
@@ -825,7 +920,8 @@ export async function scannedFace(input: {
       place it is measured — the panel's first paint reads the PARTIAL, which
       both writers fill as rows land.
     */
-    return await displayOf(scan, url, await discovering);
+    const found = await discovering;
+    return await displayOf(scan, url, found.regions, found.namedNotCut);
     });
     spent = census;
     return value;
@@ -1081,6 +1177,13 @@ export function panelScanOf(scan: ScannedFace): PanelScan {
       go with it"* rule for every other row and must own it for these too.
     */
     discovered: scan.discovered,
+    /*
+      AND THE WORDS WITH NO PICTURE, STRAIGHT THROUGH TOO, for the same reason
+      in the same sentence: WHERE a scattered thing's words land — on the row it
+      sits on, or on nothing a row can carry — is a question about which rows
+      exist, and the only place that knows which rows exist is the panel.
+    */
+    namedNotCut: scan.namedNotCut,
   };
 }
 

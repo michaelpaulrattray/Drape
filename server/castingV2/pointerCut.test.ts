@@ -25,8 +25,12 @@ import {
   coveredByCatalogue,
   cutDiscovered,
   discoveredSlotOf,
+  hostedNames,
   normalisedName,
   offListFeatures,
+  placeNames,
+  pointerFeatures,
+  wordsOnlyFeatures,
 } from "./pointerCut";
 import { catalogueSlots } from "./referenceSlotCatalogue";
 import { scanPlan } from "./faceScan";
@@ -406,7 +410,12 @@ describe("cutDiscovered — the two calls, and what is asked on each", () => {
       async landmark() { throw new Error("not this road"); },
     };
     const out = await cutDiscovered({ frame: FRAME, features: [feature("sash")], reader });
-    expect(out).toEqual({ regions: [], asked: 0, declined: [], failed: [] });
+    /* ⚠ `named` IS EMPTY HERE AND THAT IS THE ASSERTION, not bookkeeping: a
+       `single` name the detector was never asked about is not *named and not
+       cut* — nobody declined it and nothing was gated. The words-only
+       population is the scattered and the makeup, and this reader was handed
+       neither. The arm below drives the other direction. */
+    expect(out).toEqual({ regions: [], asked: 0, declined: [], failed: [], named: [] });
   });
 
   it("asks about a frame's own address when it has one", async () => {
@@ -430,5 +439,269 @@ describe("cutDiscovered — the two calls, and what is asked on each", () => {
       reader,
     });
     expect(seen).toEqual(["https://pub.example/frame.png", "https://pub.example/frame.png"]);
+  });
+});
+
+/*
+  ---- THE POPULATION GATE (#2566 slice 2's grouping design, rules 2, 4 and the
+  narrow sibling rule) ----
+
+  ⚠ **EVERY FIXTURE IN THIS BLOCK IS A REAL READING.** The names, kinds, hosts
+  and coverages below are what the discovery read actually answered on his three
+  production casts, merged across both crops, on the bench the design was
+  written from (`output/2566/grouping-discovery.json`). They are not shapes
+  invented to make a rule look right — which matters most for the two arms that
+  are about the rule NOT firing.
+*/
+describe("the population gate — what the detector is never asked about", () => {
+  /** Cast 2472's merged reading, abridged to the names the rules turn on. */
+  const ELDER = [
+    feature("third eye", 1, { kind: "anatomy", on: "forehead" }),
+    feature("jaw hardware", 1, { kind: "anatomy", on: "jaw" }),
+    feature("neck hardware", 1, { kind: "accessory", on: "neck" }),
+    feature("robe", 1, { kind: "clothing", on: "" }),
+    feature("strap", 2, { kind: "accessory", on: "robe" }),
+    feature("charm", 2, { kind: "accessory", on: "strap" }),
+    feature("wrinkles", 1, { kind: "marking", on: "face", coverage: "scattered" }),
+    feature("head", 1, { kind: "anatomy", on: "" }),
+    feature("ears", 2, { kind: "anatomy", on: "head" }),
+  ];
+
+  it("asks about nothing that has no outline to cut", () => {
+    const population = pointerFeatures(ELDER).map((one) => one.name);
+    expect(population).not.toContain("wrinkles");
+    /* And what it sits on is untouched: a scattered thing is skipped, never a
+       branch of the reading. */
+    expect(population).toContain("jaw hardware");
+  });
+
+  it("gives a scattered thing's words a road instead of dropping them", () => {
+    const said = wordsOnlyFeatures([
+      feature("wrinkles", 1, {
+        kind: "marking",
+        on: "face",
+        coverage: "scattered",
+        about: "deep lines across the brow",
+      }),
+    ]);
+    expect(said).toEqual([{
+      noun: "wrinkles",
+      on: "face",
+      about: "deep lines across the brow",
+      kind: "marking",
+      why: "scattered",
+    }]);
+  });
+
+  /*
+    HIS RULING: makeup is something you change with words, not a thing in the
+    list. It is read off the KIND and not the coverage, so a reading that calls
+    eyeliner one connected line still buys nothing.
+  */
+  it("asks about no makeup, however the reading described its spread", () => {
+    for (const coverage of ["single", "scattered"] as const) {
+      const one = feature("eye makeup", 1, { kind: "makeup", on: "eyes", coverage });
+      expect(pointerFeatures([one]), coverage).toEqual([]);
+      expect(wordsOnlyFeatures([one])[0]?.why, coverage).toBe("makeup");
+    }
+  });
+
+  /*
+    THE NARROW SIBLING RULE — a place is not a feature.
+
+    ⚠ **`head` IS A PLACE ONLY AFTER THE MERGE, which is why the rule reads the
+    merged reading and not one crop**: the full-frame crop named `head`, and the
+    HEAD crop was the one that said `ears on=head`. This is the real pairing
+    from cast 2472.
+  */
+  it("draws nothing for a place things merely sit on", () => {
+    expect(Array.from(placeNames(ELDER))).toEqual(["head"]);
+    expect(pointerFeatures(ELDER).map((one) => one.name)).not.toContain("head");
+  });
+
+  it("gives a place no words either — its words are about a head, not a feature", () => {
+    const said = wordsOnlyFeatures([
+      ...ELDER.filter((one) => one.name !== "head"),
+      feature("head", 1, { kind: "anatomy", on: "", about: "a long tapered skull" }),
+    ]);
+    expect(said.map((one) => one.noun)).not.toContain("head");
+  });
+
+  /*
+    ⚠ **THE POSITIVE CONTROL FOR THE RULE'S OWN LIMIT, and it is the arm that
+    matters most.** `charm on=strap` makes `strap` a host on this very cast — so
+    a place rule that did not restrict itself to `anatomy` would take the
+    strap's row and its cut away, and every arm above would still pass.
+  */
+  it("CONTROL — an accessory that things sit on keeps its row and its cut", () => {
+    expect(placeNames(ELDER).has("strap")).toBe(false);
+    expect(pointerFeatures(ELDER).map((one) => one.name)).toContain("strap");
+  });
+
+  it("CONTROL — a reading that answers its own name as its host hosts nothing", () => {
+    const narcissus = [feature("skin", 1, { kind: "anatomy", on: "skin" })];
+    expect(Array.from(hostedNames(narcissus))).toEqual([]);
+    expect(Array.from(placeNames(narcissus))).toEqual([]);
+  });
+
+  /*
+    THE MEASURED SAVING, on the three production casts the design was written
+    from. ⚠ **It is reported rather than celebrated**: four names of twenty-nine
+    is a courtesy, and what the gate actually removes is the CLASS — the
+    detector is never asked for a thing that has no outline, which is the source
+    of the freckles-cut-like-an-object defect his eye found.
+  */
+  it("spends on twenty-five of the twenty-nine off-list names the fixtures produced", () => {
+    const cast2456 = [
+      feature("mole", 1, { kind: "marking", on: "face" }),
+      feature("collar", 1, { kind: "accessory", on: "neck" }),
+      feature("tattoo", 1, { kind: "marking", on: "" }),
+      feature("jacket", 1, { kind: "clothing", on: "" }),
+      feature("choker", 1, { kind: "accessory", on: "neck" }),
+      feature("top", 1, { kind: "clothing", on: "" }),
+      feature("harness", 1, { kind: "accessory", on: "jacket" }),
+      feature("sash", 1, { kind: "clothing", on: "" }),
+    ];
+    const cast2472 = [
+      ...ELDER,
+      feature("scarf", 1, { kind: "clothing", on: "" }),
+      feature("shoulder armor", 1, { kind: "accessory", on: "shoulder" }),
+      feature("pendant", 1, { kind: "accessory", on: "robe" }),
+      feature("shoulder plate", 2, { kind: "accessory", on: "robe" }),
+    ];
+    const cast2556 = [
+      feature("hood", 1, { kind: "clothing", on: "" }),
+      feature("face mask", 1, { kind: "clothing", on: "" }),
+      feature("scarf", 1, { kind: "clothing", on: "" }),
+      feature("coat", 1, { kind: "clothing", on: "" }),
+      feature("strap", 2, { kind: "accessory", on: "coat" }),
+      feature("buckle", 1, { kind: "accessory", on: "strap" }),
+      feature("rope", 1, { kind: "accessory", on: "coat" }),
+      feature("leather patch", 2, { kind: "clothing", on: "coat", coverage: "scattered" }),
+      feature("stitching", 1, { kind: "marking", on: "coat", coverage: "scattered" }),
+    ];
+    const casts = [cast2456, cast2472, cast2556];
+    const before = casts.reduce((sum, cast) => sum + offListFeatures(cast).length, 0);
+    const after = casts.reduce((sum, cast) => sum + pointerFeatures(cast).length, 0);
+    expect(before).toBe(29);
+    expect(after).toBe(25);
+    /* The gated names BY NAME, so a change here says which name it stopped
+       asking about rather than only that a number moved. `head` is absent on
+       purpose: it is gated as a PLACE, which buys no call AND contributes no
+       words, so it shows in the arithmetic and not in this list. */
+    const gated = casts.flatMap((cast) => wordsOnlyFeatures(cast).map((one) => one.noun));
+    expect(gated.sort()).toEqual(["leather patch", "stitching", "wrinkles"]);
+    expect(before - after).toBe(4);
+  });
+});
+
+describe("cutDiscovered — the grouping facts, and what it says about a name it could not draw", () => {
+  const box = { x: 100, y: 200, width: 60, height: 40 };
+
+  it("carries the reading's own kind and host onto every region it cuts", async () => {
+    const reader = readerWith({ detects: { jacket: [box], harness: [box] } });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [
+        feature("jacket", 1, { kind: "clothing", on: "" }),
+        feature("harness", 1, { kind: "accessory", on: "jacket" }),
+      ],
+      reader,
+    });
+    expect(out.regions.map((one) => ({ noun: one.noun, kind: one.kind, on: one.on }))).toEqual([
+      { noun: "jacket", kind: "clothing", on: "" },
+      { noun: "harness", kind: "accessory", on: "jacket" },
+    ]);
+  });
+
+  /*
+    ⚠ **`named` IS KEYED ON ROWS AND NOT ON THE REFUSAL, and this arm is the
+    difference.** A name the detector ANSWERED and the segmenter then failed on
+    — no mask, no pixels, or a cut outside the rectangle that asked for it — is
+    neither `declined` nor `failed`, and has no row either. Keying the words on
+    `declined` would have dropped exactly the specimen this module's header is
+    written about: the three-eyed cast's rectangle that came back cutting an
+    ordinary eye.
+  */
+  it("records a name it was asked about and could not draw, however it failed", async () => {
+    const reader = readerWith({ detects: { goggles: [box] }, cuts: () => null });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("goggles", 1, { about: "cracked brass lenses" })],
+      reader,
+    });
+    expect(out.regions).toEqual([]);
+    expect(out.declined).toEqual([]);
+    expect(out.failed).toEqual([]);
+    expect(out.named).toEqual([{
+      noun: "goggles",
+      on: "",
+      about: "cracked brass lenses",
+      kind: "anatomy",
+      why: "uncut",
+    }]);
+  });
+
+  it("CONTROL — a name it DID draw is not recorded as uncut", async () => {
+    const reader = readerWith({ detects: { goggles: [box] } });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("goggles", 1, { about: "cracked brass lenses" })],
+      reader,
+    });
+    expect(out.regions).toHaveLength(1);
+    expect(out.named).toEqual([]);
+  });
+
+  it("records a partly-drawn name as drawn — one row of two is still a row", async () => {
+    let call = 0;
+    const reader = readerWith({
+      detects: { strap: [box, { x: 300, y: 200, width: 60, height: 40 }] },
+      cuts: (asked) => (call++ === 0 ? maskAt(asked) : null),
+    });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("strap", 2, { kind: "accessory", on: "coat" })],
+      reader,
+    });
+    expect(out.regions).toHaveLength(1);
+    expect(out.named).toEqual([]);
+  });
+
+  it("carries a gated name's words even when the reader cannot point at all", async () => {
+    const blind: RegionReader = {
+      async region() { throw new Error("not this road"); },
+      async subject() { throw new Error("not this road"); },
+      async landmark() { throw new Error("not this road"); },
+    };
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("freckles", 1, {
+        kind: "marking",
+        on: "skin",
+        coverage: "scattered",
+        about: "a dusting across the nose",
+      })],
+      reader: blind,
+    });
+    /* The words were never the detector's to give, so a reader without the
+       capability costs the rows and not the record. */
+    expect(out.regions).toEqual([]);
+    expect(out.named.map((one) => one.noun)).toEqual(["freckles"]);
+  });
+
+  it("asks the detector about no gated name at all", async () => {
+    const reader = readerWith({ detects: { tattoo: [box] } });
+    await cutDiscovered({
+      frame: FRAME,
+      features: [
+        feature("tattoo", 1, { kind: "marking", on: "" }),
+        feature("freckles", 1, { kind: "marking", on: "skin", coverage: "scattered" }),
+        feature("eye makeup", 1, { kind: "makeup", on: "eyes" }),
+      ],
+      reader,
+    });
+    /* The whole point of the gate, read at the wire rather than at a count. */
+    expect(reader.asked.pointer).toEqual(["tattoo"]);
   });
 });

@@ -131,6 +131,28 @@ export type StoredDiscoveredSlot = {
   box: { x: number; y: number; width: number; height: number; frame: { width: number; height: number } };
   /** The stencil's object key, as {@link StoredScanSlot.maskKey}. */
   maskKey: string;
+  /**
+   * WHAT THE READING SAID IT IS AND WHAT IT SITS ON — the panel's grouping
+   * grammar, kept for the reason the noun is (#2566 slice 2's grouping design).
+   *
+   * ⚠ **A READING SERVED FROM THIS ROW GROUPS ITSELF, so these have to survive
+   * the keep.** `CASTING_SCAN_TABLE_SCOPE` stands at `all`: the first look is
+   * kept and every later look is served from here, so a row holding the boxes
+   * and not the two facts would put the jacket in the Outfit row on the first
+   * look and back in *Also on this character* on the second — the same
+   * different-panel-same-frame defect the field above is kept for, one level up.
+   *
+   * ⚠ **BOTH OPTIONAL, AND THE ABSENT CASE IS TODAY'S PANEL EXACTLY RATHER THAN
+   * A GUESS.** A row written between slice 2's two landings has `discovered`
+   * and neither of these. Read as `anatomy` with no host, which is what every
+   * reader here defaults them to: `anatomy` can never enter the Outfit row and
+   * an empty `on` resolves to no host — so every found row on such a reading is
+   * a top-level sibling in *Also on this character*, which is byte for byte
+   * where it was drawn before this slice. No migration, no backfill, and the
+   * next reading of a changed frame writes them.
+   */
+  kind?: string;
+  on?: string;
 };
 
 export type StoredScanGeometry = {
@@ -149,6 +171,29 @@ export type StoredScanGeometry = {
    *  ⚠ Named for the ROAD and not `found`, which one field up is the catalogue's
    *  own COUNT — two facts one word apart is the collision this name avoids. */
   discovered?: readonly StoredDiscoveredSlot[];
+  /**
+   * WHAT THE READING NAMED AND NOTHING CUT — words with no picture (#2566
+   * slice 2's grouping design, rules 2, 3 and 4).
+   *
+   * Kept for the same reason {@link StoredScanGeometry.discovered} is: a
+   * reading served from this row would otherwise lose the freckles' words off
+   * the Skin row on the second look, with the frame unchanged. There is no
+   * geometry here and no object to clean up — it is prose, three short fields
+   * per entry, and the JSON column already holds it.
+   *
+   * Absent on every row written before this landed and on every reading that
+   * named nothing it could not cut, which is the ordinary case.
+   */
+  namedNotCut?: readonly {
+    noun: string;
+    on: string;
+    about: string;
+    /** One of the five feature kinds. Narrowed on the way back out, for
+     *  {@link StoredDiscoveredSlot.kind}'s reason. */
+    kind?: string;
+    /** `scattered` · `makeup` · `uncut` — see `pointerCut`'s `NamedNotCut`. */
+    why: string;
+  }[];
   /**
    * WHETHER A SCAN HAS EVER WRITTEN THIS ROW — `false` only on a row the render
    * created for its carried geometry alone.

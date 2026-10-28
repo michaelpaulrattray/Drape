@@ -10,8 +10,17 @@
 import { describe, expect, it } from "vitest";
 
 import type { CastPronouns } from "./castPronouns";
-import { facePanel, maskFetchUrl, type PanelInkWorn, type PanelRow } from "./facePanel";
+import type { FeatureKind } from "./faceDiscovery";
+import {
+  PANEL_GROUPS,
+  facePanel,
+  maskFetchUrl,
+  type FacePanel,
+  type PanelInkWorn,
+  type PanelRow,
+} from "./facePanel";
 import type { StoredReference } from "./referenceLibrary";
+import type { FeatureSlot } from "./recipeAssembler";
 
 let nextId = 1;
 
@@ -1353,7 +1362,7 @@ describe("the stencil url is same-origin, because a CSS mask is a CORS fetch", (
 describe("a found row — what the reading saw and the catalogue cannot name", () => {
   const frame = { width: 1000, height: 1500 };
   const found = (
-    discovered: Array<{ slot: string; noun: string; instance: number; x: number; y: number }>,
+    discovered: Array<{ slot: string; noun: string; instance: number; x: number; y: number; kind?: FeatureKind; on?: string }>,
   ) => facePanel({
     rows: [],
     pronouns: SHE,
@@ -1366,6 +1375,12 @@ describe("a found row — what the reading saw and the catalogue cannot name", (
         slot: one.slot,
         noun: one.noun,
         instance: one.instance,
+        /* A hostless `anatomy` by default, which is what the grouping reads as
+           *its own row in the open section* — so every arm below that predates
+           #2566 slice 2's grouping still describes the panel it described. An
+           arm about the grouping passes its own. */
+        kind: one.kind ?? "anatomy",
+        on: one.on ?? "",
         box: { x: one.x, y: one.y, width: 80, height: 60, frame },
         maskUrl: `data:image/png;base64,${one.slot}`,
       })),
@@ -1486,6 +1501,8 @@ describe("the loader names nothing nobody has seen", () => {
         slot: "discovered:neck-tattoo#1",
         noun: "neck tattoo",
         instance: 1,
+        kind: "marking",
+        on: "",
         box: { x: 420, y: 900, width: 90, height: 70, frame },
         maskUrl: "data:image/png;base64,neck",
       }],
@@ -1555,5 +1572,488 @@ describe("the loader names nothing nobody has seen", () => {
 
   it("off the road, `discovering: false` is the panel with no such field — today's panel exactly", () => {
     expect(reading({ scanning: true, discovering: false })).toEqual(reading({ scanning: true }));
+  });
+});
+
+/**
+ * THE GROUPING — where each found thing actually goes (#2566 slice 2, the
+ * grouping design of 2026-10-28, answering his five findings of that day).
+ *
+ * Until slice 2 every found thing was a top-level sibling, and his eye found
+ * five separate defects in that one fact: a lip ring sibling to Lips, "eye
+ * makeup" a row at all, six garment nouns six rows, freckles cut like an
+ * object. The panel now reads the two facts the reading declares — `kind` and
+ * `on` — and these arms are the three destinations and the words.
+ *
+ * ⚠ **The fixtures are real readings.** Every name, kind and host below came
+ * back from the discovery read on his three production casts, merged across
+ * both crops (`output/2566/grouping-discovery.json`), which is the bench the
+ * design was written from.
+ */
+describe("the grouping — the outfit, the folds, and the words with no picture", () => {
+  const frame = { width: 1000, height: 1500 };
+  type Found = {
+    noun: string;
+    kind: FeatureKind;
+    on?: string;
+    instance?: number;
+    x?: number;
+    y?: number;
+  };
+  type Said = {
+    noun: string;
+    on: string;
+    about: string;
+    kind: FeatureKind;
+    why: "scattered" | "makeup" | "uncut";
+  };
+
+  /**
+   * A panel from a reading: `found` is what the pointer road cut, `catalogued`
+   * is which catalogue slots the scan located (so a fold has a parent to land
+   * under), and `said` is the words with no picture.
+   */
+  const panelOf = (input: {
+    found?: readonly Found[];
+    catalogued?: readonly string[];
+    said?: readonly Said[];
+  }) => facePanel({
+    rows: [],
+    pronouns: SHE,
+    contentUrl: (key) => `https://bucket.example/${key}`,
+    maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+    scan: {
+      frameUrl: "https://bucket.example/casting/master.jpg",
+      slots: new Map((input.catalogued ?? []).map((slot, at) => [slot as FeatureSlot, {
+        box: { x: 10 + at * 10, y: 20 + at * 10, width: 50, height: 40, frame },
+        maskUrl: `data:image/png;base64,${slot}`,
+      }])),
+      discovered: (input.found ?? []).map((one, at) => ({
+        slot: `discovered:${one.noun.replace(/[^a-z0-9]+/g, "-")}#${one.instance ?? 1}` as FeatureSlot,
+        noun: one.noun,
+        instance: one.instance ?? 1,
+        kind: one.kind,
+        on: one.on ?? "",
+        box: { x: one.x ?? 100 + at * 100, y: one.y ?? 200 + at * 50, width: 80, height: 60, frame },
+        maskUrl: `data:image/png;base64,${one.noun}`,
+      })),
+      namedNotCut: input.said ?? [],
+    },
+  });
+  const sectionOf = (panel: FacePanel, group: string) =>
+    panel.groups.find((one) => one.group === group) ?? null;
+  const rowNames = (panel: FacePanel, group: string) =>
+    (sectionOf(panel, group)?.rows ?? []).map((row) => row.name);
+
+  /* ---- rule 5: the outfit is ONE row ---- */
+
+  it("draws ONE Outfit row for a whole look, however many garments the reading named", () => {
+    /* Cast 2556's merged reading: four garments the old panel drew as four
+       sibling rows, which is the complaint. */
+    const panel = panelOf({
+      found: [
+        { noun: "hood", kind: "clothing" },
+        { noun: "face mask", kind: "clothing" },
+        { noun: "scarf", kind: "clothing" },
+        { noun: "coat", kind: "clothing" },
+      ],
+    });
+    const outfit = sectionOf(panel, "outfit")!;
+    expect(outfit.heading).toBe("Outfit");
+    expect(outfit.rows).toHaveLength(1);
+    const row = outfit.rows[0]!;
+    expect(row.name).toBe("Outfit");
+    expect(row.spoken).toBe("her outfit");
+    expect(row.prefill).toBe("her outfit — ");
+    /* The pieces are real underneath — one child each, with its own cut. */
+    expect(row.instances.map((one) => one.name)).toEqual(["Hood", "Face mask", "Scarf", "Coat"]);
+    /* And nothing is left in the open section: the whole reading was clothing. */
+    expect(sectionOf(panel, "open")).toBeNull();
+  });
+
+  it("sits between Body and Accessories, and vanishes when the cast wears nothing the reading saw", () => {
+    const dressed = panelOf({ found: [{ noun: "coat", kind: "clothing" }] });
+    expect(dressed.groups.map((one) => one.group)).toEqual(["outfit"]);
+    /* Order is the authored one, and it is asserted on the declaration rather
+       than on a panel that happens to have every section. */
+    expect(PANEL_GROUPS.map((one) => one.group)).toEqual([
+      "face", "hair", "body", "outfit", "accessories", "open",
+    ]);
+    const bare = panelOf({ found: [{ noun: "neck tattoo", kind: "marking" }] });
+    expect(sectionOf(bare, "outfit")).toBeNull();
+  });
+
+  it("draws the dressed figure in a window, with no stencil over it", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "coat", kind: "clothing", x: 100, y: 300 },
+        { noun: "scarf", kind: "clothing", x: 400, y: 200 },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    expect(row.cutouts).toHaveLength(1);
+    /* ⚠ NULL, not a union of masks: a union of several stencils is several
+       disconnected islands with the body showing between them, which is not
+       what anybody means by an outfit. */
+    expect(row.cutouts[0]!.maskUrl).toBeNull();
+    expect(row.cutouts[0]!.contentUrl).toBe("https://bucket.example/casting/master.jpg");
+    /* The union of the pieces' boxes — x 100..480, y 200..360. */
+    expect(row.cutouts[0]!.crop).toEqual({ x: 100, y: 200, width: 380, height: 160, frame });
+  });
+
+  it("takes anything whose chain ends at clothing, however many hops away", () => {
+    /* Cast 2556 again: `buckle on=strap`, `strap on=coat`, `coat` clothing.
+       ⚠ A ONE-HOP READER PUTS THE BUCKLE IN *Also on this character* BESIDE AN
+       OUTFIT ROW HOLDING THE STRAP IT IS BUCKLED TO, which is why the walk is
+       a walk. */
+    const panel = panelOf({
+      found: [
+        { noun: "coat", kind: "clothing" },
+        { noun: "strap", kind: "accessory", on: "coat" },
+        { noun: "buckle", kind: "accessory", on: "strap" },
+        { noun: "rope", kind: "accessory", on: "coat" },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    expect(row.instances.map((one) => one.name)).toEqual(["Coat", "Strap", "Buckle", "Rope"]);
+    expect(sectionOf(panel, "open")).toBeNull();
+  });
+
+  it("lights every piece from the row, because the outfit IS the collection", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "jacket", kind: "clothing" },
+        { noun: "harness", kind: "accessory", on: "jacket" },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    expect(row.slots).toEqual(["discovered:outfit", "discovered:jacket#1", "discovered:harness#1"]);
+    /* One rectangle per PIECE and not the union: a union rectangle over a
+       dressed figure is the whole figure, which points at nothing. */
+    expect(row.regions.map((one) => one.name)).toEqual(["Jacket", "Harness"]);
+  });
+
+  /*
+    ⚠ **HIS OWN ⚠ ON THE FINDING, AND IT IS THE ARM THIS WHOLE RULE HANGS ON.**
+    The body implants on his cast were labelled *Collar*, so a rule keyed on the
+    WORD sweeps hardware into the outfit. `kind` is the only key, judged from
+    the picture: the measured reader put body hardware in `anatomy` 4 of 4 times
+    and its one miss landed in `accessory` — and this arm drives BOTH of those,
+    plus the word that would have caught it.
+  */
+  it("CONTROL — body hardware never enters the outfit, whatever the reading called it", () => {
+    for (const kind of ["anatomy", "accessory"] as const) {
+      const panel = panelOf({
+        found: [
+          { noun: "jacket", kind: "clothing" },
+          { noun: "collar", kind, on: "neck" },
+        ],
+      });
+      const outfit = sectionOf(panel, "outfit")!.rows[0]!;
+      expect(outfit.instances.map((one) => one.name), kind).toEqual(["Jacket"]);
+      expect(rowNames(panel, "open"), kind).toEqual(["Collar"]);
+    }
+  });
+
+  /* ---- rule 3: a found thing folds under the row it sits on ---- */
+
+  it("folds a found thing under the catalogued row it sits on, never beside it", () => {
+    /* His own sentence: a lip ring goes under Lips. */
+    const panel = panelOf({
+      catalogued: ["lips"],
+      found: [{ noun: "lip ring", kind: "accessory", on: "lips", x: 420, y: 700 }],
+    });
+    expect(sectionOf(panel, "open")).toBeNull();
+    const lips = sectionOf(panel, "face")!.rows.find((row) => row.name === "Lips")!;
+    expect(lips.instances.map((one) => one.name)).toEqual(["Lip ring"]);
+    expect(lips.instances[0]!.spoken).toBe("her lip ring");
+    expect(lips.instances[0]!.prefill).toBe("her lip ring — ");
+    /* Its own cut, kept — the design's *"the child keeps its own cut"*. */
+    expect(lips.instances[0]!.cutout).toEqual({
+      contentUrl: "https://bucket.example/casting/master.jpg",
+      maskUrl: "data:image/png;base64,lip ring",
+      crop: { x: 420, y: 700, width: 80, height: 60, frame },
+    });
+    /* And its rectangle on the photograph, NAMED, the way a pair's sides are. */
+    const ring = lips.regions.find((one) => one.name === "Lip ring")!;
+    expect(ring.slot).toBe("discovered:lip-ring#1");
+    expect(ring.spoken).toBe("her lip ring");
+  });
+
+  it("reaches a pair row through the words the catalogue uses for it", () => {
+    /* `on: "ear"` has to reach a row that draws as *Ears* — the label alone
+       would not, which is why the catalogue's five words are recorded. */
+    const panel = panelOf({
+      catalogued: ["ear@left", "ear@right"],
+      found: [{ noun: "ear piercing", kind: "accessory", on: "ear" }],
+    });
+    expect(sectionOf(panel, "open")).toBeNull();
+    const ears = sectionOf(panel, "face")!.rows.find((row) => row.name === "Ears")!;
+    expect(ears.instances.map((one) => one.name)).toEqual(["Left ear", "Right ear", "Ear piercing"]);
+  });
+
+  it("keeps a parent's own ask about the parent — the fold does not widen it", () => {
+    const panel = panelOf({
+      catalogued: ["lips"],
+      found: [{ noun: "lip ring", kind: "accessory", on: "lips" }],
+    });
+    const lips = sectionOf(panel, "face")!.rows.find((row) => row.name === "Lips")!;
+    /* ⚠ Tapping Lips is an ask about the lips, not about a ring on them. A row
+       whose `slots` quietly included its lodgers would send an edit meaning
+       both — which is the opposite of the Outfit row, where the noun IS the
+       collection. */
+    expect(lips.slots).toEqual(["lips"]);
+  });
+
+  it("keeps two of one noun as two children, never a union", () => {
+    /* #2565 §6: left and right are separate items. Cast 2472's two straps. */
+    const panel = panelOf({
+      catalogued: ["lips"],
+      found: [
+        { noun: "piercing", kind: "accessory", on: "lips", instance: 1, x: 400, y: 700 },
+        { noun: "piercing", kind: "accessory", on: "lips", instance: 2, x: 500, y: 700 },
+      ],
+    });
+    const lips = sectionOf(panel, "face")!.rows.find((row) => row.name === "Lips")!;
+    expect(lips.instances).toHaveLength(2);
+    expect(lips.instances.map((one) => one.slot)).toEqual([
+      "discovered:piercing#1", "discovered:piercing#2",
+    ]);
+    expect(lips.instances.map((one) => one.cutout?.crop?.x)).toEqual([400, 500]);
+  });
+
+  it("folds under a FOUND row too, not only a catalogued one", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "third eye", kind: "anatomy", on: "forehead" },
+        { noun: "stud", kind: "accessory", on: "third eye" },
+      ],
+    });
+    const open = sectionOf(panel, "open")!;
+    expect(open.rows.map((row) => row.name)).toEqual(["Third eye"]);
+    expect(open.rows[0]!.instances.map((one) => one.name)).toEqual(["Stud"]);
+  });
+
+  /*
+    ⚠ **NEVER SCOPABLE, AND THIS IS THE ARM THAT KEEPS A TAP FROM DEAD-ENDING.**
+    `refineService`'s scope door answers `scope_unknown` on a `discovered:` key
+    — driven at the code, `slotDefinition("discovered:lip-ring#1")` is null — so
+    a child offering a narrow edit is a BAD_REQUEST on an affordance we drew.
+    The catalogued sides in the same row are the positive control.
+  */
+  it("offers no narrow edit on a found child, and still offers one on a pair's sides", () => {
+    const panel = panelOf({
+      catalogued: ["ear@left", "ear@right"],
+      found: [{ noun: "ear piercing", kind: "accessory", on: "ear" }],
+    });
+    const ears = sectionOf(panel, "face")!.rows.find((row) => row.name === "Ears")!;
+    expect(ears.instances.map((one) => ({ name: one.name, scopable: one.scopable }))).toEqual([
+      { name: "Left ear", scopable: true },
+      { name: "Right ear", scopable: true },
+      { name: "Ear piercing", scopable: false },
+    ]);
+    expect(ears.regions.find((one) => one.name === "Ear piercing")!.scopable).toBe(false);
+  });
+
+  it("refuses a narrow edit on every piece of the outfit", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "coat", kind: "clothing" },
+        { noun: "strap", kind: "accessory", on: "coat" },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    expect(row.instances.every((one) => one.scopable === false)).toBe(true);
+    expect(row.regions.every((one) => one.scopable === false)).toBe(true);
+  });
+
+  /*
+    ⚠ **A CYCLE IS AN ANSWER AND NOT A HANG, and it is driven directly because
+    a model that usually behaves is no test of a guard (working law 3).** A
+    reading that answers `strap on=buckle` and `buckle on=strap` has said
+    nothing about where either sits.
+  */
+  it("reads a cycle in the reading's own hosts as hostless", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "strap", kind: "accessory", on: "buckle" },
+        { noun: "buckle", kind: "accessory", on: "strap" },
+      ],
+    });
+    expect(rowNames(panel, "open")).toEqual(["Strap", "Buckle"]);
+  });
+
+  it("reads a thing that sits on itself as hostless", () => {
+    const panel = panelOf({ found: [{ noun: "scales", kind: "marking", on: "scales" }] });
+    expect(rowNames(panel, "open")).toEqual(["Scales"]);
+  });
+
+  it("invents no parent out of a host nothing drew", () => {
+    /* `charm on=strap` where the strap itself could not be cut. ⚠ The
+       `namedNotCut` channel KNOWS that strap sat on the robe, and the chain
+       deliberately does not walk through it: a chain through a thing with no
+       picture would fold a visible row under an invisible one, and the design
+       says a thing that cannot be cut gets no row at all. So the charm keeps
+       its own row rather than joining an outfit it was never shown to be part
+       of. */
+    const panel = panelOf({
+      found: [
+        { noun: "robe", kind: "clothing" },
+        { noun: "charm", kind: "accessory", on: "strap" },
+      ],
+      said: [{ noun: "strap", on: "robe", about: "frayed webbing", kind: "accessory", why: "uncut" }],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    expect(row.instances.map((one) => one.name)).toEqual(["Robe"]);
+    /* ⚠ The charm's host is not a ROW, so it keeps its own — the walk cannot
+       invent a parent out of a name nothing drew. */
+    expect(rowNames(panel, "open")).toEqual(["Charm"]);
+  });
+
+  /* ---- rules 2 and 4: the words with no picture ---- */
+
+  it("puts a scattered thing's words on the row it sits on", () => {
+    /* The design's own worked example. */
+    const panel = panelOf({
+      catalogued: ["skin"],
+      said: [{
+        noun: "freckles",
+        on: "skin",
+        about: "a dusting of freckles across the nose and cheeks",
+        kind: "marking",
+        why: "scattered",
+      }],
+    });
+    const skin = sectionOf(panel, "body")!.rows.find((row) => row.name === "Skin")!;
+    expect(skin.words).toEqual(["a dusting of freckles across the nose and cheeks"]);
+    /* No row of its own and no cut — the class his eye found is gone at source. */
+    expect(sectionOf(panel, "open")).toBeNull();
+  });
+
+  it("puts a scattered piece of an outfit's words on the Outfit row", () => {
+    /* Cast 2556: `leather patch` and `stitching`, both scattered, both on the
+       coat. Neither is a child; both are words. */
+    const panel = panelOf({
+      found: [{ noun: "coat", kind: "clothing" }],
+      said: [
+        { noun: "leather patch", on: "coat", about: "leather patches at the elbows", kind: "clothing", why: "scattered" },
+        { noun: "stitching", on: "coat", about: "rough visible stitching", kind: "marking", why: "scattered" },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    expect(row.words).toEqual(["leather patches at the elbows", "rough visible stitching"]);
+    expect(row.instances.map((one) => one.name)).toEqual(["Coat"]);
+  });
+
+  it("says the same thing once, however many crops reported it", () => {
+    const panel = panelOf({
+      catalogued: ["skin"],
+      said: [
+        { noun: "freckles", on: "skin", about: "a dusting across the nose", kind: "marking", why: "scattered" },
+        { noun: "freckles", on: "face skin", about: "a dusting across the nose", kind: "marking", why: "scattered" },
+      ],
+    });
+    const skin = sectionOf(panel, "body")!.rows.find((row) => row.name === "Skin")!;
+    expect(skin.words).toEqual(["a dusting across the nose"]);
+  });
+
+  /*
+    ⚠ **HIS RULING, AND IT IS THE ONE ENTRY THAT IS SKIPPED RATHER THAN
+    ROUTED.** Makeup is something you change with words, not a thing in the
+    list — so eyeliner on eyes must write no row AND no line onto the Eyes row,
+    because a row's words line is a description of the feature the row IS.
+  */
+  it("writes no row and no words for makeup, wherever it sits", () => {
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right"],
+      said: [{
+        noun: "eye makeup",
+        on: "eyes",
+        about: "smoked black liner",
+        kind: "makeup",
+        why: "makeup",
+      }],
+    });
+    expect(sectionOf(panel, "open")).toBeNull();
+    const eyes = sectionOf(panel, "face")!.rows.find((row) => row.name === "Eyes")!;
+    expect(eyes.words).toEqual([]);
+  });
+
+  it("writes no words for a thing it was asked about and could not draw", () => {
+    /* What is missing is its OWN row, not a line on its host — and writing its
+       words onto the host would describe the host with a sentence about
+       something that is not drawn. The next edit to that area asks again. */
+    const panel = panelOf({
+      catalogued: ["lips"],
+      said: [{ noun: "lip ring", on: "lips", about: "a thin steel hoop", kind: "accessory", why: "uncut" }],
+    });
+    const lips = sectionOf(panel, "face")!.rows.find((row) => row.name === "Lips")!;
+    expect(lips.words).toEqual([]);
+    expect(lips.instances).toEqual([]);
+  });
+
+  it("says nothing on the panel about a scattered thing nothing can carry", () => {
+    const panel = panelOf({
+      catalogued: ["lips"],
+      said: [{ noun: "wrinkles", on: "face", about: "deep lines across the brow", kind: "marking", why: "scattered" }],
+    });
+    /* `face` is no row's noun, so there is nowhere honest to put it: it stays
+       on the channel for the current description and the panel is silent. */
+    const everyWord = panel.groups.flatMap((group) => group.rows.flatMap((row) => row.words));
+    expect(everyWord).toEqual([]);
+    expect(sectionOf(panel, "open")).toBeNull();
+  });
+
+  /* ---- the whole thing, on two real casts ---- */
+
+  it("groups cast 2472's whole reading the way a person would describe it", () => {
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right", "skin", "teeth", "lips"],
+      found: [
+        { noun: "third eye", kind: "anatomy", on: "forehead" },
+        { noun: "jaw hardware", kind: "anatomy", on: "jaw" },
+        { noun: "neck hardware", kind: "accessory", on: "neck" },
+        { noun: "scarf", kind: "clothing", on: "" },
+        { noun: "shoulder armor", kind: "accessory", on: "shoulder" },
+        { noun: "pendant", kind: "accessory", on: "robe" },
+        { noun: "strap", kind: "accessory", on: "robe", instance: 1 },
+        { noun: "charm", kind: "accessory", on: "strap", instance: 1 },
+        { noun: "robe", kind: "clothing", on: "" },
+      ],
+      said: [{ noun: "wrinkles", on: "face", about: "deep lines", kind: "marking", why: "scattered" }],
+    });
+    /* ONE outfit row holding the scarf, the robe and everything hanging off
+       it; four things that are this character rather than their clothes. */
+    const outfit = sectionOf(panel, "outfit")!.rows[0]!;
+    expect(outfit.instances.map((one) => one.name)).toEqual([
+      "Scarf", "Pendant", "Strap", "Charm", "Robe",
+    ]);
+    expect(rowNames(panel, "open")).toEqual([
+      "Third eye", "Jaw hardware", "Neck hardware", "Shoulder armor",
+    ]);
+  });
+
+  /*
+    ⚠ **THE CONTROL THAT PROVES THE OLD PANEL IS STILL REACHABLE, and it is the
+    kept-row case rather than a hypothetical**: a reading written between slice
+    2's two landings has `discovered` and neither fact, and `keptFaceScan`
+    restores it as a hostless `anatomy`. Every found thing is then a top-level
+    sibling in *Also on this character*, which is byte for byte where it was
+    drawn before the grouping.
+  */
+  it("CONTROL — a reading with no grouping facts draws exactly the old panel", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "jacket", kind: "anatomy" },
+        { noun: "sash", kind: "anatomy" },
+        { noun: "neck tattoo", kind: "anatomy" },
+      ],
+    });
+    expect(sectionOf(panel, "outfit")).toBeNull();
+    expect(rowNames(panel, "open")).toEqual(["Jacket", "Sash", "Neck tattoo"]);
+    for (const row of sectionOf(panel, "open")!.rows) {
+      expect(row.instances).toEqual([]);
+      expect(row.regions).toHaveLength(1);
+    }
   });
 });
