@@ -32,7 +32,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2730"
+          "server/castingV2/refineService.ts:2743"
         ]
       },
       {
@@ -42,7 +42,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1341"
+          "server/castingV2/refineService.ts:1354"
         ]
       },
       {
@@ -66,7 +66,7 @@
           "server/castingV2/voiceCache.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:5125",
+          "server/castingV2/refineService.ts:5138",
           "server/castingV2/rollEngine.ts:122",
           "server/castingV2/rollEngine.ts:134"
         ]
@@ -78,7 +78,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1323"
+          "server/castingV2/refineService.ts:1336"
         ]
       },
       {
@@ -198,9 +198,9 @@
         "sites": [
           "server/castingV2/refineDelta.ts:706",
           "server/castingV2/refineDelta.ts:706",
-          "server/castingV2/refineDelta.ts:1886",
-          "server/castingV2/refineDelta.ts:1886",
-          "server/castingV2/refineService.ts:2579"
+          "server/castingV2/refineDelta.ts:1963",
+          "server/castingV2/refineDelta.ts:1963",
+          "server/castingV2/refineService.ts:2592"
         ]
       },
       {
@@ -214,8 +214,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:672",
           "server/castingV2/refineDelta.ts:672",
-          "server/castingV2/refineDelta.ts:1895",
-          "server/castingV2/refineDelta.ts:1895",
+          "server/castingV2/refineDelta.ts:1972",
+          "server/castingV2/refineDelta.ts:1972",
           "server/castingV2/refineDelta.ts:672"
         ]
       },
@@ -230,10 +230,10 @@
         "sites": [
           "server/castingV2/refineDelta.ts:679",
           "server/castingV2/refineDelta.ts:679",
-          "server/castingV2/refineDelta.ts:1863",
-          "server/castingV2/refineDelta.ts:1863",
-          "server/castingV2/refineService.ts:2578",
-          "server/castingV2/refineService.ts:2590"
+          "server/castingV2/refineDelta.ts:1940",
+          "server/castingV2/refineDelta.ts:1940",
+          "server/castingV2/refineService.ts:2591",
+          "server/castingV2/refineService.ts:2603"
         ]
       },
       {
@@ -245,8 +245,8 @@
         "sites": [
           "server/castingV2/refineDelta.ts:698",
           "server/castingV2/refineDelta.ts:698",
-          "server/castingV2/refineDelta.ts:1878",
-          "server/castingV2/refineDelta.ts:1878",
+          "server/castingV2/refineDelta.ts:1955",
+          "server/castingV2/refineDelta.ts:1955",
           "server/castingV2/refineDelta.ts:698"
         ]
       },
@@ -257,7 +257,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3088"
+          "server/castingV2/refineService.ts:3101"
         ]
       },
       {
@@ -267,7 +267,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3862"
+          "server/castingV2/refineService.ts:3875"
         ]
       },
       {
@@ -312,7 +312,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1330"
+          "server/castingV2/refineService.ts:1343"
         ]
       },
       {
@@ -424,7 +424,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4602"
+          "server/castingV2/refineService.ts:4615"
         ]
       },
       {
@@ -447,7 +447,7 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3559"
+          "server/castingV2/refineService.ts:3572"
         ]
       },
       {
@@ -457,7 +457,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3540"
+          "server/castingV2/refineService.ts:3553"
         ]
       },
       {
@@ -467,7 +467,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3697"
+          "server/castingV2/refineService.ts:3710"
         ]
       },
       {
@@ -477,8 +477,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3317",
-          "server/castingV2/refineService.ts:3334"
+          "server/castingV2/refineService.ts:3330",
+          "server/castingV2/refineService.ts:3347"
         ]
       },
       {
@@ -488,7 +488,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4572"
+          "server/castingV2/refineService.ts:4585"
         ]
       },
       {
@@ -498,7 +498,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3131"
+          "server/castingV2/refineService.ts:3144"
         ]
       },
       {
@@ -578,7 +578,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:5098"
+          "server/castingV2/refineService.ts:5111"
         ]
       },
       {
@@ -588,8 +588,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1411",
-          "server/castingV2/refineService.ts:1449"
+          "server/castingV2/refineService.ts:1424",
+          "server/castingV2/refineService.ts:1462"
         ]
       },
       {
@@ -641,7 +641,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2776"
+          "server/castingV2/refineService.ts:2789"
         ]
       },
       {
@@ -776,8 +776,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1317",
-          "server/castingV2/refineService.ts:2702"
+          "server/castingV2/refineService.ts:1330",
+          "server/castingV2/refineService.ts:2715"
         ]
       },
       {
@@ -811,7 +811,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:499",
-          "server/castingV2/refineDelta.ts:1914",
+          "server/castingV2/refineDelta.ts:1991",
           "server/castingV2/refineInterpreter.ts:1831",
           "server/castingV2/refineDelta.ts:499"
         ]
@@ -833,7 +833,7 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:533",
-          "server/castingV2/refineDelta.ts:1938",
+          "server/castingV2/refineDelta.ts:2015",
           "server/castingV2/refineInterpreter.ts:1936",
           "server/castingV2/refineDelta.ts:533"
         ]
@@ -847,8 +847,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:643",
-          "server/castingV2/refineDelta.ts:1561",
-          "server/castingV2/refineDelta.ts:1715",
+          "server/castingV2/refineDelta.ts:1638",
+          "server/castingV2/refineDelta.ts:1792",
           "server/castingV2/refineDelta.ts:643"
         ]
       },
@@ -881,8 +881,8 @@
         ],
         "sites": [
           "server/castingV2/refineDelta.ts:569",
-          "server/castingV2/refineDelta.ts:1609",
-          "server/castingV2/refineDelta.ts:1995",
+          "server/castingV2/refineDelta.ts:1686",
+          "server/castingV2/refineDelta.ts:2072",
           "server/castingV2/refineDelta.ts:569"
         ]
       },
@@ -3529,6 +3529,13 @@
       "kind": "documented-unreachable",
       "subject": "whichInkToChange",
       "message": "no corpus row reaches it: needs a branch wearing TWO tattoos; no cast in either world has ever worn two at once (opus-966 §1) and the multi-tattoo fixture is §10 item 3b's build — a row could reach it via: item 3b's keying work, which needs two-tattoo state to test itself"
+    },
+    {
+      "id": "drive-profile:drift",
+      "severity": "warn",
+      "kind": "drive-profile-drift",
+      "subject": "fixture-as-founder",
+      "message": "this census was driven under a different product than the next drive would measure — the table records no date — it was taken before a drive wrote one; 10 flag(s) the next drive would OPEN for the first time (CASTING_BORN_INK_SCOPE, CASTING_BRIEF_FIDELITY_SCOPE, CASTING_CONCEPT_UPLOAD_SCOPE, CASTING_CREATION_RECORD_SCOPE, CASTING_CURRENT_DESCRIPTION_SCOPE, CASTING_FACE_DISCOVERY_SCOPE, CASTING_OUTFIT_EDIT_SCOPE, CASTING_RETRY_SCOPE, CASTING_ROLL_ENGINE_SCOPE, CASTING_VOICE_SCOPE); 7 the tree no longer declares (CASTING_INK_WORDS_SCOPE, CASTING_OPEN_LANE_SCOPE, CASTING_REPAINT_SCOPE, CASTING_SEGMENTS_DELIVERED_SCOPE, CASTING_SEGMENTS_SCOPE, CASTING_SIDE_PHRASING_SCOPE, CASTING_TWO_PATHS_SCOPE). A corpus row's expectation and a road's prose describing \"the flag-off reading\" may both be true of this table and false of the next one — read this before reading any belief-mismatch or route-changed finding a drive produces"
     },
     {
       "id": "not-driven:ref.hair.whole",

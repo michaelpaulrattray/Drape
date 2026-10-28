@@ -713,3 +713,41 @@ export function likenessSetAsideNote(input: { subjects: readonly string[] }): st
 export function attachedPictureUnusedNote(): string {
   return "The picture you attached wasn't used — this change didn't ask for anything I could take from it.";
 }
+
+/**
+ * THE CLAUSE THAT STAYED BEHIND — what a take says when half the sentence named
+ * the shoot and the reading dropped it in silence (#2695).
+ *
+ * # The defect this sentence ends
+ *
+ * *"Make her hair copper red in a studio"* delivered the copper and never
+ * mentioned the studio: the stage wall runs over the parsed value, a clause the
+ * model elided was never parsed, and the honest sentence the product already
+ * owns (`wall_stage`'s) was unreachable for a mixed ask. Measured through the
+ * real entrance, 20 of 21 such reads rendered with the scenery word dropped
+ * and nothing said.
+ *
+ * # Its rules, each inherited from a sibling rather than invented
+ *
+ * - It quotes THEIR word (`wall_stage`'s own `asked` discipline) — except
+ *   `holding`, which is named as `prop`, because "the holding part" is not a
+ *   sentence anybody says.
+ * - It never says "nothing was charged": money moved, which is the owed-note
+ *   family's standing rule (a paid take says what it did not do and says
+ *   nothing about money).
+ * - The garment branch exists only for an account not yet served the wardrobe
+ *   subject — served, the garment half is licensed at the lexicon and can never
+ *   reach this note — and it says what `wall_stage`'s unserved sentence says:
+ *   clothing comes after Sign.
+ * - No engine, no pipeline term, no percentage: the sentence speaks of their
+ *   ask and the product's own rule, which is the disappearing-technology law's
+ *   whole demand of it.
+ */
+export function sceneryLeftOutNote(found: { word: string; kind: "scenery" | "garment" }): string {
+  const named = found.word === "holding" ? "prop" : found.word;
+  const why = found.kind === "garment"
+    ? "clothing comes after Sign"
+    : "refining changes the person, not the shoot";
+  return `The ${named} part of your ask wasn't changed — ${why}. `
+    + "Everything else you asked for went ahead.";
+}
