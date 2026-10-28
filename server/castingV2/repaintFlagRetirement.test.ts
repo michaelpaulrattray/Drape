@@ -48,8 +48,19 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const RETIRED = "CASTING_REPAINT_SCOPE";
 /** A flag that exists and cannot go — every control below finds this one. */
 const LIVE = "CASTING_V2_SCOPE";
-/** The retired flag's own parent, which is live and keeps its row. */
-const PARENT = "CASTING_REFERENCE_LIBRARY_SCOPE";
+/*
+  A SECOND LIVE FLAG, used as this file's positive control.
+
+  ⚠ IT WAS THE RETIRED FLAG'S OWN PARENT, `CASTING_REFERENCE_LIBRARY_SCOPE`,
+  UNTIL #1577 SLICE D5 RETIRED THAT ONE TOO — which is the hazard a retirement
+  guard has that no other suite has: its controls are flags, and a flag can die.
+  A control naming a dead flag does not fail loudly; it stops proving the reader
+  works, and the whole file keeps passing. So the control moved to a flag that
+  is not on the ghost audit's retirement list at all: the auto-scan's, which
+  band E of that audit marks KEEP because widening it is his (a scan spends
+  house money).
+*/
+const PARENT = "CASTING_FACE_SCAN_SCOPE";
 
 const SOURCES = serverAndSharedSources(repoRoot);
 const DECLARED = declaredEnvNames(SOURCES);
@@ -61,7 +72,7 @@ describe("the compositor swap's flag is retired (#1577 slice 4b)", () => {
   it("⚠ CONTROL — every reader in this file finds a flag that IS there", () => {
     expect(SOURCES.length, "the file walk found a real tree").toBeGreaterThan(100);
     expect(DECLARED, "the constant scan read a real population").toContain(LIVE);
-    expect(DECLARED, "and the retired flag's own parent, which is not going anywhere")
+    expect(DECLARED, "and a second live flag, which band E marks KEEP")
       .toContain(PARENT);
     expect(LAW).toContain(LIVE);
     expect(Object.keys(PRODUCTION_FLAG_POSITIONS)).toContain(LIVE);
@@ -98,8 +109,8 @@ describe("the compositor swap's flag is retired (#1577 slice 4b)", () => {
       passing as coverage.
     */
     expect(
-      TEXTS.some((source) => source.text.includes("captureCastingReferenceLibraryEnabled(")),
-      "the predicate shape finds the parent's own reader",
+      TEXTS.some((source) => source.text.includes("captureCastingFaceScanEnabled(")),
+      "the predicate shape finds a live flag's own reader",
     ).toBe(true);
     expect(
       TEXTS.some((source) => source.text.includes(`process.env[${PARENT}_ENV]`)

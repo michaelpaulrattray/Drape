@@ -26,7 +26,7 @@ import {
  *
  * **The check could never fire.** The parent chain is
  * `CASTING_INK_CUT_SCOPE` → `CASTING_INK_STUDIO_SCOPE` →
- * `CASTING_REFERENCE_LIBRARY_SCOPE` → `CASTING_V2_SCOPE` (the repaint's own
+ * `CASTING_V2_SCOPE` (the reference library sat here until #1577 slice D5, and the repaint's own
  * flag sat in that chain until #1577 slice 4b retired it), and the last of
  * those already refuses to boot without the key. It was found by driving the
  * guard through `validateEnv()` and insisting the arm assert ITS OWN REASON —

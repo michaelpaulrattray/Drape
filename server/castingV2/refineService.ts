@@ -292,7 +292,6 @@ import { refusal, refusalOf } from "./refusalTag";
 import { padToFrame, studioBackgroundOf, type StudioBackground } from "./referenceFit";
 import { capitalize, pronounsForSex } from "./castPronouns";
 import {
-  captureCastingReferenceLibraryEnabled,
   captureCastingHairReferenceEnabled,
   captureCastingInkReferenceEnabled,
   captureCastingInkTransformEnabled,
@@ -751,16 +750,17 @@ export type RefineServiceDependencies = {
   storeImage?: (
     input: { key: string; bytes: Buffer; contentType: string },
   ) => Promise<{ key: string; url: string }>;
-  /**
-   * Whether this face builds a reference library — read ONCE per render.
-   *
-   * The predicate rather than a boolean, and the same one handed to the mint, so
-   * the caller's decision to do the work and the mint's decision to accept it
-   * can never be two different answers. The caller has to read it too: composing
-   * the ask list is free, but the digests the duplicate check needs are a
-   * database round trip, and a dark deploy must not pay for one.
-   */
-  referenceLibraryEnabled?: (userId: number) => boolean;
+  /*
+    ⚠ `referenceLibraryEnabled` STOOD HERE AND IS GONE WITH ITS FLAG (#1577
+    slice D5). It was the predicate — not a boolean — read once per render and
+    handed to the mint as well, so the caller's decision to do the work and the
+    mint's decision to accept it could never be two different answers; the
+    caller needed it because composing the ask list is free while the digests
+    the duplicate check needs are a database round trip, and a dark deploy must
+    not pay for one. There is no dark deploy any more: the library is what a
+    Casting V2 refine does, and this road is only reached after
+    `requireCastingV2`.
+  */
   /** The library's retirement, injectable so the removal's two arms can be
    *  driven without a database (chunk 3). */
   retireSlot?: typeof retireReferenceSlot;
@@ -4793,7 +4793,7 @@ async function refineCandidateCounted(
     studio carries on.
 
     What replaces it is not nothing: the REFERENCE LIBRARY carries a crop into
-    the repaint recipe (`CASTING_REFERENCE_LIBRARY_SCOPE`, `all`), which is the
+    the repaint recipe (which every paid refine takes since #1577 slice 4b), which is the
     mechanism actually keeping a customer's earlier work today. That is a
     different table and a different flag and it is untouched here — the
     repaint's own flag was retired with the paste road in #1577 slice 4b, so the
@@ -6607,33 +6607,32 @@ async function refineCandidateCounted(
       ever return the same rows more slowly.
     */
     /*
-      ⚠ GATED ON THE LIBRARY'S OWN FLAG SINCE #1577 SLICE 4b, AND THAT IS THE
-      SAME CONDITION IT ALWAYS HAD RATHER THAN A NEW ONE.
+      ⚠ IT IS NO LONGER A CONDITION — #1577 SLICE D5 RETIRED THE FLAG IT ASKED.
 
-      It read the repaint's flag, and that flag was an AND of its parent: the
-      repaint served a user only if the reference library did
-      (`captureCastingRepaintEnabled` ended in
-      `captureCastingReferenceLibraryEnabled`). So *repaint on* and *library on*
-      were the same answer here, and with the repaint's flag retired the parent
-      is what is left to read. Production holds the library at `all`, so this
-      round trip happens on every refine exactly as it did before.
+      It read the repaint's flag until slice 4b and the LIBRARY's own flag after
+      it, and each was an AND ending in the next one down
+      (`captureCastingRepaintEnabled` returned
+      `captureCastingReferenceLibraryEnabled`, which returned
+      `captureCastingV2Enabled`). The library stood at `all` from 2026-08-24, so
+      this round trip already happened on every refine; what is gone is the
+      branch that could have skipped it.
 
-      It matters that it is still a CONDITION: these are the LIBRARY's rows, and
-      a deploy with the library dark must not pay for a database round trip to
-      read rows nobody could have written — which is what the arm titled *with
-      the flag dark it never speaks to the library at all* exists to hold. That
-      arm passed before this slice for the WRONG REASON: what silenced the query
-      was the suite leaving the repaint flag unset, not the library flag.
+      What the condition was FOR, so the loss is stated rather than discovered
+      later: a deploy with the library dark must not pay for a database round
+      trip to read rows nobody could have written. There is no such deploy any
+      more — the library is what a Casting V2 refine does, and `refineCandidate`
+      runs `requireCastingV2` before anything reaches here. The arm titled *with
+      the flag dark it never speaks to the library at all* goes with it, which is
+      the honest cost: it had already passed for the WRONG REASON once (what
+      silenced the query was the suite leaving the repaint flag unset, not the
+      library flag), and an arm with no subject left is what slice 4b found 134
+      of.
     */
-    const branchRows = (dependencies.referenceLibraryEnabled ?? captureCastingReferenceLibraryEnabled)(
-      input.userId,
-    )
-      ? await listLineageReferences({
-        userId: input.userId,
-        candidateId: variant.candidateId,
-        anchorVariantId: variant.id,
-      })
-      : [];
+    const branchRows = await listLineageReferences({
+      userId: input.userId,
+      candidateId: variant.candidateId,
+      anchorVariantId: variant.id,
+    });
     /*
       THE INK CARRY'S ENLARGEMENT, RESOLVED ONCE PER RENDER.
 
@@ -9597,8 +9596,9 @@ async function refineCandidateCounted(
       # take back a picture that is about to be delivered
 
       `mintReferencesForRender` catches its own failures and returns `failed`,
-      but everything BEFORE it — the flag read, the digest query, the slot
-      composition — is this function's own code running inside the request's
+      but everything BEFORE it — the digest query, the slot composition; a flag
+      read too until #1577 slice D5 retired the library's own switch — is this
+      function's own code running inside the request's
       outer try, whose catch refunds. This block now runs BEFORE the landing, so
       a throw here would refund a render nobody has seen rather than take back
       one somebody is looking at — the gentler of the two failures, and still
@@ -9608,8 +9608,6 @@ async function refineCandidateCounted(
       synchronous throw rather than a rejected promise that walks past a
       `.catch()`.
     */
-    const libraryEnabled = dependencies.referenceLibraryEnabled
-      ?? captureCastingReferenceLibraryEnabled;
     /*
       WHERE A READER AND A CALIBRATED RULER DISAGREED (fable-429 §3 condition 2).
 
@@ -9652,456 +9650,466 @@ async function refineCandidateCounted(
       priorWords: ReadonlyMap<string, readonly string[]>;
       minted: Set<string>;
     } | null = null;
-    if (libraryEnabled(input.userId)) {
-      try {
-        /* The other half of the same derivation, and the reason it is a `Set`
-           computed once above: any missed item disputes its facet, so the two
-           lists are complements by construction rather than by two filters
-           happening to agree. */
-        /* Written misses AND carried ones — the two are disjoint by
-           construction (see `carriedMissedFacets`), so this is a concatenation
-           rather than a merge. */
-        const disputed = [...Array.from(missedFacets), ...carriedMissedFacets];
+    /*
+      ⚠ IT WAS WRAPPED IN `if (libraryEnabled(input.userId))` UNTIL #1577 SLICE
+      D5 RETIRED THAT FLAG, and the wrapper is removed rather than left as a
+      bare scope — a block with no condition is a puzzle somebody re-finds in
+      six months. The whole 450-line body is de-indented by two spaces and
+      otherwise byte-identical, which is why this diff looks larger than the
+      change is.
+
+      What the condition was FOR: with the library dark there was nothing to
+      mint and nothing to carry, so this whole block was skipped. There is no
+      dark deploy any more, and `requireCastingV2` runs before anything reaches
+      here.
+    */
+    try {
+      /* The other half of the same derivation, and the reason it is a `Set`
+         computed once above: any missed item disputes its facet, so the two
+         lists are complements by construction rather than by two filters
+         happening to agree. */
+      /* Written misses AND carried ones — the two are disjoint by
+         construction (see `carriedMissedFacets`), so this is a concatenation
+         rather than a merge. */
+      const disputed = [...Array.from(missedFacets), ...carriedMissedFacets];
+      /*
+        THE DIGESTS THIS BRANCH ALREADY HOLDS, so a byte-identical crop is
+        caught whether it arrived this render or three renders ago. `marks`
+        and `makeup` at `face skin` produced exactly that in production,
+        three separate times — the walk, not the fold's entries, because a
+        RETIRED row's bytes are still bytes at a key and a new row pointing
+        at the same picture is still two rows holding one fact.
+
+        The anchor is this variant: its own rows do not exist yet, so the
+        walk climbs its parents and returns the library as it stood when
+        this render started.
+
+        Taken BEFORE the slot list rather than inside it, because the list
+        now needs it: a slot re-cut every render is filed on the strength of
+        what the library already keeps for it, and that answer lives here.
+      */
+      const lineage = await listLineageReferences({
+        userId: input.userId,
+        candidateId: variant.candidateId,
+        anchorVariantId: variant.id,
+      });
+      const live = liveReferences(lineage);
+      /*
+        AND THE SLOTS STILL WAITING FOR A CARRIER (fable-468 §2, ruling b).
+
+        Derived from the SAME read rather than a second one: `liveReferences`
+        drops a disputed row so it cannot displace a crop it has no verdict
+        about, and `supersededCarrySlots` reads the other consequence of that
+        rule — the slots whose newest word about the subject holds no pixels.
+        One of them is the founder's build on candidate 1604.
+      */
+      const awaitingCarrier = new Set(supersededCarrySlots(lineage));
+      const known = new Map<string, string>();
+      for (const row of live) if (row.digest) known.set(row.slot, row.digest);
+
+      /*
+        THE OPEN KINDS THIS ASK WROTE, WITH THE ONE PROPERTY THAT GATES THEM
+        (5b Stage C, fable-872 §2).
+
+        `editDelta`, never the composed recipe: a composed recipe carries every
+        open kind this face has ever been given, so composing from it would
+        re-cut and re-buy a vision read for a kind three edits old on every
+        later render — the same rule the facet passes obey through `earned`.
+
+        The property is READ, never re-derived: the acceptance door bought it
+        once for this noun and wrote it down. `null` here is *nobody answered*,
+        and `mintedSlotsForRender` files that as `openKindLocalityUnread` and
+        cuts nothing — the conservative side, because a gate treating unknown
+        as croppable files one wing under the name of two.
+      */
+      const openAsks = await Promise.all(
+        Object.entries(editDelta?.open ?? {}).map(async ([kind, ask]) => ({
+          kind,
+          /* HER WORD, spaces intact — the key is `cat-ears` and she typed
+             `cat ears`, and the library row is read as copy by the panel, the
+             recipe, Sign and the view words. `OpenKindToFile.noun` carries the
+             whole argument. */
+          noun: ask.noun,
+          words: ask.words,
+          locality: (await readOpenKindProperties(kind))?.locality ?? null,
+        })),
+      );
+      const { slots, unfiled, unfiledOpen, disputeSetAside } = mintedSlotsForRender({
+        earned,
+        disputed,
+        /* The slots THIS step asked for (#2673): their delivered crop is the
+           guide, and the reader's dispute on them is logged, not obeyed. */
+        editedSlots: image.askedNow ?? [],
+        captions: capturedCaptions,
+        /* The earned pass's fallback: a fact the binding verifier confirmed
+           files its ask's words rather than nothing, so a caption the two
+           readers worded differently cannot delete a paid feature. */
+        asked: askedWords,
+        open: openAsks,
+        /* What the instruction said the worn object IS — EVERY kind the worn
+           list names, derived once above through `familyGroupsOf` (#2616).
+           It was the single longest match, so a list holding two sorts of
+           thing filed every item under the winner's slots and the other
+           item's slot got no row at all. */
+        accessoryKind: accessoryKinds,
         /*
-          THE DIGESTS THIS BRANCH ALREADY HOLDS, so a byte-identical crop is
-          caught whether it arrived this render or three renders ago. `marks`
-          and `makeup` at `face skin` produced exactly that in production,
-          three separate times — the walk, not the fold's entries, because a
-          RETIRED row's bytes are still bytes at a key and a new row pointing
-          at the same picture is still two rows holding one fact.
+          WHAT THE LIBRARY ALREADY KEEPS FOR HER, which is the only honest
+          answer to *has she paid for a build?*
 
-          The anchor is this variant: its own rows do not exist yet, so the
-          walk climbs its parents and returns the library as it stood when
-          this render started.
-
-          Taken BEFORE the slot list rather than inside it, because the list
-          now needs it: a slot re-cut every render is filed on the strength of
-          what the library already keeps for it, and that answer lives here.
+          A build produces no caption — measured on the live pipeline, dev
+          #365: the render verifier passed the narrowing, `buildSpan` read it
+          at −10.8%, and the caption reader looked at the same frame and said
+          *"no visible slimming edit"* for both facets. So "does this slot
+          have words" is a gate that can never open for `build`, and it was
+          the gate the whole feature stood behind.
         */
-        const lineage = await listLineageReferences({
-          userId: input.userId,
-          candidateId: variant.candidateId,
-          anchorVariantId: variant.id,
-        });
-        const live = liveReferences(lineage);
+        held: new Set(live.map((row) => row.slot)),
+        awaitingCarrier,
         /*
-          AND THE SLOTS STILL WAITING FOR A CARRIER (fable-468 §2, ruling b).
+          AND WHAT THIS RENDER'S OWN READER CONFIRMED WITHOUT BEING ASKED.
 
-          Derived from the SAME read rather than a second one: `liveReferences`
-          drops a disputed row so it cannot displace a crop it has no verdict
-          about, and `supersededCarrySlots` reads the other consequence of that
-          rule — the slots whose newest word about the subject holds no pixels.
-          One of them is the founder's build on candidate 1604.
+          Read ∧ verified ∧ NOT written by this ask: the facet was carried
+          into the prompt as a fact she already has, and the reader looked at
+          the delivered frame and agreed. On candidate 1604 that is v#186
+          saying "slender arms and torso visible, consistent with a slim
+          build" two renders after the crop was refused as disputed.
+
+          `readChecks` above is deliberately not reused: it is filtered to
+          WRITTEN facets, which is the opposite of this question.
         */
-        const awaitingCarrier = new Set(supersededCarrySlots(lineage));
-        const known = new Map<string, string>();
-        for (const row of live) if (row.digest) known.set(row.slot, row.digest);
-
+        confirmed: verification.unavailable ? [] : Array.from(new Set(
+          verification.checks
+            .flatMap((check) => {
+              /* Facets only: this list tells the LIBRARY a fact it already
+                 holds was seen again, and the library's own key is a slot the
+                 catalogue owns. An open kind's crop is minted by its own
+                 door, from `openAsks`, and never from a reader's affirmative. */
+              const facet = facetIn(check.subject);
+              if (facet === null) return [];
+              /* An unconfirmed yes on a rap-sheet facet confirms nothing
+                 (#2646) — the same rule the earned pass reads above. */
+              if (unconfirmed.has(facet)) return [];
+              return check.read && check.verified && !writtenFacets.has(facet) ? [facet] : [];
+            }),
+        )),
         /*
-          THE OPEN KINDS THIS ASK WROTE, WITH THE ONE PROPERTY THAT GATES THEM
-          (5b Stage C, fable-872 §2).
+          AND THE ONE INSTANCE SHE POINTED AT, so the library records what the
+          painter was actually asked for.
 
-          `editDelta`, never the composed recipe: a composed recipe carries every
-          open kind this face has ever been given, so composing from it would
-          re-cut and re-buy a vision read for a kind three edits old on every
-          later render — the same rule the facet passes obey through `earned`.
-
-          The property is READ, never re-derived: the acceptance door bought it
-          once for this noun and wrote it down. `null` here is *nobody answered*,
-          and `mintedSlotsForRender` files that as `openKindLocalityUnread` and
-          cuts nothing — the conservative side, because a gate treating unknown
-          as croppable files one wing under the name of two.
+          This is where fable-444's ruling C is kept: the delta stays
+          whole-face, and the library is the memory of per-side. A scoped
+          render that filed both instances would put a row on `eye@right`
+          claiming a delivery its own recipe never asked for — and every later
+          render would carry it.
         */
-        const openAsks = await Promise.all(
-          Object.entries(editDelta?.open ?? {}).map(async ([kind, ask]) => ({
-            kind,
-            /* HER WORD, spaces intact — the key is `cat-ears` and she typed
-               `cat ears`, and the library row is read as copy by the panel, the
-               recipe, Sign and the view words. `OpenKindToFile.noun` carries the
-               whole argument. */
-            noun: ask.noun,
-            words: ask.words,
-            locality: (await readOpenKindProperties(kind))?.locality ?? null,
-          })),
-        );
-        const { slots, unfiled, unfiledOpen, disputeSetAside } = mintedSlotsForRender({
-          earned,
-          disputed,
-          /* The slots THIS step asked for (#2673): their delivered crop is the
-             guide, and the reader's dispute on them is logged, not obeyed. */
-          editedSlots: image.askedNow ?? [],
-          captions: capturedCaptions,
-          /* The earned pass's fallback: a fact the binding verifier confirmed
-             files its ask's words rather than nothing, so a caption the two
-             readers worded differently cannot delete a paid feature. */
-          asked: askedWords,
-          open: openAsks,
-          /* What the instruction said the worn object IS — EVERY kind the worn
-             list names, derived once above through `familyGroupsOf` (#2616).
-             It was the single longest match, so a list holding two sorts of
-             thing filed every item under the winner's slots and the other
-             item's slot got no row at all. */
-          accessoryKind: accessoryKinds,
-          /*
-            WHAT THE LIBRARY ALREADY KEEPS FOR HER, which is the only honest
-            answer to *has she paid for a build?*
-
-            A build produces no caption — measured on the live pipeline, dev
-            #365: the render verifier passed the narrowing, `buildSpan` read it
-            at −10.8%, and the caption reader looked at the same frame and said
-            *"no visible slimming edit"* for both facets. So "does this slot
-            have words" is a gate that can never open for `build`, and it was
-            the gate the whole feature stood behind.
-          */
-          held: new Set(live.map((row) => row.slot)),
-          awaitingCarrier,
-          /*
-            AND WHAT THIS RENDER'S OWN READER CONFIRMED WITHOUT BEING ASKED.
-
-            Read ∧ verified ∧ NOT written by this ask: the facet was carried
-            into the prompt as a fact she already has, and the reader looked at
-            the delivered frame and agreed. On candidate 1604 that is v#186
-            saying "slender arms and torso visible, consistent with a slim
-            build" two renders after the crop was refused as disputed.
-
-            `readChecks` above is deliberately not reused: it is filtered to
-            WRITTEN facets, which is the opposite of this question.
-          */
-          confirmed: verification.unavailable ? [] : Array.from(new Set(
-            verification.checks
-              .flatMap((check) => {
-                /* Facets only: this list tells the LIBRARY a fact it already
-                   holds was seen again, and the library's own key is a slot the
-                   catalogue owns. An open kind's crop is minted by its own
-                   door, from `openAsks`, and never from a reader's affirmative. */
-                const facet = facetIn(check.subject);
-                if (facet === null) return [];
-                /* An unconfirmed yes on a rap-sheet facet confirms nothing
-                   (#2646) — the same rule the earned pass reads above. */
-                if (unconfirmed.has(facet)) return [];
-                return check.read && check.verified && !writtenFacets.has(facet) ? [facet] : [];
-              }),
-          )),
-          /*
-            AND THE ONE INSTANCE SHE POINTED AT, so the library records what the
-            painter was actually asked for.
-
-            This is where fable-444's ruling C is kept: the delta stays
-            whole-face, and the library is the memory of per-side. A scoped
-            render that filed both instances would put a row on `eye@right`
-            claiming a delivery its own recipe never asked for — and every later
-            render would carry it.
-          */
-          ...(input.scope ? { scope: input.scope } : {}),
-        });
-        libraryAtRender = {
-          rows: lineage,
-          priorWords: priorWordsBySlot(live),
-          minted: new Set(slots.map((one) => one.slot)),
-        };
-        /*
-          ⚠ THE READER'S DISPUTES ON A SLOT THIS EDIT CHANGED, KEPT AS TELEMETRY
-          (#2673). The slot was filed as its newest picture anyway, on his
-          ruling; this line is where a person can still see that the reader and
-          the painter disagreed — including an affirmation whose confirming
-          re-read never came (#2646's unconfirmed rule, `unconfirmed` below).
-        */
-        if (disputeSetAside.length > 0) {
-          log.info(
-            {
-              operationId,
-              variant: variant.publicId,
-              disputeSetAside,
-              unconfirmed: Array.from(unconfirmed),
-            },
-            "[refineService] the reader disputed a feature this edit changed — its newest picture is kept as the guide anyway",
-          );
-        }
-        if (unfiled.length > 0) {
-          log.info(
-            { operationId, variant: variant.publicId, unfiled },
-            "[refineService] a facet this render wrote had no library slot to file in",
-          );
-        }
-        /*
-          AND THE OPEN KINDS THAT FILED NOTHING, with the reason NAMED.
-          `openKindLocalityUnread` is a kind whose property read is failing,
-          which is silently taking the conservative path on every ask forever and
-          is worth chasing. `openKindDistributed` used to stand beside it and no
-          longer exists: since the D1 wire (fable-987 §1, fable-1001) a
-          distributed kind files one slot per side, and the refusal that remains
-          is the COUNT'S, taken at the mint where the frame is.
-        */
-        if (unfiledOpen.length > 0) {
-          log.info(
-            { operationId, variant: variant.publicId, unfiledOpen },
-            "[refineService] an open kind this render wrote filed no crop — the reason is the finding",
-          );
-        }
-        if (disputed.length > 0) {
-          log.info(
-            {
-              operationId,
-              variant: variant.publicId,
-              disputed,
-              /* Split at the log rather than only in the code, because the two
-                 halves are different findings: a WRITTEN miss is an ask that
-                 did not land, and a CARRIED one is a feature she already had
-                 going missing under somebody else's edit. A single list would
-                 make a carry break read as a delivery failure. */
-              carried: carriedMissedFacets,
-            },
-            "[refineService] this render's reader disputed a facet — its crop is cut for a human, not for the library",
-          );
-        }
-        /*
-          A PAID RENDER THAT FILED NOTHING SAYS SO (#64 item 2; the compositor
-          design's own self-maintaining table, driven at the code 2026-08-24).
-
-          Until now this branch guarded the mint and logged nothing: a render
-          the customer paid for could contribute nothing to her library and the
-          only trace was the ABSENCE of a mint line. The lines above each name
-          one road to nothing (a facet with no slot, an open kind that filed no
-          crop, a disputed facet), but a render can reach zero slots down a road
-          none of them names — a reader that was unavailable, so nothing was
-          earned or confirmed; a build that produced no caption; an ask that
-          wrote no facet at all. So the line carries the ingredients the mint
-          was handed, and the reason is read off them rather than guessed:
-          `earned` and `disputed` are this render's reader verdicts, `held` is
-          what the library already keeps, `open` the open-kind asks, and the
-          two `unfiled` counts are the lines above, repeated as numbers so one
-          log read holds the whole answer.
-        */
-        if (slots.length === 0) {
-          log.info(
-            {
-              operationId,
-              variant: variant.publicId,
-              earned: earned.length,
-              disputed: disputed.length,
-              held: live.length,
-              awaitingCarrier: awaitingCarrier.size,
-              open: openAsks.length,
-              unfiled: unfiled.length,
-              unfiledOpen: unfiledOpen.length,
-              readerUnavailable: verification.unavailable,
-            },
-            "[refineService] this render filed nothing in the library — no slot was minted",
-          );
-        }
-        if (slots.length > 0) {
-          const reader = dependencies.regions ?? defaultRegionReader();
-          /*
-            THE GUARD'S OWN READ, and `absentIsAnswer` is true on purpose.
-
-            Asked of the DELIVERED frame, nothing found means the frame does not
-            wear the thing — which the guard turns into `subjectAbsent`, the
-            honest refusal (fable-181). Refusing to answer instead would arrive
-            as `readDidNotSettle` and file "we could not tell" over a picture
-            that told us plainly.
-          */
-          const read: MintRegionReader = async ({ frame, question, side, declaredTwoSided }) => {
-            /* HER AXIS IS HERS, not this frame's (fable-603 §3): the face read a
-               bilateral question needs is bought once per candidate rather than
-               once per frame, on a measurement of 0.3px across a whole chain. */
-            const axisKey = input.candidatePublicId;
-            if (side === undefined) {
-              return reader.region({ image: frame, name: question, absentIsAnswer: true, axisKey });
-            }
-            /*
-              A SIDE IS SCOPED BY THE READER OR IT IS NOT SCOPED AT ALL.
-
-              Asked about one hoop, the whole-frame answer is both of them, and
-              scoring a crop of one against a region of two produces a number
-              around 50% that means nothing except that the question was wrong.
-              A reader without the capability returns null here, which the guard
-              reads as `readDidNotSettle` — the one refusal that records no
-              reading, so nothing measured against the wrong boundary can ever
-              become this kind's specimen.
-            */
-            if (!reader.regionSides) return null;
-            const sides = await reader.regionSides({
-              image: frame, name: question, absentIsAnswer: true, axisKey,
-              /* An open kind is outside the reader's own bilateral vocabulary, so
-                 without the classifier's answer travelling this far every
-                 distributed crop would refuse at the reader (the D1 wire). */
-              ...(declaredTwoSided === undefined ? {} : { declaredTwoSided }),
-            });
-            return sides ? sides[side] : null;
-          };
-
-          const minted = await mintReferencesForRender({
-            userId: input.userId,
-            variantId: variant.id,
-            frame: { bytes: image.bytes },
-            /*
-              ⚠ THE HARVEST'S FIVE MAPS ARE THE PASTE ROAD'S AND THE PASTE ROAD
-              IS GONE — #1577 slice 4b. These read `image.evidence?.…` with
-              exactly these fallbacks, and `evidence` is `undefined` on every
-              repaint, so the fallbacks have been the live values for every
-              production render since the repaint reached every account.
-              Declared as the constants they already were rather than read off a
-              field that cannot exist: `readGround` below is what this road
-              actually hands the mint, and it is handed unconditionally now for
-              the same reason.
-
-              The mint's own harvest-side machinery is therefore reached with
-              nothing by its only caller. Collapsing THAT is its own slice
-              (#1577's record names it) — a dead input is not licence to cut a
-              module this one does not own.
-            */
-            applied: null,
-            masterRegions: new Map(),
-            deliveredRegions: null,
-            masterSideRegions: null,
-            deliveredSideRegions: null,
-            slots,
-            knownDigests: known,
-            /*
-              EVERYTHING SHE HAS EVER SAID ABOUT EACH SLOT — for the QUESTION
-              only (fable-1419 §1(a)).
-
-              Derived from `live`, the lineage walk this function already read,
-              rather than fetched again: a second read of the same rows is a
-              second answer to the same question waiting to disagree. It reaches
-              exactly one decision — the string an OPEN KIND's segmenter call is
-              keyed on — and `MintInput.priorWords` carries the measurement.
-
-              What it fixes: the founder's orb got no crop on v218 because the
-              mint asked *"orb glowing slightly brighter"*, this render's own
-              words, and the segmenter answered nothing. Her first sentence for
-              the same orb answers 1,402 px, and the two joined answer
-              identically.
-            */
-            priorWords: priorWordsBySlot(live),
-            /*
-              THE FRAME THIS RENDER WAS PAINTED FROM — the ruler's other end.
-
-              `variant.baseImageKey` is what the render was anchored on, which
-              under recipe v3 is the sharp original: exactly the pair the body
-              bench measured its court on (master → first body edit). Passing
-              the previous DELIVERED frame instead would be a reading with no
-              court behind it.
-
-              It costs nothing unless a court is asked something it can answer:
-              the mint buys its two anchor reads only for a disputed slot whose
-              facets an instrument measures, on a branch with no crop for that
-              slot yet. Every other render passes these bytes and spends nothing.
-            */
-            anchorFrame: { bytes: base.bytes },
+        ...(input.scope ? { scope: input.scope } : {}),
+      });
+      libraryAtRender = {
+        rows: lineage,
+        priorWords: priorWordsBySlot(live),
+        minted: new Set(slots.map((one) => one.slot)),
+      };
+      /*
+        ⚠ THE READER'S DISPUTES ON A SLOT THIS EDIT CHANGED, KEPT AS TELEMETRY
+        (#2673). The slot was filed as its newest picture anyway, on his
+        ruling; this line is where a person can still see that the reader and
+        the painter disagreed — including an affirmation whose confirming
+        re-read never came (#2646's unconfirmed rule, `unconfirmed` below).
+      */
+      if (disputeSetAside.length > 0) {
+        log.info(
+          {
             operationId,
-            dependencies: {
-              read,
-              /*
-                THE GROUND, ON THE ROAD THAT BRINGS NO MAP.
-
-                A repaint has no harvest, so `masterRegions` above is empty and
-                every cuttable slot would fall to `noRegion` and file words —
-                the library ceasing to acquire crops on the very road that makes
-                crops the carrier. The mint asks the delivered frame instead, and
-                what it gets is `region(delivered)`: the feature's whole extent
-                on the frame that delivered it (§2.3).
-
-                THE SAME ADAPTER as the guard's, deliberately — one definition of
-                how this product asks a frame where something is, rather than two
-                that drift. The independence the guard needs is between the two
-                READS, and it is structural: the mint invokes each seam
-                separately, so the mask that cut the crop is never the mask the
-                crop is scored against.
-
-                ⚠ IT WAS GATED ON THE FLAG rather than on the absence of
-                evidence, because the old paste road could also arrive here with
-                no evidence (the masked path off) and inferring the need from
-                that would have started spending vision calls on a live path
-                that never asked for them. #1577 slice 4b removed that road and
-                its flag, so the gate's whole population is this road and the
-                reader is handed unconditionally.
-              */
-              readGround: read,
-              /*
-                THE COMPOSER'S TWO READS, ON THE FRAME THE USER IS LOOKING AT.
-
-                `build` has no segmentation question — no region vocabulary word
-                names a body, and D-213 forbids inventing one — so its region is
-                COMPOSED: her silhouette below the bottom of her head. Both terms
-                are read here, on `image.bytes`, and not taken from the harvest's
-                maps: those are the MASTER's regions (right question, wrong
-                frame) or the PAINTED frame's (not the composite the user sees).
-                A chin from one frame cutting a crop from another is the
-                wrong-boundary class with her whole body in it.
-
-                Not gated on a flag beyond the library's own, and deliberately:
-                this is what the live mint WRITES. Under words alone a delivered
-                build is lost ENTIRELY on the next edit — 3 faces of 3, as though
-                she had never paid for it (opus-326) — and the same crop kept
-                92–109% of it.
-
-                Costed honestly: two reads per delivered render, and ONLY on a
-                face that already has something to say about its build.
-                `mintedSlotsForRender` files nothing where nothing has ever been
-                said, so a face nobody has body-edited pays nothing at all. The
-                mint's log line reports them as `derivedReads`.
-
-                Wired HERE and asserted here — a control nothing invokes is not a
-                control (invariant 7), and this program has already paid twice
-                for a store that was inert while two benches passed.
-              */
-              derivedGround: {
-                region: read,
-                subject: ({ frame }) => reader.subject({ image: frame }),
-              },
-              /*
-                THE LIBRARY'S OWN READ OF WHAT THIS SLOT NOW IS.
-
-                Not gated on any flag, and that is deliberate: this is a fix to
-                what the live mint WRITES, not a road behind a door. Eight
-                production earring rows named her glasses because a slot's words
-                were its facets' whole-frame captions, and D-244 re-says a
-                slot's whole stack on every edit — so those sentences would ask
-                a paid render to put them back on.
-
-                `captionSlot` is handed the slot's own CUT wherever there is
-                one, which is what makes the defect unreachable rather than
-                merely avoided: a crop of her left earlobe cannot be described
-                as glasses, because the glasses are not in the bytes.
-
-                Wired HERE and asserted here — a control nothing invokes is not
-                a control (invariant 7), and this program has already paid twice
-                for a store that was inert while two benches passed.
-              */
-              readWords: ({ bytes, contentType, noun, view }) => captionSlot({
-                bytes,
-                contentType,
-                noun,
-                view,
-              }),
-              enabledFor: libraryEnabled,
-            },
-          });
-          /* Both verdicts, onto the landed row below. Null stays null when no
-             court was asked, which is every render that disputed nothing a
-             ruler measures — so the key's presence is itself the signal. */
-          adjudications = minted.adjudications ?? null;
-          for (const slot of minted.slots) {
-            if (slot.outcome === "stored" && isOpenSlot(slot.slot)) openCropsStored.add(slot.slot);
-          }
-          log.info(
-            {
-              operationId,
-              variant: variant.publicId,
-              outcome: minted.outcome,
-              slots: minted.slots,
-              ...(minted.adjudications ? { adjudications: minted.adjudications } : {}),
-            },
-            "[refineService] the library was told what this render made of her",
-          );
-        }
-      } catch (error) {
-        log.warn(
-          { err: error, operationId, variant: variant.publicId },
-          "[refineService] this render's references were not minted — the picture stands",
+            variant: variant.publicId,
+            disputeSetAside,
+            unconfirmed: Array.from(unconfirmed),
+          },
+          "[refineService] the reader disputed a feature this edit changed — its newest picture is kept as the guide anyway",
         );
       }
+      if (unfiled.length > 0) {
+        log.info(
+          { operationId, variant: variant.publicId, unfiled },
+          "[refineService] a facet this render wrote had no library slot to file in",
+        );
+      }
+      /*
+        AND THE OPEN KINDS THAT FILED NOTHING, with the reason NAMED.
+        `openKindLocalityUnread` is a kind whose property read is failing,
+        which is silently taking the conservative path on every ask forever and
+        is worth chasing. `openKindDistributed` used to stand beside it and no
+        longer exists: since the D1 wire (fable-987 §1, fable-1001) a
+        distributed kind files one slot per side, and the refusal that remains
+        is the COUNT'S, taken at the mint where the frame is.
+      */
+      if (unfiledOpen.length > 0) {
+        log.info(
+          { operationId, variant: variant.publicId, unfiledOpen },
+          "[refineService] an open kind this render wrote filed no crop — the reason is the finding",
+        );
+      }
+      if (disputed.length > 0) {
+        log.info(
+          {
+            operationId,
+            variant: variant.publicId,
+            disputed,
+            /* Split at the log rather than only in the code, because the two
+               halves are different findings: a WRITTEN miss is an ask that
+               did not land, and a CARRIED one is a feature she already had
+               going missing under somebody else's edit. A single list would
+               make a carry break read as a delivery failure. */
+            carried: carriedMissedFacets,
+          },
+          "[refineService] this render's reader disputed a facet — its crop is cut for a human, not for the library",
+        );
+      }
+      /*
+        A PAID RENDER THAT FILED NOTHING SAYS SO (#64 item 2; the compositor
+        design's own self-maintaining table, driven at the code 2026-08-24).
+
+        Until now this branch guarded the mint and logged nothing: a render
+        the customer paid for could contribute nothing to her library and the
+        only trace was the ABSENCE of a mint line. The lines above each name
+        one road to nothing (a facet with no slot, an open kind that filed no
+        crop, a disputed facet), but a render can reach zero slots down a road
+        none of them names — a reader that was unavailable, so nothing was
+        earned or confirmed; a build that produced no caption; an ask that
+        wrote no facet at all. So the line carries the ingredients the mint
+        was handed, and the reason is read off them rather than guessed:
+        `earned` and `disputed` are this render's reader verdicts, `held` is
+        what the library already keeps, `open` the open-kind asks, and the
+        two `unfiled` counts are the lines above, repeated as numbers so one
+        log read holds the whole answer.
+      */
+      if (slots.length === 0) {
+        log.info(
+          {
+            operationId,
+            variant: variant.publicId,
+            earned: earned.length,
+            disputed: disputed.length,
+            held: live.length,
+            awaitingCarrier: awaitingCarrier.size,
+            open: openAsks.length,
+            unfiled: unfiled.length,
+            unfiledOpen: unfiledOpen.length,
+            readerUnavailable: verification.unavailable,
+          },
+          "[refineService] this render filed nothing in the library — no slot was minted",
+        );
+      }
+      if (slots.length > 0) {
+        const reader = dependencies.regions ?? defaultRegionReader();
+        /*
+          THE GUARD'S OWN READ, and `absentIsAnswer` is true on purpose.
+
+          Asked of the DELIVERED frame, nothing found means the frame does not
+          wear the thing — which the guard turns into `subjectAbsent`, the
+          honest refusal (fable-181). Refusing to answer instead would arrive
+          as `readDidNotSettle` and file "we could not tell" over a picture
+          that told us plainly.
+        */
+        const read: MintRegionReader = async ({ frame, question, side, declaredTwoSided }) => {
+          /* HER AXIS IS HERS, not this frame's (fable-603 §3): the face read a
+             bilateral question needs is bought once per candidate rather than
+             once per frame, on a measurement of 0.3px across a whole chain. */
+          const axisKey = input.candidatePublicId;
+          if (side === undefined) {
+            return reader.region({ image: frame, name: question, absentIsAnswer: true, axisKey });
+          }
+          /*
+            A SIDE IS SCOPED BY THE READER OR IT IS NOT SCOPED AT ALL.
+
+            Asked about one hoop, the whole-frame answer is both of them, and
+            scoring a crop of one against a region of two produces a number
+            around 50% that means nothing except that the question was wrong.
+            A reader without the capability returns null here, which the guard
+            reads as `readDidNotSettle` — the one refusal that records no
+            reading, so nothing measured against the wrong boundary can ever
+            become this kind's specimen.
+          */
+          if (!reader.regionSides) return null;
+          const sides = await reader.regionSides({
+            image: frame, name: question, absentIsAnswer: true, axisKey,
+            /* An open kind is outside the reader's own bilateral vocabulary, so
+               without the classifier's answer travelling this far every
+               distributed crop would refuse at the reader (the D1 wire). */
+            ...(declaredTwoSided === undefined ? {} : { declaredTwoSided }),
+          });
+          return sides ? sides[side] : null;
+        };
+
+        const minted = await mintReferencesForRender({
+          userId: input.userId,
+          variantId: variant.id,
+          frame: { bytes: image.bytes },
+          /*
+            ⚠ THE HARVEST'S FIVE MAPS ARE THE PASTE ROAD'S AND THE PASTE ROAD
+            IS GONE — #1577 slice 4b. These read `image.evidence?.…` with
+            exactly these fallbacks, and `evidence` is `undefined` on every
+            repaint, so the fallbacks have been the live values for every
+            production render since the repaint reached every account.
+            Declared as the constants they already were rather than read off a
+            field that cannot exist: `readGround` below is what this road
+            actually hands the mint, and it is handed unconditionally now for
+            the same reason.
+
+            The mint's own harvest-side machinery is therefore reached with
+            nothing by its only caller. Collapsing THAT is its own slice
+            (#1577's record names it) — a dead input is not licence to cut a
+            module this one does not own.
+          */
+          applied: null,
+          masterRegions: new Map(),
+          deliveredRegions: null,
+          masterSideRegions: null,
+          deliveredSideRegions: null,
+          slots,
+          knownDigests: known,
+          /*
+            EVERYTHING SHE HAS EVER SAID ABOUT EACH SLOT — for the QUESTION
+            only (fable-1419 §1(a)).
+
+            Derived from `live`, the lineage walk this function already read,
+            rather than fetched again: a second read of the same rows is a
+            second answer to the same question waiting to disagree. It reaches
+            exactly one decision — the string an OPEN KIND's segmenter call is
+            keyed on — and `MintInput.priorWords` carries the measurement.
+
+            What it fixes: the founder's orb got no crop on v218 because the
+            mint asked *"orb glowing slightly brighter"*, this render's own
+            words, and the segmenter answered nothing. Her first sentence for
+            the same orb answers 1,402 px, and the two joined answer
+            identically.
+          */
+          priorWords: priorWordsBySlot(live),
+          /*
+            THE FRAME THIS RENDER WAS PAINTED FROM — the ruler's other end.
+
+            `variant.baseImageKey` is what the render was anchored on, which
+            under recipe v3 is the sharp original: exactly the pair the body
+            bench measured its court on (master → first body edit). Passing
+            the previous DELIVERED frame instead would be a reading with no
+            court behind it.
+
+            It costs nothing unless a court is asked something it can answer:
+            the mint buys its two anchor reads only for a disputed slot whose
+            facets an instrument measures, on a branch with no crop for that
+            slot yet. Every other render passes these bytes and spends nothing.
+          */
+          anchorFrame: { bytes: base.bytes },
+          operationId,
+          dependencies: {
+            read,
+            /*
+              THE GROUND, ON THE ROAD THAT BRINGS NO MAP.
+
+              A repaint has no harvest, so `masterRegions` above is empty and
+              every cuttable slot would fall to `noRegion` and file words —
+              the library ceasing to acquire crops on the very road that makes
+              crops the carrier. The mint asks the delivered frame instead, and
+              what it gets is `region(delivered)`: the feature's whole extent
+              on the frame that delivered it (§2.3).
+
+              THE SAME ADAPTER as the guard's, deliberately — one definition of
+              how this product asks a frame where something is, rather than two
+              that drift. The independence the guard needs is between the two
+              READS, and it is structural: the mint invokes each seam
+              separately, so the mask that cut the crop is never the mask the
+              crop is scored against.
+
+              ⚠ IT WAS GATED ON THE FLAG rather than on the absence of
+              evidence, because the old paste road could also arrive here with
+              no evidence (the masked path off) and inferring the need from
+              that would have started spending vision calls on a live path
+              that never asked for them. #1577 slice 4b removed that road and
+              its flag, so the gate's whole population is this road and the
+              reader is handed unconditionally.
+            */
+            readGround: read,
+            /*
+              THE COMPOSER'S TWO READS, ON THE FRAME THE USER IS LOOKING AT.
+
+              `build` has no segmentation question — no region vocabulary word
+              names a body, and D-213 forbids inventing one — so its region is
+              COMPOSED: her silhouette below the bottom of her head. Both terms
+              are read here, on `image.bytes`, and not taken from the harvest's
+              maps: those are the MASTER's regions (right question, wrong
+              frame) or the PAINTED frame's (not the composite the user sees).
+              A chin from one frame cutting a crop from another is the
+              wrong-boundary class with her whole body in it.
+
+              Not gated on a flag beyond the library's own, and deliberately:
+              this is what the live mint WRITES. Under words alone a delivered
+              build is lost ENTIRELY on the next edit — 3 faces of 3, as though
+              she had never paid for it (opus-326) — and the same crop kept
+              92–109% of it.
+
+              Costed honestly: two reads per delivered render, and ONLY on a
+              face that already has something to say about its build.
+              `mintedSlotsForRender` files nothing where nothing has ever been
+              said, so a face nobody has body-edited pays nothing at all. The
+              mint's log line reports them as `derivedReads`.
+
+              Wired HERE and asserted here — a control nothing invokes is not a
+              control (invariant 7), and this program has already paid twice
+              for a store that was inert while two benches passed.
+            */
+            derivedGround: {
+              region: read,
+              subject: ({ frame }) => reader.subject({ image: frame }),
+            },
+            /*
+              THE LIBRARY'S OWN READ OF WHAT THIS SLOT NOW IS.
+
+              Not gated on any flag, and that is deliberate: this is a fix to
+              what the live mint WRITES, not a road behind a door. Eight
+              production earring rows named her glasses because a slot's words
+              were its facets' whole-frame captions, and D-244 re-says a
+              slot's whole stack on every edit — so those sentences would ask
+              a paid render to put them back on.
+
+              `captionSlot` is handed the slot's own CUT wherever there is
+              one, which is what makes the defect unreachable rather than
+              merely avoided: a crop of her left earlobe cannot be described
+              as glasses, because the glasses are not in the bytes.
+
+              Wired HERE and asserted here — a control nothing invokes is not
+              a control (invariant 7), and this program has already paid twice
+              for a store that was inert while two benches passed.
+            */
+            readWords: ({ bytes, contentType, noun, view }) => captionSlot({
+              bytes,
+              contentType,
+              noun,
+              view,
+            }),
+          },
+        });
+        /* Both verdicts, onto the landed row below. Null stays null when no
+           court was asked, which is every render that disputed nothing a
+           ruler measures — so the key's presence is itself the signal. */
+        adjudications = minted.adjudications ?? null;
+        for (const slot of minted.slots) {
+          if (slot.outcome === "stored" && isOpenSlot(slot.slot)) openCropsStored.add(slot.slot);
+        }
+        log.info(
+          {
+            operationId,
+            variant: variant.publicId,
+            outcome: minted.outcome,
+            slots: minted.slots,
+            ...(minted.adjudications ? { adjudications: minted.adjudications } : {}),
+          },
+          "[refineService] the library was told what this render made of her",
+        );
+      }
+    } catch (error) {
+      log.warn(
+        { err: error, operationId, variant: variant.publicId },
+        "[refineService] this render's references were not minted — the picture stands",
+      );
     }
 
     /*

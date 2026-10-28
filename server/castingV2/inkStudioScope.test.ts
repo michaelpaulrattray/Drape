@@ -10,7 +10,6 @@ import {
 
 const KEYS = [
   CASTING_INK_STUDIO_SCOPE_ENV,
-  "CASTING_REFERENCE_LIBRARY_SCOPE",
   "CASTING_V2_SCOPE",
 ] as const;
 
@@ -51,41 +50,64 @@ describe("the grammar is the siblings' grammar", () => {
   });
 });
 
+/*
+  ⚠ THE PARENT IN EVERY ARM BELOW IS `CASTING_V2_SCOPE`, AND IT HAS MOVED TWICE
+  — the repaint's own flag until #1577 slice 4a, the reference library until
+  slice D5, the chain root now. Each move was the parent dying above it, and
+  each time the gate below it ended in the one that replaced it, so the
+  behaviour this suite holds has not changed with either.
+
+  `referenceLibraryScope` is not a key this input has any more, so re-pointing
+  it at the dead flag is a type error rather than a silently ignored field —
+  which is what makes these the arms that redden if the re-parent is undone.
+*/
 describe("it cannot be armed past the road that would render it", () => {
   it("asserts nothing while it is off", () => {
     expect(validateCastingInkStudioEnvironment({
       scope: undefined,
-      referenceLibraryScope: undefined,
+      castingScope: undefined,
       cleanupWorker: undefined,
     }).kind).toBe("off");
   });
 
-  it("refuses while the repaint road is off", () => {
+  it("refuses while the casting road is off", () => {
     /*
-      An ink design reaches a photograph only through the repaint recipe, which
-      paints from cropped references. On the paste road there is nothing that
-      would carry a plate into the render, so a user armed here and not there is
-      armed for a door that opens onto a wall.
+      An ink design reaches a photograph only through a paid refine, and only
+      Casting V2 has one. A user armed here and not there is armed for a door
+      that opens onto a wall.
     */
     expect(() => validateCastingInkStudioEnvironment({
       scope: "users:1",
-      referenceLibraryScope: "off",
+      castingScope: "off",
       cleanupWorker: "true",
     })).toThrow(CastingInkStudioCoverageError);
   });
 
-  it("refuses a user the repaint road does not cover", () => {
+  it("names the surviving parent in its refusal, not either retired one", () => {
+    expect(() => validateCastingInkStudioEnvironment({
+      scope: "users:1",
+      castingScope: "off",
+      cleanupWorker: "true",
+    })).toThrow(/CASTING_V2_SCOPE/);
+    expect(() => validateCastingInkStudioEnvironment({
+      scope: "users:1",
+      castingScope: "off",
+      cleanupWorker: "true",
+    })).not.toThrow(/CASTING_REFERENCE_LIBRARY_SCOPE|CASTING_REPAINT_SCOPE/);
+  });
+
+  it("refuses a user the casting road does not cover", () => {
     expect(() => validateCastingInkStudioEnvironment({
       scope: "users:1,7",
-      referenceLibraryScope: "users:1",
+      castingScope: "users:1",
       cleanupWorker: "true",
     })).toThrow(/7/);
   });
 
-  it("refuses all while the repaint road names specific users", () => {
+  it("refuses all while the casting road names specific users", () => {
     expect(() => validateCastingInkStudioEnvironment({
       scope: "all",
-      referenceLibraryScope: "users:1",
+      castingScope: "users:1",
       cleanupWorker: "true",
     })).toThrow(CastingInkStudioCoverageError);
   });
@@ -94,19 +116,23 @@ describe("it cannot be armed past the road that would render it", () => {
     /*
       An upload writes an object under the candidate's purge path. Without the
       worker running, nothing ever deletes it and the promise that a customer's
-      picture goes away with her Cast becomes false silently — invariant 7.
+      picture goes away with their Cast becomes false silently — invariant 7.
+
+      ⚠ This arm is the reason the library's retirement weakens no retention
+      promise here: the condition is asked by THIS flag rather than inherited
+      from a parent, so losing the parent cannot lose it.
     */
     expect(() => validateCastingInkStudioEnvironment({
       scope: "users:1",
-      referenceLibraryScope: "users:1",
+      castingScope: "users:1",
       cleanupWorker: undefined,
     })).toThrow(/ENABLE_STORAGE_CLEANUP_WORKER/);
   });
 
-  it("admits a user the reference library covers, with the worker running", () => {
+  it("admits a user the casting road covers, with the worker running", () => {
     expect(validateCastingInkStudioEnvironment({
       scope: "users:1",
-      referenceLibraryScope: "users:1",
+      castingScope: "users:1",
       cleanupWorker: "true",
     }).kind).toBe("users");
   });

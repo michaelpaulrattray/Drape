@@ -140,7 +140,6 @@ import {
 import { storagePut } from "../storage";
 import { askWordsForSlot, openKindAsk } from "./openKindQuestion";
 import { createModuleLogger } from "../logging/logger";
-import { captureCastingReferenceLibraryEnabled } from "./castingV2Scope";
 import {
   boundsOf, cropMask, cropRaster, cutSegments, encodeCut,
   type SegmentBox, type SegmentCut,
@@ -416,7 +415,7 @@ type MintedSlot =
   | { slot: FeatureSlot; outcome: "unread"; reason: "noCut" | "readFailedSoft" };
 
 export type MintResult = {
-  outcome: "stored" | "off" | "nothing-to-keep" | "failed";
+  outcome: "stored" | "nothing-to-keep" | "failed";
   slots: MintedSlot[];
   /**
    * THE RATCHET'S READING, when a build was composed on this render.
@@ -540,7 +539,15 @@ type MintDependencies = {
     userId: number;
     storageKeys: readonly string[];
   }) => Promise<void>;
-  enabledFor?: (userId: number) => boolean;
+  /*
+    ⚠ `enabledFor` STOOD HERE AND IS GONE WITH ITS FLAG (#1577 slice D5). It
+    was the library's own predicate, injectable so a test could drive the dark
+    answer, and the SAME predicate the caller read — so the caller's decision to
+    do the work and this function's decision to accept it could never be two
+    different answers. There is no dark answer any more: the library is what a
+    Casting V2 refine does, and the one production caller runs behind
+    `requireCastingV2`.
+  */
 };
 
 export type MintInput = {
@@ -1007,8 +1014,13 @@ function geometricVerdict(input: {
 }
 
 export async function mintReferencesForRender(input: MintInput): Promise<MintResult> {
-  const enabled = input.dependencies?.enabledFor ?? captureCastingReferenceLibraryEnabled;
-  if (!enabled(input.userId)) return { outcome: "off", slots: [] };
+  /* ⚠ `if (!enabled(input.userId)) return { outcome: "off", slots: [] };` was
+     the first statement here until #1577 slice D5. `off` leaves the outcome
+     union with it: no production code ever branched on that member — read at
+     the tree before the deletion, the only reader was the mint's own suite —
+     and the one caller reaches this from inside a refine, behind
+     `requireCastingV2`. `nothing-to-keep` is what a render with no slots still
+     answers, and that is a different fact. */
   if (input.slots.length === 0) return { outcome: "nothing-to-keep", slots: [] };
 
   const read = input.dependencies?.read;

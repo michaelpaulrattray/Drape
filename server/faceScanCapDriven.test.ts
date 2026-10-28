@@ -138,8 +138,10 @@ const { castingV2Router } = await import("./routes/castingV2");
 let nextUser = 1_714_000;
 
 function openTo(userId: number): void {
+  /* ⚠ The reference library was a third line here and left with #1577 slice D5
+     — dropped rather than kept, because a value nothing reads is a lever that
+     looks live, and this helper is what every arm below trusts. */
   process.env.CASTING_V2_SCOPE = `users:${userId}`;
-  process.env.CASTING_REFERENCE_LIBRARY_SCOPE = `users:${userId}`;
   process.env.CASTING_FACE_SCAN_SCOPE = `users:${userId}`;
 }
 

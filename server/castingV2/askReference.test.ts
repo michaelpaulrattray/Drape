@@ -18,7 +18,6 @@ import {
   CASTING_HAIR_REFERENCE_SCOPE_ENV,
   CASTING_INK_REFERENCE_SCOPE_ENV,
   CASTING_REFERENCE_ATTACH_SCOPE_ENV,
-  CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
   CASTING_V2_SCOPE_ENV,
 } from "./castingV2Scope";
 
@@ -156,7 +155,6 @@ describe("what comes back", () => {
 describe("the shipped gate is the OR of the roads that can act on a picture", () => {
   const ENV = [
     CASTING_V2_SCOPE_ENV,
-    CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
     CASTING_REFERENCE_ATTACH_SCOPE_ENV,
     CASTING_HAIR_REFERENCE_SCOPE_ENV,
     CASTING_INK_REFERENCE_SCOPE_ENV,
@@ -167,9 +165,10 @@ describe("the shipped gate is the OR of the roads that can act on a picture", ()
     for (const key of ENV) held[key] = process.env[key];
     /* The chain both roads hang from, so the arms below differ in ONE flag. */
     process.env[CASTING_V2_SCOPE_ENV] = "all";
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:5";
-    /* The repaint's own flag was set here too, and it is retired with the paste
-       road (#1577 slice 4b). The attach road's parent is the LIBRARY, above. */
+    /* ⚠ Two parents have been set here and retired out of it. The repaint's own
+       flag went with the paste road (#1577 slice 4b) and the reference
+       library's with slice D5; the attach road's parent is now the casting
+       scope, set above, which is what both of those predicates ended in. */
     process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV] = "users:5";
     delete process.env[CASTING_HAIR_REFERENCE_SCOPE_ENV];
     delete process.env[CASTING_INK_REFERENCE_SCOPE_ENV];

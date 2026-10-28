@@ -9,14 +9,6 @@ import {
   castingV2EnabledForUser,
   parseCastingV2Scope,
   validateCastingV2Environment,
-  captureCastingReferenceLibraryEnabled,
-  castingReferenceLibraryArmed,
-  CastingReferenceLibraryCleanupWorkerError,
-  CastingReferenceLibraryCoverageError,
-  CastingReferenceLibraryScopeConfigurationError,
-  CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
-  parseCastingReferenceLibraryScope,
-  validateCastingReferenceLibraryEnvironment,
   CastingFaceScanCoverageError,
   CastingFaceScanScopeConfigurationError,
   CASTING_FACE_SCAN_SCOPE_ENV,
@@ -187,95 +179,37 @@ describe("boot validation", () => {
   });
 });
 
-/**
- * The reference-library sub-flag (migration 0028).
- *
- * Its table lands on the production database by ceremony, so the flag is the
- * ordering device: the writers deploy dark, the table arrives, then the switch.
- * Every arm below is driven at a value it must REFUSE — a boot guard proved
- * only by the settings that pass it is a guard nobody has seen work, and this
- * codebase has crash-looped production on exactly that lesson from the other
- * direction.
- */
-describe("the reference-library sub-flag", () => {
-  const previous = { ...process.env };
+/*
+  ⚠ THE REFERENCE-LIBRARY SUB-FLAG'S SEVEN ARMS STOOD HERE AND WENT WITH THE
+  FLAG — #1577 slice D5, on his word (*"switch off the six settings"*), the last
+  of the six.
 
-  afterEach(() => {
-    process.env = { ...previous };
-  });
+  They held the grammar (`off` by default, and a refusal for anything it could
+  not read exactly), the assertion that an absent scope asserts nothing, the
+  CLEANUP-WORKER refusal (*a library row is a crop of a person's face at a
+  permanently public URL, and without the worker the purge its own write
+  transaction promises would never happen*), the boot fence against its parent
+  the casting scope, the acceptance of a scope the parent already covered, the
+  point-of-use AND over the chain, and the retention sweep's armed read.
 
-  it("is off by default and refuses anything it cannot read exactly", () => {
-    expect(parseCastingReferenceLibraryScope(undefined)).toEqual({ kind: "off" });
-    for (const raw of ["ALL", "user:1", "users:", "users:0", "true"]) {
-      expect(() => parseCastingReferenceLibraryScope(raw), raw)
-        .toThrow(CastingReferenceLibraryScopeConfigurationError);
-    }
-  });
+  ⚠ ONE OF THOSE SEVEN IS A PROPERTY THE PRODUCT NO LONGER HAS, rather than one
+  that moved: the cleanup-worker refusal over the LIBRARY'S OWN writes. Each
+  surviving child asks for the sweep itself — the ink studio and the attach door
+  below, and the scan table — so no promise about an uploaded design, an
+  attached photograph or a kept scan is weaker. What is gone is a fence that
+  could have refused a misconfiguration nobody has made:
+  `ENABLE_STORAGE_CLEANUP_WORKER` is `true` on the service. It is written here
+  because a deleted arm is the cheapest place to lose a fact.
 
-  it("asserts nothing while absent", () => {
-    expect(validateCastingReferenceLibraryEnvironment({
-      scope: undefined,
-      castingScope: "all",
-      cleanupWorker: "true",
-    })).toEqual({ kind: "off" });
-  });
-
-  it("refuses to arm without the cleanup worker", () => {
-    /* A library row is a crop of a person's face at a permanently public URL.
-       Without the worker, the purge its own write transaction promises would
-       never actually happen. */
-    expect(() => validateCastingReferenceLibraryEnvironment({
-      scope: "users:1",
-      castingScope: "users:1",
-      cleanupWorker: undefined,
-    })).toThrow(CastingReferenceLibraryCleanupWorkerError);
-  });
-
-  it("refuses to reach past the casting scope", () => {
-    expect(() => validateCastingReferenceLibraryEnvironment({
-      scope: "users:1",
-      castingScope: "off",
-      cleanupWorker: "true",
-    })).toThrow(CastingReferenceLibraryCoverageError);
-    expect(() => validateCastingReferenceLibraryEnvironment({
-      scope: "all",
-      castingScope: "users:1",
-      cleanupWorker: "true",
-    })).toThrow(CastingReferenceLibraryCoverageError);
-    expect(() => validateCastingReferenceLibraryEnvironment({
-      scope: "users:1,2",
-      castingScope: "users:1",
-      cleanupWorker: "true",
-    })).toThrow(/names users outside/);
-  });
-
-  it("accepts a scope its parent already covers", () => {
-    expect(validateCastingReferenceLibraryEnvironment({
-      scope: "users:1",
-      castingScope: "users:1,2",
-      cleanupWorker: "true",
-    })).toEqual({ kind: "users", userIds: [1] });
-  });
-
-  it("is enabled only when BOTH flags name the user", () => {
-    process.env[CASTING_V2_SCOPE_ENV] = "users:1";
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:1";
-    expect(captureCastingReferenceLibraryEnabled(1)).toBe(true);
-    expect(captureCastingReferenceLibraryEnabled(2)).toBe(false);
-
-    /* The point-of-use AND, which closes the second way a flag pair goes
-       wrong: a boot check that was never invoked. */
-    process.env[CASTING_V2_SCOPE_ENV] = "off";
-    expect(captureCastingReferenceLibraryEnabled(1)).toBe(false);
-  });
-
-  it("reports armed without asking about a user — the retention sweep's read", () => {
-    delete process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV];
-    expect(castingReferenceLibraryArmed()).toBe(false);
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:7";
-    expect(castingReferenceLibraryArmed()).toBe(true);
-  });
-});
+  The other six moved rather than dying, and that is what the re-parent arms in
+  the three `describe` blocks below hold: the auto-scan, the ink studio and the
+  attach door each named this flag as their parent and now name
+  `CASTING_V2_SCOPE`, with an arm that reddens if the re-parent is undone. The
+  retirement itself is held by
+  `server/castingV2/referenceLibraryFlagRetirement.test.ts`: no declaration, no
+  law row that calls it live, no production position, and a second reader over
+  the raw server tree.
+*/
 
 /*
   ⚠ THE COMPOSITOR-SWAP SUB-FLAG'S FIVE ARMS STOOD HERE AND WENT WITH THE FLAG
@@ -316,52 +250,74 @@ describe("the auto-scan sub-flag", () => {
   it("asserts nothing while absent", () => {
     expect(validateCastingFaceScanEnvironment({
       scope: undefined,
-      libraryScope: undefined,
+      castingScope: undefined,
     })).toEqual({ kind: "off" });
   });
 
-  it("refuses to read a face for a user whose panel does not render", () => {
+  /*
+    ⚠ THE PARENT IN THESE THREE ARMS IS `CASTING_V2_SCOPE` AND WAS THE REFERENCE
+    LIBRARY UNTIL #1577 SLICE D5. They are the arm that reddens if the
+    re-parent is undone: `libraryScope` is not a key this input has any more, so
+    putting it back is a type error rather than a silently ignored field.
+  */
+  it("refuses to read a face for a user who cannot open a sheet", () => {
     /*
-      The scan produces panel furniture and nothing else. Armed past the panel's
-      own flag it is fourteen segmenter calls whose answer nobody can see —
-      inert, and inert is indistinguishable from mistaken from outside.
+      The scan produces panel furniture and nothing else. Armed past the sheet
+      the panel is drawn on, it is twenty-odd segmenter calls whose answer
+      nobody can see — inert, and inert is indistinguishable from mistaken from
+      outside.
     */
     expect(() => validateCastingFaceScanEnvironment({
       scope: "users:1",
-      libraryScope: undefined,
+      castingScope: undefined,
     })).toThrow(CastingFaceScanCoverageError);
     expect(() => validateCastingFaceScanEnvironment({
       scope: "all",
-      libraryScope: "users:1",
+      castingScope: "users:1",
     })).toThrow(CastingFaceScanCoverageError);
     expect(() => validateCastingFaceScanEnvironment({
       scope: "users:1,2",
-      libraryScope: "users:1",
+      castingScope: "users:1",
     })).toThrow(/names users outside/);
+  });
+
+  it("names the surviving parent in its refusal, not the retired one", () => {
+    /* The reason the message is asserted and not only the error class: slice
+       4a's own note says a re-parent is the WEAKER check wherever the dying
+       parent was narrower, so a reader meeting this refusal has to be told
+       which flag it is actually about. */
+    expect(() => validateCastingFaceScanEnvironment({
+      scope: "users:1",
+      castingScope: "off",
+    })).toThrow(/CASTING_V2_SCOPE/);
+    expect(() => validateCastingFaceScanEnvironment({
+      scope: "users:1",
+      castingScope: "off",
+    })).not.toThrow(/CASTING_REFERENCE_LIBRARY_SCOPE/);
   });
 
   it("accepts a scope its parent already covers", () => {
     expect(validateCastingFaceScanEnvironment({
       scope: "users:1",
-      libraryScope: "users:1,2",
+      castingScope: "users:1,2",
     })).toEqual({ kind: "users", userIds: [1] });
     expect(validateCastingFaceScanEnvironment({
       scope: "users:1",
-      libraryScope: "all",
+      castingScope: "all",
     })).toEqual({ kind: "users", userIds: [1] });
   });
 
   it("is enabled only when the WHOLE chain names the user", () => {
+    /* ⚠ The chain was three links until #1577 slice D5 and is two now. The
+       middle arm below drove `CASTING_REFERENCE_LIBRARY_SCOPE=off` and is gone
+       with the flag; what it proved — that the point-of-use AND reads the whole
+       chain and not just this flag — is what the `CASTING_V2_SCOPE=off` arm
+       proves, because that is the link the library's own predicate ended in. */
     process.env[CASTING_V2_SCOPE_ENV] = "users:1";
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:1";
     process.env[CASTING_FACE_SCAN_SCOPE_ENV] = "users:1";
     expect(captureCastingFaceScanEnabled(1)).toBe(true);
     expect(captureCastingFaceScanEnabled(2)).toBe(false);
 
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "off";
-    expect(captureCastingFaceScanEnabled(1)).toBe(false);
-
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:1";
     process.env[CASTING_V2_SCOPE_ENV] = "off";
     expect(captureCastingFaceScanEnabled(1)).toBe(false);
 
@@ -451,8 +407,13 @@ describe("the scan-table scope", () => {
   });
 
   it("is enabled only when the WHOLE chain names the user", () => {
+    /* ⚠ The chain lost a link at #1577 slice D5: the reference library sat
+       between the scan and the casting scope, and the grandparent arm below
+       drove ITS flag. The property is unchanged and is asserted on the link
+       that is left — the library's own predicate ended in
+       `captureCastingV2Enabled`, so this is the same fact one flag further
+       down. */
     process.env[CASTING_V2_SCOPE_ENV] = "users:1";
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "users:1";
     process.env[CASTING_FACE_SCAN_SCOPE_ENV] = "users:1";
     process.env.CASTING_SCAN_TABLE_SCOPE = "users:1";
     expect(captureCastingScanTableEnabled(1)).toBe(true);
@@ -462,7 +423,7 @@ describe("the scan-table scope", () => {
     expect(captureCastingScanTableEnabled(1), "no scan to keep").toBe(false);
 
     process.env[CASTING_FACE_SCAN_SCOPE_ENV] = "users:1";
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV] = "off";
+    process.env[CASTING_V2_SCOPE_ENV] = "off";
     expect(captureCastingScanTableEnabled(1), "the grandparent going dark takes it too").toBe(false);
   });
 
@@ -614,25 +575,26 @@ describe("the discovery sub-flag (#2566)", () => {
       that was never invoked is the second way a flag pair goes wrong.
     */
     process.env.CASTING_V2_SCOPE = "users:1";
-    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "users:1";
     process.env.CASTING_FACE_SCAN_SCOPE = "users:1";
     process.env.CASTING_FACE_DISCOVERY_SCOPE = "users:1";
     expect(captureCastingFaceDiscoveryEnabled(1)).toBe(true);
     /* Another user, same configuration. */
     expect(captureCastingFaceDiscoveryEnabled(2)).toBe(false);
 
-    /* And every link above it can switch it off on its own. */
+    /* And every link above it can switch it off on its own. ⚠ The reference
+       library was one of those links until #1577 slice D5; the casting scope
+       is what its predicate ended in, so the last pair asserts the same fact
+       one flag down. */
     process.env.CASTING_FACE_SCAN_SCOPE = "off";
     expect(captureCastingFaceDiscoveryEnabled(1)).toBe(false);
     process.env.CASTING_FACE_SCAN_SCOPE = "users:1";
-    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "off";
+    process.env.CASTING_V2_SCOPE = "off";
     expect(captureCastingFaceDiscoveryEnabled(1)).toBe(false);
   });
 
   it("is OFF with no variable set — the position every account is in today", () => {
     delete process.env.CASTING_FACE_DISCOVERY_SCOPE;
     process.env.CASTING_V2_SCOPE = "all";
-    process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "all";
     process.env.CASTING_FACE_SCAN_SCOPE = "all";
     expect(captureCastingFaceDiscoveryEnabled(1)).toBe(false);
   });

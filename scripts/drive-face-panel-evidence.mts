@@ -65,11 +65,14 @@
  * makes a real regression and an overruled rule indistinguishable forever
  * (fable-431 §4).
  *
- * Requires `CASTING_REFERENCE_LIBRARY_SCOPE` and `CASTING_FACE_SCAN_SCOPE` to
+ * Requires `CASTING_V2_SCOPE` and `CASTING_FACE_SCAN_SCOPE` to
  * cover THE SUBJECT IT FINDS — not `users:1`, which is what this line said until
- * #1297 and is a different account from the one the query returns. The refusal
- * below names the exact lines to add. With the library flag off the endpoint
- * answers `enabled: false`, the panel does not render, and this driver fails
+ * #1297 and is a different account from the one the query returns. ⚠ It named
+ * `CASTING_REFERENCE_LIBRARY_SCOPE` rather than the casting scope until #1577
+ * slice D5 retired that flag; the panel is now gated by the casting scope
+ * alone. The refusal
+ * below names the exact lines to add. Outside the casting scope the endpoint
+ * refuses outright, the panel does not render, and this driver fails
  * rather than passing quietly — the correct verdict for a run that proved
  * nothing. With the SCAN flag off the panel is one library row, every count
  * below fails loudly, and that too is correct: this driver grades the product
@@ -111,7 +114,7 @@ import { parseStrictArgsOrRefuse } from "./lib/strictArgs.mts";
 import { chooseSubject, describeSubject } from "./lib/facePanelSubject.mts";
 import {
   captureCastingFaceScanEnabled,
-  captureCastingReferenceLibraryEnabled,
+  captureCastingV2Enabled,
 } from "../server/castingV2/castingV2Scope";
 
 const args = parseStrictArgsOrRefuse(process.argv.slice(2), {
@@ -249,13 +252,13 @@ console.log(describeSubject(subject));
 */
 {
   const missing: string[] = [];
-  if (!captureCastingReferenceLibraryEnabled(subject.userId)) missing.push("CASTING_REFERENCE_LIBRARY_SCOPE");
+  if (!captureCastingV2Enabled(subject.userId)) missing.push("CASTING_V2_SCOPE");
   if (!captureCastingFaceScanEnabled(subject.userId)) missing.push("CASTING_FACE_SCAN_SCOPE");
   if (missing.length > 0) {
     throw new Error(
       `the subject is user ${subject.userId} and ${missing.join(" + ")} does not cover them in this .env — `
         + `add \`${missing.map((flag) => `${flag}=users:${subject.userId}`).join("\` and \`")}\` and restart the server. `
-        + "Without the library flag the panel never renders and this run would fail on a selector ninety seconds "
+        + "Outside the casting scope the panel never renders and this run would fail on a selector ninety seconds "
         + "from now; without the scan flag the panel is the library's rows alone and every re-anchored count below fails.",
     );
   }

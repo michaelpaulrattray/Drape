@@ -4167,7 +4167,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
       say so. Production holds it at `all`, which is why this is a fixture
       change and not a behaviour one.
     */
-    referenceLibraryEnabled: () => true,
     /* The masked harvest must never be reached on this road; if it is, this
        passthrough keeps the failure legible instead of masking a real cut. */
   };
@@ -5384,7 +5383,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
      slot, so the mint has something to file. Kept from the retired compositing
      block, where it happened to live. */
   const mintingHair = {
-    referenceLibraryEnabled: () => true,
     verifier: {
       id: "verifier",
       complete: async (request: { system: string }) => ({
@@ -6956,7 +6954,6 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   });
 
   const mintingLibrary = {
-    referenceLibraryEnabled: () => true,
     verifier: {
       id: "verifier",
       complete: async (request: { system: string }) => ({
@@ -7121,7 +7118,7 @@ describe("the repaint replaces the compositor rather than configuring it", () =>
   const stepTwoAfterStepOne = async () => {
     captionsRead = { "hair.cut": "Short dark brown hair, closely cropped at the sides" };
     await refineCandidate(
-      { ...shortCropAsk, referenceLibraryEnabled: () => true, verifier: checkerDisputesEverything },
+      { ...shortCropAsk, verifier: checkerDisputesEverything },
       { ...input, instruction: "cut the hair into a short crop" },
     );
     expect(painted, "step 1 was delivered (the dispute is advisory)").toHaveLength(1);
@@ -9934,7 +9931,6 @@ describe("removal is typed, and most of it is free", () => {
 */
 describe("a render files in the library only the facets its own reading earned", () => {
   const freckles = {
-    referenceLibraryEnabled: () => true,
     interpret: async () => ({ ok: true as const, delta: { free: { marks: "freckles" } } }),
   };
   /** Earned = filed and unmarked. Disputed rides the same list marked. */
@@ -10258,7 +10254,6 @@ describe("the service says where an accessory lives, from the words in the ask",
     captionsRead = { statedAccessories: "Small gold hoops, one in each lobe" };
     await refineCandidate(
       {
-        referenceLibraryEnabled: () => true,
         verifier: sawIt("small gold hoops at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10277,7 +10272,6 @@ describe("the service says where an accessory lives, from the words in the ask",
     captionsRead = { statedAccessories: "Round tortoiseshell glasses" };
     await refineCandidate(
       {
-        referenceLibraryEnabled: () => true,
         verifier: sawIt("round tortoiseshell glasses"),
         interpret: async () => ({
           ok: true as const,
@@ -10297,7 +10291,7 @@ describe("the service says where an accessory lives, from the words in the ask",
        mentioned any. */
     captionsRead = { eyeColour: "Green eyes" };
     await refineCandidate(
-      { ...greenEyes, referenceLibraryEnabled: () => true, verifier: sawIt("green eyes") },
+      { ...greenEyes, verifier: sawIt("green eyes") },
       input,
     );
 
@@ -10317,7 +10311,6 @@ describe("the service says where an accessory lives, from the words in the ask",
  * arguments its harness had handed it.
  */
 describe("the render tells the library what it made of her", () => {
-  const onFlag = { referenceLibraryEnabled: () => true };
   const readerSees = (saw: string) => ({
     id: "verifier",
     complete: async () => ({
@@ -10340,7 +10333,6 @@ describe("the render tells the library what it made of her", () => {
     captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10388,7 +10380,6 @@ describe("the render tells the library what it made of her", () => {
 
     await refineCandidate(
       {
-        ...onFlag,
         regions: {
           region: async () => ({ data: Buffer.alloc(1), width: 1, height: 1 }),
           regionSides: async ({ name }: { name: string }) => {
@@ -10429,7 +10420,6 @@ describe("the render tells the library what it made of her", () => {
     const union = { data: Buffer.alloc(1), width: 1, height: 1 };
     await refineCandidate(
       {
-        ...onFlag,
         /* Production's reader before today, and any stub that has not opted in. */
         regions: {
           region: async () => union,
@@ -10489,7 +10479,6 @@ describe("the render tells the library what it made of her", () => {
 
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("thin gold wire frames"),
         interpret: async () => ({
           ok: true as const,
@@ -10510,7 +10499,6 @@ describe("the render tells the library what it made of her", () => {
     captionsRead = {};
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10549,7 +10537,6 @@ describe("the render tells the library what it made of her", () => {
     captionsRead = { lips: "Natural, slim, no pronounced fuller cupid's bow visible" };
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerDisputes("lips appear natural, slim, no pronounced fuller cupid's bow visible"),
         interpret: async () => ({
           ok: true as const,
@@ -10581,7 +10568,6 @@ describe("the render tells the library what it made of her", () => {
     captionsRead = { lips: "Full, with a pronounced cupid's bow" };
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("a fuller, more defined cupid's bow"),
         interpret: async () => ({
           ok: true as const,
@@ -10599,11 +10585,30 @@ describe("the render tells the library what it made of her", () => {
       .toEqual(["lips"]);
   });
 
-  it("CONTROL — with the flag dark it never speaks to the library at all", async () => {
+  /*
+    ⚠ THIS ARM WAS THE CUT'S OWN BAR AND IT IS INVERTED RATHER THAN DELETED —
+    #1577 slice D5.
+
+    It read *CONTROL — with the flag dark it never speaks to the library at all*
+    and asserted the opposite of what is below: handed a dependency bag with no
+    `referenceLibraryEnabled`, a refine minted nothing and never called
+    `listLineageReferences`. Both of those are now wrong, and they are the ONLY
+    behaviour this slice changes, so the arm is re-pointed at the new fact in the
+    same fixture rather than removed.
+
+    ⚠ It had already passed once for the WRONG REASON, which is why it is worth
+    keeping as a positive arm: before slice 4b what silenced the query was the
+    suite leaving the REPAINT flag unset, not the library flag. A bar that can
+    be satisfied by the absence of a key nobody named is not a bar.
+
+    The production shape is now this bag, with no library key in it at all —
+    because there is no key.
+  */
+  it("speaks to the library on every render — the one behaviour slice D5 changed", async () => {
     captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
     await refineCandidate(
       {
-        /* No `referenceLibraryEnabled` — production's shape today. */
+        /* No library key — there is no library key. This is production's shape. */
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10613,10 +10618,10 @@ describe("the render tells the library what it made of her", () => {
       { ...input, instruction: "give her dangly cross earrings" },
     );
 
-    expect(mintAsks, "a dark deploy mints nothing").toHaveLength(0);
-    /* And it does not pay for the digest query either — the flag is read once,
-       by the caller, before any of this costs anything. */
-    expect(vi.mocked(listLineageReferences)).not.toHaveBeenCalled();
+    expect(mintAsks, "every refine mints now — there is no dark deploy").toHaveLength(1);
+    /* And it pays for the digest query too, unconditionally: the read that used
+       to sit behind the flag is now the first thing the branch does. */
+    expect(vi.mocked(listLineageReferences)).toHaveBeenCalled();
   });
 
   /**
@@ -10633,7 +10638,7 @@ describe("the render tells the library what it made of her", () => {
    */
   it("says so when the mint filed nothing, with the ingredients it was handed", async () => {
     logged.length = 0;
-    await refineCandidate({ ...onFlag, ...greenEyes }, input);
+    await refineCandidate({ ...greenEyes }, input);
 
     expect(mintAsks, "the road to this arm is a render that minted no slot").toHaveLength(0);
     const line = logged.find((entry) => entry.message.includes("filed nothing in the library"));
@@ -10656,7 +10661,6 @@ describe("the render tells the library what it made of her", () => {
     captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10693,7 +10697,6 @@ describe("the render tells the library what it made of her", () => {
 
     const result = await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10735,7 +10738,6 @@ describe("the render tells the library what it made of her", () => {
 
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -10763,27 +10765,23 @@ describe("the render tells the library what it made of her", () => {
     /*
       The negative control this assertion cannot do without. An observer that
       quietly reported the FINAL state would pass the test above no matter where
-      the mint sat, so it has to be shown counting zero somewhere. With the flag
-      dark nothing is ever minted, and the count at the landing is 0 — the same
-      instrument, the same instant, a different answer.
+      the mint sat, so it has to be shown counting zero somewhere.
+
+      ⚠ ITS LEVER CHANGED AT #1577 SLICE D5 AND THE CONTROL IS THE SAME CONTROL.
+      It used to drive the LIBRARY'S FLAG dark, which minted nothing; that flag
+      is retired, so a bag with no library key no longer silences anything and
+      this arm would have passed for the wrong reason — the quietest way a
+      control rots. The road to zero mints is now a REAL one, borrowed from the
+      *filed nothing* arm two describes up: no verifier, so nothing is earned or
+      confirmed, and an eye-colour delta no caption reader worded. **It is the
+      better lever** — it is a road a customer can actually take, where the old
+      one was a configuration production never held.
     */
-    captionsRead = { statedAccessories: "Dangly gold cross earrings, one in each lobe" };
+    await refineCandidate({ ...greenEyes }, input);
 
-    await refineCandidate(
-      {
-        /* No `referenceLibraryEnabled` — production's shape today. */
-        verifier: readerSees("dangly gold crosses at both lobes"),
-        interpret: async () => ({
-          ok: true as const,
-          delta: { free: { statedAccessories: ["dangly cross earrings"] } },
-        }),
-      },
-      { ...input, instruction: "give her dangly cross earrings" },
-    );
-
+    expect(mintAsks, "the road to this arm is a render that minted no slot").toHaveLength(0);
     expect(atLanding).toHaveLength(1);
     expect(atLanding[0]!.mints).toBe(0);
-    expect(mintAsks).toHaveLength(0);
   });
 });
 
@@ -10845,7 +10843,6 @@ describe("a later confirmation rescues a refused carrier", () => {
     /* The mint runs behind the library's own flag. (The repaint arg that
        used to sit above this went with the paste road in #1577 slice 4b —
        every refine repaints now, so there is no second flag to need.) */
-    referenceLibraryEnabled: () => true,
     repaintEngine,
     readBytes,
   };
@@ -10938,7 +10935,6 @@ describe("a later confirmation rescues a refused carrier", () => {
  * overlap even in principle.
  */
 describe("two read-backs on one render, and whether they wait for each other", () => {
-  const onFlag = { referenceLibraryEnabled: () => true };
   /*
     A TWO-FACET RENDER ASKS THE VERIFIER TWO QUESTIONS, so this answers every
     id it is asked about rather than only the first. The single-result reader
@@ -11007,7 +11003,6 @@ describe("two read-backs on one render, and whether they wait for each other", (
 
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("a fuller cupid's bow, and dangly gold crosses at both lobes"),
         interpret: async () => ({
           ok: true as const,
@@ -11050,7 +11045,6 @@ describe("two read-backs on one render, and whether they wait for each other", (
 
     await refineCandidate(
       {
-        ...onFlag,
         verifier: readerSees("a fuller cupid's bow"),
         interpret: async () => ({
           ok: true as const,
@@ -16216,7 +16210,6 @@ describe("one current description rides the paid refine", () => {
     readBytes: async (key: string) => (key === "casting-v2/candidates/abc.png"
       ? { bytes: TINY_MASTER_PNG, contentType: "image/png" }
       : { bytes: Buffer.from(`crop:${key}`), contentType: "image/png" }),
-    referenceLibraryEnabled: () => true,
     interpret: async () => ({ ok: true as const, delta: { free: { hairWorn: "hair down" } } }),
     readBaseWorn: async () => ({
       compiledBrief: null,
