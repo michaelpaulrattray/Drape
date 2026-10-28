@@ -159,6 +159,35 @@ export function readHolder(path: string, fs: RiteLockFs): RiteLockHolder | null 
 }
 
 /**
+ * HOW LONG THE HOLDER HAS HELD IT — the sentence this refusal was missing
+ * (#2763).
+ *
+ * The refusal already names a pid, a start time and a receipt, and on
+ * 2026-10-28 that was all true and none of it was the useful fact. A rite
+ * whose watch had outlived its answer by twenty-five minutes held the lock for
+ * the whole of them, and the next rite read *"another deploy rite is already
+ * running"* — correct, and silent about the only thing a reader needed to
+ * decide anything: it had been running for the better part of an hour.
+ *
+ * ⚠ **IT IS A READING AND NEVER A VERDICT.** A long-held lock is not evidence
+ * of a stuck rite — the slowest deploy measured is 41.3 minutes (#1519) and the
+ * watch's ceiling is 50 — so this adds the elapsed figure and the one fact that
+ * bounds it, and stops. **Nothing here may suggest deleting the lock on a
+ * duration**: a rite mid-push is exactly what this refusal exists to protect,
+ * and that protection is worth more than any threshold would buy.
+ *
+ * An unparseable or future `startedAt` adds nothing rather than guessing — a
+ * clause that cannot be computed is omitted, never printed as zero.
+ */
+function heldForClause(holder: RiteLockHolder, now: Date): string {
+  const started = Date.parse(holder.startedAt);
+  if (!Number.isFinite(started)) return "";
+  const minutes = Math.floor((now.getTime() - started) / 60_000);
+  if (minutes < 0) return "";
+  return ` — held for ${minutes} minute${minutes === 1 ? "" : "s"}`;
+}
+
+/**
  * THE MESSAGE A SHIFT READS AT 2AM, and it has one job: stop them deleting the
  * lock of a rite that is mid-push.
  *
@@ -167,13 +196,18 @@ export function readHolder(path: string, fs: RiteLockFs): RiteLockHolder | null 
  * actually prevents is two receipts that are confidently wrong about
  * production.
  */
-export function riteLockRefusal(holder: RiteLockHolder, path: string): string {
+export function riteLockRefusal(holder: RiteLockHolder, path: string, now: Date = new Date()): string {
   return [
     "another deploy rite is already running in this checkout.",
     "",
-    `    pid ${holder.pid}, started ${holder.startedAt}`,
+    `    pid ${holder.pid}, started ${holder.startedAt}${heldForClause(holder, now)}`,
     `    deploying ${holder.sha.slice(0, 8) || "(unrecorded)"}`,
     `    its receipt: ${holder.receipt}`,
+    "",
+    "A rite spends most of its time WATCHING a deploy it cannot influence — up to the",
+    "watch's 50-minute ceiling, against a slowest measured deploy of 41.3 minutes (#1519).",
+    "So a long-held lock is an ordinary slow deploy far more often than a stuck rite, and",
+    "the elapsed figure above is a reading rather than a reason to clear anything.",
     "",
     "Two rites in one working tree share `main` and share Railway's one deployment",
     "list, and neither can tell its own deploy from the other's. On 2026-10-01 that",
