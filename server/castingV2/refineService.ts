@@ -125,6 +125,7 @@ import {
   departedShortfall,
   facetsWrittenBy,
   filedSubjectsOf,
+  theirNounForTheOneThingFiled,
   itemsOf,
   missingFromPrompt,
   presenceItemsOfFacet,
@@ -277,8 +278,8 @@ import {
 import { refineRefundDescription } from "./refineRefundLedger";
 import { inkSlotOfPhrase, slotsOfPrunedStep } from "./prunedSlots";
 import {
-  attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote, sceneryLeftOutNote,
-  type AttachedPictureUnused, type CannotSayReason,
+  attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote, owedSentences,
+  sceneryLeftOutNote, type AttachedPictureUnused, type CannotSayReason,
 } from "./cannotSayCopy";
 /* The prior question — is this ask about ink she already has, and does she
    want it changed or gone (opus-940 §2, countersigned fable-1274 §2). */
@@ -5976,7 +5977,7 @@ async function refineCandidateCounted(
       ? { asked: "nothing" }
       : hairAskedButNotTaken
         ? { asked: "untaken" }
-        : { asked: "unservable", filed: filedSubjectsOf(editDelta) })
+        : { asked: "unservable", theirNoun: theirNounForTheOneThingFiled(editDelta, instruction) })
     : null;
 
   /* ---- the claim ---- */
@@ -6403,7 +6404,14 @@ async function refineCandidateCounted(
     const sceneryDropped = sceneryLeftOut(instruction, editDelta, {
       garmentLicensed: outfitEditServed,
     });
-    owedBeforeThePaint = [
+    /*
+      ⚠ AND THE REST IS SPOKEN FOR ONCE (the relay's finding on PR #2740).
+      The three left-out members used to carry their own "Everything else you
+      asked for…", so a joined receipt said it twice in two tenses.
+      `owedSentences` keeps this order and adds the one closing clause after
+      the left-out members when there are any.
+    */
+    owedBeforeThePaint = owedSentences({ said: [
       /*
         AND IT NAMES WHAT IT ACTUALLY FILED (fable-490 §1b).
 
@@ -6427,6 +6435,7 @@ async function refineCandidateCounted(
       /* And the second view of a two-panel reference, said plainly rather than
          dropped in silence (ruled fable-1093 §1). */
       secondViewNote,
+    ], leftOut: [
       outOfFrameNote,
       /* And the half she named that reached no lane at all — the same class as
          the line above, and the same rule: a paid take says what it did not do,
@@ -6445,7 +6454,7 @@ async function refineCandidateCounted(
       sceneryDropped && !unservedSubjects.includes(sceneryDropped.word)
         ? sceneryLeftOutNote(sceneryDropped)
         : null,
-    ].filter((line): line is string => line !== null);
+    ] });
   } catch (error) {
     log.warn(
       { err: error, operationId, variant: variant.publicId },

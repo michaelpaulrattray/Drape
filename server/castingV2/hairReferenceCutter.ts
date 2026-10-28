@@ -129,7 +129,10 @@ export const SCALE_REGION = "face";
  * reads as *that is everything we saw*.
  */
 export const SECOND_VIEW_UNUSED_NOTE =
-  "That picture holds two views — I worked from the one showing the most hair.";
+  /* "I worked from" until #2713 — past work, read on a receipt while the paint
+     runs. The view was chosen and cut before anything was sent, so "took" is
+     true at dispatch and at landing. */
+  "That picture holds two views — I took the hair from the one showing the most of it.";
 
 type HairCarrierRefusalCode =
   /** The bytes would not decode at all. */

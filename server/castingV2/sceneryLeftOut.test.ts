@@ -163,14 +163,13 @@ describe("sceneryLeftOutNote — the sentence beside the picture", () => {
   it("quotes their word and the product's own rule, scenery branch", () => {
     expect(sceneryLeftOutNote({ word: "studio", kind: "scenery" })).toBe(
       "The studio part of your ask wasn't changed — refining changes the person, "
-      + "not the shoot. Everything else you asked for went ahead.",
+      + "not the shoot.",
     );
   });
 
   it("says what the stage wall says for an unserved garment: after Sign", () => {
     expect(sceneryLeftOutNote({ word: "coat", kind: "garment" })).toBe(
-      "The coat part of your ask wasn't changed — clothing comes after Sign. "
-      + "Everything else you asked for went ahead.",
+      "The coat part of your ask wasn't changed — clothing comes after Sign.",
     );
   });
 

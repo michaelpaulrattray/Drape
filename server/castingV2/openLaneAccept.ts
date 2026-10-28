@@ -443,9 +443,12 @@ export function namedButNotServedNote(input: {
     return new RegExp(`\\b${plain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(lowered);
   });
 
-  return "Everything else you asked for was done. "
-    + (speakable
-      ? `The ${speakable.trim().toLowerCase().replace(/[_-]+/g, " ")} isn't something I can do yet, `
-        + "so it was left out of this take."
-      : "There was one more thing in that sentence I couldn't do.");
+  /* ⚠ It opened with "Everything else you asked for was done." until #2713:
+     a finished paint claimed on a receipt read while the paint runs, and said
+     again by every other left-out sentence beside it. The closing is now said
+     once for the whole owed list (`owedSentences`, `cannotSayCopy.ts`). */
+  return speakable
+    ? `The ${speakable.trim().toLowerCase().replace(/[_-]+/g, " ")} isn't something I can do yet, `
+      + "so it was left out of this take."
+    : "There was one more thing in that sentence I couldn't do.";
 }

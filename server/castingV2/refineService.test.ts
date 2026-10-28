@@ -1287,7 +1287,7 @@ describe("refusals land before anything is claimed", () => {
     );
 
     expect(result.note).toContain("The orb isn't something I can do yet");
-    expect(result.note).toContain("Everything else you asked for was done");
+    expect(result.note).toContain("Everything else you asked for went ahead");
     /* A DELIVERED take. The refusal's reassuring sentence would be a lie. */
     expect(result.note?.toLowerCase()).not.toContain("nothing was charged");
   });
@@ -11490,6 +11490,9 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
         expect(likeness, "the likeness confession rides the receipt").toBeGreaterThanOrEqual(0);
         expect(orb, "the named-but-not-served half rides the receipt").toBeGreaterThan(likeness);
         expect(studio, "the dropped clause rides it too, in the landing's order").toBeGreaterThan(orb);
+        expect(said, "the likeness sentence is true while the paint runs").toContain(
+          "The change to the lips went ahead as you described.",
+        );
       } finally {
         await landEvenOnRed(render);
       }
@@ -11521,17 +11524,17 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
             interpret: async () => ({
               ok: true as const,
               fromReference: true,
-              delta: { free: { wardrobe: "the outfit in the attached picture" } },
+              delta: { free: { wardrobe: "the jacket in the attached picture" } },
             }),
             cannotTakeAReceipt: false,
           },
-          { ...input, instruction: "put them in the outfit from this picture", referenceId: "ref-public" },
+          { ...input, instruction: "put them in the jacket from this picture", referenceId: "ref-public" },
         );
 
         expect(result.kind).toBe("dispatched");
         expect(landedVariant, "said before any paint exists").toBeNull();
         expect(result.note).toBe(
-          "I can't take the wardrobe from a picture yet, so your picture wasn't used — "
+          "I can't take the jacket from a picture yet, so your picture wasn't used — "
             + "the change went ahead from your words.",
         );
         expect(result.note, "the false clause is gone").not.toContain("didn't ask for anything");
@@ -11541,6 +11544,43 @@ describe("the dispatch swap — WHEN the answer arrives, never what is painted",
         await landEvenOnRed(render);
       }
       expect(landedVariant, "and the picture still lands").not.toBeNull();
+    });
+
+    it("⚠ SAYS \"Everything else you asked for\" ONCE, AT THE END, when several halves were left out", async () => {
+      /*
+        The relay's finding on PR #2740, read off the joined frame: two left-out
+        sentences each carried their own closing, in two tenses, so a receipt
+        read while the paint was still running said "Everything else you asked
+        for was done" in the middle and "…went ahead" at the end. The members
+        now say only what was left out, and the rest is spoken for once, last.
+      */
+      const render = latch();
+      try {
+        const result = await refineCandidate(
+          {
+            interpret: async () => ({
+              ok: true as const,
+              delta: { free: { lips: "a soft nude lip gloss" } },
+              unserved: ["orb"],
+              droppedReference: true,
+            }),
+            cannotTakeAReceipt: false,
+          },
+          {
+            ...input,
+            instruction: "give them a soft nude lip gloss like a famous singer, and a glowing red orb, in a studio",
+          },
+        );
+
+        expect(result.kind).toBe("dispatched");
+        const said = result.note ?? "";
+        expect(said.split("Everything else you asked for").length - 1, said).toBe(1);
+        expect(said.endsWith("Everything else you asked for went ahead."), said).toBe(true);
+        expect(said, "no sentence claims a finished paint").not.toMatch(/\bwas done\b|\bMade the\b/);
+      } finally {
+        await landEvenOnRed(render);
+      }
+      expect(landedVariant).not.toBeNull();
     });
 
     it("CONTROL — a picture riding an ask about something else keeps the sentence it always had", async () => {

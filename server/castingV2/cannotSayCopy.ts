@@ -690,9 +690,18 @@ export function likenessSetAsideNote(input: { subjects: readonly string[] }): st
     without a feature in it rather than a guess — which is what the hardcoded
     "the eyes" was, every time it was not eyes.
   */
+  /*
+    ⚠ AND IT IS TRUE AT BOTH MOMENTS (#2713, the relay's finding on PR #2740).
+    It said *"Made the change to lips as you described"* — a bare heading with
+    no article, and a FINISHED paint claimed in the past tense. Since #2713 the
+    sentence rides the dispatch receipt and is read while the picture is still
+    being painted; if the paint then fails, "made" was false. *"went ahead"* is
+    #2712's verb, chosen because it is true when the edit is sent and when it
+    lands.
+  */
   const made = said.length > 0
-    ? `Made the change to ${said.join(" and ")} as you described.`
-    : "Made that as you described.";
+    ? `The change to ${said.map((subject) => `the ${subject}`).join(" and ")} went ahead as you described.`
+    : "The change went ahead as you described.";
   return `${made} Refining can't copy a real person's features, so that part of `
     + "the comparison was set aside.";
 }
@@ -729,13 +738,15 @@ export function likenessSetAsideNote(input: { subjects: readonly string[] }): st
  *   `fromReference` bit, the one every reference road gates on). The original
  *   sentence, byte for byte.
  * - `unservable` — it pointed at the picture for something no road open to
- *   this account takes from a picture. The thing is named from what the
- *   reading FILED, through `filedSubjectsOf` (the reader the chips and the
- *   likeness sentence above are both labelled from), and never from a list
+ *   this account takes from a picture. The thing is named in THE CUSTOMER'S
+ *   OWN WORD (`theirNounForTheOneThingFiled`, `refineDelta.ts`): a word they
+ *   typed that the reading also filed for the one subject this ask wrote —
+ *   *"the jacket"*, never the chip's heading *"the wardrobe"*, which nobody
+ *   says (law 8; the relay's finding on PR #2740). It is never from a list
  *   kept here of what a picture cannot give: *"nothing should be confined to a
- *   set list"*. One filed subject is named; with two or more the sentence
- *   cannot know which one the picture was for, so it names none — the
- *   likeness sentence's NO SUBJECT, NO CLAIM rule, one function up.
+ *   set list"*. With no such word, or with two or more subjects filed (the
+ *   sentence cannot know which one the picture was for), it names none and
+ *   says *"that"* — the likeness sentence's NO SUBJECT, NO CLAIM rule.
  * - `untaken` — a road for that subject IS open and still did not take this
  *   picture (a take it could not read). Saying *"I can't take hair from a
  *   picture"* to an account that can would be specific and wrong, so it says
@@ -747,7 +758,7 @@ export function likenessSetAsideNote(input: { subjects: readonly string[] }): st
  */
 export type AttachedPictureUnused =
   | { asked: "nothing" }
-  | { asked: "unservable"; filed: readonly string[] }
+  | { asked: "unservable"; theirNoun: string | null }
   | { asked: "untaken" };
 
 export function attachedPictureUnusedNote(
@@ -757,10 +768,8 @@ export function attachedPictureUnusedNote(
     return "Your picture wasn't used this time — the change went ahead from your words.";
   }
   if (why.asked === "unservable") {
-    const said = why.filed
-      .map((subject) => subject.trim().toLowerCase())
-      .filter((subject) => subject.length > 0);
-    const what = said.length === 1 ? `the ${said[0]}` : "that";
+    const noun = why.theirNoun?.trim().toLowerCase() ?? "";
+    const what = noun.length > 0 ? `the ${noun}` : "that";
     return `I can't take ${what} from a picture yet, so your picture wasn't used — `
       + "the change went ahead from your words.";
   }
@@ -801,6 +810,40 @@ export function sceneryLeftOutNote(found: { word: string; kind: "scenery" | "gar
   const why = found.kind === "garment"
     ? "clothing comes after Sign"
     : "refining changes the person, not the shoot";
-  return `The ${named} part of your ask wasn't changed — ${why}. `
-    + "Everything else you asked for went ahead.";
+  /* ⚠ The closing "Everything else you asked for went ahead." left this
+     sentence with #2713: it is said ONCE for the whole owed list, by
+     `owedSentences` below, so two left-out halves never say it twice. */
+  return `The ${named} part of your ask wasn't changed — ${why}.`;
+}
+
+/**
+ * THE CLOSING CLAUSE, SAID ONCE (#2713 — the relay's finding on PR #2740).
+ *
+ * Three of the owed sentences are about a PART of the ask that was left out —
+ * the out-of-frame half, the half that reached no lane, the scenery clause —
+ * and each used to carry its own closing, two of them in different tenses.
+ * Joined on one receipt, the customer read *"Everything else you asked for was
+ * done"* in the middle and *"Everything else you asked for went ahead"* at the
+ * end, while the picture was still being painted.
+ *
+ * So the members say only what was left out, and this is the one place the
+ * rest is spoken for: once, last, and in #2712's verb, which is true when the
+ * edit is sent and when it lands.
+ */
+export const THE_REST_WENT_AHEAD = "Everything else you asked for went ahead.";
+
+/**
+ * The owed list, in order, with the closing clause added once after the
+ * left-out members when there are any. `said` are the sentences that carry
+ * their own account of what happened (the likeness confession, the picture,
+ * the second view); `leftOut` are the ones about a part of the ask that was
+ * not done. Order within each is kept exactly as given.
+ */
+export function owedSentences(input: {
+  said: readonly (string | null)[];
+  leftOut: readonly (string | null)[];
+}): string[] {
+  const said = input.said.filter((line): line is string => line !== null);
+  const leftOut = input.leftOut.filter((line): line is string => line !== null);
+  return leftOut.length > 0 ? [...said, ...leftOut, THE_REST_WENT_AHEAD] : said;
 }
