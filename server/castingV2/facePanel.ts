@@ -71,7 +71,7 @@
  */
 import { capitalize, type CastPronouns } from "./castPronouns";
 import type { FeatureKind } from "./faceDiscovery";
-import { normalisedName } from "./pointerCut";
+import { normalisedName, type NamedNotCut } from "./pointerCut";
 import type { FeatureSlot } from "./recipeAssembler";
 import { liveReferences, type StoredReference } from "./referenceLibrary";
 import {
@@ -294,13 +294,12 @@ export type PanelScan = {
    * Absent on a panel built without a scan, and empty on a reading that cut
    * everything it named. Both route nothing, which is today's panel.
    */
-  namedNotCut?: readonly {
-    noun: string;
-    on: string;
-    about: string;
-    kind: FeatureKind;
-    why: "scattered" | "makeup" | "uncut";
-  }[];
+  /* ⚠ THE READER'S OWN TYPE, imported rather than restated — unlike
+     `discovered` above, which deliberately declares a SUBSET of what the store
+     holds. The panel wants every field of this one and nothing else, so a
+     second copy here would be the mirror working law 4 is about, and the Atlas
+     says so: an inline copy raised a `redeclared-shape` finding of its own. */
+  namedNotCut?: readonly NamedNotCut[];
 };
 
 /**
