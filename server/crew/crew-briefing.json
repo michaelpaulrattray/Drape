@@ -1,7 +1,7 @@
 {
-  "edition": 761,
-  "updatedAt": "2026-10-28T09:45:00.000Z",
-  "shift": "EVERYTHING FINISHED TODAY IS NOW ON THE LIVE SITE. TWO CHANGES HAD BEEN STUCK OUTSIDE IT, AND THE REASON WAS NOT OURS.\n\nTHE ONE THAT MATTERS TO YOU. When you send a paid edit, the studio owes you a few plain sentences — what it did, and why it could not do a part of it. Until tonight those sentences were written too late to ever reach you: the studio answers you the moment the edit is sent, and the sentences were only being composed when the picture finished, so they arrived after you had already been told. It is live now. One of those sentences also used to be wrong: if you attached a photo and asked for something the studio cannot take from a photo yet, it told you your photo \"didn't ask for anything I could take from it\". It now says what actually happened.\n\nAND THE FACE PANEL'S FIRST PIECE IS LIVE TOO. The reading now says what each thing on a character IS, so the panel can group what it finds the way a person would, rather than listing it flat. It had been finished and approved for four hours and could not be merged: too much else had moved underneath it, so the checks that had passed were checking a version of the code that no longer existed. It was brought back into step, re-checked from scratch — 8,283 tests — merged, and published.\n\nWHY ANY OF THIS TOOK A NIGHT, AND IT IS WORTH KNOWING IT IS NOT A FAULT IN OUR WORK. Every time we publish, Railway — the company that runs our servers — builds the site. Their builder failed nine times out of eleven today, every time before it even began on our code, and Railway's own status page reports degraded performance. Our side is fine: the same unchanged code failed and then succeeded with nothing altered in between. The first change took eight attempts to publish. Nothing needed fixing; it needed publishing again.\n\nONE THING WE FOUND ABOUT OURSELVES RATHER THAN ABOUT RAILWAY, AND IT IS THE REAL FINDING. A change can be finished, approved, merged and still not be on the live site — and nothing on the team was checking. Everything we naturally look at agrees it shipped, because the previous version is still running and still answering healthy. One change sat finished-but-not-live for 52 minutes before anyone noticed, and it was noticed by accident. That is written up as its own job and is not yet built.\n\nNOTHING TONIGHT COST YOU A CREDIT, and no setting was changed. Your character pictures from last night's photo test are still below and still want your eye.",
+  "edition": 762,
+  "updatedAt": "2026-10-28T10:41:35.862Z",
+  "shift": "THE GAP I TOLD YOU ABOUT LAST NIGHT IS CLOSED, AND IT IS THE ONLY THING THAT CHANGED TONIGHT.\n\nLast night's note ended on something we had found out about ourselves rather than about Railway: a change can be finished, approved, merged — and still not be on the live site, with nobody watching. One sat that way for 52 minutes and was noticed by accident. Everything we naturally look at agreed it had shipped, because the previous version was still running and still answering healthy.\n\nThat is now watched, and the watcher is live. The site already publishes which version it is running; something now simply asks whether that is the version we last merged. When the answer is no, a job appears on the board in plain English saying a finished change is in front of nobody and needs publishing again rather than fixing. It asks within about two minutes of a failed publish, and again every three hours in case nothing was publishing at all. It will never raise the same thing twice — the six failed builds of this morning would have been one note, not six.\n\nOne detail is worth knowing, because it is why this needed care rather than an afternoon. We could not build it on Railway's own report of whether a publish worked: theirs was wrong in both directions this morning — six failures recorded and not one success across three changes, and one of those three was the version production was actually serving. So the watcher ignores their report entirely and compares the two version numbers instead, which cannot go wrong in the direction that cries wolf. A watcher that cries wolf is how a real alarm comes to be ignored.\n\nTonight's publish worked first time, so Railway's trouble may be easing. The watcher does not depend on that either way.\n\nNOTHING ELSE WAS BUILT TONIGHT, AND TWO JOBS WERE DELIBERATELY LEFT ALONE. The first is a guard on our own feature-switch documentation, which found five places where that documentation disagreed with what is actually switched on — two of them wrong for 34 days. The guard cannot be switched on until a separate money-related change is reviewed by hand, because until that lands the guard would correctly report five faults and turn the whole building red. The second is the brand-name problem from earlier today: ask for \"Gucci\" and nothing else, and the studio answers three different wrong ways, including charging for an edit whose whole instruction is the word \"makeup\". Choosing which of those three should answer, and in what words, is a design decision rather than a fix, so it is marked for one and not guessed at.\n\nBoth were written down with the reason on them, so neither gets picked up and half-done. Nothing tonight cost you a credit, no setting was changed, and your character pictures from the photo-reference test are still below and still want your eye.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-28T09:30:54.521Z",
+      "readAt": "2026-10-28T10:43:43.655Z",
       "items": [
         {
           "issueNumber": 30,
@@ -7610,6 +7610,13 @@
   ],
   "pipeline": [
     {
+      "id": "production-currency-reader-2748",
+      "title": "A merged change that did not ship now gets noticed, not just a red run nobody reads (#2748)",
+      "status": "merged",
+      "prNumber": 2749,
+      "note": "Merged forward onto main first — its green gate described a four-commit-stale tree that had moved the same generated map; preflight green on the merged tree (472 files, 8,474 tests), gate green on the merged head (10 of 10 checks), triage declined a review by both surface readings, squash 7fd0237b live on production on a 22-second uptime."
+    },
+    {
       "id": "overlong-value-refusal-2714",
       "title": "An over-long ask says so, instead of telling a customer their clear sentence was unclear (#2714)",
       "status": "merged",
@@ -11128,9 +11135,9 @@
     {
       "id": "merged-work-not-live-unwatched-2748",
       "severity": "warning",
-      "state": "open",
-      "title": "Work can be finished, approved and merged and still not be on the live site, with nobody watching (#2748)",
-      "detail": "This bit twice today, and you would not have been able to tell by looking.\n\nWhen a change is merged, Railway rebuilds and publishes the site. If that build fails, the change stays merged, stays green, stays reviewed — and simply is not live. Everything the team naturally looks at agrees that it shipped: the pull request says merged, the code is on the main branch, and the site answers healthy, because the OLD version is still running and answering.\n\nToday one change sat finished-but-not-live for 52 minutes before anyone noticed, and it was noticed by accident. A second one sat for two hours. Nobody skipped a step: the person who writes a change has finished and gone by the time it merges, and every alarm the team owns watches work that is still in progress.\n\nThe underlying cause of the failures is Railway's, not ours — their builder has failed nine of eleven attempts today and their status page reports degraded performance. What is ours is that nothing was checking whether what we merged is actually the thing running. There is a reading that would answer it exactly, which the site already publishes.\n\nBoth of today's changes are now live, so nothing is outstanding on the live site tonight — what stays open is that nobody was watching. It is written up and not yet built. It is tooling rather than something you can see, so it waits behind the current feature work. Nothing is charged wrongly and nothing is lost — the delay is the whole of the harm, and a change that is not live is simply the previous version still serving."
+      "state": "resolved",
+      "title": "A merged change that is not on the live site is now noticed, instead of nobody watching (#2748)",
+      "detail": "This bit twice today, and you would not have been able to tell by looking.\n\nWhen a change is merged, Railway rebuilds and publishes the site. If that build fails, the change stays merged, stays green, stays reviewed — and simply is not live. Everything the team naturally looks at agrees that it shipped: the pull request says merged, the code is on the main branch, and the site answers healthy, because the OLD version is still running and answering.\n\nToday one change sat finished-but-not-live for 52 minutes before anyone noticed, and it was noticed by accident. A second one sat for two hours. Nobody skipped a step: the person who writes a change has finished and gone by the time it merges, and every alarm the team owns watches work that is still in progress.\n\nThe underlying cause of the failures is Railway's, not ours — their builder has failed nine of eleven attempts today and their status page reports degraded performance. What is ours is that nothing was checking whether what we merged is actually the thing running. There is a reading that would answer it exactly, which the site already publishes.\n\nBoth of today's changes are now live, so nothing is outstanding on the live site tonight — what stays open is that nobody was watching. It is written up and not yet built. It is tooling rather than something you can see, so it waits behind the current feature work. Nothing is charged wrongly and nothing is lost — the delay is the whole of the harm, and a change that is not live is simply the previous version still serving.\n\nRESOLVED 2026-10-28 — built and live (PR #2749, serving as 7fd0237b). The reader asks one question, is the commit on main the commit production is serving, and files one plain-English job on the board when it is not: about two minutes after a failed publish, and every three hours as the net for a publish that never started. It is deliberately blind to Railway's own success and failure records, which were wrong in both directions on the morning this was found, and it can never open a second job for the same thing."
     }
   ],
   "acknowledgedReplyIds": [
@@ -11439,7 +11446,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-28T09:30:54.521Z",
+    "readAt": "2026-10-28T10:43:43.655Z",
     "items": [
       {
         "issueNumber": 14,
