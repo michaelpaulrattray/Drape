@@ -1,7 +1,7 @@
 {
-  "edition": 755,
-  "updatedAt": "2026-10-28T00:52:00.000Z",
-  "shift": "NOTHING COST ANYTHING TONIGHT AND NOTHING NEEDS YOU. One piece of work that was waiting for review turned out to have a cost nobody had priced, so it got fixed before it shipped. Three jobs on the board were already finished and closed with their evidence. And one instruction we were about to follow would have been harmful if followed tonight, so it is now a job with the reasoning written down.\n\nTHE MAIN ONE, AND IT IS A CATCH RATHER THAN A FIX. Yesterday a change was written for this case: somebody types a perfectly clear instruction, and the product throws the whole thing away and tells them it did not come through clearly. That was wrong and the change fixed the sentence. But the change also made the refusal instant, and presented that as saving us money. It does the opposite. The thing that is too long is OUR OWN answer, not what the customer typed - when the product reads an instruction it writes down what it understood, and sometimes it writes that down far more verbosely than it needs to. Ask the same question again and the answer usually comes back shorter and fits. So the product today reads it up to three times and quietly succeeds on the second or third try. Making the refusal instant would have REFUSED edits that work right now, to save two reads costing a fraction of a cent. A paid edit we could have done and did not is much more expensive than that.\n\nWHAT IT DOES NOW. It still reads up to three times, exactly as it always has. If the last read is still too long, the customer gets the new honest sentence instead of the old one that blamed their typing. If any read fits, the edit simply goes ahead and they never know anything happened. Four places in the written record claimed the instant refusal was a saving, and all four are crossed out with what they said and why it was wrong, rather than quietly deleted.\n\nHOW I KNOW IT WORKS. I broke it on purpose three times and checked that the right test went red each time, and that the three went red in different places rather than all together. The sharpest one: if you take out the single line that counts the attempts, the product goes straight back to telling customers their clear sentence did not come through - the exact fault the original job was filed about. So that one line is holding the whole thing up, and there is now a test that says so.\n\nTHREE JOBS WERE ALREADY DONE. Rather than start something new I read three open jobs against the real code and all three were finished, shipped and live. The one worth naming: when somebody asks for two things at once - change the hair AND change the backdrop - the product can only do the person, not the room, and it used to do the hair and say nothing at all about the backdrop. It now says which part it left alone and why. I followed that sentence all the way from where it is written to where it appears on screen, because there is a known fault on that road where messages composed too late reach nobody, and I wanted to be sure this one was not caught by it. It is not. The other two were a warning on our own map of the product, and a whole class of one-character typo that used to be caught only after work had already merged - I re-broke that one on purpose to check it is now caught beforehand.\n\nTHE ONE THING I DID NOT DO, AND WHY. A leftover setting on the live service needs removing now that its work has merged. The handover note said to do it the moment that happened. Read tonight, that would have been the wrong moment: the new version had merged but was still being built, so the version actually serving customers was still using that setting. Removing it then would have put every customer back on the slower road. It is now a job with the readings attached and a first step that checks the new version is genuinely running, rather than trusting that a merge means it is live. Changing settings on the live service is not a night shift's to do, so it waits for a hand.",
+  "edition": 756,
+  "updatedAt": "2026-10-28T02:20:00.000Z",
+  "shift": "NOTHING NEEDS YOU AND NOTHING COST ANYTHING. The opening act of the current rung is FINISHED. Cleaning the old studio's machinery out of the paid edit road is done, and tonight the written record of the whole job was finished, checked against the real code and the live service, and closed.\n\nWHAT THAT MEANS IN PLAIN TERMS. Over the last fortnight thirteen pieces of old machinery came out of the road a paid edit travels, and the last six on/off settings that guarded them were retired one at a time on your word of 15 October. Every one of those settings is now gone from the code AND gone from the live service — I read all six off the service by name, and asked for four settings that ARE switched on in the same breath, because a filter that quietly fails reads exactly like a setting that is not there. The four came back; the six came back empty. Nothing a customer can see changed in any of it, which was the point.\n\nAND I CHECKED THAT EACH PIECE IS ACTUALLY LIVE, NOT JUST APPROVED. There are eleven pieces of work behind this job. For each one I proved the version serving customers right now genuinely contains it, rather than trusting that it was signed off. That matters here: a job can be approved and merged and still not be running, and we have been bitten by exactly that before. Nine of the eleven were also read by eye before they shipped; the two that were not changed only a document and a piece of code nothing anywhere called, and neither touched a single screen.\n\nTWO THINGS THE CHECKING CAUGHT, BOTH IN OUR OWN RECORDS. First, six of the pieces had been removed on 16 October and our list still said they were waiting to be done — so anyone reading it to see what was left got the wrong answer for twelve days. Second, one of those retired settings still read like a live setting in our reference book: you had to get three thousand characters into its entry before it said it was gone, and what came first was a description of it working, plus a rule pointing at another setting that is also retired. Both are fixed, and I checked all six retired entries now say so up front rather than buried.\n\nONE THING I DID NOT FIX, ON PURPOSE. Eight places in our notes say that a setting is removed from the live service 'in the same act' as the code being approved. That is wrong and it is the dangerous way round: the setting must come off only once the new version is genuinely running, because the service treats a missing setting as 'off' and would put every customer straight back on the road we just retired. Every one of those eight notes then contradicts itself a sentence later, so the mistake is only in the headline — which is the half anyone actually acts on. It already cost us a job last night. It reaches real code and our own reference document, so it is its own job with its own review rather than something I slip into a records tidy-up.\n\nTHE TWO JOBS AT THE TOP OF YOUR LIST NEED A DESIGN DECISION, NOT BUILDING. Taking anything out of a reference picture, and the tap-to-pick selector, both say in their own bodies that a design pass comes first. They were not marked that way, so the system kept offering them to an ordinary builder, who may not make that call — and that is how one job burned seven sessions earlier this month. Both are marked now, and I proved it works: before the mark the launcher said 'an ordinary shift can take this', after it says 'this needs the design seat'. Nothing about your order or what they do has changed.\n\nAND YOUR FIVE FINDINGS ON THE FACE PANEL ARE NOW VISIBLE ON THIS PAGE. You looked at the panel tonight and gave five — the loading list, the freckles read as the tattoo, the doubled-up rows, makeup not belonging there, and the outfit needing to be one whole thing. The reason that job is held was written in a comment underneath it rather than in the job itself, and this page only reads the job itself, so it could not show you anything. Moved across, in the exact words it was written in. The panel stays switched on for your account so you can keep looking, and your five are still what has to be right before it goes any wider.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -14,8 +14,8 @@
       "title": "The refine era completes — the feature panel and the studio surfaces. What a character has is read from the character, never looked up in a fixed list, and every box on the panel is a promise that pressing there edits that thing.",
       "steps": [
         {
-          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire) and EVERY SWITCH IN IT IS NOW RETIRED OR BUILT AND WAITING FOR A READ. Tonight took out the last one — the sixth and last of the six settings you approved retiring on 15 October. It decided whether a character's face builds a library of small pictures cut from each edit, so the next edit can see what the character already looks like; it has been on for every account since 24 August, so you will see no difference, and what changes is that it can no longer be switched off. ⚠ LAST NIGHT'S NOTE SAID THIS PIECE WAS A QUESTION FOR YOU AND IT WAS NOT — reading the code showed the answer was already written there two weeks ago, so it was ours, and nothing about it is waiting on you. What IS left is writing the record of the whole clean-out, which is a small job for us (#1577)",
-          "state": "waiting"
+          "title": "Cleaning out the paid edit road — DONE AND CLOSED (#1577). Every piece of old-studio machinery that was running there is out: thirteen retirements, and the last six on/off settings retired one at a time on your word of 15 October. Tonight finished the written record of the whole job, which was the last thing left. It was checked rather than taken on trust: all six settings read off the live service by name (with four switched-on settings asked for alongside, so a quietly failing filter could not look like an absent setting), and every one of the eleven pieces of work proven to be inside the version serving customers right now rather than merely approved. Nothing a customer can see changed anywhere in it. Two errors in our own records came out of the checking and are fixed; one more reaches real code and is its own job (#2738)",
+          "state": "done"
         },
         {
           "title": "What an edit costs us — ANSWERED and closed. Five checks, not seven; about six cents an edit. You chose: keep the checks that describe, let the checker step in only when nothing changed at all, and drop the price to 100 credits. Both are built (#1689, #2526)",
@@ -30,7 +30,7 @@
           "state": "waiting"
         },
         {
-          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest answer when something is not there. The READER is built and switched off (#2566): one look at the picture names what is really there, so the studio stops asking twelve fixed questions of every character and can see the things that were never on the list. Measured first, on your own three characters: it takes two looks, one close and one wide, because the wide one finds the clothes and starts missing the nose. Still to come: one panel row per thing found, the cutter for off-list things, and carrying a reading across an edit",
+          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest answer when something is not there. THE READER IS BUILT AND IS NOW SWITCHED ON FOR YOUR ACCOUNT, AND YOU HAVE LOOKED AT IT (#2566): one look at the picture names what is really there, so the studio stops asking twelve fixed questions of every character and can see things that were never on the list. You gave five findings on 28 October — the loading state still shows the old fixed list, freckles were read as the neck tattoo, rows doubled up with ones already on the panel, makeup does not belong there, and the outfit must be one whole thing rather than six separate rows. All five are now what has to be right before it goes wider, and the repair is a design decision about how found things are grouped, so it waits for the design seat rather than a builder. The switch stays on your account meanwhile so you can keep looking",
           "state": "waiting"
         },
         {
@@ -152,14 +152,8 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-28T00:32:13.657Z",
+      "readAt": "2026-10-28T02:09:28.949Z",
       "items": [
-        {
-          "issueNumber": 14,
-          "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
-          "kind": "rung",
-          "rung": "N3"
-        },
         {
           "issueNumber": 30,
           "title": "The auto-discovery scan: the panel finds a cast's uncatalogued features on its own (his demand, 17 Aug), quality-gated — N3's detector",
@@ -10841,7 +10835,7 @@
     {
       "id": "reference-library-flag-1577-d5",
       "title": "The library that remembers what a character already looks like can no longer be switched off (#1577 slice D5)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2729,
       "note": "The sixth and last of the six settings he approved retiring. Gate green (4.2m, all eleven checks), CLEAN, held for the relay: it touches a money/auth file and a customer-visible one, and triage agreed on its own reading. The full suite ran because this is a deletion — 1,202 files, 21,118 tests, 0 failures. The one thing lost is declared: the boot refusal over the storage cleaner, which every surviving child still asks for itself."
     },
@@ -11357,12 +11351,16 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-28T00:32:13.656Z",
+    "readAt": "2026-10-28T02:09:28.949Z",
     "items": [
       {
-        "issueNumber": 1577,
-        "title": "N3 opening act: the REFINE-ROAD half of the ghost audit — enumerate every piece of old-lane machinery still running on the refine road (his timing, 2026-08-28)",
-        "urgent": false
+        "issueNumber": 14,
+        "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
+        "urgent": false,
+        "held": {
+          "state": "fable",
+          "because": "a Fable seat — a DESIGN DECISION: the build design, then a mock for his eye before any build."
+        }
       },
       {
         "issueNumber": 1598,
@@ -11435,7 +11433,11 @@
       {
         "issueNumber": 2566,
         "title": "N3: the face reader — read what is on the cast, cut only what is there, carry it across edits (his approve 2026-10-16, design on #2532)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "fable",
+          "because": "a Fable seat — a DESIGN DECISION: how found things are grouped and merged into the panel, across his five findings of 2026-10-28."
+        }
       },
       {
         "issueNumber": 2576,
@@ -11467,6 +11469,15 @@
         "held": {
           "state": "blocked",
           "because": "#2656 — the upstream gap: a first step saves no picture, so a lost edit cannot be restored. Build and verdict are done."
+        }
+      },
+      {
+        "issueNumber": 2736,
+        "title": "N3: take anything from a reference picture — attach a photo, say what to take (\"wear this jacket\"), read from the picture, never a list (his word 2026-10-28)",
+        "urgent": false,
+        "held": {
+          "state": "fable",
+          "because": "a Fable seat — a DESIGN DECISION, and step 0 of this card's own road says so."
         }
       }
     ]
