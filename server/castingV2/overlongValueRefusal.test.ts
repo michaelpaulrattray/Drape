@@ -348,7 +348,10 @@ describe("⚠ THE LAST SAMPLING ANSWERS, AND A SHORTER SECOND ONE IS SERVED (the
     });
 
     expect(parsed.ok, "the ask is servable and must be served").toBe(true);
-    expect(parsed.ok && parsed.delta.free?.marks).toEqual([short]);
+    /* `ok` alone does not narrow to a delta — the union's `navigate` member is
+       `ok` and carries none, which is the shape every other reader of this
+       type checks for the same way. */
+    expect(parsed.ok && "delta" in parsed && parsed.delta.free?.marks).toEqual([short]);
     expect(engine.seen.length, "the second sampling answered, so there is no third").toBe(2);
   });
 
