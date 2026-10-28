@@ -407,6 +407,121 @@ describe("provider queue admission", () => {
     release?.();
     await Promise.all([first, second]);
   });
+
+  /*
+    #2733 — THE BREAKER USED TO OVERWRITE THE ONE CLASS THE CUSTOMER'S SENTENCE
+    IS READ FROM.
+
+    The arm above (*"refuses before dispatch once the breaker opens"*) opens the
+    breaker with `transport` and pins `capability`, and it is left exactly as it
+    was: it is the CONTROL for this pair. Widening the carry to "throw whatever
+    opened it" reddens it, which is the point — `transport` is retryable and a
+    retryable refusal from a door that is refusing by design is the one outcome
+    this change must not produce.
+  */
+  it("carries the account class through an open breaker (#2733)", async () => {
+    const queue = new ProviderQueue({
+      name: "overdrawn",
+      concurrency: 2,
+      maxQueueDepth: 8,
+      failureThreshold: 2,
+      cooldownMs: 10_000,
+    });
+
+    const refused = () => Promise.reject(new ProviderError("provider_account", "401 disabled key"));
+    await expect(queue.run("a", refused)).rejects.toThrow();
+    await expect(queue.run("b", refused)).rejects.toThrow();
+    expect(queue.stats().breaker).toBe("open");
+
+    let dispatched = false;
+    await expect(
+      queue.run("c", async () => {
+        dispatched = true;
+        return "never";
+      }),
+    ).rejects.toMatchObject({ failureClass: "provider_account" });
+
+    /* The refusal is still free: this is a class change, never a dispatch. */
+    expect(dispatched, "a refused call must provably cost nothing").toBe(false);
+  });
+
+  it("a full queue still refuses as capability even while the account breaker is open (#2733)", async () => {
+    /*
+      The two refusals `admit` can give are different facts and the change moves
+      only one of them. Without this arm, carrying the class on BOTH paths would
+      pass the pair above — and a busy queue would start telling a customer our
+      account was refused when it was not.
+    */
+    const queue = new ProviderQueue({
+      name: "overdrawn-and-busy",
+      concurrency: 1,
+      maxQueueDepth: 1,
+      failureThreshold: 1,
+      cooldownMs: 0,
+    });
+
+    await expect(
+      queue.run("a", () => Promise.reject(new ProviderError("provider_account", "401"))),
+    ).rejects.toThrow();
+    expect(queue.stats().breaker).toBe("open");
+
+    /* cooldownMs 0 — the next call probes rather than being refused, so what
+       follows is measuring the QUEUE-FULL door and not the breaker. */
+    let release: (() => void) | undefined;
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const held = queue.run("probe", () => blocked.then(() => "done"));
+
+    await expect(queue.run("overflow", async () => "nope")).rejects.toMatchObject({
+      failureClass: "capability",
+    });
+
+    release?.();
+    await held;
+  });
+
+  it("closing the breaker forgets the cause it was carrying (#2733)", async () => {
+    /*
+      A stale cause would make a LATER weather outage say our account was
+      refused — the same misattribution one direction over, and the reason the
+      field is cleared on success rather than only overwritten on the next open.
+
+      Only `Date` is faked. The breaker reads the clock (`Date.now()`) to decide
+      the cooldown is over, and nothing else here does — faking the timers
+      themselves would hang the awaits below.
+    */
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const queue = new ProviderQueue({
+        name: "recovers",
+        concurrency: 1,
+        maxQueueDepth: 8,
+        failureThreshold: 1,
+        cooldownMs: 10_000,
+      });
+
+      await expect(
+        queue.run("a", () => Promise.reject(new ProviderError("provider_account", "401"))),
+      ).rejects.toThrow();
+      expect(queue.stats().breaker).toBe("open");
+
+      /* Past the cooldown: the next call is the probe, and it succeeds. */
+      vi.advanceTimersByTime(10_001);
+      await expect(queue.run("probe", async () => "recovered")).resolves.toBe("recovered");
+      expect(queue.stats().breaker).toBe("closed");
+
+      /* Now open it on weather alone, and refuse INSIDE the new cooldown. */
+      await expect(
+        queue.run("b", () => Promise.reject(new ProviderError("transport", "socket hang up"))),
+      ).rejects.toThrow();
+      await expect(queue.run("c", async () => "never")).rejects.toMatchObject({
+        failureClass: "capability",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("retry policy", () => {
