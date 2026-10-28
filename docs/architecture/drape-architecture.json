@@ -16427,6 +16427,10 @@
       "path": "server/productionBootSettings.test.ts"
     },
     {
+      "id": "test:server/productionCurrency.test.ts",
+      "path": "server/productionCurrency.test.ts"
+    },
+    {
       "id": "test:server/productionFlagPositions.test.ts",
       "path": "server/productionFlagPositions.test.ts"
     },
