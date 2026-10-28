@@ -29,15 +29,18 @@ const shipped = fs.readFileSync(
 const FACE_SCAN: ScopeFlagSpec = {
   env: "CASTING_FACE_SCAN_SCOPE",
   stem: "CastingFaceScan",
-  parentEnvConst: "CASTING_REFERENCE_LIBRARY_SCOPE_ENV",
-  parentParse: "parseCastingReferenceLibraryScope",
-  parentEnabled: "captureCastingReferenceLibraryEnabled",
-  parentField: "libraryScope",
-  inertWithoutParent: "the scan fills a panel that does not render",
+  /* ⚠ The example parent was the reference library's until #1577 slice D5
+     retired that flag. A template that hands the next author a dead parent
+     writes a child that cannot boot. */
+  parentEnvConst: "CASTING_V2_SCOPE_ENV",
+  parentParse: "parseCastingV2Scope",
+  parentEnabled: "captureCastingV2Enabled",
+  parentField: "castingScope",
+  inertWithoutParent: "the scan fills a panel on a sheet nobody can open",
   /* The shipped flag's own binding names, so the comparison below needs no
      normaliser at all beyond whitespace. */
   local: "scan",
-  parentLocal: "library",
+  parentLocal: "casting",
 };
 
 /* Indentation is the formatter's business; nothing else is normalised, because

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<title>The reference selector — mock for his eye (#14)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* Klieg design language: monochrome, Inter, 4px grid, restrained.
+     Token values quoted from client/src/styles/tokens.css by hand — this is a
+     standalone mock, not product code. */
+  :root, [data-theme="light"] {
+    --ink: #0A0A0A;
+    --paper: #EBEBEB;
+    --panel: #FFFFFF;
+    --line: rgba(10,10,10,.14);
+    --muted: rgba(10,10,10,.55);
+    --scrim: rgba(10,10,10,.32);
+  }
+  [data-theme="dark"] {
+    --ink: #F2F2F2;
+    --paper: #0A0A0A;
+    --panel: #161616;
+    --line: rgba(242,242,242,.16);
+    --muted: rgba(242,242,242,.55);
+    --scrim: rgba(0,0,0,.45);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    background: var(--paper); color: var(--ink);
+    padding: 32px; -webkit-font-smoothing: antialiased;
+  }
+  header { max-width: 1280px; margin: 0 auto 24px; }
+  header h1 { font-size: 15px; font-weight: 600; letter-spacing: .01em; }
+  header p { font-size: 12px; color: var(--muted); margin-top: 4px; max-width: 72ch; line-height: 1.5; }
+  .row { display: flex; gap: 24px; justify-content: center; align-items: flex-start; max-width: 1280px; margin: 0 auto; }
+  .stage { width: 384px; flex: none; }
+  .stage > .what {
+    font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 8px 2px;
+  }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    overflow: hidden;
+  }
+  .pic { position: relative; }
+  .pic img { display: block; width: 100%; aspect-ratio: 3/4; object-fit: cover; }
+  .pic.reading img { filter: grayscale(.15) brightness(.92); }
+  .reading-line {
+    position: absolute; inset: auto 0 0 0; padding: 14px 16px;
+    background: linear-gradient(transparent, var(--scrim));
+    color: #fff; font-size: 13px; letter-spacing: .01em;
+  }
+  .reading-line .dotdot { display: inline-block; width: 18px; text-align: left; }
+
+  /* markers — the Pinterest affordance: a small round dot on the thing, its
+     name beside it. */
+  .marker {
+    position: absolute; display: flex; align-items: center; gap: 7px;
+    transform: translate(-9px, -9px); cursor: pointer;
+  }
+  .marker .dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(255,255,255,.92); border: 1.5px solid rgba(10,10,10,.85);
+    box-shadow: 0 1px 4px rgba(0,0,0,.35); flex: none;
+  }
+  .marker .dot::after {
+    content: ""; display: block; width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(10,10,10,.85); margin: 4.5px;
+  }
+  .marker .name {
+    font-size: 11.5px; font-weight: 550; color: #fff;
+    background: rgba(10,10,10,.62); padding: 3px 9px; border-radius: 999px;
+    backdrop-filter: blur(3px); white-space: nowrap;
+  }
+  .marker.chosen .dot { background: #0A0A0A; border-color: #fff; }
+  .marker.chosen .dot::after { background: #fff; }
+  .marker.chosen .name { background: rgba(10,10,10,.88); outline: 1px solid rgba(255,255,255,.75); }
+
+  /* the quiet group affordance for the outfit */
+  .group-chip {
+    position: absolute; left: 12px; bottom: 12px;
+    font-size: 11px; color: #fff; background: rgba(10,10,10,.5);
+    border: 1px solid rgba(255,255,255,.4); border-radius: 999px; padding: 4px 11px;
+    backdrop-filter: blur(3px);
+  }
+
+  .ask { padding: 14px 16px 16px; display: grid; gap: 10px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; min-height: 24px; }
+  .chip {
+    font-size: 11.5px; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--ink); background: transparent;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .chip.sel { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .chip .x { opacity: .6; font-size: 10px; }
+  .box {
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+    font-size: 13px; min-height: 58px; line-height: 1.45; color: var(--ink);
+  }
+  .box .ph { color: var(--muted); }
+  .send {
+    display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+  }
+  .send .note { font-size: 11px; color: var(--muted); margin-right: auto; max-width: 21ch; line-height: 1.4; }
+  button.refine {
+    font: inherit; font-size: 13px; font-weight: 550; letter-spacing: .01em;
+    background: var(--ink); color: var(--paper); border: 0; border-radius: 8px;
+    padding: 9px 16px; cursor: pointer;
+  }
+  .caption { font-size: 11.5px; color: var(--muted); line-height: 1.55; margin: 10px 2px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Taking things from a picture — the selector, three moments</h1>
+  <p>You attach a picture the same way as today. It opens and is read; the things in it get named dots.
+     Tap what you want. Say nothing and the whole look of what you tapped applies; type, and your words
+     decide what is taken. Nothing else is new, and a tap costs nothing.</p>
+</header>
+
+<div class="row">
+
+  <!-- STATE 1 — reading -->
+  <section class="stage">
+    <p class="what">1 · Just attached</p>
+    <div class="panel">
+      <div class="pic reading">
+        <img src="reference-photo-standin.jpg" alt="">
+        <div class="reading-line">Reading your picture<span class="dotdot">…</span></div>
+      </div>
+      <div class="ask">
+        <div class="chips"></div>
+        <div class="box"><span class="ph">Describe the change…</span></div>
+        <div class="send">
+          <button class="refine">Refine · 350 credits</button>
+        </div>
+      </div>
+    </div>
+    <p class="caption">No list of guesses while it reads — just what is happening. Words keep working the whole time.</p>
+  </section>
+
+  <!-- STATE 2 — found -->
+  <section class="stage">
+    <p class="what">2 · What it found</p>
+    <div class="panel">
+      <div class="pic">
+        <img src="reference-photo-standin.jpg" alt="">
+        <div class="marker" style="left: 74%; top: 24%"><span class="dot"></span><span class="name">Hair</span></div>
+        <div class="marker" style="left: 37%; top: 42%"><span class="dot"></span><span class="name">Earrings</span></div>
+        <div class="marker" style="left: 52%; top: 68%"><span class="dot"></span><span class="name">Necklace</span></div>
+        <div class="marker" style="left: 32%; top: 88%"><span class="dot"></span><span class="name">Top</span></div>
+        <div class="group-chip">Whole outfit</div>
+      </div>
+      <div class="ask">
+        <div class="chips"></div>
+        <div class="box"><span class="ph">Tap what you want to take, or describe it…</span></div>
+        <div class="send">
+          <button class="refine">Refine · 350 credits</button>
+        </div>
+      </div>
+    </div>
+    <p class="caption">The dots are read from this picture — whatever it holds, not a fixed menu. The face never gets a dot.</p>
+  </section>
+
+  <!-- STATE 3 — chosen -->
+  <section class="stage">
+    <p class="what">3 · Two things chosen</p>
+    <div class="panel">
+      <div class="pic">
+        <img src="reference-photo-standin.jpg" alt="">
+        <div class="marker chosen" style="left: 74%; top: 24%"><span class="dot"></span><span class="name">Hair</span></div>
+        <div class="marker chosen" style="left: 37%; top: 42%"><span class="dot"></span><span class="name">Earrings</span></div>
+        <div class="marker" style="left: 52%; top: 68%"><span class="dot"></span><span class="name">Necklace</span></div>
+        <div class="marker" style="left: 32%; top: 88%"><span class="dot"></span><span class="name">Top</span></div>
+        <div class="group-chip">Whole outfit</div>
+      </div>
+      <div class="ask">
+        <div class="chips">
+          <span class="chip sel">Hair <span class="x">✕</span></span>
+          <span class="chip sel">Earrings <span class="x">✕</span></span>
+        </div>
+        <div class="box"><span class="ph">Say how to apply them — or say nothing to take the full look</span></div>
+        <div class="send">
+          <span class="note">Nothing typed = the full hair look and the earrings, as shown.</span>
+          <button class="refine">Refine · 350 credits</button>
+        </div>
+      </div>
+    </div>
+    <p class="caption">His own example: tap hair and earrings, say nothing — both apply whole. Type “use the hair color only” and the words narrow it.</p>
+  </section>
+
+</div>
+</body>
+</html>

@@ -33,8 +33,6 @@ import {
   CASTING_INK_TRANSFORM_SCOPE_ENV,
   CASTING_INK_REGION_CROP_SCOPE_ENV,
   CASTING_INK_STUDIO_SCOPE_ENV,
-  CASTING_REFERENCE_LIBRARY_SCOPE_ENV,
-  CASTING_REFINE_DISPATCH_SCOPE_ENV,
   CASTING_RETRY_SCOPE_ENV,
   CASTING_ROLL_ENGINE_SCOPE_ENV,
   CASTING_ROLL_ENGINE_MODEL_ENV,
@@ -66,8 +64,6 @@ import {
   CASTING_REFERENCE_ATTACH_SCOPE_ENV,
   validateCastingInkReferenceEnvironment,
   CASTING_INK_REFERENCE_SCOPE_ENV,
-  validateCastingReferenceLibraryEnvironment,
-  validateCastingRefineDispatchEnvironment,
   validateCastingRetryEnvironment,
   validateCastingRollEngineEnvironment,
   validateCastingScanTableEnvironment,
@@ -372,16 +368,26 @@ export function validateEnv(): void {
     Nothing replaces the check: there is no flag left to validate.
   */
   /*
-    The reference library (migration 0028): a new table on the paid path, so the
-    ceremony lands it and the flag is flipped afterwards. Checked against the
-    casting scope rather than the segment scope — the library is not built from
-    the segment store and never reads it.
+    ⚠ THE REFERENCE LIBRARY'S OWN FENCE STOOD HERE AND IS RETIRED WITH ITS FLAG
+    (#1577 slice D5, on his word of 2026-10-15). It checked the library scope
+    against the casting scope — the library is not built from the segment store
+    and never read it — and it refused to boot without
+    `ENABLE_STORAGE_CLEANUP_WORKER`, because the library writes crops of a
+    person's face to the PUBLIC bucket and the sweep is what eventually deletes
+    them. Nothing replaces the coverage half: there is no flag left to validate,
+    the library is simply what a Casting V2 refine does, and its rows hang off a
+    candidate only `CASTING_V2_SCOPE` can create.
+
+    ⚠ The CLEANUP-WORKER half is the one thing this deletion loses, and it is
+    named here rather than in a report: a deployment with the sweep off now
+    boots and files crops nothing collects. Every surviving child still asks for
+    the sweep itself — the ink studio and the attach door below, and the scan
+    table's own fence — so no promise about an uploaded design, an attached
+    photograph or a kept scan is weakened. `ENABLE_STORAGE_CLEANUP_WORKER` is
+    `true` on the service and has been since at least 2026-08-11, so this
+    changes nothing production holds; it removes a fence that could have refused
+    a misconfiguration nobody has made.
   */
-  validateCastingReferenceLibraryEnvironment({
-    scope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
-    castingScope: process.env[CASTING_V2_SCOPE_ENV],
-    cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
-  });
   /*
     ⚠ THE COMPOSITOR SWAP'S OWN FENCE STOOD HERE AND IS RETIRED WITH ITS FLAG
     (#1577 slice 4b, on his word of 2026-10-15). It checked the repaint scope
@@ -405,13 +411,16 @@ export function validateEnv(): void {
   */
   /*
     The auto-scan: reading a face nobody has edited so the panel is not a
-    column of empty slots. Checked against the LIBRARY scope because the panel
+    column of empty slots. Checked against `CASTING_V2_SCOPE` because the panel
     is its only consumer — a scan whose answer nothing renders is a paid read
-    into the dark, and inert looks the same as mistaken from outside.
+    into the dark, and inert looks the same as mistaken from outside. ⚠ It was
+    the LIBRARY scope until #1577 slice D5 retired that flag; the panel is now
+    gated by the casting scope alone, so the sentence is said about the casting
+    scope and the reasoning is untouched.
   */
   validateCastingFaceScanEnvironment({
     scope: process.env[CASTING_FACE_SCAN_SCOPE_ENV],
-    libraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
   /*
     And whether that reading starts by asking the PICTURE what is on this
@@ -474,14 +483,16 @@ export function validateEnv(): void {
     corrected in the audit: a retired feature's boot fence outlives the feature,
     and a child still naming a flag about to be deleted is what refuses boot.
 
-    ⚠ Checked against the REFERENCE LIBRARY, which became this flag's parent
-    when the paste road's own flag was retired (#1577 slice 4a). It used to be
-    the REPAINT scope, and that gate ended in the library's anyway, so no
-    position production holds changes.
+    ⚠ Checked against `CASTING_V2_SCOPE`, and this parent has moved TWICE under
+    the same cause — a parent dying above it. It was the REPAINT scope until
+    #1577 slice 4a re-parented it onto the repaint's own parent, the reference
+    library; slice D5 retires the library's flag too, so it lands on the chain
+    root. Each gate ended in the one below it, so no position production holds
+    changes either time.
   */
   validateCastingInkStudioEnvironment({
     scope: process.env[CASTING_INK_STUDIO_SCOPE_ENV],
-    referenceLibraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
   /*
@@ -492,27 +503,30 @@ export function validateEnv(): void {
     switch. The cleanup worker is still a parent, because it is what eventually
     deletes the bytes.
 
-    ⚠ Checked against the REFERENCE LIBRARY, which became this flag's parent
-    when the paste road's own flag was retired (#1577 slice 4a). It used to be
-    the REPAINT scope, and that gate ended in the library's anyway, so no
-    position production holds changes.
+    ⚠ Checked against `CASTING_V2_SCOPE`, and this parent has moved TWICE under
+    the same cause — a parent dying above it. It was the REPAINT scope until
+    #1577 slice 4a re-parented it onto the repaint's own parent, the reference
+    library; slice D5 retires the library's flag too, so it lands on the chain
+    root. Each gate ended in the one below it, so no position production holds
+    changes either time.
   */
   validateCastingReferenceAttachEnvironment({
     scope: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
-    referenceLibraryScope: process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
   /*
-    Whether the paid half of a refine stops holding the request. Checked against
-    the CASTING scope rather than the repaint one, and that is the road question
-    answered: the swap changes WHEN the answer arrives and never what is
-    painted, so a paste-road customer is a legitimate subject — what it cannot
-    be armed over is a user with no refine to dispatch.
+    ⚠ WHETHER THE PAID HALF STOPS HOLDING THE REQUEST WAS CHECKED HERE AND HAS
+    NO FENCE ANY MORE — `CASTING_REFINE_DISPATCH_SCOPE` is retired (#1577 slice
+    D4), so there is no scope to refuse and no parent to check it against.
+
+    Every refine answers with a receipt now, which is what the flag already did
+    at `all` on the service from the founder's 2026-08-25 widening until it came
+    out — so this fence had nothing left to refuse. The road that HOLDS the
+    request survives, reached by a caller saying `cannotTakeAReceipt` on the
+    call itself (#2560); that is a fact about the caller rather than about an
+    account, so it never had a boot question and gains none.
   */
-  validateCastingRefineDispatchEnvironment({
-    scope: process.env[CASTING_REFINE_DISPATCH_SCOPE_ENV],
-    castingScope: process.env[CASTING_V2_SCOPE_ENV],
-  });
   /*
     The Retry button (#122 shape 1). Parent is the CASTING scope alone: what a
     retry re-renders is a slice of a roll, so a user with no roll has nothing

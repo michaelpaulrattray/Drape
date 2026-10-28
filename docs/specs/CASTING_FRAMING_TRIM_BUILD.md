@@ -13,7 +13,7 @@ before the render, instead of a paid crop after it.
 `framingTrim.ts` (and their suites), the 1536x2304 render, the two fal region
 reads a frame, the kept-original write, and `CASTING_FRAMING_TRIM_SCOPE`
 everywhere it was declared or documented (the production variable removed from
-the service in the same act). **What SURVIVES and is deliberate:** the
+the service after that code deployed, never in the same act as the merge). **What SURVIVES and is deliberate:** the
 `sourceKey` column and `candidateRetention.ts`'s sweep of it — rows written
 while the flag was live still point at real R2 objects, and dropping the column
 would orphan them. `server/castingV2/framingTrimRetirement.test.ts` holds the

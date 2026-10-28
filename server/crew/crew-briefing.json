@@ -1,7 +1,7 @@
 {
-  "edition": 750,
-  "updatedAt": "2026-10-27T15:57:58.035Z",
-  "shift": "TONIGHT WAS ABOUT OUR OWN TOOLS, NOT YOUR PRODUCT. Nothing you can see changed, and that is the\nhonest headline. No money was spent and nothing was deleted.\n\nTHE JOB. The first thing on your rung is cleaning out the paid edit road, and the next piece of it\nis taking out an old switch. One real thing stood in the way. When that switch is on, asking for an\nedit answers immediately with a note saying the work has started — and the picture attached to that\nnote is the one the character already had, not the edited one. A person watching a screen waits for\nthe real picture to arrive. A tool does not: it takes the first answer, saves it as the result, and\nexits while the edit we paid for is still being made.\n\nThat has already happened once, in September, on one of our own measurements: three copies of the\nunedited face were saved as finished results, and one render was abandoned halfway. Sixteen more of\nour measuring tools were sitting in exactly that position. The only reason they were fine is a\nsetting on the development machine that happens to be switched off — and that setting is the very\nthing being deleted. All sixteen now say, in their own code, that they cannot take that kind of\nanswer.\n\nWHAT I FOUND ALONG THE WAY. Two corrections, both to our own notes rather than to the product. The\nlist of sixteen had missed two more tools — harmlessly, because those two never ask for a picture at\nall. And the tool the note called the most dangerous turned out not to spend money or make a\npicture: the note's reason was wrong even though its conclusion was right.\n\nWHY IT SHOULD NOT COME BACK. There is now a check that refuses any of our tools that asks for a paid\nedit without saying which kind of answer it can handle. I proved it works by breaking one tool on\npurpose, watching the check catch it by name, and putting it back.\n\nWHERE THAT LEAVES THE RUNG. The next-to-last slice of the cleaning-out job is genuinely clear now\nand is still the first thing to pick up. The last slice is not a simple switch removal — it needs a\ndecision from you about what controls the feature panel — and that is written on the job itself, so\nnothing is waiting here.",
+  "edition": 757,
+  "updatedAt": "2026-10-28T03:09:45.000Z",
+  "shift": "THE TAP-TO-PICK SELECTOR IS DESIGNED AND ITS MOCK IS ON YOUR DESK. You ordered two roads for taking things from a reference picture; this shift wrote the design for the second one - the selector - under all three of your words from today: clothing is in its goal, nothing rides a fixed list, and it is one road with the simple attach-and-say card, never two. THE SHAPE IN ONE BREATH: the moment a picture is attached it is read, and everything found in it gets a small named dot on the picture itself. Tap what you want. Say nothing and the whole look of what you tapped applies - your own rule from August. Type, and your words narrow what is taken. The face never gets a dot and is never cut; one picture per ask, several taps on it. A tap costs nothing. WHAT THE DESIGN SETTLED: the one open tension the old design left (a tap with no words has no noun) is answered by reading the picture up front, so every dot already carries its name and your tap is the confirmation. The cutting road it needs is already built and measured; the one new measurement owed is a small house-money court on real reference photos (about a dollar or two) before the build believes its numbers, because everything so far was measured on our own renders. WHAT IS ON YOUR DESK: one picture-story in both themes - just attached, what it found, two things chosen. If the surface reads right, say so and the build is cut into slices; if anything reads wrong, say which. Nothing was spent this shift and nothing a customer sees changed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -14,8 +14,8 @@
       "title": "The refine era completes — the feature panel and the studio surfaces. What a character has is read from the character, never looked up in a fixed list, and every box on the panel is a promise that pressing there edits that thing.",
       "steps": [
         {
-          "title": "Cleaning out the paid edit road — every piece of old-studio machinery still running there, listed with who reads it and whether it stays or goes, the way the roll road was cleaned in September. Your own order: N3's opening act. The list is written (25 pieces, 13 to retire) and NOTHING IS WAITING ANY MORE: every one of the eight pieces of work it had in review has merged and is live, including the old dressing answer and the whole old picture-making road with its switch. The job was then left sitting on a hold that had stopped being true, which was cleared on Monday night. The one real thing the next slice was still waiting on is now done as well: sixteen of our own measuring tools would have started saving the wrong picture the moment that switch came out, and they now say they cannot take that answer (#2710). So the next-to-last slice is genuinely clear, and it is still the first thing a shift should pick up. The last slice is NOT a simple switch removal — it needs a decision from you about what controls the feature panel — and that is written on the job (#1577)",
-          "state": "waiting"
+          "title": "Cleaning out the paid edit road — DONE AND CLOSED (#1577). Every piece of old-studio machinery that was running there is out: thirteen retirements, and the last six on/off settings retired one at a time on your word of 15 October. Tonight finished the written record of the whole job, which was the last thing left. It was checked rather than taken on trust: all six settings read off the live service by name (with four switched-on settings asked for alongside, so a quietly failing filter could not look like an absent setting), and every one of the eleven pieces of work proven to be inside the version serving customers right now rather than merely approved. Nothing a customer can see changed anywhere in it. Two errors in our own records came out of the checking and are fixed; one more reaches real code and is its own job (#2738)",
+          "state": "done"
         },
         {
           "title": "What an edit costs us — ANSWERED and closed. Five checks, not seven; about six cents an edit. You chose: keep the checks that describe, let the checker step in only when nothing changed at all, and drop the price to 100 credits. Both are built (#1689, #2526)",
@@ -30,7 +30,7 @@
           "state": "waiting"
         },
         {
-          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest answer when something is not there. The READER is built and switched off (#2566): one look at the picture names what is really there, so the studio stops asking twelve fixed questions of every character and can see the things that were never on the list. Measured first, on your own three characters: it takes two looks, one close and one wide, because the wide one finds the clothes and starts missing the nose. Still to come: one panel row per thing found, the cutter for off-list things, and carrying a reading across an edit",
+          "title": "The feature panel finds things on its own — every feature a character has, found, boxed and made editable, and an honest answer when something is not there. THE READER IS BUILT AND IS NOW SWITCHED ON FOR YOUR ACCOUNT, AND YOU HAVE LOOKED AT IT (#2566): one look at the picture names what is really there, so the studio stops asking twelve fixed questions of every character and can see things that were never on the list. You gave five findings on 28 October — the loading state still shows the old fixed list, freckles were read as the neck tattoo, rows doubled up with ones already on the panel, makeup does not belong there, and the outfit must be one whole thing rather than six separate rows. All five are now what has to be right before it goes wider, and the repair is a design decision about how found things are grouped, so it waits for the design seat rather than a builder. The switch stays on your account meanwhile so you can keep looking",
           "state": "waiting"
         },
         {
@@ -152,14 +152,8 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-27T14:38:58.124Z",
+      "readAt": "2026-10-28T03:10:41.669Z",
       "items": [
-        {
-          "issueNumber": 14,
-          "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
-          "kind": "rung",
-          "rung": "N3"
-        },
         {
           "issueNumber": 30,
           "title": "The auto-discovery scan: the panel finds a cast's uncatalogued features on its own (his demand, 17 Aug), quality-gated — N3's detector",
@@ -4161,7 +4155,7 @@
         }
       ],
       "recommendation": "WARN. It would have caught these on the 24th instead of the 27th, it costs nothing, and it cannot ever stand\nbetween you and a merge. REFUSE is the one I would not take: a hole with no published fix would stop the crew\ndead over something a customer cannot reach, and we have been bitten by exactly that on the production side\nalready.",
-      "state": "answered",
+      "state": "done",
       "filedAt": "2026-10-27T09:10:09.227Z",
       "issueNumber": 2703
     }
@@ -7545,9 +7539,50 @@
           "caption": "THE LIZARD, which is the hardest of the three. A suit; a denim jacket over the jerkin with the chest strap still visible under it; the jerkin and strap taken off leaving the shirt beneath; and the jerkin in oxblood. The scales, the ridges and the tail are untouched in all four."
         }
       ]
+    },
+    {
+      "id": "reference-selector-mock-14",
+      "title": "Taking things from a picture — the selector's surface, three moments, your eye before any build",
+      "question": "WHAT YOU ARE LOOKING AT — the mock of the tap-to-pick selector (#14), not a live screen. Three moments, left to right: the picture just attached and being read; the things it found, each with a named dot on the picture; and two things chosen — hair and earrings, your own example — with the box saying that nothing typed means the full look of both.\n\nThe photo is a stand-in (one of our own generated test pictures), and the dots are placed by hand to show the surface — in the real thing they come from reading the picture, whatever it holds, never from a menu.\n\nWHAT I AM ASKING: does this surface read right? Three things worth your eye: (1) dots on the picture with names — is that how you want to choose, or too busy on a crowded photo? (2) the 'Whole outfit' affordance beside per-piece dots — right call? (3) the no-words line under the box — plain enough? If it reads right, reply on the card and the build is cut into slices (a small court on real reference photos runs first, house money). If anything reads wrong, say which and the design moves before anything is built.",
+      "state": "open",
+      "filedAt": "2026-10-28T03:09:45.000Z",
+      "issueNumber": 14,
+      "frames": [
+        {
+          "key": "crew-eye/16ff1654-4182-45f0-ba15-f5799c609b4e.png",
+          "arm": "light",
+          "caption": "LIGHT THEME. Left: just attached — while it reads, the only words are what is happening, never a list of guesses. Middle: what it found — named dots on the hair, the earrings, the necklace and the top, with a quiet Whole-outfit chip; the face gets no dot. Right: hair and earrings chosen — chips above the box, and nothing typed takes the full look of both."
+        },
+        {
+          "key": "crew-eye/bbdfe4cd-a244-4200-8bf0-54119fd66329.png",
+          "arm": "dark",
+          "caption": "DARK THEME. The same three moments. The dots and name tags sit on the photograph itself so they read identically in both themes; the panel, chips and button follow the theme."
+        }
+      ]
     }
   ],
   "pipeline": [
+    {
+      "id": "overlong-value-refusal-2714",
+      "title": "An over-long ask says so, instead of telling a customer their clear sentence was unclear (#2714)",
+      "status": "merged",
+      "prNumber": 2732,
+      "note": "Reviewed by hand and HELD with a finding, then repaired the same night: making the refusal instant would have refused edits the product serves today, because the over-long thing is our own answer and the next read usually fits. Now refuses only if the LAST read is still too long. Gate green on the repaired version, all ten checks. Waiting on review again."
+    },
+    {
+      "id": "refine-dispatch-flag-1577-d4",
+      "title": "Every edit answers straight away, and the switch that could turn that off is gone (#1577 slice D4)",
+      "status": "merged",
+      "prNumber": 2728,
+      "note": "Gate green (5.2m), CLEAN. Held for the relay: it touches a money/auth file, and triage agreed on its own and said so on the pull request."
+    },
+    {
+      "id": "qs-advisory-pin-2726",
+      "title": "A security warning that blocked every piece of work in the building is cleared (#2726)",
+      "status": "merged",
+      "prNumber": 2727,
+      "note": "Gate green; ordinary change by both triage halves, merged on the gate. Live on production."
+    },
     {
       "id": "wardrobe-cap-2552",
       "title": "A whole outfit fits in the box that holds a whole outfit (#2552)",
@@ -7558,7 +7593,7 @@
     {
       "id": "scenery-note-2695",
       "title": "Refine says which half of your sentence named the shoot and was dropped (#2695)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2712,
       "note": "Customer-visible, so it waits on the relay's hand verdict; gate green, frames posted in both themes."
     },
@@ -10816,6 +10851,20 @@
       "status": "merged",
       "prNumber": 2709,
       "note": "Held for review on purpose — the refine charge and its refund sit inside the function it changes. No customer-visible change by construction. Gate green in 4 minutes; the sabotage check proves the new behaviour is what the tests are actually reading."
+    },
+    {
+      "id": "reference-library-flag-1577-d5",
+      "title": "The library that remembers what a character already looks like can no longer be switched off (#1577 slice D5)",
+      "status": "merged",
+      "prNumber": 2729,
+      "note": "The sixth and last of the six settings he approved retiring. Gate green (4.2m, all eleven checks), CLEAN, held for the relay: it touches a money/auth file and a customer-visible one, and triage agreed on its own reading. The full suite ran because this is a deletion — 1,202 files, 21,118 tests, 0 failures. The one thing lost is declared: the boot refusal over the storage cleaner, which every surviving child still asks for itself."
+    },
+    {
+      "id": "overlong-account-sentence-2733",
+      "title": "An outage at our end keeps saying so, instead of blaming the customer's picture after five tries (#2733)",
+      "status": "merged",
+      "prNumber": 2734,
+      "note": "Gate green in 4.5 minutes. Waiting on review; no shift merges it."
     }
   ],
   "problems": [
@@ -11322,15 +11371,15 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-27T14:38:58.124Z",
+    "readAt": "2026-10-28T03:10:41.668Z",
     "items": [
       {
-        "issueNumber": 1577,
-        "title": "N3 opening act: the REFINE-ROAD half of the ghost audit — enumerate every piece of old-lane machinery still running on the refine road (his timing, 2026-08-28)",
+        "issueNumber": 14,
+        "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "#2560 (the seam D4 needs) and PR #2569 in review. The five PRs this line used to name have all merged."
+          "because": "YOU — your eye on the mock (eye item `reference-selector-mock-14` on your Desk, both themes). The build design is written: `docs/specs/REFERENCE_SELECTOR_BUILD…"
         }
       },
       {
@@ -11404,7 +11453,11 @@
       {
         "issueNumber": 2566,
         "title": "N3: the face reader — read what is on the cast, cut only what is there, carry it across edits (his approve 2026-10-16, design on #2532)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "fable",
+          "because": "a Fable seat — a DESIGN DECISION: how found things are grouped and merged into the panel, across his five findings of 2026-10-28."
+        }
       },
       {
         "issueNumber": 2576,
@@ -11436,6 +11489,15 @@
         "held": {
           "state": "blocked",
           "because": "#2656 — the upstream gap: a first step saves no picture, so a lost edit cannot be restored. Build and verdict are done."
+        }
+      },
+      {
+        "issueNumber": 2736,
+        "title": "N3: take anything from a reference picture — attach a photo, say what to take (\"wear this jacket\"), read from the picture, never a list (his word 2026-10-28)",
+        "urgent": false,
+        "held": {
+          "state": "fable",
+          "because": "a Fable seat — a DESIGN DECISION, and step 0 of this card's own road says so."
         }
       }
     ]

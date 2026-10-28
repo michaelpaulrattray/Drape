@@ -152,136 +152,91 @@ export function captureCastingV2Enabled(userId: number): boolean {
   return castingV2EnabledForUser(parseCastingV2Scope(process.env[CASTING_V2_SCOPE_ENV]), userId);
 }
 
-/* ---------------------------------------- the reference-library sub-flag */
+/* ------------ the reference-library sub-flag, RETIRED (#1577 slice D5) ------- */
 
-/**
- * THE REFERENCE LIBRARY — its own switch, off everywhere until the ceremony,
- * and `all` in production since (the ceremony ran and the flag rode with the
- * repaint road, which carries features by crop and cannot work without it).
- *
- * The library is a NEW TABLE (migration 0028) on the same paid path
- * `CASTING_V2_SCOPE` already opens — for EVERY account (`all`); this said *"for
- * the founder"* until 2026-08-24, and this flag has since been widened to `all`
- * itself. A writer shipping under
- * that flag alone would INSERT into a table production does not have yet, on a
- * render somebody paid for. So the table lands by ceremony and the flag is
- * flipped afterwards; neither step alone changes behaviour, and neither alone
- * can break a live roll.
- *
- * It was deliberately NOT a child of `CASTING_SEGMENTS_SCOPE`: the library is
- * not built from the segment store and never read it — the store seeded nothing
- * (fable-173/196), and the two answered different questions about a face. ⚠ That
- * flag and its store are RETIRED (#1160, his word of 2026-09-24, *"Retire both.
- * The paste road is gone; nothing reads these"*), so the contrast is kept in the
- * past tense as the reason this parentage was chosen. Its parent is the casting
- * scope, because its rows hang off a candidate.
- */
-export const CASTING_REFERENCE_LIBRARY_SCOPE_ENV = "CASTING_REFERENCE_LIBRARY_SCOPE";
+/*
+ ⚠ THE REFERENCE LIBRARY'S OWN FLAG STOOD HERE AND IS GONE — the variable, its
+ three errors, its parse, its capture, its armed question and its boot fence,
+ all in one act. It is the LAST of the six settings his word retired, and the
+ last flag of the ghost audit's refine-road half.
 
-export class CastingReferenceLibraryScopeConfigurationError extends Error {
-  constructor() {
-    super(
-      `${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
-    );
-    this.name = "CastingReferenceLibraryScopeConfigurationError";
-  }
-}
+ It was `CASTING_REFERENCE_LIBRARY_SCOPE` (migration 0028's companion): off, a
+ face built no library, so the face panel answered `enabled: false` with no
+ rows, a refine read no carried crops and the mint stored none; on, every edit
+ filed a crop of what it delivered and every later render carried it. The table
+ landed by ceremony and the flag was flipped afterwards, which is why it existed
+ at all — a writer shipping under `CASTING_V2_SCOPE` alone would have INSERTed
+ into a table production did not have yet, on a render somebody paid for.
 
-/**
- * A library row hangs off a candidate, and only Casting V2 makes candidates. A
- * library scope wider than the casting scope is either inert or a mistake, and
- * from outside those look identical — so it refuses (invariant 7).
- */
-export class CastingReferenceLibraryCoverageError extends Error {
-  constructor(detail: string) {
-    super(`${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} ${detail}`);
-    this.name = "CastingReferenceLibraryCoverageError";
-  }
-}
+ It reached `all` on production on 2026-08-24 and stood there, read by name with
+ a working negative control on the night it came out, so its OFF arm had been
+ reached by no account for two months. **His word retiring it, 2026-10-15,
+ verbatim and entire: _"yes approve the plan and switch off the six settings"_.**
+ The code stopped reading the variable in this commit and the variable came off
+ the service AFTER that code DEPLOYED — never in the same act as the merge
+ (`scripts/lib/productionFlagPositions.mts` is the authority and says it
+ once). The other order is the expensive one: with the old build still serving,
+ an absent variable parses as `off`, which would have blanked the face panel for
+ every customer and stopped every refine carrying the cast's own features.
 
-/**
- * The library writes crops of a person's face to the public bucket. Without the
- * cleanup worker nothing ever deletes them, so the retention promise the write
- * transaction makes would be false at the far end. That is the founder's
- * storage condition, and it is the rule rather than a borrowed posture — the
- * segment store that used to be cited here is retired (#1160).
- */
-export class CastingReferenceLibraryCleanupWorkerError extends Error {
-  constructor() {
-    super(
-      `${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} cannot be enabled unless ENABLE_STORAGE_CLEANUP_WORKER is exactly "true"`,
-    );
-    this.name = "CastingReferenceLibraryCleanupWorkerError";
-  }
-}
+ # THE LIBRARY IS LIVE AND IS NOT WHAT RETIRED
 
-export function parseCastingReferenceLibraryScope(raw: string | undefined): CastingV2Scope {
-  return parseScopeGrammar(raw, () => {
-    throw new CastingReferenceLibraryScopeConfigurationError();
-  });
-}
+ `casting_reference_library`, `recordReferenceRows`, `listLineageReferences`,
+ `mintReferencesForRender`, the retention sweep and the face panel are all
+ untouched. What retired is the SWITCH: the library is now simply what a Casting
+ V2 account's refine does, the way the repaint became simply what a refine
+ paints (slice 4b) and the open lane became simply what the interpreter reads
+ (slice D1).
 
-/** Whether this user's faces build a reference library. An AND of both flags,
- *  and this is where that reason is WRITTEN DOWN — the siblings below point
- *  here: the boot check already refuses a scope that reaches past its parent,
- *  and the same rule is enforced a second time at the point of use, because the
- *  two ways a flag pair goes wrong are a bad value and a boot check that was
- *  never invoked. ⚠ Every one of those siblings cited
- *  `captureCastingSegmentsEnabled` until #1160 retired the segment pair on his
- *  word — a pointer outliving its target is how a load-bearing reason becomes a
- *  deletion nobody argues with, so the reason moved here rather than dying. */
-export function captureCastingReferenceLibraryEnabled(userId: number): boolean {
-  const library = parseCastingReferenceLibraryScope(
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
-  );
-  if (!castingV2EnabledForUser(library, userId)) return false;
-  return captureCastingV2Enabled(userId);
-}
+ # WHAT CARRIED ITS WEIGHT, AND WHERE EACH PIECE WENT
 
-/**
- * Whether the library is armed AT ALL, regardless of user.
- *
- * The retention sweep reads this one, and only to decide whether a MISSING
- * TABLE is tolerable. Purging itself is never per-user and never flag-gated:
- * the sweep must collect crops for every user who has any, including one
- * removed from the scope list after their rows were written.
- */
-export function castingReferenceLibraryArmed(): boolean {
-  return parseCastingReferenceLibraryScope(
-    process.env[CASTING_REFERENCE_LIBRARY_SCOPE_ENV],
-  ).kind !== "off";
-}
+ **The cleanup-worker condition did NOT travel with it, and it did not need to.**
+ This flag refused to boot unless `ENABLE_STORAGE_CLEANUP_WORKER` was exactly
+ `"true"`, because the library writes crops of a person's face to the PUBLIC
+ bucket and without the sweep nothing would ever delete them — the founder's own
+ storage condition. Every surviving child enforces that same condition in its
+ own body (`validateCastingInkStudioEnvironment`,
+ `validateCastingReferenceAttachEnvironment`, and the scan table's own fence),
+ so no retention promise is weakened by this deletion. ⚠ The one thing that IS
+ gone is the condition over the LIBRARY'S own writes, and that is stated rather
+ than glossed: a deployment with the sweep off now boots and files crops nothing
+ collects. It is not a new exposure — `ENABLE_STORAGE_CLEANUP_WORKER` is `true`
+ on the service and has been since at least 2026-08-11 (`opus-204`'s separate
+ `ENABLE_` sweep) — but it is a fence that existed and does not, and the honest
+ place to say so is here rather than in a report.
 
-export function validateCastingReferenceLibraryEnvironment(input: {
-  scope: string | undefined;
-  castingScope: string | undefined;
-  cleanupWorker: string | undefined;
-}): CastingV2Scope {
-  const library = parseCastingReferenceLibraryScope(input.scope);
-  if (library.kind === "off") return library;
+ **THE THREE CHILDREN RE-PARENT ONTO `CASTING_V2_SCOPE`**, which is exactly what
+ slice 4a did one level down when the repaint flag died, and what #1442 slice 1
+ did for another flag: `CASTING_FACE_SCAN_SCOPE`,
+ `CASTING_REFERENCE_ATTACH_SCOPE` and `CASTING_INK_STUDIO_SCOPE` each named this
+ flag as their parent, and a child naming a missing parent refuses boot. The
+ chain `CASTING_INK_CUT_SCOPE` → `CASTING_INK_STUDIO_SCOPE` →
+ `CASTING_REFERENCE_LIBRARY_SCOPE` → `CASTING_V2_SCOPE` loses its third link and
+ still ends where it ended, so the `FAL_KEY`-is-guaranteed-by-the-chain argument
+ at `CASTING_INK_CUT_SCOPE_ENV` holds unchanged.
 
-  if (input.cleanupWorker !== "true") throw new CastingReferenceLibraryCleanupWorkerError();
+ ⚠ **It changes nothing at the positions production actually holds**, read at
+ the service by name rather than argued: the library and `CASTING_V2_SCOPE` both
+ stood at `all`, the scan at `all`, attach at `users:1`, and the ink studio is
+ ABSENT (so `off`, and its fence returns before the parent is read at all). Every
+ user inside the library was already inside the casting scope — the library's own
+ capture ENDED in `captureCastingV2Enabled`, and its boot fence refused a library
+ reaching past the casting scope — so the new parent is the same answer or wider.
 
-  const casting = parseCastingV2Scope(input.castingScope);
-  if (casting.kind === "off") {
-    throw new CastingReferenceLibraryCoverageError(
-      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — a library hangs off a candidate, and nothing can create one`,
-    );
-  }
-  if (casting.kind === "all") return library;
-  if (library.kind === "all") {
-    throw new CastingReferenceLibraryCoverageError(
-      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
-    );
-  }
-  const uncovered = library.userIds.filter((userId) => !casting.userIds.includes(userId));
-  if (uncovered.length > 0) {
-    throw new CastingReferenceLibraryCoverageError(
-      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
-    );
-  }
-  return library;
-}
+ ⚠ **AND IT IS THE WEAKER OF THE TWO WHEREVER THE LIBRARY WAS NARROWER THAN
+ `CASTING_V2_SCOPE`, exactly as slice 4a said of itself: a child at `all` under a
+ `users:1` library used to be refused and would now pass. There is no narrower
+ flag left to track, because the library's flag does not exist.
+
+ # THE FACE SCAN'S REASON MOVED RATHER THAN DYING
+
+ Its fence's sentence was *"the scan fills a panel that does not render"* — true
+ while the panel was gated on the library alone. The panel is now gated by
+ `requireCastingV2` and nothing else, so the same sentence is said about the
+ casting scope: a scan is house money on a read nobody asked to pay for, and
+ buying one for an account that cannot open a sheet is a paid read into the dark.
+ Inert and mistaken look identical from outside, which is why it is still a
+ fence and not a dropped check.
 
 /* ------------- the compositor-swap sub-flag, RETIRED (#1577 slice 4b) -------- */
 
@@ -310,6 +265,13 @@ export function validateCastingReferenceLibraryEnvironment(input: {
  `CASTING_REFERENCE_LIBRARY_SCOPE` is what decides whether it has crops to carry.
  Slice 4a had already re-parented the four children that named this flag onto
  that scope for exactly this reason, which is why nothing else moved tonight.
+ ⚠ **THAT LAST SENTENCE ABOUT THE LIBRARY DECIDING IS NO LONGER TRUE AND THE
+ RECORD IS LEFT STANDING WITH THIS CORRECTION BESIDE IT (#1577 slice D5):** the
+ library's own flag is retired too, so nothing decides any more — every refine
+ carries whatever crops the library holds, and the three children slice 4a
+ re-parented onto it have been re-parented again onto `CASTING_V2_SCOPE`. A
+ sentence inside an obituary is still read in the present tense, which is why
+ this is corrected rather than filed as history.
 
  An EMPTY library remains the degenerate case and remains fine (fable-171
  condition 1): the road every new cast travels, assembling to the master alone
@@ -338,20 +300,24 @@ export function validateCastingReferenceLibraryEnvironment(input: {
  * question first time, which no real face does; #2183 measured the real one).
  * A switch is the difference between that starting when we choose and starting
  * the moment a deploy lands on whoever already has the panel.
- * `CASTING_REFERENCE_LIBRARY_SCOPE` is `all` in production — it read *"open for
- * the founder"* until the same day — so without this the scan would arrive on
- * EVERY account's next selection unannounced, which is more of the reason and
- * not less.
+ * The panel is open to every account that can open a sheet — it was gated on
+ * `CASTING_REFERENCE_LIBRARY_SCOPE` at `all` until #1577 slice D5 retired that
+ * flag, and before 2026-08-24 that read *"open for the founder"* — so without
+ * this switch the scan would arrive on EVERY account's next selection
+ * unannounced, which is more of the reason and not less.
  *
- * # Its parent is the LIBRARY scope, because the panel is its only consumer
+ * # Its parent is `CASTING_V2_SCOPE`, because the panel is its only consumer
  *
  * The scan produces panel furniture and nothing else — no rows, no objects, no
- * manifest (fable-373 ruling 4a). The panel it fills is dark until the library
- * scope is on, so a scan scope reaching past it is a paid read whose answer
- * nobody can see: inert, and inert is indistinguishable from mistaken from
- * outside (invariant 7). The transport is inherited rather than re-asserted —
+ * manifest (fable-373 ruling 4a). ⚠ **This section said THE LIBRARY SCOPE until
+ * #1577 slice D5, and the reasoning is unchanged — only the flag it lands on
+ * moved.** The panel it fills is drawn on a casting sheet, so a scan scope
+ * reaching past the casting scope is a paid read whose answer nobody can see:
+ * inert, and inert is indistinguishable from mistaken from outside
+ * (invariant 7). The transport is inherited rather than re-asserted —
  * `CASTING_V2_SCOPE`, which every scope below it must sit inside, already
- * refuses to arm without `FAL_KEY`.
+ * refuses to arm without `FAL_KEY`, and it is now this flag's own parent rather
+ * than its grandparent.
  */
 export const CASTING_FACE_SCAN_SCOPE_ENV = "CASTING_FACE_SCAN_SCOPE";
 
@@ -380,40 +346,67 @@ export function parseCastingFaceScanScope(raw: string | undefined): CastingV2Sco
 /**
  * Whether this user's untouched faces are read on selection.
  *
- * An AND of the whole chain, for `captureCastingReferenceLibraryEnabled`'s
- * reason: the boot check already refuses a scope that reaches past its parent,
- * and this is the same rule enforced again where it is used, because a boot
- * check that was never invoked is the second way a flag pair goes wrong.
+ * An AND of the whole chain, for the reason its siblings carry: the boot check
+ * already refuses a scope that reaches past its parent, and this is the same
+ * rule enforced again where it is used, because a boot check that was never
+ * invoked is the second way a flag pair goes wrong.
+ *
+ * ⚠ The other half was `captureCastingReferenceLibraryEnabled` until #1577
+ * slice D5 retired the library's flag; it ENDED in this same call, so the
+ * answer here is unchanged for every position production has ever held.
  */
 export function captureCastingFaceScanEnabled(userId: number): boolean {
   const scan = parseCastingFaceScanScope(process.env[CASTING_FACE_SCAN_SCOPE_ENV]);
   if (!castingV2EnabledForUser(scan, userId)) return false;
-  return captureCastingReferenceLibraryEnabled(userId);
+  return captureCastingV2Enabled(userId);
 }
 
+/**
+ * ⚠ RE-PARENTED ONTO `CASTING_V2_SCOPE` BY #1577 SLICE D5, and the fence's own
+ * reason moved with it rather than dying.
+ *
+ * ⚠ IT IS A `/**` DOCBLOCK RATHER THAN A PLAIN COMMENT ON PURPOSE:
+ * `scopeFlagTemplate.test.ts` regenerates THIS flag from the template and
+ * compares byte for byte, stripping docblocks because *the reasons are what a
+ * human writes and the generator deliberately does not*. A plain comment here
+ * is kept by that stripper and reddens a template that is perfectly correct.
+ *
+ * It tracked `CASTING_REFERENCE_LIBRARY_SCOPE` and refused with *"the scan
+ * fills a panel that does not render"* — true while `facePanel` was gated on
+ * the library alone. That gate is gone with the library's flag, so the panel
+ * renders for every account that can open a sheet at all, and the same sentence
+ * is now said about the casting scope: a scan is house money on a read nobody
+ * asked to pay for, and buying one for an account with no sheet is a paid read
+ * into the dark. Inert and mistaken look identical from outside, which is why
+ * this is still a fence.
+ *
+ * It changes nothing at the positions production holds — the scan is `all` and
+ * so is `CASTING_V2_SCOPE` — and the library's own capture ended in
+ * `captureCastingV2Enabled`, so the new parent is the same answer or wider.
+ */
 export function validateCastingFaceScanEnvironment(input: {
   scope: string | undefined;
-  libraryScope: string | undefined;
+  castingScope: string | undefined;
 }): CastingV2Scope {
   const scan = parseCastingFaceScanScope(input.scope);
   if (scan.kind === "off") return scan;
 
-  const library = parseCastingReferenceLibraryScope(input.libraryScope);
-  if (library.kind === "off") {
+  const casting = parseCastingV2Scope(input.castingScope);
+  if (casting.kind === "off") {
     throw new CastingFaceScanCoverageError(
-      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — the scan fills a panel that does not render`,
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — the scan fills a panel on a sheet nobody can open`,
     );
   }
-  if (library.kind === "all") return scan;
+  if (casting.kind === "all") return scan;
   if (scan.kind === "all") {
     throw new CastingFaceScanCoverageError(
-      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
     );
   }
-  const uncovered = scan.userIds.filter((userId) => !library.userIds.includes(userId));
+  const uncovered = scan.userIds.filter((userId) => !casting.userIds.includes(userId));
   if (uncovered.length > 0) {
     throw new CastingFaceScanCoverageError(
-      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
     );
   }
   return scan;
@@ -794,7 +787,7 @@ export function castingInkStudioArmed(): boolean {
 
 export function validateCastingInkStudioEnvironment(input: {
   scope: string | undefined;
-  referenceLibraryScope: string | undefined;
+  castingScope: string | undefined;
   cleanupWorker: string | undefined;
 }): CastingV2Scope {
   const child = parseCastingInkStudioScope(input.scope);
@@ -808,41 +801,45 @@ export function validateCastingInkStudioEnvironment(input: {
   }
 
   /*
-    ⚠ THIS FENCE TRACKED `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a. It is
-    re-parented onto the repaint's OWN parent — the reference library —
-    because the paste road and its flag were then retired by the ghost audit's
-    slice 4b, and a child naming a missing parent refuses boot.
+    ⚠ THIS FENCE HAS NOW MOVED TWICE AND BOTH MOVES WERE A PARENT DYING UNDER
+    IT. It tracked `CASTING_REPAINT_SCOPE` until #1577 slice 4a, which
+    re-parented it onto the repaint's OWN parent, the reference library; slice
+    D5 retires that flag too, so it is re-parented again onto the chain root,
+    `CASTING_V2_SCOPE`. A child naming a missing parent refuses boot, which is
+    why this is not optional either time.
 
-    It changes nothing at the positions production actually holds: both
-    stood at `all` when this moved (`scripts/lib/productionFlagPositions.mts`),
-    and the repaint's own gate ENDED in this very call
-    (`captureCastingRepaintEnabled` returned `captureCastingReferenceLibraryEnabled`),
-    so every user inside the repaint was already inside the library.
+    It changes nothing at the positions production actually holds, read at the
+    service by name rather than argued (`scripts/lib/productionFlagPositions.mts`
+    carries the record): `CASTING_INK_STUDIO_SCOPE` is ABSENT from the service,
+    so `child.kind === "off"` returns four statements above this and the parent
+    is never read at all. Even armed it would hold — the library's own capture
+    ENDED in `captureCastingV2Enabled`, so every user inside the library was
+    already inside the casting scope.
 
-    ⚠ But it is the WEAKER of the two wherever the repaint is narrower than
-    its own parent, and that is stated rather than glossed: a child at `all`
-    under a `users:1` repaint used to be refused here and would now pass.
-    Slice 4b has landed and there is no narrower flag to track any more,
-    because the repaint flag does not exist.
+    ⚠ But it is the WEAKER of the two wherever the dying parent was narrower
+    than the surviving one, and that is stated rather than glossed, exactly as
+    slice 4a stated it of itself: a child at `all` under a `users:1` library
+    used to be refused here and would now pass. There is no narrower flag left
+    to track, because neither the repaint's flag nor the library's exists.
   */
-  const parent = parseCastingReferenceLibraryScope(input.referenceLibraryScope);
+  const parent = parseCastingV2Scope(input.castingScope);
   if (parent.kind === "off") {
     throw new CastingInkStudioCoverageError(
-      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — it became this `
-      + "flag's parent when the paste road's own flag was retired (#1577 slice 4a), and "
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — it became this `
+      + "flag's parent when the reference library's own flag was retired (#1577 slice D5), and "
       + "nothing below an off parent is reachable",
     );
   }
   if (parent.kind === "all") return child;
   if (child.kind === "all") {
     throw new CastingInkStudioCoverageError(
-      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
     );
   }
   const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
   if (uncovered.length > 0) {
     throw new CastingInkStudioCoverageError(
-      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
     );
   }
   return child;
@@ -928,11 +925,15 @@ export function parseCastingReferenceAttachScope(raw: string | undefined): Casti
  * An AND of the whole chain at the point of use, for the reason its siblings
  * carry: the boot check refuses a scope that reaches past its parent, and a boot
  * check nobody invoked is the second way a flag pair goes wrong.
+ *
+ * ⚠ The other half was `captureCastingReferenceLibraryEnabled` until #1577
+ * slice D5 retired the library's flag; it ENDED in this same call, so the
+ * answer here is unchanged for every position production has ever held.
  */
 export function captureCastingReferenceAttachEnabled(userId: number): boolean {
   const child = parseCastingReferenceAttachScope(process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV]);
   if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingReferenceLibraryEnabled(userId);
+  return captureCastingV2Enabled(userId);
 }
 
 /**
@@ -948,7 +949,7 @@ export function castingReferenceAttachArmed(): boolean {
 
 export function validateCastingReferenceAttachEnvironment(input: {
   scope: string | undefined;
-  referenceLibraryScope: string | undefined;
+  castingScope: string | undefined;
   cleanupWorker: string | undefined;
 }): CastingV2Scope {
   const child = parseCastingReferenceAttachScope(input.scope);
@@ -962,41 +963,50 @@ export function validateCastingReferenceAttachEnvironment(input: {
   }
 
   /*
-    ⚠ THIS FENCE TRACKED `CASTING_REPAINT_SCOPE` UNTIL #1577 SLICE 4a. It is
-    re-parented onto the repaint's OWN parent — the reference library —
-    because the paste road and its flag were then retired by the ghost audit's
-    slice 4b, and a child naming a missing parent refuses boot.
+    ⚠ THIS FENCE HAS NOW MOVED TWICE AND BOTH MOVES WERE A PARENT DYING UNDER
+    IT. It tracked `CASTING_REPAINT_SCOPE` until #1577 slice 4a, which
+    re-parented it onto the repaint's OWN parent, the reference library; slice
+    D5 retires that flag too, so it is re-parented again onto the chain root,
+    `CASTING_V2_SCOPE`. A child naming a missing parent refuses boot, which is
+    why this is not optional either time.
 
-    It changes nothing at the positions production actually holds: both
-    stood at `all` when this moved (`scripts/lib/productionFlagPositions.mts`),
-    and the repaint's own gate ENDED in this very call
-    (`captureCastingRepaintEnabled` returned `captureCastingReferenceLibraryEnabled`),
-    so every user inside the repaint was already inside the library.
+    It changes nothing at the positions production actually holds, read at the
+    service by name rather than argued: attach is `users:1`, the library stood
+    at `all` and `CASTING_V2_SCOPE` is `all`, so the narrowing check passes
+    before and after. Even at a narrower casting scope it would hold — the
+    library's own capture ENDED in `captureCastingV2Enabled`, so every user
+    inside the library was already inside the casting scope.
 
-    ⚠ But it is the WEAKER of the two wherever the repaint is narrower than
-    its own parent, and that is stated rather than glossed: a child at `all`
-    under a `users:1` repaint used to be refused here and would now pass.
-    Slice 4b has landed and there is no narrower flag to track any more,
-    because the repaint flag does not exist.
+    ⚠ But it is the WEAKER of the two wherever the dying parent was narrower
+    than the surviving one, and that is stated rather than glossed, exactly as
+    slice 4a stated it of itself: a child at `all` under a `users:1` library
+    used to be refused here and would now pass. There is no narrower flag left
+    to track, because neither the repaint's flag nor the library's exists.
+
+    ⚠ The cleanup worker is UNTOUCHED by the re-parent and is checked four
+    statements above, which is the whole reason the library's retirement
+    weakens no retention promise here: what eventually deletes an attached
+    photograph is the sweep, and this flag asks for it itself rather than
+    inheriting the question from a parent.
   */
-  const parent = parseCastingReferenceLibraryScope(input.referenceLibraryScope);
+  const parent = parseCastingV2Scope(input.castingScope);
   if (parent.kind === "off") {
     throw new CastingReferenceAttachCoverageError(
-      `cannot be enabled while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is off — it became this `
-      + "flag's parent when the paste road's own flag was retired (#1577 slice 4a), and "
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — it became this `
+      + "flag's parent when the reference library's own flag was retired (#1577 slice D5), and "
       + "nothing below an off parent is reachable",
     );
   }
   if (parent.kind === "all") return child;
   if (child.kind === "all") {
     throw new CastingReferenceAttachCoverageError(
-      `cannot be "all" while ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV} is limited to specific users`,
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
     );
   }
   const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
   if (uncovered.length > 0) {
     throw new CastingReferenceAttachCoverageError(
-      `names users outside ${CASTING_REFERENCE_LIBRARY_SCOPE_ENV}: ${uncovered.join(",")}`,
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
     );
   }
   return child;
@@ -1108,109 +1118,41 @@ export function validateCastingHairReferenceEnvironment(input: {
   return child;
 }
 
-/* ------------------------------------------- the dispatch sub-flag */
+/* --------------------- the dispatch sub-flag, RETIRED (#1577 slice D4)
 
-/**
- * WHETHER THE PAID HALF STOPS HOLDING THE REQUEST (Landing C,
- * `CASTING_V2_REFINE_DISPATCH_DESIGN.md` §3; countersigned fable-973).
- *
- * Off — and absent means off — `castingV2.refine` awaits the entire render
- * before it answers, so the customer's exposure is the operation's own life:
- * median 121 s, p95 276 s, and 1.7% of them answered past the observed ~305 s
- * gateway wall, where the socket carrying the answer is gone before the answer
- * exists. On, the paid half returns a receipt the moment the work is genuinely
- * under way, and the outcome arrives on the surface like every other durable
- * fact — the rows, the sweep and the three lists that read them are all already
- * live, which is why this is a flag rather than a rebuild.
- *
- * # Its parent is the CASTING scope, and that choice is the road question
- *
- * Every other sub-flag on this road hangs off the repaint scope because it
- * changes what is PAINTED. This one changes only WHEN THE ANSWER ARRIVES: the
- * same render, the same recipe, the same bytes, on whichever road the user is
- * already travelling. A paste-road customer is a legitimate subject and gains
- * exactly what a repaint-road one gains. What it cannot be armed over is a user
- * with no refine to dispatch, so the parent is the scope that opens the door at
- * all.
- *
- * # What is NOT gated on it, deliberately
- *
- * The settled list (Landing A) is unconditional and already shipped: a terminal
- * refine failure reaches the surface whether or not the request was still
- * holding. That is the ordering this design turns on — take the socket away
- * before the surface can represent its own terminal outcome and the outcome
- * reaches nobody ALWAYS, which is strictly worse than the 1.7% being fixed.
- *
- * # Turning it on is its own recorded decision
- *
- * Off everywhere at landing. A dev walk comes before any thought of `users:1`,
- * and that step is a separate, written act rather than a consequence of this
- * code existing (fable-973 §3e).
- */
-export const CASTING_REFINE_DISPATCH_SCOPE_ENV = "CASTING_REFINE_DISPATCH_SCOPE";
+   `CASTING_REFINE_DISPATCH_SCOPE` stood here with its env constant, its two
+   error classes, `parseCastingRefineDispatchScope`,
+   `captureCastingRefineDispatchEnabled` and
+   `validateCastingRefineDispatchEnvironment`. It decided whether the paid half
+   of a refine stopped holding the request. It is retired on his word of
+   2026-10-15 (*"yes approve the plan and switch off the six settings"*), the
+   ghost audit's row D4.
 
-export class CastingRefineDispatchScopeConfigurationError extends Error {
-  constructor() {
-    super(
-      `${CASTING_REFINE_DISPATCH_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
-    );
-    this.name = "CastingRefineDispatchScopeConfigurationError";
-  }
-}
+   ⚠ THIS ONE IS THE ODD MEMBER OF THE SIX AND THE REASON IS WORTH KEEPING: its
+   OFF arm was the DEFECT, not the old feature. Every other flag in that batch
+   chose between a retired road and a current one, so retiring it deleted dead
+   code. Here, off meant the request was held for the whole render — median
+   121 s, p95 276 s, and 1.7% of refines answering past the observed ~305 s
+   gateway wall, where the socket carrying the answer is gone before the answer
+   exists, the money safe and the REASON lost. The flag was raised to FIX that
+   and reached `all` on 2026-08-25, so nothing was on the off arm, and retiring
+   it means the fix can no longer be switched off by a variable.
 
-export class CastingRefineDispatchCoverageError extends Error {
-  constructor(detail: string) {
-    super(`${CASTING_REFINE_DISPATCH_SCOPE_ENV} ${detail}`);
-    this.name = "CastingRefineDispatchCoverageError";
-  }
-}
+   ⚠ AND THE HELD ROAD ITSELF DID NOT DIE WITH IT, WHICH IS WHY THIS SLICE
+   WAITED A FORTNIGHT. Our own measuring scripts need the awaited road — handed
+   a receipt they reach the end of their work and exit, abandoning a render they
+   paid for (`refineService`'s own `cannotTakeAReceipt` docblock records the
+   incident). While this flag was the only door to it, a script had to borrow a
+   CUSTOMER switch to describe a fact about itself. #2560 built that door on the
+   CALL, #2710 put it on all sixteen exposed callers, and only then was there
+   nothing left here to remove. The road survives; the question *may this
+   account answer early* is what is gone.
 
-export function parseCastingRefineDispatchScope(raw: string | undefined): CastingV2Scope {
-  return parseScopeGrammar(raw, () => {
-    throw new CastingRefineDispatchScopeConfigurationError();
-  });
-}
-
-/**
- * Whether this user's paid refine returns a receipt instead of a picture.
- *
- * An AND of the chain at the point of use, for its siblings' reason: the boot
- * check refuses a scope reaching past its parent, and a boot check nobody
- * invoked is the second way a flag pair goes wrong.
- */
-export function captureCastingRefineDispatchEnabled(userId: number): boolean {
-  const child = parseCastingRefineDispatchScope(process.env[CASTING_REFINE_DISPATCH_SCOPE_ENV]);
-  if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingV2Enabled(userId);
-}
-
-export function validateCastingRefineDispatchEnvironment(input: {
-  scope: string | undefined;
-  castingScope: string | undefined;
-}): CastingV2Scope {
-  const child = parseCastingRefineDispatchScope(input.scope);
-  if (child.kind === "off") return child;
-
-  const parent = parseCastingV2Scope(input.castingScope);
-  if (parent.kind === "off") {
-    throw new CastingRefineDispatchCoverageError(
-      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — there is no refine to dispatch`,
-    );
-  }
-  if (parent.kind === "all") return child;
-  if (child.kind === "all") {
-    throw new CastingRefineDispatchCoverageError(
-      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
-    );
-  }
-  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
-  if (uncovered.length > 0) {
-    throw new CastingRefineDispatchCoverageError(
-      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
-    );
-  }
-  return child;
-}
+   The parent was `CASTING_V2_SCOPE` rather than the repaint scope, because the
+   swap changed WHEN the answer arrived and never what was painted — the one
+   sub-flag on this road for which a paste-road customer was a legitimate
+   subject. That reasoning retires with it and is kept here because the next
+   flag to hang off this chain will have to answer the same question. */
 
 /* ------------------------------------- the tattoo-from-a-reference sub-flag */
 
@@ -1508,13 +1450,19 @@ export function validateCastingInkReferenceEnvironment(input: {
  *
  * A `FAL_KEY` check was written here for exactly that reason and then **deleted,
  * because it could never fire**. The parent chain is
- * `CASTING_INK_CUT_SCOPE` → `CASTING_INK_STUDIO_SCOPE` →
- * `CASTING_REFERENCE_LIBRARY_SCOPE` → `CASTING_V2_SCOPE` (the repaint's own
- * flag sat between the studio and the library until #1577 slice 4b retired it),
+ * `CASTING_INK_CUT_SCOPE` → `CASTING_INK_STUDIO_SCOPE` → `CASTING_V2_SCOPE`,
  * and the last of
  * those refuses to boot without the transport
  * (`CastingV2TransportConfigurationError`). So no configuration exists in which
  * this flag is armed and the key is missing.
+ *
+ * ⚠ **THE CHAIN HAS LOST TWO LINKS AND THE ARGUMENT IS UNAFFECTED, which is the
+ * only thing that had to be re-asked.** The repaint's own flag sat between the
+ * studio and the library until #1577 slice 4b retired it, and
+ * `CASTING_REFERENCE_LIBRARY_SCOPE` sat between the studio and the casting
+ * scope until slice D5 retired that one. Both times the chain still ENDS where
+ * it ended, and it is the last link that carries the transport refusal — a
+ * shorter chain to the same root guarantees the same fact.
  *
  * It was found by driving the guard through `validateEnv()` itself
  * (`scripts/rehearse-ink-cut-boot-disposable.mts`) and INSISTING THE ARM ASSERT

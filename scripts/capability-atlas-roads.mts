@@ -143,7 +143,14 @@ export const ROADS: readonly Road[] = [
       "candidate_missing", "already_signed", "busy", "refine_limit", "master_missing", "version_missing",
       "history_unreadable", "history_predates_undo", "step_moved",
     ],
-    flags: ["CASTING_V2_SCOPE", "CASTING_REFINE_DISPATCH_SCOPE", "CASTING_CURRENT_DESCRIPTION_SCOPE"],
+    /* CASTING_REFINE_DISPATCH_SCOPE stood second here and is RETIRED (#1577
+       slice D4, his word of 2026-10-15): every paid refine answers with a
+       receipt and finishes the render afterwards, which is what the flag
+       already did at `all`, so it is no longer a flag this road runs under. The
+       held road it used to choose is still reachable — by a CALLER saying
+       `cannotTakeAReceipt` (#2560), which is a fact about the caller and never
+       a door a customer passes through, so it is not a flag either. */
+    flags: ["CASTING_V2_SCOPE", "CASTING_CURRENT_DESCRIPTION_SCOPE"],
     notes: [
       "ONE CURRENT DESCRIPTION (#2565 slice 1, dark behind CASTING_CURRENT_DESCRIPTION_SCOPE): AFTER the claim and before the render, the house text model rewrites one natural paragraph of who the cast is now (`writeCurrentDescription`, currentDescription.ts) and the prompt carries it in place of the change clause; it is filed on the version in `landVariant`. It is NOT a door: it never refuses and never moves money — a writer that does not answer leaves the render on today's prompt and the version with no description, at the same price. Every render is still anchored on the pristine master (`claimVariant` takes the base from the candidate row). A FOLLOW OF AN EDITED VERSION carries the direction the edits took (#2576, his word 2026-10-16: 'build it', which supersedes 'follow doesnt need a description' for this one thing): inside `createRoll` — BELOW every door that refuses free in milliseconds and above the compile, which is #2582 items 1 and 3 — `resolveFollowBrief` (followBrief.ts) has the same engine rewrite the face's roll brief from that version's description or ask chain (`writeFollowBrief`, purpose `follow.brief`, 8 s and one retry under one overall deadline of `FOLLOW_BRIEF_DEADLINE_MS` from the press, which covers the shared text queue's own unbounded wait for a slot) — direction-level changes in (hair, style, augments, outfit direction, build), one-person specifics out and REFUSED on the way out rather than only forbidden in the prompt (`introducedOnePersonSpecific`: a scar, a mole, a freckle, a tattoo, or an eye colour the brief never stated), and everything that is not the person (setting, light, camera and framing, style, mood) kept word for word, with a reply that drops more of the brief's clauses than it puts back refused as a collapse (`clauseBalance`, which replaced a 70% length floor that refused a short brief's removal and passed the very collapse it was for). The rewritten words are what the roll COMPILES from and what its row records, so the new sheet shows them; the CLAIM is keyed on the customer's own words instead, because a claim hashed over a nondeterministic rewrite made a replayed press of one request id read as a different action. It is NOT a door either: a never-edited face, the flag off, words the customer typed that differ from the face's brief, or a writer that does not answer all send the box's own string, and price, claim and refunds are createRoll's unchanged. A Follow child's FIRST description is seeded from its own roll's brief like any face without one: 'following a cast is meant to show cousins of that direction of cast not exact replicas of the same person you followed'.",
       "`busy` is the admit door (a real TOO_MANY_REQUESTS, invariant 6); reaching it in the census reads as would-render.",
@@ -167,6 +174,7 @@ export const ROADS: readonly Road[] = [
     doors: [
       "empty", "unreadable", "reader_outage",
       "wall_likeness", "wall_content", "wall_stage", "wall_unbacked", "wall_unfileable",
+      "wall_too_long", "wall_too_many", "wall_brand_only",
       "gate_ink_document", "gate_ink_uncarried", "gate_ink_unkeepable",
       "gate_ink_coverage_unread", "scope_unknown", "scope_mismatch",
     ],
@@ -185,6 +193,7 @@ export const ROADS: readonly Road[] = [
       "gate_ink_uncarried is a place the product can SEE and cannot KEEP (a covered chest): render would land, the mint could not crop, the tattoo would die on the next edit — his own find-and-crop condition enforced.",
       "item 7a split that gate three ways, because its two reasons only COINCIDED while the product had one outfit: gate_ink_uncarried = a garment is over it; gate_ink_unkeepable = the surface is bare and the road still cannot crop a result there (a shirtless Basics chest); gate_ink_coverage_unread = nobody has read this outfit's coverage, which fails closed and says so in its OWN words rather than borrowing the covering's.",
       "unreadable = a reply CAME BACK and could not be read, and rephrasing is real advice for it; reader_outage = nothing came back at all (the transport threw, the deadline passed, the text account is overdrawn, or no engine is configured), where telling her to rephrase is advice she cannot follow. The roll road has drawn this line since #126; the refine road drew it 2026-08-30.",
+      "wall_too_long, wall_too_many and wall_brand_only are the three ways a reply that was UNDERSTOOD cannot be stored as filed — one value longer than its drawer (#2714), more items under one set subject than a set keeps (#2730), or a value that was nothing but a brand name the customer typed (#2731). Each used to null the whole delta with no wall and arrive as `unreadable`. All three are facts about OUR rendering, so each carries `resampled: true` in `REFINE_REFUSALS` and the interpreter re-samples it on attempts 1 and 2; the last sampling answers. The all-or-nothing rule stays: none of the sentence is applied, and each sentence says so.",
       "A tapped rectangle (scope) outranks the words and the memory — the tap is the customer's freshest act; a scope naming nothing the instruction writes refuses free (scope_mismatch).",
     ],
   },
@@ -205,7 +214,7 @@ export const ROADS: readonly Road[] = [
       "removal_absent", "removal_unnamed", "removal_not_in_brief", "removal_uncheckable", "removal_reread_unmatched",
       "removal_unnameable", "already_original",
     ],
-    flags: ["CASTING_INK_STUDIO_SCOPE", "CASTING_INK_TRANSFORM_SCOPE", "CASTING_REFERENCE_LIBRARY_SCOPE"],
+    flags: ["CASTING_INK_STUDIO_SCOPE", "CASTING_INK_TRANSFORM_SCOPE"],
     notes: [
       "THE ID POINTS AND THE ROW DECIDES: a chain naming a crop with no row is skipped loudly by the carry (the rescue needs the name to stand) and answered free at the transform door (inkNotKept) — never scrubbed, because scrubbing deletes the pointer the minted-loss rescue lives on (C4b, closed not-to-be-built).",
       "free.ink is ONE subject holding every tattoo (the keying work, §10 3b, splits it); the gate skips items warranted only by the prior so a carried tattoo cannot wall a new ask.",

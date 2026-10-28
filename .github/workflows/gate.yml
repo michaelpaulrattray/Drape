@@ -317,9 +317,33 @@ jobs:
       # check (a step that passes because it could not look is invariant 7's
       # defect, and is precisely what Socket did here), but it is a new way for
       # the gate to go red on nothing we did. And `--prod` means devDependencies
-      # are NOT read: build and test tooling still has no pre-merge reader at all,
-      # which is the half of W6-B this does not close.
-      - name: Dependency advisories (known vulnerabilities in what ships)
+      # are NOT read — ⚠ WHICH STOPPED BEING THE WHOLE STORY AT #2703, below.
+      #
+      # ⚠ THE BUILD AND TEST TOOLS ARE READ TOO SINCE #2703, AND THAT READING CAN
+      # NEVER REFUSE. His word, 2026-10-27, Crew reply #302, verbatim and entire:
+      # "WARN — tell us, never block us". The clause above said build tooling
+      # "still has no pre-merge reader at all, which is the half of W6-B this
+      # does not close"; it is kept because its reasoning is why the new half
+      # warns instead of blocking, and because the PRODUCTION verdict is still
+      # the only thing this step's exit code answers to.
+      #
+      # What it cost to have no reader, measured at Warden run 9: ELEVEN
+      # published advisories open in the build tools, one of them HIGH
+      # (GHSA-587h-7wmj-h5pm, a Windows-specific bypass in launch-editor under
+      # vite — Windows being the machine the founder and every shift work on),
+      # the oldest three days old, every one with a patch inside a range
+      # package.json already declared, and the only reader this seat's weekly
+      # clock. Second measured instance of the same gap (#2169 was the first),
+      # which is what took it to him rather than leaving it to a shift.
+      #
+      # Why WARN and not REFUSE, in his words and in the evidence: a dev-scope
+      # advisory cannot reach a customer — a developer's machine and CI are what
+      # is exposed — so refusing would stop the crew dead over a hole nobody can
+      # be hurt by, and this repository has already paid that bill twice on the
+      # production side (#1894, #1899). The point is to be told on the 24th
+      # instead of the 27th. It costs one more registry round trip (~1.6s
+      # measured) and no secret.
+      - name: Dependency advisories (what ships BLOCKS, the build tools WARN)
         run: npx tsx scripts/check-dependency-advisories.mts
 
       - name: Typecheck (pnpm check)

@@ -189,8 +189,8 @@ const CLEAN_SCAN = {
 
 let nextUser = 2_170_000;
 function openTo(userId: number): void {
+  /* ⚠ Two links, not three, since #1577 slice D5 retired the library's. */
   process.env.CASTING_V2_SCOPE = `users:${userId}`;
-  process.env.CASTING_REFERENCE_LIBRARY_SCOPE = `users:${userId}`;
   process.env.CASTING_FACE_SCAN_SCOPE = `users:${userId}`;
 }
 function caller(userId: number) {

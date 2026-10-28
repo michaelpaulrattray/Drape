@@ -147,6 +147,28 @@ export function mentionsGarments(text: string | null): boolean {
   return GARMENT_WORDS.some((word) => words.has(word));
 }
 
+/**
+ * WHICH marks a text names — lowercased, accents folded, in the order they
+ * appear (#2731).
+ *
+ * `containsBrand` answers *is there one*; Refine's bare-brand wall needs *is it
+ * THE SAME one the customer typed*, because it may only tell somebody to stop
+ * naming a brand when they named that brand. Read off `BRAND_PATTERN`, the one
+ * list, rather than a second matcher beside it.
+ *
+ * Accents are folded on the way out because the list carries both spellings
+ * of two houses (`hermes`/`hermès`, `comme des garcons`/`garçons`) and a reply
+ * may use the other one from the sentence it is reading.
+ */
+export function brandsNamedIn(text: string | null): string[] {
+  if (!text) return [];
+  /* `match` with the pattern's own `g` flag returns every hit and resets
+     `lastIndex` itself, so the shared pattern carries no state out of here. */
+  return (text.match(BRAND_PATTERN) ?? []).map((hit) => (
+    hit.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+  ));
+}
+
 /** True when the text still carries a mark — for tests and for the guard. */
 export function containsBrand(text: string | null): boolean {
   if (!text) return false;

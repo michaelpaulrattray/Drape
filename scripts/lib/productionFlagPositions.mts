@@ -88,6 +88,35 @@
  * position here in the same commit that flips it, with the ruling that
  * authorised it named — the reason field is where a future seat learns whether
  * a position is a decision or an accident.
+ *
+ * # RETIRING A ROW — AND WHEN THE VARIABLE COMES OFF. THE ONE SENTENCE, SAID HERE ONCE
+ *
+ * ⚠ **A RETIREMENT'S VARIABLE COMES OFF AFTER THE CODE DEPLOYS — NEVER IN THE
+ * SAME ACT AS THE MERGE.** The row leaves in the commit that stops reading the
+ * variable; the variable leaves the service once that build is SERVING. An
+ * absent variable parses as off ({@link UNSET}), so deleting it while the old
+ * build still answers puts every customer back on the retired road — and a
+ * merge is not a deploy: `main` moving starts a build, and `/api/health` keeps
+ * answering from the OLD process until the cutover.
+ *
+ * So the two acts are SEPARATE, and the window between them is expected rather
+ * than a fault: with the row gone and the variable still set, the service holds
+ * a governed variable this table does not name, so `comparePositions` reports
+ * exactly one mismatch naming that flag until the deletion. **That window is
+ * why the sentence has an order at all.**
+ *
+ * ⚠ **This is the authority on that question, and until #2738 it said the
+ * opposite in its own two retirement notes** — *"in the same act as the
+ * merge"*, which eight statements across six files repeated. Every one of them
+ * then said *"in that order"*, or described the one-mismatch window above, and
+ * both are only meaningful if the acts are separate — so each sentence
+ * contradicted its own next clause, and the headline is the half a reader acts
+ * on. **What it cost is #2735**: a handoff wrote the obligation as firing when
+ * the PR merged, and at 00:20:51Z on 2026-10-28 the merge had happened, the
+ * variable was still `all`, and `/api/health` was serving the pre-merge build
+ * that still read it — the fourth instance of a precondition stated one step
+ * too early. The retirement records, the catalogue entries and the retirement
+ * guards' docblocks now point HERE instead of re-wording it six ways.
  */
 
 import { BOOT_GOVERNED_ENV_NAMES } from "./governedBootSettings.mts";
@@ -101,12 +130,92 @@ import { BOOT_GOVERNED_ENV_NAMES } from "./governedBootSettings.mts";
  */
 export const UNSET = "off";
 
+/**
+ * A SCOPE FLAG'S OWN THREE WORDS, AND THE PER-USER FORM (#2691).
+ *
+ * `off` is what {@link UNSET} resolves to, and the four rows that write the
+ * literal are rows whose paragraph talks about being off rather than unset.
+ */
+export type ScopeStanding =
+  | "off"
+  | "all"
+  | "true"
+  /**
+   * ⚠ **THE IDS ARE NOT EXPRESSIBLE HERE AND THE SUITE READS THEM INSTEAD.**
+   * A template literal cannot say *"a comma-separated list of positive
+   * integers"*: `users:${number}` would reject the legal `users:1,2`, and
+   * widening to `${string}` is what this says — so `users:UNSET` is a position
+   * this TYPE accepts. {@link positionIsLegal} is where that half is checked,
+   * and `server/productionFlagPositions.test.ts` drives it over the real table
+   * with a sabotage case. Named rather than left as a quiet hole: the type
+   * catches the shape the defect took and not the whole grammar.
+   */
+  | `users:${string}`;
+
+/**
+ * A FLAG WHOSE VALUE IS A NAMED SETTING RATHER THAN A SCOPE — which engine,
+ * which recipe.
+ *
+ * Written out by hand on purpose. Each of these is a founder-level choice, so a
+ * new legal value is a deliberate edit to this union rather than a free string
+ * nobody reviewed; and the alternative that reads tidier — letting the type be
+ * `string` for these two rows — is exactly the hole #2691 was filed about.
+ */
+export type NamedSetting =
+  /**
+   * `CASTING_ROLL_ENGINE_MODEL` — which GPT Image 2.5 model the scope's users
+   * roll on. `flare` is the other legal value and is named here even though no
+   * row holds it, so narrowing this type does not quietly hide the choice.
+   */
+  | "flare"
+  | "sunburst"
+  /** `R7_EVIDENCE_COMPOSER_RECIPE` — which recipe the composer runs. */
+  | "ink.add.front_upper_torso.v1";
+
 export type FlagPosition = {
-  /** What the service is expected to hold. `off` means the variable is unset. */
-  readonly position: string;
+  /**
+   * What the service is expected to hold. `off` means the variable is unset.
+   *
+   * ⚠ **A UNION RATHER THAN `string`, AND THE REASON IS A MEASURED INCIDENT
+   * (#2691, found by Janitor patrol #17).** A row wrote `position: "UNSET"` —
+   * the constant's NAME in quotes — and because this field was a bare `string`
+   * the record claimed production held the literal text `UNSET`. The
+   * typechecker was silent, all three local suites passed (45 tests), and the
+   * **deploy rite was the only reader that caught it** — after merge, where it
+   * blocked every rite anybody ran for about two hours, including the briefing
+   * edition that is the founder-facing page's only road.
+   *
+   * Production was never wrong and nothing on the service moved. The record
+   * was, for one token, and the earliest instrument that could see it ran last.
+   */
+  readonly position: ScopeStanding | NamedSetting;
   /** Why it stands there — name the ruling, not the feature. */
   readonly why: string;
 };
+
+/**
+ * WHETHER A POSITION IS IN THE LEGAL DOMAIN — the half the type cannot express.
+ *
+ * Exported so the suite and the rite read ONE grammar rather than two that
+ * drift (working law 4). It is deliberately not a second copy of any server
+ * scope parser: those live under `server/` and run at boot against
+ * `process.env`; this reads a tracked record in a build script, and importing a
+ * boot validator here would drag its refusal behaviour into a tool whose job is
+ * to report rather than to refuse.
+ *
+ * `users:` is where it earns its keep: the type accepts any suffix, and this
+ * requires at least one positive integer with no leading zero, comma-separated
+ * and with no repeats — which is the grammar every scope paragraph states.
+ */
+export function positionIsLegal(position: string): boolean {
+  if (position === "off" || position === "all" || position === "true") return true;
+  if (position === "flare" || position === "sunburst") return true;
+  if (position === "ink.add.front_upper_torso.v1") return true;
+  if (!position.startsWith("users:")) return false;
+  const ids = position.slice("users:".length).split(",");
+  if (ids.length === 0 || ids.some((id) => !/^[1-9][0-9]*$/.test(id))) return false;
+  return new Set(ids).size === ids.length;
+}
 
 /**
  * Read off the production service by the deploy rite on 2026-08-23, receipt
@@ -122,22 +231,42 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
      2026-10-15, on his word (*"yes approve the plan and switch off the six
      settings"*). It read `all` since fable-1253 widened the compositor swap past
      `users:1`, and the ghost audit found the whole OLD paste road still standing
-     behind it as the flag's off arm. The code stops reading the variable in this
-     commit and the variable leaves the service in the same act as the merge —
-     in that order, and the other order is the expensive one: with the old build
-     still serving, an absent variable parses as `off`, which would put every
-     customer back on the paste road.
+     behind it as the flag's off arm. The code stopped reading the variable in
+     this commit and the variable came off the service AFTER that code DEPLOYED
+     — never in the same act as the merge, which is the rule said once at the
+     head of this file. The other order is the expensive one: with the old build
+     still serving, an absent variable parses as `off`, which would have put
+     every customer back on the paste road.
 
      The row is REMOVED rather than moved to `off`, which is the framing trim's
      precedent (#11) and what `productionFlagPositions.test.ts` enforces from
      both directions: a row for a variable nothing declares can never disagree
      with anything, and a governed variable with no row is reported by
-     `comparePositions`. So the two have to move together — and between the merge
-     and the deletion the rite reports exactly that mismatch, by design. */
-  CASTING_REFERENCE_LIBRARY_SCOPE: {
-    position: "all",
-    why: "the repaint's parent; a repaint carries features by crop and needs it",
-  },
+     `comparePositions`. So neither moves without the other — the row in this
+     commit, the variable after the deploy — and between the merge and the
+     deletion the rite reports exactly that mismatch, by design. */
+  /* ⚠ CASTING_REFERENCE_LIBRARY_SCOPE'S ROW STOOD HERE AND IS GONE — #1577
+     slice D5, 2026-10-15, on his word (*"yes approve the plan and switch off the
+     six settings"*), the LAST of the six. It read `all` since 2026-08-24 and
+     said *"the repaint's parent; a repaint carries features by crop and needs
+     it"* — true, and the repaint's own flag went two slices earlier, leaving
+     this one gating nothing a customer could switch.
+
+     The code stopped reading the variable in this commit and the variable came
+     off the service AFTER that code DEPLOYED — never in the same act as the
+     merge, which is the rule said once at the head of this file. The other
+     order is the expensive one: with the old build still serving, an absent
+     variable parses as `off`, which would have blanked the face panel for every
+     customer and stopped every refine carrying the cast's own features.
+
+     The row is REMOVED rather than moved to `off`, which is the repaint's
+     precedent four rows up and what `productionFlagPositions.test.ts` enforces
+     from both directions: a row for a variable nothing declares can never
+     disagree with anything, and a governed variable with no row is reported by
+     `comparePositions`. So neither moves without the other — the row in this
+     commit, the variable after the deploy — and between the
+     merge and the deletion the rite reports exactly that mismatch, by
+     design. */
   CASTING_INK_STUDIO_SCOPE: {
     position: "off",
     /* ⚠ RETIRED AND UNSET ON THE SERVICE, 2026-09-24 — his Crew reply #208 (card
@@ -252,9 +381,14 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "same 'widen the pair' word) — the keeper makes every later look free",
   },
   CASTING_FACE_DISCOVERY_SCOPE: {
-    position: UNSET,
+    position: "users:1",
     why:
-      "built dark 2026-10-16 (#2566 slice 1, the reader half of the design he "
+      "users:1 since 2026-10-28, HIS ACCOUNT ONLY, set by the relay for his eye "
+      + "on real panels -- his word in chat, verbatim: 'yes obviously i need to "
+      + "chekc it right', and 'never ask me to switch things on for my account "
+      + "just do it'. Widening past his account is still his word. The record "
+      + "before that flip follows unchanged: "
+      + "built dark 2026-10-16 (#2566 slice 1, the reader half of the design he "
       + "approved on #2532). It has never been on for any account. It changes "
       + "what the panel draws as well as what a reading costs, so the flip is "
       + "his eye on real panels — judged beside #2565's twelve-edit chains, "
@@ -339,12 +473,20 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "Widening past users:1 is his word, and the flag retires at the end of its road "
       + "(N2's law: flags go home)",
   },
-  CASTING_REFINE_DISPATCH_SCOPE: {
-    position: "all",
-    why:
-      "founder ruling 2026-08-25 on the Desk (register card #3): fixes the "
-      + "1.7% lost-answer defect at the ~305s gateway wall; parent V2 is all",
-  },
+  /* ⚠ `CASTING_REFINE_DISPATCH_SCOPE` had a row here at `all` and it is RETIRED
+     (#1577 slice D4, his word of 2026-10-15). The row is REMOVED rather than
+     moved to `off`, which is the framing trim's and the repaint flag's
+     precedent and what `productionFlagPositions.test.ts` enforces from both
+     directions: nothing in the code declares the variable any more, so a row
+     for it could never disagree with anything.
+
+     ⚠ ORDER, and it is the expensive half: the code stops reading the variable
+     in this commit and the variable leaves the SERVICE after that code DEPLOYS
+     — never in the same act as the merge, which is the rule said once at the
+     head of this file. The other order is the costly one — with the old build still serving, an absent
+     variable parses as `off`, which would put every customer back on the held
+     road and the 1.7% lost answers with it. Between the merge and the deletion
+     `comparePositions` reports exactly that one mismatch, by design. */
   CASTING_DIAGNOSTIC_CAPTURE_SCOPE: {
     position: "users:1",
     why: "keeps the frame from a refused render, on the private evidence adapter",

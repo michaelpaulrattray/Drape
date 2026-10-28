@@ -32,7 +32,7 @@
  * comparison, and a blocked background — because a photograph of a smudge is
  * indistinguishable from a photograph of her eye at 34 pixels.
  *
- * Requires a server with `CASTING_REFERENCE_LIBRARY_SCOPE=users:1` and
+ * Requires a server with `CASTING_V2_SCOPE` covering the subject and
  * `CASTING_FACE_SCAN_SCOPE=users:1`. With either off the panel answers
  * unscanned, and this fails rather than passing quietly.
  */

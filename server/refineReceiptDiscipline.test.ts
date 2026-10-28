@@ -37,11 +37,19 @@ allowTreeSweeps();
  *
  * # The incident this exists for, which has happened once and was armed sixteen times
  *
- * `CASTING_REFINE_DISPATCH_SCOPE` changes the SHAPE OF THE ANSWER, not the
- * picture: with it on, `refineCandidate` returns a dispatch receipt the moment
- * the render starts, and `imageUrl` on that receipt is the face the customer is
- * still looking at. A browser can take a receipt and a script cannot — a script
- * reads the answer as the finished picture and exits.
+ * `refineCandidate` returns a dispatch receipt the moment the render starts,
+ * and `imageUrl` on that receipt is the face the customer is still looking at —
+ * the SHAPE OF THE ANSWER changes, never the picture. A browser can take a
+ * receipt and a script cannot: a script reads the answer as the finished
+ * picture and exits.
+ *
+ * ⚠ **THAT USED TO BE A FLAG AND IT IS NOW THE ROAD, WHICH MAKES THIS GUARD
+ * LOAD-BEARING RATHER THAN A BELT.** Until #1577 slice D4 the receipt only
+ * arrived for a customer inside `CASTING_REFINE_DISPATCH_SCOPE`, so a script
+ * running with the dev `.env` (which has never set it) was saved by an accident
+ * of configuration. The flag is retired, every refine dispatches, and the only
+ * thing standing between a tracked script and the #801 incident is the field
+ * this file holds the tree to.
  *
  * It cost `_801-court-disposable.mts` a court round: three copies of the
  * unedited master written to disk as results, *"That edit is already being
@@ -286,7 +294,7 @@ describe("a script that drives a paid edit says whether it can take a receipt", 
     expect(
       refused,
       "A script cannot take a dispatch receipt: it reads the answer as the finished picture and "
-      + "exits, so with `CASTING_REFINE_DISPATCH_SCOPE` on it writes the unedited master to disk "
+      + "exits, so it writes the unedited master to disk "
       + "and abandons the render it paid for (#2710, #801). Pass `cannotTakeAReceipt: true` in the "
       + "dependency bag, or shut the credit door with `admit: () => false` if the subject is a "
       + "refusal before the claim.",

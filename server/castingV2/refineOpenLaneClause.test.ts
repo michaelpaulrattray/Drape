@@ -238,8 +238,18 @@ describe("and it stays retired (#1577 slice D1)", () => {
   const RETIRED = "CASTING_OPEN_LANE_SCOPE";
   /** A flag that exists and cannot go — every control below finds this one. */
   const LIVE = "CASTING_V2_SCOPE";
-  /** The retired flag's former parent, which is live and keeps its row. */
-  const PARENT = "CASTING_REFERENCE_LIBRARY_SCOPE";
+  /*
+    A SECOND LIVE FLAG, used as this block's positive control for shape 1.
+
+    ⚠ IT WAS THE RETIRED FLAG'S FORMER PARENT, `CASTING_REFERENCE_LIBRARY_SCOPE`,
+    UNTIL #1577 SLICE D5 RETIRED THAT ONE TOO — the hazard every retirement
+    guard carries and no other suite does: its controls are flags, and a flag
+    can die. A control naming a dead flag does not fail loudly; it quietly stops
+    proving the reader works while the file keeps passing. So it moved to a flag
+    that is not on the ghost audit's retirement list at all: the auto-scan's,
+    which band E marks KEEP because widening it is his.
+  */
+  const PARENT = "CASTING_FACE_SCAN_SCOPE";
 
   const SOURCES = serverAndSharedSources(repoRoot);
   const DECLARED = declaredEnvNames(SOURCES);
@@ -314,8 +324,27 @@ describe("and it stays retired (#1577 slice D1)", () => {
     expect(cataloguedFlags(CATALOGUE), "and the catalogue must still carry its entry")
       .toContain(RETIRED);
 
-    const bullet = CATALOGUE.indexOf(`- \`${RETIRED}\``);
-    expect(bullet, "the catalogue's own top-level entry for it").toBeGreaterThan(-1);
-    expect(CATALOGUE.slice(bullet, bullet + 6_000)).toMatch(/RETIRED/);
+    /* ⚠ THE PROPERTY IS THE ENTRY'S OPENING, NOT A CHARACTER COUNT — #2738.
+       This arm asked that /RETIRED/ appear within 6,000 characters of the
+       bullet, which `CASTING_SIDE_PHRASING_SCOPE` proved cannot express the
+       property: its entry was shorter than the window, so a retirement recorded
+       anywhere inside it passed while the entry opened as a live flag, for
+       twelve days. THIS entry is 6,191 characters — already longer than the
+       window it was being measured against, so the arm was passing for the
+       right reason (it opens with its retirement) and the window was doing none
+       of the work. The opening shape is the property, and it is what the
+       guarded siblings assert.
+
+       Line-based rather than offset-based, for the same reason the old arm
+       anchored on the bullet: one catalogue entry is one line, so a neighbouring
+       entry that merely cites this flag in its prose cannot move where this
+       slice starts. The flag name is written out in the regex rather than
+       interpolated from RETIRED, the siblings' own choice — a pattern built
+       from the constant it is checking can be weakened by editing the
+       constant. */
+    const entry = CATALOGUE.split("\n").find((line) => line.startsWith(`- \`${RETIRED}\``));
+    expect(entry, "the catalogue's own top-level entry for it").toBeTruthy();
+    expect(entry, "and it opens with the retirement, not with what the flag used to do")
+      .toMatch(/^- `CASTING_OPEN_LANE_SCOPE` — ✅ \*\*RETIRED/);
   });
 });

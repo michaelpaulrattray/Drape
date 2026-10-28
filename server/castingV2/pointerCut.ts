@@ -373,6 +373,25 @@ export async function cutDiscovered(input: {
     for (const region of one.regions) regions.push(region);
   }
 
+  /*
+    ⚠ `found` IS ROWS, NOT CALLS, AND THE DIFFERENCE IS THE COST (the relay's
+    note on PR #2692, #2566).
+
+    A cut that came back with no mask, with no pixels in it, or sitting outside
+    the rectangle it was asked about is a call BOUGHT and a gate slot SPENT
+    with no row to show for it — so `found` systematically understates what a
+    reading cost, in the one direction that hides it. The header's own
+    three-eyed-cast specimen is exactly that: a rectangle answered, a normal
+    eye cut, the row discarded.
+
+    **The number of calls is the call census's, not this line's** — one
+    instrument, which is why there is no counter here (working law 4). They are
+    `POINTER_DETECT_ABOUT` and `POINTER_BOX_ABOUT` in the census's `byAbout`,
+    kept apart because a `detect` is one per name and a box call is up to
+    `count` of them; `wallMs` beside them is the reading's wall time. The
+    scan logs the whole table on every reading (`[faceScanService] scanned a
+    face-version`).
+  */
   log.info(
     {
       asked,

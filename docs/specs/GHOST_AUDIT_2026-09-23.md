@@ -642,18 +642,18 @@ proposal; nothing here is decided.
 | **B1** | the two-paths half of the wardrobe resolution on refine: `rollPath` threaded into `currentWardrobeLine` (`refineService.ts:1862`, `:9751`; selected at `db/castingV2.ts:865`, `:964`), the `incoherent` kind (`wardrobeLine.ts:94`, `:168`) and the `"born"` source (`:62`, `:165`) | **reachable by no production branch**: `rollService.ts:698` writes the path as a constant `null`, and the thirteen pathed rolls production holds have **zero candidates** (measured 2026-09-23, `TWO_PATHS_PREDICATES_2026-09-24.md`), and a refine needs a candidate | ✅ **RETIRED — slice 2, 2026-10-15** | a branch only a row with no candidate could take. ⚠ The resolution is SHARED: Sign reads it (`signService.ts:319`, `:335`), and so do the ink coverage owner (`inkSurfaceCoverage.ts:402`) and the ink-form demand counter (`refineService.ts:2531`, `source !== "brief"`). The #203 warning above holds: every question that reads it is re-answered in writing. **The `path` column stays** (#203's ruling). ✅ **DONE. All four questions re-answered, and the row's own count was one short.** **(a) Refine's door** — stops threading the path; `wardrobeNow` is the stored line or `unpathed`. **(b) Sign** — stops threading it, its `incoherent` arm goes, and the snapshot still writes `path: null` on purpose (a stored blob three services read back; no row in either world has ever held a non-null one, so the shape is byte-identical to what it already wrote). **(c) The ink coverage owner** — its `incoherent` → `unknown` arm goes, and its docblock's claim that `incoherent` was *the whole reason the gate takes a resolution* is CORRECTED: the reason moved rather than dying, because a bare string still cannot say whether a line is the brief's or an edit, and the surviving arm turns on exactly that. **(d) The demand counter** — the guard is now `source === "edited"` (written positive, because the negative silently widens the day a member is added) and `pathAtRefusal` is no longer passed. ⚠ **THE READER THIS ROW DID NOT NAME IS THE ONE THAT DECIDED WHETHER `born` COULD GO AT ALL: `castWardrobeSource`, which reads the SIGNED SNAPSHOT back** (three callers — `signService.ts:643`, `packageRedoService.ts:580`, `viewRetryService.ts:547`). Measured in both worlds first: **production holds zero snapshots with `source: "born"` and zero with a non-null `wardrobe.path`; dev holds four** (the verify-bot fixtures). ⚠ **And neither reading moves, which is a property of the consumers rather than of the counts** — the whole snapshot chain is typed `string | null` and branches on `"brief"` ALONE (`coverageOfSnapshotWardrobe`, reached through `placementRideCoverage`, whose docblock already says *"Absent means not brief"*), so `born`, `edited`, `null` and absent were always one answer there. That is the argument; the row counts are its second witness. **Also measured: zero of the thirteen pathed rolls are in the `incoherent` shape** — every one carries a line — so that kind was unreachable from the DATA as well as from the code. **Three dead imports of `CastingPath` fell out with it** and were removed |
 | **B2** | `unpathed`: no path and no line, answered as *"the house crew tee"* (`wardrobeLine.ts:167`, `refineInterpreter.ts:818`) | **live**: every cast whose brief named no outfit | **keep** | current machinery under an old-lane name. A rename is cosmetic and not proposed |
 | **B3** | two stale docblocks on the wardrobe hand-off (`refineService.ts:1915-1930`): *"a roll cast before the paths has both columns NULL … every roll in production answers exactly what it answered"*, and *"the BRANCH'S edited line is not threaded yet"* | none (prose) | ✅ **CORRECTED — slice 2, 2026-10-15** | false since #1222 (a pathless line is now the brief's own outfit) and item 8 (the edited line IS threaded, `:1867`). ⚠ **There were THREE false sentences there, not two.** The third was the middle paragraph — *the resolution rides WHOLE because `incoherent` must not read as the house crew tee* — and this slice is what made it false, by retiring the kind. All three are replaced with what is true, and the reason the resolution still rides whole is stated rather than left implied |
-| **C1** | **the paste road**: `renderOnce` below `if (repaintEnabled) return repaintOnce();` (`refineService.ts:7536-7667`) | **none in production**: `CASTING_REPAINT_SCOPE=all` | **retire, with the flag, on his word** | D-241 called it retired; the code kept it as the flag's off arm |
-| **C2** | `castingIdentityEngine` on refine, the Nano Banana Pro plain edit at `1K` (`refineService.ts:338`, built `:6242`, used only `:7557`) | **none in production** (paste arm only) | **retire with C1** | CLAUDE.md's `FAL_KEY` locator is corrected in the same slice. At this tree nothing else calls `signEngine.ts:94`'s factory, so it goes too unless the slice's re-count finds a reader |
-| **C3** | `harvestRefinement` (`maskedRefine.ts:1022`) | **one** production caller, `refineService.ts:7564`, on the paste arm | **retire with C1** | the module STAYS: `RegionReader` has 13 production importers, and `refusingRegionReader`, `regionNameOf`, `additionDestination` and `maskedEditingEnabledFor` all have live readers off this road |
-| **C4** | the masked-edit branch INSIDE the paste arm (`:7550-7556`) | none (paste arm) | **retire with C1** | `defaultMaskedEditEngine` itself **stays**: the repaint road paints with it (`:7289`) |
-| **C5** | the `kind_unserved` door, *"I can't do that to them yet. Nothing was charged."*, for `REPAINT_ONLY_SUBJECTS` (`refineService.ts:2755-2770`) | **none in production**: it fires only when repaint is off | **retire with C1** | a capability-atlas door, so its slice moves the door's map entry in the same commit |
-| **C6** | six repaint-or-paste ternaries and guards around it (`:4386`, `:4599`, `:6270`, `:6398`, `:7898`, `:9592`) | the paste half of each: none | **collapse with C1** | each keeps its repaint half |
+| **C1** | **the paste road**: `renderOnce` below `if (repaintEnabled) return repaintOnce();` (`refineService.ts:7536-7667`) | **none in production**: `CASTING_REPAINT_SCOPE=all` | **retire, with the flag, on his word** — ✅ **RETIRED, slice 4b, 2026-10-16** (`2f4d02e8f`, PR #2555) | D-241 called it retired; the code kept it as the flag's off arm |
+| **C2** | `castingIdentityEngine` on refine, the Nano Banana Pro plain edit at `1K` (`refineService.ts:338`, built `:6242`, used only `:7557`) | **none in production** (paste arm only) | **retire with C1** — ✅ **RETIRED with it, slice 4b** | CLAUDE.md's `FAL_KEY` locator is corrected in the same slice. At this tree nothing else calls `signEngine.ts:94`'s factory, so it goes too unless the slice's re-count finds a reader |
+| **C3** | `harvestRefinement` (`maskedRefine.ts:1022`) | **one** production caller, `refineService.ts:7564`, on the paste arm | **retire with C1** — ✅ **RETIRED with it, slice 4b** | the module STAYS: `RegionReader` has 13 production importers, and `refusingRegionReader`, `regionNameOf`, `additionDestination` and `maskedEditingEnabledFor` all have live readers off this road |
+| **C4** | the masked-edit branch INSIDE the paste arm (`:7550-7556`) | none (paste arm) | **retire with C1** — ✅ **RETIRED with it, slice 4b** | `defaultMaskedEditEngine` itself **stays**: the repaint road paints with it (`:7289`) |
+| **C5** | the `kind_unserved` door, *"I can't do that to them yet. Nothing was charged."*, for `REPAINT_ONLY_SUBJECTS` (`refineService.ts:2755-2770`) | **none in production**: it fires only when repaint is off | **retire with C1** — ✅ **RETIRED with it, slice 4b** | a capability-atlas door, so its slice moves the door's map entry in the same commit |
+| **C6** | six repaint-or-paste ternaries and guards around it (`:4386`, `:4599`, `:6270`, `:6398`, `:7898`, `:9592`) | the paste half of each: none | **collapse with C1** — ✅ **COLLAPSED with it, slice 4b** | each keeps its repaint half |
 | **D1** | `CASTING_OPEN_LANE_SCOPE` (`all`): the off arm is the two closed-lane prompts, `BASE_PROMPT` and `SYSTEM_PROMPT` (`refineInterpreter.ts:383`, `:431`, chosen at `:481`), read through `refineService.ts:1886` | the off arm: none | ✅ **RETIRED — slice D1, 2026-10-16** | two of the four interpreter prompts no account is asked. The bar is #1495's: the surviving prompts sha256-identical before and after — **and it was MET**: `5166fdbc…` / 12,990 chars (classify) and `d938853e…` / 10,547 (edit), hashed at `9622e69e` before the cut and re-asserted every run by `refineOpenLaneClause.test.ts`. ⚠ **The hash is the bar and the LENGTH is not**, driven rather than assumed: one lowercase character moved both hashes and left both lengths unchanged. Out with the flag: the parse, two error classes, `captureCastingOpenLaneEnabled`, the boot fence, the `openLaneEnabled` service seam, the interpreter's `openLane` option, the acceptance door's second gate, and the two closed-lane fixtures — confirmed hash-for-hash as the dying prompts before they were removed. **The LANE is live and is not what retired.** ⚠ **ONE LIVE ROAD CHANGES, DECLARED (the relay's held finding on PR #2556)**: the removal path's RULE 3 re-read (`refineService.ts`, `const asEdit = await (dependencies.interpret ?? interpretRefinement)({ instruction, mode: "edit", … })`) was the one direct interpret call that never passed `openLane`, so on production it read with the CLOSED edit prompt and skipped `acceptOpenKind`. It now gets the open prompt and the door, like every other read. **What changes for the customer**: a removal of a thing that cannot depart, re-read as an edit naming a kind nobody catalogued, can file an `open` delta and RENDER — **a free refusal becomes a charged render of the removal they asked for**. Measured with the real interpreter, text only, two runs each (2026-10-16): *"take off his tail"* and *"get rid of her wings"* went from `wall_unbacked` (free) to `open.tail` / `open.wings` with the words *"no tail"* / *"no wings"*; *"remove her horns"* and *"remove the antlers"* already filed `free.horns` (*"no horns"*, *"no antlers"*) on the closed prompt and still do (one antlers run read `unreadable`, a free refusal). No kind was invented and the words are the same state phrase the closed lane already renders for horns, so this is the main read's behaviour reaching the one caller that bypassed its seam. Pinned in `refineService.test.ts` ("the RULE 3 re-read takes the open lane"), which reddens when the door is closed. The Railway variable comes off AFTER the deploy |
 | **D2** | `CASTING_SIDE_PHRASING_SCOPE` (`all`): `placeSides` (`refineService.ts:7010`) | the off arm: none | ✅ **RETIRED — slice D2, 2026-10-16** | the clause naming which half of the picture a side is on. **The bar was #1495's and it was MET**: the assembled instruction hashed across twelve shapes before and after the cut, every one byte-identical, rollup `883b5ab0…` — and ⚠ **the hash is the bar and the LENGTH is not**, driven rather than assumed: one changed letter moved a hash and left its length at 84. Out with the flag: the parse, two error classes, `captureCastingSidePhrasingEnabled`, the boot fence, the `sidePhrasingEnabled` service seam, and the `placeSides` option on the assembler — the compiler named every reader the moment the option came off `AssembleInput`. **`sidePhrasing.ts` and `imageHalfClause` STAY**: the signed-Cast view lane says the same sentence through the same owner. ⚠ **This row's `all` hid a stale belief, not a live arm** — `recipeAssembler.ts` still called the clause *"dark until its own court runs"* seven weeks after he widened it. The Railway variable comes off AFTER the deploy |
 | **D3** | `CASTING_INK_WORDS_SCOPE` (`all`): *"the neck alone"* is the off arm (`:1912`, `:4010`) | the off arm: none | ✅ **RETIRED — PR for slice D3, 2026-10-15.** Both off-arm sites confirmed at the code before the cut | the flag chose between two placement lists rather than flipping a boolean, so the cut was five choice sites and the parameter they rode on. ⚠ **The compiler named FOUR readers and a grep afterwards found THREE MORE** — an injected dependency and two object-literal fields that survived the typecheck because their literals are inferred or spread, where excess-property checking never runs. D2's slice found the opposite (*"a grep afterwards added nothing"*), which is why each slice establishes its own count. The bar: the classifier's verdict over 256 shapes, rollup identical, the reader proven able to fail on the closed arm |
-| **D4** | `CASTING_REFINE_DISPATCH_SCOPE` (`all`): the arm that HOLDS the request until the render lands (`refineService.ts:1076`) | the off arm: none | **retire with its flag, on his word** | money-adjacent (it decides when a paid request returns), so its slice is a held review |
-| **D5** | `CASTING_REFERENCE_LIBRARY_SCOPE` (`all`), the repaint flag's own parent (`castingV2Scope.ts:356`), read at `routes/castingV2.ts:2722`, `:2822` | the off arm: none | **retire last, on his word** | it is the root of the chain C and D1-D2 hang from, so it goes after them or not at all |
-| **E** | the refine flags still at `users:1`: `MASKED_EDITING_SCOPE` (`maskedRefine.ts:99`, a **code constant**, read at `refineService.ts:3387`, `:4759`, `:7550`), and `CASTING_HAIR_REFERENCE_SCOPE`, `CASTING_INK_REFERENCE_SCOPE`, `CASTING_INK_TRANSFORM_SCOPE`, `CASTING_REFERENCE_ATTACH_SCOPE`, `CASTING_INK_REGION_CROP_SCOPE` | **live** for his account | **keep** | not ghosts: half rollouts, and widening is his. ⚠ `MASKED_EDITING_SCOPE` is a constant in the source, not a Railway variable, so `productionFlagPositions.mts` cannot see it. Worth one line in the catalogue |
+| **D4** | `CASTING_REFINE_DISPATCH_SCOPE` (`all`): the arm that HOLDS the request until the render lands (`refineService.ts:1076`) | the off arm: none | ✅ **RETIRED — slice D4, 2026-10-28** | it decides when a paid request returns, so the slice was a held review and the bar was a BEHAVIOUR bar rather than a prompt hash: a before/after arm asserting that with no variable set anywhere a caller that says nothing gets a receipt, **written and driven RED against the pre-cut tree first** (`expected undefined to be "dispatched"`), green after. ⚠ **THE ROW'S OWN READING OF THIS SLICE WAS RIGHT AND ITS SEQUENCING WAS NOT, and the fortnight between D3 and D4 is the correction.** *"the off arm: none"* is true of PRODUCTION and was false of this repository: our own measuring scripts set the flag `off` in their own process to get the awaited road, because a script handed a receipt exits and abandons the render it paid for. So the off arm had a live consumer that was not a customer — found by the 2026-10-15 sweep, which REFUSED to cut the slice and filed the door instead (#2560, `cannotTakeAReceipt` on the call; #2710, the same field on all sixteen exposed callers, with `server/refineReceiptDiscipline.test.ts` holding the tree to it). ⚠ **AND ITS OFF ARM WAS THE DEFECT RATHER THAN AN OLD FEATURE, which makes it the odd member of D1–D5**: off meant median 121 s, p95 276 s and 1.7% of refines answering past the ~305 s gateway wall with the money safe and the REASON lost. The flag was raised to fix that; retiring it means the fix cannot be switched off by a variable. Out with the flag: the env constant, two error classes, `parseCastingRefineDispatchScope`, `captureCastingRefineDispatchEnabled`, the boot fence, the service's one read, the position row, the capability road's flag entry and the census drive's dead pin. **The HELD road stays, reached by the caller and never by an account.** ⚠ **THE COMPILER NAMED SIX READERS AND NOT ONE OF THEM WAS PRODUCTION CODE, and the first reading of that was WRONG ON THE INSTRUMENT RATHER THAN ON THE TREE — the correction is the finding.** `npx tsc -p tsconfig.json` (which is only `check:root`) says NOTHING: it excludes `**/*.test.ts`, and the one production read sits behind an optional call the compiler cannot see. Reading that as *the compiler named zero readers* was about to go into this row. **`pnpm check` runs FOUR typechecks in parallel, and two of them include test files** — driven by reverting the two test files to `origin/main` with the production cut in place: `tsconfig.casting-tests.json` names all six imports in `castingV2Scope.test.ts` by line, with a *Did you mean* for each. **So the lesson is not a new blind spot; it is that `pnpm check` and `tsc -p tsconfig.json` are different instruments and only one of them is the gate's.** What the compiler genuinely cannot reach here is everything outside TypeScript's own graph — the position table's string key, the capability road's flag literal, the drive profiles' dead pin, the two law surfaces and a client comment — and the grep found all of those. Run both instruments, in that order, and expect either answer: D1 found the compiler sufficient, D3 found a grep added three, and D4 found the compiler reaching only the tests. The Railway variable comes off AFTER the deploy |
+| **D5** | `CASTING_REFERENCE_LIBRARY_SCOPE` (`all`), the repaint flag's own parent, read at `routes/castingV2.ts`'s two panel doors, `refineService.ts`'s three sites, the mint's `enabledFor` and the sweep's armed read | the off arm: none | ✅ **RETIRED — slice D5, 2026-10-28** | it was the root of the chain C and D1–D2 hung from, so it went after them. **Three validators re-parented onto `CASTING_V2_SCOPE`, not six** — three of the six had already gone with their own flags, exactly as the 2026-10-15 sweep's table predicted, and the re-count is a comment on #1577 rather than a figure carried from a handoff. ⚠ **ONE PROPERTY IS LOST RATHER THAN MOVED AND IT IS NAMED EVERYWHERE IT MATTERS: the cleanup-worker fence over the LIBRARY'S OWN writes.** Each surviving child asks for the sweep in its own body, so nothing about an uploaded design, an attached photograph or a kept scan is weaker; a deployment with the sweep off now boots and files crops nothing collects, and `ENABLE_STORAGE_CLEANUP_WORKER` is `true` on the service. ⚠ **The bar was the REAL BOOT GATE rather than a hash**: production's whole recorded position set driven through `validateEnv()` after the cut (`scripts/rehearse-reparent-boot-disposable.mts`, re-pointed in this slice rather than deleted — the first of its arms to survive a retirement, because the fence lived and only its variable moved), with a negative control that refuses BY NAME over the new parent. **The one behaviour change is declared**: a refine always reads the library now, where the flag could in principle have skipped the digest query — unreachable on production since 2026-08-24, and the arm that asserted the dark road is INVERTED rather than deleted |
+| **E** | the refine flags still at `users:1`: `MASKED_EDITING_SCOPE` (`maskedRefine.ts:99`, a **code constant**, read at `refineService.ts:3387`, `:4759`, `:7550`), and `CASTING_HAIR_REFERENCE_SCOPE`, `CASTING_INK_REFERENCE_SCOPE`, `CASTING_INK_TRANSFORM_SCOPE`, `CASTING_REFERENCE_ATTACH_SCOPE`, `CASTING_INK_REGION_CROP_SCOPE` | **live** for his account | **keep** | not ghosts: half rollouts, and widening is his. ⚠ `MASKED_EDITING_SCOPE` is a constant in the source, not a Railway variable, so `productionFlagPositions.mts` cannot see it. Worth one line in the catalogue. ⚠ **AND ONE OF THE THREE READERS THIS ROW NAMES DIED WITH C4 — re-read at the code for slice 6, 2026-10-28.** `maskedEditingEnabledFor` is called from `refineService.ts` **twice** today (`:3482`, `:4947` — the same two questions, moved down the file as it grew), plus once inside its own module (`maskedRefine.ts:1091`). The third, `:7550`, was the masked branch INSIDE the paste arm, so it went with the paste road in slice 4b. The flag's position is unchanged — it is still the constant `"users:1"` at `maskedRefine.ts:99`, still invisible to `productionFlagPositions.mts`, and still his to widen |
 | **F** | `withoutFacets` (`refineDelta.ts:1957`), the segment store's facet filter | **none, anywhere, not even a test.** Lost its only caller at #1160 slice 1 (`fa1a9ce5d`, 2026-09-25) | ✅ **RETIRED — slice 1, this commit** | the differ found it. The uncalled-export sweep cannot, because the docblock at `:1971` names it and the sweep counts that as a self-use. Re-counted at the cut: two mentions in the source, the declaration and that docblock, and nothing else in the tree. `clearFacets` has a second live caller (`:2282`) and STAYS |
 | **G** | `readStoredDelta` / `migrateStoredDelta` (`refineLegacy.ts:116`, `:150`), the reader for deltas older builds wrote | **live**: 15 uses in `refineService.ts`, and `signService.ts:42` | **keep** | it is the READ path for history, the refine road's equivalent of `rollComposedOnAuthorRoad`: a stored row is our own paid-for past |
 | **H** | `renderVerification.ts` after #2526 | n/a | **keep** | no old-lane vocabulary: *"the house"* there is the company paying for its own free re-render. Its two test-only exports (`facetsWithUnreliabilityPrior`, a declared seam; `unreadFacts`) are not this card's class |
@@ -759,9 +759,12 @@ any of them (his rule on #1398).
      boot.** It was found by enumerating every production reader of the flag
      before editing anything, rather than by trusting this row's count — the
      rule that a retirement slice re-counts before it cuts, paying for itself
-     one slice after it was written down. All four now read
+     one slice after it was written down. All four then read
      `CASTING_REFERENCE_LIBRARY_SCOPE`, the manifest's slice-1 shape, because
-     a child naming a missing parent refuses boot.
+     a child naming a missing parent refuses boot. ✅ **AND SLICE D5 MOVED THE
+     SURVIVORS AGAIN, ONTO `CASTING_V2_SCOPE`** — three of them, because three of
+     the four had retired with their own flags by then. The re-count rule paid
+     for itself a second time on the same row.
      **Nothing production holds changes**: both flags stood at `all`, and the
      repaint's own gate ENDED in the library's, so every user inside the
      repaint was already inside the library. ⚠ **It is the weaker of the two
@@ -853,9 +856,13 @@ any of them (his rule on #1398).
         answer. Collapsing it to unconditional made the library's own
         *"a dark deploy must not pay for a database round trip"* arm fail, and
         that arm had been passing for the WRONG REASON (what silenced the query
-        was the suite leaving the REPAINT flag unset). It is gated on
-        `CASTING_REFERENCE_LIBRARY_SCOPE` now — the same condition it always
-        had, named at its real parent.
+        was the suite leaving the REPAINT flag unset). It was then gated on
+        `CASTING_REFERENCE_LIBRARY_SCOPE` — the same condition it always
+        had, named at its real parent. ✅ **AND IT IS GATED ON NOTHING SINCE
+        SLICE D5**: the library has no switch, so the read is unconditional and
+        the arm that asserted the dark road is INVERTED rather than deleted —
+        *speaks to the library on every render*, which is this slice's one
+        declared behaviour change.
 
      **What is left standing and is named rather than cut**, because each is its
      own change with its own suites: `harvestRefinement` itself (~965 lines
@@ -895,11 +902,246 @@ any of them (his rule on #1398).
      by five sabotages, one per arm.
 5. **One flag at a time after that, each on his word**: open lane (D1, with the
    prompt-hash bar), side phrasing (D2), ink words (D3), refine dispatch (D4,
-   held review), and the reference library last (D5).
-6. **The record closes**: this section's own last slice, as on the roll road.
+   held review), and the reference library last (D5 — ✅ all five shipped; D5 on
+   2026-10-28, and with it every flag retirement this audit proposed).
+6. ✅ **SHIPPED — the record closes**: this section's own last slice, as on the roll road. It is the section below, *WHAT ACTUALLY SHIPPED ON THE REFINE ROAD*, written 2026-10-28.
 
 **What is NOT in it**: the dice reader and everything that reads the house-road
 record (A1-A3, G: the 220 legacy sheets read through it for good); the
 `users:1` flags (E: his to widen); the legacy `LOOK_KEYS` vocabulary (the
 card's own *not in this card*); `validateLocks` (#1125, `rung:N3`, its own
 card); and the roll-road residue (K).
+
+---
+
+## WHAT ACTUALLY SHIPPED ON THE REFINE ROAD, read at `git log` on `origin/main` rather than off the PR bodies
+
+**Slice 6 of the refine-road half — *"the record closes"* — is this section**, and
+it closes **#1577**. It has no card of its own, for the roll road's reason: it IS
+the card's close, and it is written here because this is the file a shift opens to
+work it.
+
+**Read at `origin/main@3849af1dd`, which is the build production was serving when
+this was written** — `/api/health` at 2026-10-28T01:49:58Z, build
+`3849af1dda3d00984739d7eed094a61b9516d8ef`, uptime 631 s, database 1.13 ms. Every
+squash below was proven an ancestor of **that build** with
+`git merge-base --is-ancestor`, not merely present on `main`: a merged PR has not
+shipped until the process serving traffic carries it (#296).
+
+⚠ **And the build moved while this section was being written, which is the
+ordinary case rather than a problem**: PR #2737 merged and production was serving
+`cc1eba398` by 02:06:42Z. **All eleven were re-proven against that build too**, and
+they hold for the structural reason rather than by luck — `cc1eba398` is a
+descendant of `3849af1dd`, so nothing an ancestry proof says here can be undone by
+a later deploy. The reading above keeps its own timestamp, because a claim about a
+serving build is only ever true at a time.
+
+| slice | card | merged as | at (UTC) | what it took |
+|---|---|---|---|---|
+| opening act | #2534 | `b04b62a8e` (PR #2534) | 2026-10-15 07:37 | **no code.** The population, its readers and a proposed fate for each — the card's first done-when line |
+| 1 | #2538 | `9311e2a3c` (PR #2538) | 2026-10-15 08:22 | `withoutFacets` (item F), whose last caller died at #1160 slice 1 — and the production specimen its docblock was the only record of |
+| 3 | #2538 | same squash | 2026-10-15 08:22 | **no deletion.** Item A4 carded as **#2537**, which is where it still lives |
+| 4a | #2541 | `580eecace` (PR #2541) | 2026-10-15 09:56 | the repaint's children re-parented onto its own parent — **four**, not the three this table named |
+| 2 | #2550 | `77a4113cf` (PR #2550) | 2026-10-16 03:29 | the two-paths half of refine's wardrobe answer (B1), with B3's three false docblocks |
+| D2 | #2557 | `38440d1b5` (PR #2557) | 2026-10-16 04:32 | `CASTING_SIDE_PHRASING_SCOPE`, its parse, its fence and its seam — the clause is simply what every render says |
+| 4b | #2555 | `2f4d02e8f` (PR #2555) | 2026-10-16 05:00 | **the paste compositor and `CASTING_REPAINT_SCOPE` — rows C1 through C6 in one act** |
+| D3 | #2559 | `da7644a18` (PR #2559) | 2026-10-16 05:16 | `CASTING_INK_WORDS_SCOPE` and the five choice sites it rode on |
+| D1 | #2556 | `67fed3a5f` (PR #2556) | 2026-10-16 05:36 | `CASTING_OPEN_LANE_SCOPE` and the two closed-lane prompts that were its off arm |
+| D1 remainder | #2569 | `2c008f345` (PR #2569) | 2026-10-27 02:30 | the D1 correction reaching its five copies, and a boot rehearsal that was refusing a slice that had shipped |
+| D4 | #2728 | `e305a47c8` (PR #2728) | 2026-10-28 00:16 | `CASTING_REFINE_DISPATCH_SCOPE` — every refine answers with a receipt, and that cannot be switched off |
+| D5 | #2729 | `52cc75764` (PR #2729) | 2026-10-28 00:34 | `CASTING_REFERENCE_LIBRARY_SCOPE`, the chain root, **last of the six**, with three fences re-parented |
+| 6 | — | this section | 2026-10-28 | the record |
+
+### ⚠ THE PLANNED ORDER IS NOT THE ORDER THEY MERGED IN, AND ONLY ONE ORDER WAS EVER LOAD-BEARING
+
+Slice 5 of the plan reads *"open lane (D1), side phrasing (D2), ink words (D3),
+refine dispatch (D4), and the reference library last (D5)"*. Read at the commit
+times above, the six actually landed **D2 → 4b → D3 → D1 → D4 → D5**: D2 merged
+**64 minutes before D1** and 44 before D3, and the paste road went out between
+them. **Nothing is wrong with that, and the record says so rather than implying a
+sequence it did not have**, because the only ordering constraint in this chain was
+structural and it HELD: a child naming a missing parent refuses boot, so **D5, the
+root C and D1–D2 hung from, had to be last — and it was, by 18 minutes over D4 and
+by twelve days over the rest.** The four leaves were independent of each other.
+
+### ⚠ SIX ROWS HAD SHIPPED AND THE TABLE STILL READ AS A PROPOSAL — CORRECTED IN THIS SLICE
+
+**C1 through C6 carried no fate marker** while every other shipped row carried a
+✅, so the audit's own fate column — the thing a shift reads to learn what is left
+— described the paste road as *"retire, with the flag, on his word"* for twelve
+days after his word had been given and the road removed. Read at the code before
+the markers went in, rather than taken from slice 4b's PR body:
+
+- **C1** — the fork is gone. `repaintEnabled` survives in `refineService.ts` as
+  **one comment** (`:8012`, *"This used to be a FORK: `if (repaintEnabled) return
+  repaintOnce()`"*), and the comment beside it states the consequence plainly:
+  *"every refine on this product is a repaint."*
+- ⚠ **`renderOnce` STILL EXISTS AND IS NOT THE PASTE ROAD — the one thing in this
+  row a later reader will misread.** C1's subject was *"`renderOnce` below `if
+  (repaintEnabled) return repaintOnce();`"*. The paste arm is gone; the **name**
+  survives at `refineService.ts:8026` as the surviving road's single *"render this"*
+  definition, so one definition cannot drift from the attempt it is retrying. The
+  code already carries its own ⚠ about this (`:6489`) — *"THIS USED TO NAME
+  `renderOnce` AS THAT ONE PLACE, and it was already wrong when #1577 slice 4b
+  landed (#2596)"*. **A grep for `renderOnce` is therefore not a test of whether C1
+  shipped**, and that is why this bullet exists.
+- **C2, C3** — `castingIdentityEngine` and `harvestRefinement` appear in
+  `refineService.ts` only inside the obituary at `:8023-8024`, which names them as
+  the two engines the paste road was the only live caller of.
+  ⚠ **`castingIdentityEngine` itself is NOT deleted, deliberately**: it is declared
+  in `signEngine.ts` and built by `scripts/calibration/accessory-instance-cell.mts`,
+  a **tracked instrument** — which is the re-count slice 4b's own row called for,
+  answered by finding a reader rather than by assuming none.
+- **C4, C5** — the masked branch inside the paste arm is gone, and with it one of
+  the three `MASKED_EDITING_SCOPE` readers row E names (corrected at that row);
+  `kind_unserved` survives as prose at `:2842`, *"It was `kind_unserved`"*.
+- **C6** — the six repaint-or-paste ternaries are collapsed to their repaint halves.
+
+### The card's second done-when, checked rather than assumed
+
+*"Retirements ship as their own slices; nothing customer-visible changes without
+the relay's eye."* **Nine of the eleven PRs above carry a hand verdict from his
+account**, four of them after a held finding that was then answered (#2555, #2556,
+#2559, #2569). **Two carry no relay comment at all — #2534 and #2538 — and both
+are correct**, read at the diffs rather than argued: #2534 changed one file, this
+document; #2538 changed this document and `refineDelta.ts`, deleting a function
+with no caller anywhere, **not even a test**. `git show --name-only` finds **zero
+`client/src` files in either**, so neither earned `needs-fable` under the triage,
+and an ordinary PR merges on the gate alone. **The done-when holds.**
+
+### The six flags, read off the service by name with a working positive control
+
+Read on the Drape service 2026-10-28, filtering a `railway variables --kv`
+listing by name — and ⚠ **with four flags that ARE set asked for in the same
+breath, because a filter that fails open reads exactly like an absent variable.**
+The controls answered `CASTING_V2_SCOPE=all`, `CREW_TAB_SCOPE=all`,
+`CASTING_OUTFIT_EDIT_SCOPE=users:1` and `CASTING_FACE_DISCOVERY_SCOPE=users:1`;
+**all six retired variables answered nothing at all.**
+
+| flag | on the service | in the code |
+|---|---|---|
+| `CASTING_OPEN_LANE_SCOPE` | absent | two comments, both past-tense |
+| `CASTING_SIDE_PHRASING_SCOPE` | absent | no non-test, non-comment reference anywhere |
+| `CASTING_INK_WORDS_SCOPE` | absent | two comments (`_core/env.ts`, `testing/suitePointers.ts`) |
+| `CASTING_REPAINT_SCOPE` | absent | three comments in `castingV2Scope.ts` |
+| `CASTING_REFINE_DISPATCH_SCOPE` | absent | no non-test, non-comment reference anywhere |
+| `CASTING_REFERENCE_LIBRARY_SCOPE` | absent | four comments, one of which **corrects itself** (below) |
+
+**Both of the two variables that were still standing last night are gone** —
+`CASTING_REFINE_DISPATCH_SCOPE` (slice D4's, the subject of **#2735**) and
+`CASTING_REFERENCE_LIBRARY_SCOPE` (slice D5's, named on that card as *"the sibling
+and NOT owed yet"*). Each came off after its own deploy, which is the order both
+PRs and `scripts/lib/productionFlagPositions.mts` insist on, and
+`comparePositions` now reports no mismatch for either.
+
+### ⚠ ONE SENTENCE INSIDE AN OBITUARY ALREADY CORRECTED ITSELF, AND IT IS THE SHAPE WORTH COPYING
+
+`castingV2Scope.ts:264` still reads *"`CASTING_REFERENCE_LIBRARY_SCOPE` is what
+decides whether it has crops to carry"* — a **present-tense** claim about a flag
+that no longer exists — and the very next lines say so: *"THAT LAST SENTENCE ABOUT
+THE LIBRARY DECIDING IS NO LONGER TRUE AND THE RECORD IS LEFT STANDING WITH THIS
+CORRECTION BESIDE IT … A sentence inside an obituary is still read in the present
+tense, which is why this is corrected rather than filed as history."* Slice D5
+wrote that itself. **It is recorded here because it is the only one of the eleven
+obituaries that anticipated its own misreading**, and because a record close whose
+job is to find stale sentences should say when it found one already handled.
+
+### What this close does NOT close, and where each remainder actually lives
+
+Nothing here is a loose end being tidied away; each has an owner, read at the
+queue on 2026-10-28 rather than carried from a handoff:
+
+- **#2537** (`rung:N3`, `design-unbuilt`, **OPEN**) — item **A4**, the caption
+  hybrid. Slice 3's whole job was to card it, and it is deliberately NOT held on
+  him: today's behaviour is one of the three answers, so nothing waits.
+- **#1125** (`rung:N3`, `debt`, **OPEN**) — `validateLocks` and the unowned-axis
+  sweep, which the plan's *"what is NOT in it"* already named as its own card.
+- **Rows A1–A3 and G** — the dice record read for pronouns, for *"the composed
+  identity so far"* and as `priorItems`, and the stored-delta reader. All **live,
+  all keep**: they answer `null` for every cast rolled on the author road, and they
+  are how the 220 legacy sheets stay readable. Not ghosts.
+- **Row B2** — `unpathed` answered as *"the house crew tee"*. **Live and keep**:
+  current machinery for every cast whose brief named no outfit.
+- **Row E** — the five refine flags still at `users:1`, every one of them read by
+  name on the service tonight and standing exactly there
+  (`CASTING_HAIR_REFERENCE_SCOPE`, `CASTING_INK_REFERENCE_SCOPE`,
+  `CASTING_INK_TRANSFORM_SCOPE`, `CASTING_REFERENCE_ATTACH_SCOPE`,
+  `CASTING_INK_REGION_CROP_SCOPE`), plus the `MASKED_EDITING_SCOPE` constant.
+  **Half rollouts, not ghosts, and widening is his word.**
+- **Rows H, I, J** — `renderVerification.ts`, `refineReask.ts` / `refineRemoval.ts`,
+  and `readBriefFacts`. **Keep**: no old-lane vocabulary in any of them.
+- **Row K** — the roll-road residue found on the way, which belongs to the roll
+  road's own record and not to this one.
+- **The legacy `LOOK_KEYS` vocabulary** — the card's own *not in this card*, and
+  his 2026-09-06 cancellation of the chips that would have replaced it.
+
+### ⚠ AND ONE FINDING IS CARDED RATHER THAN FIXED HERE, BECAUSE IT REACHES PRODUCTION CODE AND AN AUTHORITY
+
+Writing this close turned up **eight statements across six files** saying a
+retirement's Railway variable *"leaves the service in the same act as the merge"*
+— including `scripts/lib/productionFlagPositions.mts`, which is the authority on
+that exact question, and a retirement guard's own docblock. **Every one of them
+then says *"in that order"*, or describes the one-mismatch window between the two
+acts, which is only meaningful if the acts are SEPARATE** — so each sentence
+contradicts its own next clause, and the headline is the half a reader acts on.
+**This is not academic: it is why #2735 existed**, and the predecessor's entry
+named it *"the fourth instance of a precondition stated one step too early."*
+⚠ **The entry with the sentence written correctly — *"The Railway variable comes
+off only AFTER this code deploys"* — is `CASTING_SIDE_PHRASING_SCOPE`'s**, which is
+also the entry that read as a LIVE flag for its first ~2,800 characters (below).
+It is **its own card**, not folded in here: it touches
+`server/castingV2/castingV2Scope.ts` and a retirement guard's docblock, so it is a
+code diff with its own PR, and agreeing one sentence in the authority is a decision
+worth making once rather than six times in passing.
+
+### ⚠ AND THE GUARD THAT SHOULD HAVE CAUGHT THE STALE ENTRY EXISTS — IT IS ITS WINDOW THAT IS WRONG
+
+**The first reading of this was that D2 had no retirement guard, and that is
+measured FALSE — corrected here before it was committed.**
+`server/castingV2/sidePhrasingClause.test.ts` has a law-surface arm, anchored on
+the catalogue bullet exactly as the other three are. **What differs is the
+assertion**: it asks that `/RETIRED/` appear within **6,000 characters** of the
+bullet, and the whole entry is 4,464 characters — so the window is the entry, and
+a retirement recorded anywhere in it passes. The three guarded siblings instead
+assert the entry **OPENS** with it (`referenceLibraryFlagRetirement.test.ts`:
+*"it opens with the retirement, not with what the flag used to do"*). **So the
+record drifted under a green guard, which is the only way this kind of staleness
+ever survives**, and the repair is to tighten that one arm rather than to write a
+new instrument — carded with the finding above, because a control is built from a
+card that predates the shift.
+
+### ✅ BOTH OF THOSE ARE DISCHARGED — #2738, and the sweep found the class wider than the card
+
+The card both paragraphs above were written into is **#2738**, and it is built.
+What changed against what it asked for, because the difference is the finding:
+
+- **The sentence is said ONCE**, at the head of `scripts/lib/productionFlagPositions.mts`,
+  which is the authority on exactly this question and had been saying the opposite
+  in its own two retirement notes. Every other statement was made to agree with it.
+- **The population was 16 statements in 9 files, not 8 in 6.** The card measured
+  `grep "same act as the merge"`, which is case-sensitive — so it missed the three
+  CAPITALISED catalogue headlines it then listed by line anyway, and it could not
+  see the same claim in **different words**: `CLAUDE.md`'s own index said *"the
+  variable leaves the service with that merge"* on two rows, this authority's third
+  retirement note said *"after the merge"* (true but under-specified — the dangerous
+  window is before the DEPLOY), two row comments said the row and the variable
+  *"have to move together"*, and two records said *"in the same act"* with no merge
+  in the sentence at all. **Grep for the sentence, never for the phrase.**
+- **The guard arm was three arms**, not one: `sidePhrasingClause.test.ts`,
+  `inkWordsRoad.test.ts` and `refineOpenLaneClause.test.ts` each carried the same
+  6,000-character window. All three now assert the opening shape, which makes four
+  guards on that property and none on a character count. ⚠ **The open lane's entry
+  is 6,191 characters — already longer than the window it was measured against** —
+  so that arm had been passing for the right reason with the window doing none of
+  the work, which is the clearest statement of why the number was never the property.
+- **Three statements were stale in TENSE as well as wrong in order**, and that was
+  read rather than assumed: the three refine-road variables were read ABSENT from
+  the Drape service by name on 2026-10-28, with three live flags asked for in the
+  same breath as a positive control. Their headlines now say the variable *is gone*
+  and came off after the code deployed.
+
+⚠ **One statement is deliberately NOT changed**, and it is the paragraph above:
+it QUOTES the wrong wording as the finding, so rewriting it would delete the
+record of the defect. `CASTING_CREATIVE_REGISTER_SCOPE`'s headline is also left
+alone — it says *"the variable leaves the service with this deploy"*, which is the
+right ORDER; only its tense is now stale, and that is not this card's class.

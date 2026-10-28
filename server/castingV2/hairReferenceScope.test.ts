@@ -24,10 +24,12 @@ import {
   validateCastingHairReferenceEnvironment,
 } from "./castingV2Scope";
 
+/* ⚠ `CASTING_REFERENCE_LIBRARY_SCOPE` was a link in this chain and left it with
+   #1577 slice D5. It is off this list rather than pinned `all` in the fixtures,
+   because a value nothing reads is a lever that looks live. */
 const KEYS = [
   CASTING_HAIR_REFERENCE_SCOPE_ENV,
   "CASTING_REFERENCE_ATTACH_SCOPE",
-  "CASTING_REFERENCE_LIBRARY_SCOPE",
   "CASTING_V2_SCOPE",
 ] as const;
 
@@ -110,7 +112,6 @@ describe("the AND is taken at the point of use, not only at boot", () => {
   it("is closed when this flag names her and the attach door does not", () => {
     setEnv({
       CASTING_V2_SCOPE: "all",
-      CASTING_REFERENCE_LIBRARY_SCOPE: "all",
       CASTING_REFERENCE_ATTACH_SCOPE: "users:1",
       CASTING_HAIR_REFERENCE_SCOPE: "users:1,2",
     });
@@ -121,7 +122,6 @@ describe("the AND is taken at the point of use, not only at boot", () => {
   it("is closed for a user this flag does not name", () => {
     setEnv({
       CASTING_V2_SCOPE: "all",
-      CASTING_REFERENCE_LIBRARY_SCOPE: "all",
       CASTING_REFERENCE_ATTACH_SCOPE: "all",
       CASTING_HAIR_REFERENCE_SCOPE: "users:1",
     });

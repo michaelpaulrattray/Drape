@@ -28,12 +28,14 @@
 /** Only what this decision reads. The rest of the result is none of its business. */
 export type RefineOutcomeLike = {
   /*
-    `dispatched` is a RECEIPT rather than an outcome (Landing C): the render is
-    under way and nothing has happened yet to confess. It is listed so the union
-    is the server's union — a kind this reader has never heard of is how a future
-    confession goes quiet, which is the defect in the header — and the rule
-    below still holds without an edit: a receipt carries no note, so it says
-    nothing, and when the render lands the surface says what it did.
+    `dispatched` is a RECEIPT rather than an outcome (Landing C) — and since
+    #2695 a receipt CAN carry a note: the dropped-clause confession is a fact of
+    the reading, true before any paint, and on production the receipt is the
+    only answer a dispatched customer ever reads (the settled result loses the
+    race). The rule below held without an edit, exactly as this comment's first
+    version predicted it would for a future confession — a note said whatever
+    kind carries it. What the receipt still never carries is the render's own
+    OUTCOME, which stays owed to the surface when the picture lands.
   */
   kind?: "rendered" | "selected" | "asked" | "dispatched";
   note?: string;

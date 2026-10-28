@@ -20,7 +20,7 @@
 import { createModuleLogger } from "../logging/logger";
 import { createOpenRouterTextEngine } from "../providers/openrouterText";
 import { ProviderQueue } from "../providers/providerQueue";
-import type { TextEngine } from "../providers/types";
+import { providerAccountRefused, type TextEngine } from "../providers/types";
 import {
   AGE_BANDS,
   ARCHETYPE_KEYS,
@@ -891,17 +891,31 @@ JSON.`;
  *
  *   - `thrown` — the call itself failed: the deadline fired, the transport
  *     died, the provider was down. The brief was never read at all.
+ *   - `account` — the provider refused US: a 401, 402 or 403 on our own key
+ *     (`providerAccountRefused`). Never read, and nothing a retry reaches.
  *   - `unconfigured` — no text engine exists in this deployment. Never read.
  *   - `unparsed` — the provider ANSWERED and the reply could not be read as
  *     an intent (a refusal in prose, a truncated object, a schema failure).
  *
- * The founder's ruling (Crew reply #7, "refuse-free") is about the first two:
+ * The founder's ruling (Crew reply #7, "refuse-free") is about the first three:
  * a roll whose brief was never read refuses free instead of charging for a
- * sheet cast from `briefText.slice(0, 80)`. The third is a different question
+ * sheet cast from `briefText.slice(0, 80)`. The last is a different question
  * — a reply we could not parse — and keeps the compiler's fallback until he
  * says otherwise; the compiler's own docblock says which is which.
+ *
+ * ⚠ **`account` IS A FOURTH STATE AND IT EXISTS FOR THE SENTENCE, NOT FOR THE
+ * MONEY** (#2688). All of `thrown`, `account` and `unconfigured` refuse free
+ * and always did, so nobody's bill moves. What they could not do while they
+ * were one word is tell the customer the true thing: *"try again in a
+ * moment"* is honest for a deadline and is advice no retry can satisfy when
+ * our key is disabled. Measured on production, 2026-10-27 from 03:09Z — the
+ * key was off, every call answered 401, and every brief got the weather
+ * sentence. `unconfigured` sits with `account` on that question rather than
+ * with `thrown`: no reader in the deployment at all is the same fact to the
+ * customer, which is the line `conceptDescribeCopy.ts` already draws between
+ * its own `no_transport` and `unreadable`.
  */
-type InterpreterUnavailableCause = "thrown" | "unconfigured" | "unparsed";
+type InterpreterUnavailableCause = "thrown" | "account" | "unconfigured" | "unparsed";
 
 export type InterpretOutcome =
   | { ok: true; intent: CastingIntent; subject: SubjectReading; latencyMs: number; model: string }
@@ -1197,7 +1211,22 @@ export async function compressCharacterNotes(input: {
 
 export async function interpretBrief(input: {
   briefText: string;
-  engine?: TextEngine;
+  /**
+   * The text engine, or `null` to say THIS DEPLOYMENT HAS NONE (#2688).
+   *
+   * ⚠ `null` was not expressible until #2688, and `cause: "unconfigured"`
+   * was therefore not drivable at all — `undefined` falls through to
+   * `interpreterEngine()`, which reads `OPENROUTER_API_KEY` from the
+   * environment, so an arm aiming at the deployment state would have made a
+   * real paid call on any machine that has a key. That is why the one branch
+   * whose sentence this card moved had no arm of its own.
+   *
+   * `refineInterpreter`, `hairColourFromReference` and `makeupFromReference`
+   * all declare exactly this seam already (`=== undefined` rather than `??`),
+   * so this is that pattern rather than a new one. Nothing about production
+   * moves: it passes no engine, which is still `undefined`.
+   */
+  engine?: TextEngine | null;
   signal?: AbortSignal;
   /**
    * Ask for a wardrobe pick as well — the Wardrobe path's case (b), §4.
@@ -1259,7 +1288,9 @@ export async function interpretBrief(input: {
   statedWardrobe?: boolean;
 }): Promise<InterpretOutcome> {
   const notesMax = input.fidelity === true ? NOTES_MAX_FIDELITY : NOTES_MAX;
-  const textEngine = input.engine ?? interpreterEngine();
+  /* `=== undefined`, never `??` — an explicit `null` means "no engine in this
+     deployment" and must NOT fall through to the environment (#2688). */
+  const textEngine = input.engine === undefined ? interpreterEngine() : input.engine;
   if (!textEngine) {
     log.warn({}, "[interpreter] no OPENROUTER_API_KEY — the brief cannot be read");
     return { ok: false, reason: "unavailable", latencyMs: 0, cause: "unconfigured" };
@@ -1599,8 +1630,26 @@ export async function interpretBrief(input: {
     };
   } catch (error) {
     const latencyMs = Date.now() - startedAt;
-    log.warn({ err: error, latencyMs }, "[interpreter] unavailable — the brief was not read");
-    return { ok: false, reason: "unavailable", latencyMs, cause: "thrown" };
+    /*
+      WHOSE FAULT, NOT JUST THAT IT FAILED (#2688).
+
+      `thrown` collapsed two different facts: a deadline or a dead transport,
+      which reads differently a minute later, and the provider refusing OUR
+      account, which does not. The compiler says a different sentence for each
+      and could not tell them apart, so for the whole of 2026-10-27's disabled
+      key every brief was told to try again in a moment.
+
+      The classification is the taxonomy's own (`providerAccountRefused` — a
+      401, 402 or 403 on our key), never a second opinion about what a 402 is.
+    */
+    const ours = providerAccountRefused(error);
+    log.warn(
+      { err: error, latencyMs, cause: ours ? "account" : "thrown" },
+      ours
+        ? "[interpreter] unavailable — the provider refused OUR account, so no retry reaches it"
+        : "[interpreter] unavailable — the brief was not read",
+    );
+    return { ok: false, reason: "unavailable", latencyMs, cause: ours ? "account" : "thrown" };
   }
 }
 

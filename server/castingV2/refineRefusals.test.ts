@@ -48,6 +48,9 @@ describe("every refusal answers all three questions", () => {
       expect(typeof entry.say, reason).toBe("function");
       expect(["free", "charged"], reason).toContain(entry.charge);
       expect(["wall", "gate", "absorbed", "unread"], reason).toContain(entry.report);
+      /* The fourth question (#2730/#2731): which sampling answers. A boolean
+         on every entry, so no refusal can leave it to the loop to guess. */
+      expect(typeof entry.resampled, reason).toBe("boolean");
     }
   });
 

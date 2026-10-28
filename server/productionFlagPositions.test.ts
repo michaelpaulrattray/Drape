@@ -51,6 +51,7 @@ import {
   PRODUCTION_FLAG_POSITIONS,
   comparePositions,
   parseVariableLines,
+  positionIsLegal,
 } from "../scripts/lib/productionFlagPositions.mts";
 import { declaredEnvNames, serverAndSharedSources } from "../scripts/lib/declaredEnvNames.mts";
 import { BOOT_GOVERNED_ENV_NAMES } from "../scripts/lib/governedBootSettings.mts";
@@ -150,6 +151,88 @@ describe("the position table's population", () => {
       expect(entry.position, `${name} has no position`).toBeTruthy();
       expect(entry.why.length, `${name}'s reason is too thin to be one`).toBeGreaterThan(20);
     }
+  });
+
+  /*
+    ────────────────────────────────────────────────────────────────────────────
+    EVERY POSITION IS IN THE LEGAL DOMAIN (#2691, found by Janitor patrol #17).
+
+    A row wrote `position: "UNSET"` — the constant's NAME in quotes — and the
+    record then claimed production held the literal text `UNSET`. What makes it
+    a class rather than a typo is that **every local instrument was blind to
+    it**, driven at the time rather than reasoned: these three suites passed 45
+    tests with the defect present, `tsc` was silent because the field was a bare
+    `string`, and the deploy rite was the ONLY reader that caught it — after
+    merge, where it blocked every rite for about two hours.
+
+    The field is a union now, so that exact token is a COMPILE error. This arm
+    is the other half, and it is not redundant with the type: the type cannot
+    say *"a comma-separated list of positive integers"*, so `users:UNSET` type-
+    checks and this is what refuses it.
+  */
+  it("⚠ #2691 — every position is in the legal domain, ids and all", () => {
+    for (const [name, entry] of Object.entries(PRODUCTION_FLAG_POSITIONS)) {
+      expect(positionIsLegal(entry.position), `${name} holds "${entry.position}"`).toBe(true);
+    }
+  });
+
+  it("⚠ CONTROL — the domain reader refuses the token that actually shipped", () => {
+    /*
+      THE SPECIMEN FIRST, because an arm that cannot fail on the real defect is
+      decoration. `"UNSET"` is what row 255 carried.
+    */
+    expect(positionIsLegal("UNSET")).toBe(false);
+
+    /* The shape the TYPE lets through, which is this reader's whole reason for
+       existing beside it. */
+    expect(positionIsLegal("users:UNSET")).toBe(false);
+    expect(positionIsLegal("users:")).toBe(false);
+    expect(positionIsLegal("users:0")).toBe(false);
+    expect(positionIsLegal("users:01")).toBe(false);
+    expect(positionIsLegal("users:1,1")).toBe(false);
+    expect(positionIsLegal("users:1,")).toBe(false);
+    expect(positionIsLegal("users:-1")).toBe(false);
+
+    /* And the other identifier-shaped mistakes in the same family: a constant
+       this module does not have, and the catalogue's own spelling of one. */
+    expect(positionIsLegal("ALL")).toBe(false);
+    expect(positionIsLegal("OFF")).toBe(false);
+    expect(positionIsLegal("")).toBe(false);
+
+    /*
+      ⚠ POSITIVE CONTROL, and it is the arm that matters most: a reader that
+      refuses everything would pass every assertion above while making the
+      domain arm refuse the real table. Each of these is a value some row
+      genuinely holds today.
+    */
+    expect(positionIsLegal("off")).toBe(true);
+    expect(positionIsLegal("all")).toBe(true);
+    expect(positionIsLegal("true")).toBe(true);
+    expect(positionIsLegal("users:1")).toBe(true);
+    expect(positionIsLegal("users:1,2")).toBe(true);
+    expect(positionIsLegal("sunburst")).toBe(true);
+    expect(positionIsLegal("ink.add.front_upper_torso.v1")).toBe(true);
+  });
+
+  /*
+    AND THE DOMAIN READER IS HELD TO THE TABLE IN BOTH DIRECTIONS — a value the
+    reader allows and no row holds is dead permission, and the two named
+    settings are the ones most likely to rot: `flare` is in the union because it
+    is `CASTING_ROLL_ENGINE_MODEL`'s other legal value, and the recipe id is a
+    string nobody would notice going stale.
+
+    Derived from the table rather than listed, so a row that changes its value
+    moves this arm with it.
+  */
+  it("⚠ #2691 — the named settings the reader allows are the ones rows actually hold", () => {
+    const held = new Set(Object.values(PRODUCTION_FLAG_POSITIONS).map((entry) => entry.position));
+    const namedSettingsHeld = [...held].filter((position) => !/^(off|all|true|users:)/.test(position));
+    /* Sorted, so the failure message names the drift rather than an order. */
+    expect(namedSettingsHeld.sort()).toEqual(["ink.add.front_upper_torso.v1", "sunburst"]);
+    /* `flare` is allowed and unheld ON PURPOSE — stated here so a later reader
+       does not "tidy" it out of the union and make the other engine illegal. */
+    expect(positionIsLegal("flare")).toBe(true);
+    expect(held.has("flare")).toBe(false);
   });
 
   it("⚠ holds the two positions whose CLAUDE.md paragraphs had gone stale", () => {

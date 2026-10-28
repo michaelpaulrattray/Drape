@@ -84,8 +84,12 @@ const ARMS: Array<{ arm: string; side: "left" | "right" | "both"; ask: (colour: 
 const REPEATS: Record<string, number> = { plain: 6, placed: 6 };
 
 const outsider = await ensureOutsider();
-process.env.CASTING_REPAINT_SCOPE = `users:${outsider.id}`;
-process.env.CASTING_REFERENCE_LIBRARY_SCOPE = `users:${outsider.id}`;
+/* `CASTING_REPAINT_SCOPE` was armed over the outsider here and is retired
+   (#1577 slice 4b) — every refine repaints. Removed with the library's line beside
+   it (slice D5) rather than left: a pin on a variable nothing reads says this run
+   arms the repaint road, and it arms nothing. */
+/* `CASTING_REFERENCE_LIBRARY_SCOPE` was armed over the outsider here and is
+   retired (#1577 slice D5) — the library follows the casting scope now. */
 process.env.ENABLE_STORAGE_CLEANUP_WORKER = "true";
 process.env.CASTING_SIDE_INFERENCE = "on";
 /* THE THING UNDER TEST — set per render, below. */

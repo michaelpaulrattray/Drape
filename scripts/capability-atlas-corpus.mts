@@ -113,6 +113,13 @@ export const CORPUS: readonly CorpusRow[] = [
     expect: "would-render", why: "the founder's own sentence; the mark lane is NOT the ink lane (opus-957 §2)" },
   { id: "mark.freckles", ask: "give her freckles", subject: "marks", verb: "add", state: "master",
     expect: "would-render", why: "the freckle court's class" },
+  /* #2730's door, and unlike `wall_too_long` it IS a row: nine unjoined marks
+     came back as nine items on 36 of 36 samplings through the real
+     interpreter (2026-10-28), so the sentence reaches the door rather than
+     probing the model. Not yet driven through the census entrance — the row
+     says what it believes until a drive says otherwise. */
+  { id: "mark.nine", ask: "give her freckles across her nose, a mole on her left cheek, a small scar on her chin, a birthmark on her neck, a beauty mark above her lip, a scar through her right eyebrow, a mole on her jaw, freckles on her shoulders, and a small scar on her forehead", subject: "marks", verb: "add", state: "master",
+    expect: "refused:wall_too_many", why: "#2730: more separate marks than a set keeps — named, free, and never `unreadable`; the same sentence with eight files every one" },
   /* ───────────────────────────── accessories ────────────────────────────── */
   { id: "acc.earrings.add", ask: "give her gold hoop earrings", subject: "statedAccessories", verb: "add", state: "master",
     expect: "would-render", why: "a matching pair, the stylist's ontology (law 8)" },
@@ -421,11 +428,17 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
     reason: "answers a brief shorter than `BRIEF_TEXT_MIN` — the floor, raised by both the live compiler and the deterministic one. Its state is a REQUEST too small to be a brief, which the refine grammar has no field for",
     becomesReachable: "the same brief-carrying row, sending a brief under the floor; the cheapest of the five to drive and the least informative" },
   { id: "reader_outage",
-    reason: "REFINE's own reader outage — the sentence was never read because the call threw, the deadline passed, or no engine is configured. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells her to try naming what she wants changed, which is advice she cannot follow when the failure is ours",
-    becomesReachable: "deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError a 402 produces and asserts the classifier's mapping beside it" },
+    reason: "REFINE's own reader outage — the sentence was never read because the call threw or the deadline passed, or because three samplings were all cut off at our token ceiling. The twin of `roll.reader_outage` on the refine road, and of `concept.unreadable`; free, before the claim, exactly as the `unreadable` beside it always was. What changed is only WHOSE fault it names: `unreadable` means a reply came back and could not be read, and its sentence tells the customer to try naming what they want changed, which is advice they cannot follow when the failure is ours. ⚠ ITS SCOPE NARROWED AT #2688: it said \"or no engine is configured\" until that card, and both that state and our own account being refused now take `reader_down` below, because this door's sentence asks for a retry and neither of those two is reachable by one",
+    becomesReachable: "deliberately never as a corpus row, on the same ground the two doors above state: manufacturing a reader outage in the census would test the harness and not the product. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws a real ProviderError for a timeout as the WEATHER control beside `reader_down`'s account double, and asserts the classifier's 401/402/403 mapping beside both" },
+  { id: "reader_down",
+    reason: "REFINE's reader outage THAT NO RETRY REACHES (#2688, the sweep of #2686) — the provider refused OUR key (a 401, 402 or 403, which `classifyOpenRouterTextHttp` maps to `provider_account`), or this deployment has no text reader configured at all. Split out of `reader_outage` above because that door's sentence ends *\"Try again in a moment\"*, which is true of a deadline and is advice a disabled key can never honour: the customer retries, it fails identically, and they conclude their own sentence was the problem. Measured on production, 2026-10-27 from 03:09Z — the account key was disabled, every call answered 401, and this road said \"in a moment\" for the whole outage. Free exactly as its sibling is; the only thing that moved is the sentence, and it is the same fact the roll road's `roll.reader_down` and the four picture roads' `PICTURE_READER_DOWN_MESSAGE` state at their own entrances",
+    becomesReachable: "deliberately never as a corpus row, and MORE firmly than its sibling: manufacturing a disabled account in the census would test the harness and not the product, and it is the same discharge `concept.reader_outage` carries for the identical fact one entrance over. Its pin is its own driven arm in `readerOutageRefusal.test.ts`, which throws the exact ProviderError an overdrawn key produces, with the timeout double beside it as the control proving the transient sentence still appears" },
   { id: "roll.reader_outage",
-    reason: "answers a brief whose reader never answered — the transport threw, the deadline passed, or no engine is configured. Free by founder ruling (#126, 'refuse-free', always). An infrastructure state, not a sentence",
-    becomesReachable: "deliberately never as a corpus row: manufacturing a reader outage in the census would test the harness and not the product — the discharge `removal_uncheckable` and `concept.unreadable` already carry. Its pin is its own driven arm in `briefCompiler.test.ts`" },
+    reason: "answers a brief whose reader never answered and might on the next try — the transport threw or the deadline passed. Free by founder ruling (#126, 'refuse-free', always). An infrastructure state, not a sentence. ⚠ ITS SCOPE NARROWED AT #2688: it said \"or no engine is configured\" until that card, and that state now takes `roll.reader_down` beside it",
+    becomesReachable: "deliberately never as a corpus row: manufacturing a reader outage in the census would test the harness and not the product — the discharge `removal_uncheckable` and `concept.unreadable` already carry. Its pin is its own driven arm in `briefCompiler.test.ts`, now beside the account double as its weather control" },
+  { id: "roll.reader_down",
+    reason: "THE ROLL ROAD'S half of the same split (#2688) — a brief whose reader cannot answer at all, because the provider refused OUR key or because no reader is configured in this deployment. Free before the claim exactly as `roll.reader_outage` is, and filed `studio` rather than `brief` by `BRIEF_REFUSAL_FAULT` so the sheet does not offer \"Edit the brief\" above a brief that was never read. The sentence differs from its sibling's in one way and it is the whole card: it does not ask for a retry, because no retry reaches a disabled key. Measured on production, 2026-10-27 from 03:09Z",
+    becomesReachable: "deliberately never as a corpus row, on its sibling's ground and its twin `concept.reader_outage`'s: a manufactured outage measures the harness. Its pin is its own driven arm in `briefCompiler.test.ts`, which throws the ProviderError a disabled key produces and asserts the cause the interpreter reports for it, with the bare-Error double beside it keeping `roll.reader_outage`" },
   { id: "unplacedInk",
     reason: "raised at the pre-claim ink door only for a DOCUMENTED ask with no placement; every master-state words ask dies earlier at the document gate (measured, drive-4), and the documented states (reference attached, delivered ink) resolve their placement before that door",
     becomesReachable: "a reference-attached fixture whose take carries no placement" },
@@ -441,6 +454,37 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
   { id: "removal_uncheckable",
     reason: "needs the removal-verification reader to be unavailable mid-ask — an infrastructure failure state no fixture manufactures honestly",
     becomesReachable: "deliberately never: its pin is its service arm (C5), and manufacturing reader outages in the census would test the harness, not the product" },
+  /*
+    THE DOOR #2714 ADDED, AND IT IS OURS BY CONSTRUCTION — the
+    `concept.ran_long` argument on the refine road, which is why it sits with
+    that family rather than with the request-shape block below.
+
+    The state that reaches it is a value in OUR OWN REPLY longer than the
+    subject's storage cap. The customer's sentence is not the variable: a long
+    ask reaches this door only if the model happens to render it long, and the
+    same ask on the next sampling may file perfectly. So no fixture sentence
+    reaches it deterministically, and a corpus row that tried would be measuring
+    the model's prose length rather than the product.
+  */
+  { id: "wall_too_long",
+    reason: "answers a reply carrying one free-lane value, or the makeup value, longer than that subject's own cap (`FREE_SUBJECT_MAX_LENGTH`, else `MAX_FREE_LENGTH`; `MAX_MAKEUP_LENGTH` for makeup). Before #2714 this state set no wall at all: the whole delta nulled and it was delivered in `unreadable`'s words - telling somebody their clear sentence did not come through and advising them to do what they had just done. The LENGTH is a property of our own reply, so the door is ours rather than the picture or the phrasing - and for that same reason the interpreter still takes all three samplings before answering here, discarding this wall on attempts 1 and 2, because the next sampling of the same sentence may fit within the cap (the relay's finding on PR #2732). What #2714 changed is the SENTENCE, not the sampling count",
+    becomesReachable: "deliberately never as a corpus row - the trigger is how long the model rendered its answer, so a fixture sentence probes the model rather than pinning the door. Its pin is `server/castingV2/overlongValueRefusal.test.ts`, which drives BOTH sites (the free lane and the makeup slot) through the real interpreter, including the two arms this door's cost turns on - a first-sampling-long, second-sampling-short ask must be SERVED, and three long samplings must answer in this door's words - each with a sabotage that names the arm it reddens" },
+  /*
+    #2731's DOOR, AND IT IS OURS BY CONSTRUCTION for `wall_too_long`'s reason —
+    the state that reaches it is a value in OUR OWN REPLY, not their sentence.
+
+    It answers a reply whose value for one subject was nothing but a brand
+    name, when that brand is one the customer typed. The prompt tells the model
+    to drop the name and keep the description, and measured through the real
+    interpreter it does: across 68 runs of the card's own sentences and three
+    described brand asks it filed a bare brand name in none of 108 readings.
+    So no corpus sentence reaches this door deterministically — "put her in
+    Gucci" reached `wall_unbacked` on 12 of 12 — and a row that tried would be
+    measuring whether the model slipped.
+  */
+  { id: "wall_brand_only",
+    reason: "answers a reply whose free-lane value, or the makeup value, was NOTHING BUT a brand name the customer's own sentence named — `scrubBrands` emptied it, and `bareBrandWall` found every removed mark in their words. Before #2731 this state set no wall: the whole delta nulled, the neighbouring changes died with it, and it was delivered in `unreadable`'s words. A brand the MODEL introduced keeps that old road on purpose, because this door's sentence tells somebody to stop naming one. The bare-name value is a slip of our rendering against the prompt's own instruction, so the interpreter re-samples it on attempts 1 and 2 and answers here only if the last sampling is still bare (`REFINE_REFUSALS.wall_brand_only.resampled`)",
+    becomesReachable: "deliberately never as a corpus row - the trigger is the model filing the bare name it was told to drop (measured 0 of 108 readings, 2026-10-28), so a fixture sentence probes the model rather than pinning the door. Its pin is `server/castingV2/brandOnlyAndTooManyRefusal.test.ts`, which drives both sites through the real reader and the re-sample through the real interpreter, each arm with a sabotage that names the arm it reddens" },
   /* ── request-shape doors: no SENTENCE constructs these; the request does.
      Each is pinned by C5's driven service arms (opus-980), which is their
      proof — the census documents why a corpus row cannot be one. ── */

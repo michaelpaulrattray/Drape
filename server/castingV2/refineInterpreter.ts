@@ -29,7 +29,7 @@ import { EYE_COLOURS, EYE_SHAPES, HAIR_TEXTURES } from "../../shared/castingReal
 import { HAIR_COLOURS } from "../../shared/castingVocabularies";
 import { REFINABLE_CUT_NAMES } from "./hairStyles";
 import { createModuleLogger } from "../logging/logger";
-import type { ReadPurpose, TextEngine } from "../providers/types";
+import { providerAccountRefused, type ReadPurpose, type TextEngine } from "../providers/types";
 import { interpreterEngine } from "./interpreter";
 import { declarativeStateRule } from "./declarativeState";
 import {
@@ -1043,14 +1043,21 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
     /*
       Fail CLOSED — see the header. Refusing costs nobody anything.
 
-      `reader_outage` rather than `unreadable`: no engine configured is a
-      DEPLOYMENT state and there is nothing wrong with her sentence, so telling
-      her to rephrase it is false. The roll road folds the same state into the
-      same door (`interpretBrief`'s `cause: "unconfigured"` → `reader_outage`),
-      and this is that road's rule applied here rather than a second opinion.
+      `reader_down` rather than `unreadable`: no engine configured is a
+      DEPLOYMENT state and there is nothing wrong with their sentence, so
+      telling them to rephrase it is false. The roll road folds the same state
+      into the same door (`interpretBrief`'s `cause: "unconfigured"` →
+      `reader_down`), and this is that road's rule applied here rather than a
+      second opinion.
+
+      ⚠ IT WAS `reader_outage` UNTIL #2688, and the move is the whole point of
+      that card on this road: a deployment with no reader cannot be fixed by
+      trying again in a moment, which is what that door says. Nothing about
+      the money moves — both are free, and this exit has always refused before
+      anything was claimed.
     */
     log.warn({}, "[refineInterpreter] no text engine — refusing rather than guessing");
-    return { ok: false, refusal: { reason: "reader_outage" } };
+    return { ok: false, refusal: { reason: "reader_down" } };
   }
 
   /*
@@ -1091,6 +1098,93 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const parsed = await runOnce(engine, input, instruction, "interpret", trace);
     if (parsed) {
+      /*
+        AN OVER-LONG VALUE IS A FAILED SAMPLING UNTIL THE LAST ONE — the
+        relay's finding on PR #2732, and it is this loop's OWN rule rather
+        than an exception to it.
+
+        # The case this exists to keep serving
+
+        `wall_too_long` fires when ONE value in the reply is longer than the
+        drawer it files into. ⚠ **That length is a property of OUR reply, not
+        of the sentence they typed** — the same ask, sampled again at the same
+        temperature, can come back shorter and file perfectly. The card's own
+        corpus entry says so in as many words: *"a long ask reaches this door
+        only if the model happens to render it long, and the same ask on the
+        next sampling may file perfectly."*
+
+        So before this branch existed, the first sampling's wall ENDED the read
+        (`containReply` returns a set wall ahead of everything, because *a wall
+        is an answer, not a hiccup*) — and every ask whose first sampling ran
+        long and whose second would have fitted was **refused where `main`
+        serves it**. That is the trade PR #2732 made without measuring it, and
+        it is the one this branch is not willing to make.
+
+        # Why THIS wall and no other
+
+        Every other member of the union is a fact about what they ASKED for —
+        words that were not theirs, a stage with nothing behind it, a colour
+        with no feature. Those are identical on the next sampling, so
+        re-sampling them is pure spend for a certain answer. This one is a fact
+        about how verbosely we rendered their ask, which is the only cause in
+        the set that a re-sample can change. A later member of this union is
+        NOT covered by this branch and should not be added to it without the
+        same argument.
+
+        ⚠ **AND TWO LATER MEMBERS WERE, WITH THE ARGUMENT — #2730 and #2731 —
+        so the branch no longer names an id.** `wall_too_many` (how many items
+        WE split and restated a set into) and `wall_brand_only` (a value WE
+        filed as nothing but a brand name, which the prompt tells the model to
+        drop) are the same kind of fact as a length, and each argues it at its
+        own union member with the measurement beside it. A second `=== "…"`
+        here would have been a list of re-sampled ids living in the loop and
+        shadowing the registry that holds every other fact about a refusal, so
+        the loop reads `REFINE_REFUSALS[reason].resampled` instead — and every
+        refusal now has to say, in the one place it is declared, which kind of
+        fact it is. "Why THIS wall and no other" above is kept as the argument
+        that field encodes; read "this wall" as "these".
+
+        # THE LAST attempt decides, which is already written above
+
+        On attempts 1 and 2 the wall is discarded exactly as an unusable reply
+        is, and the loop re-samples. On attempt 3 it falls through and becomes
+        the answer. Nothing is held across samplings, and that is deliberate:
+        if the last sampling fails some OTHER way — a throw, our token ceiling
+        — the post-loop doors below decide, and the customer hears about that
+        failure instead. A wall remembered from attempt 1 would outrank a live
+        outage at attempt 3, which is the mixed-run coin this loop's own
+        paragraph refuses to flip.
+
+        # What it costs, said out loud (the disappearing-technology law, 3)
+
+        Up to two extra text samplings — a few cents of house money, no
+        customer credit either way, since this road refuses free. What they buy
+        is a chance of serving an ordinary paid edit that would otherwise be
+        refused. A refused edit the product could have done is the costlier
+        side of that trade, and the persistent case now costs exactly what it
+        costs on `main` (three samplings) with a TRUE sentence at the end of it
+        instead of *"didn't come through clearly"*.
+
+        # Not recorded on `trace`, and the reason is the three doors below
+
+        `trace.last` is a `ReadFailure` and is read by exact comparison at
+        three post-loop doors (`account` → `reader_down`, `threw`/`truncated` →
+        `reader_outage`, anything else → `unreadable`). A fourth member would
+        need a deliberate answer at each of them, and it could never be the
+        value there anyway — a wall on the last attempt returns from inside the
+        loop. So the fact goes in the operator log, where the diagnosis
+        actually reads it, and the type keeps meaning what it says.
+      */
+      if (!parsed.ok && REFINE_REFUSALS[parsed.refusal.reason].resampled && attempt < 3) {
+        /* The refusal's own fields — the subject, and the length, count or
+           value it carries for exactly this log. None of them is ever a
+           customer sentence; the copy states each fact without its number. */
+        log.warn(
+          { attempt, ...parsed.refusal },
+          "[refineInterpreter] the reply hit a wall OUR rendering caused — re-sampling",
+        );
+        continue;
+      }
       /*
         THE ECHO PASS (D-172) — only the user's words are ever filed.
 
@@ -1141,6 +1235,26 @@ export async function interpretRefinement(input: RefineInterpretInput): Promise<
     failing to be clear, so "try again in a moment" is the true advice and "try
     naming what you want changed" is advice she cannot act on.
   */
+  /*
+    ⚠ AND `account` TAKES THE OTHER DOOR (#2688, the sweep of #2686).
+
+    `threw` and `truncated` are both OURS and both reach for the same advice,
+    because a deadline, a dead transport and our own token ceiling all read
+    differently on the next sampling — *"try again in a moment"* is true of
+    them. A provider that refused our KEY is the one failure here that no
+    retry reaches, so it gets the door that does not ask for one. Three
+    samplings all failing that way is the only road to this state, which is
+    why it is read off `trace.last` rather than counted.
+
+    Money is identical on both: this road refuses free.
+  */
+  if (trace.last === "account") {
+    log.warn(
+      { why: trace.last },
+      "[refineInterpreter] the reader is down at OUR end — refusing without asking for a retry that cannot work",
+    );
+    return { ok: false, refusal: { reason: "reader_down" } };
+  }
   if (trace.last === "threw" || trace.last === "truncated") {
     log.warn(
       { why: trace.last },
@@ -1548,8 +1662,20 @@ export async function asksNothingOfItsOwn(
  * for. This is the same reading #1272 applied to `hairColourFromReference` and
  * `makeupFromReference`, and it needs no new customer copy — it moves this road
  * between two sentences that already exist.
+ *
+ * ⚠ `account` IS THE FOURTH STATE AND IT SPLITS `threw` (#2688, the sweep of
+ * #2686). A call that threw because the deadline fired or the transport died
+ * is weather — the same instruction a minute later is a different reading, and
+ * *"try again in a moment"* is true of it. A call that threw because the
+ * provider refused OUR key is not weather, and every retry fails identically.
+ * This catch's own comment already named that cause — *"or the account is
+ * overdrawn"* — so the module knew and the sentence did not, which is exactly
+ * the shape #2700 found in the two reference readers. Measured on production,
+ * 2026-10-27 from 03:09Z: the key was off, every call answered 401, and this
+ * road said "in a moment" throughout. Money is untouched on every one of
+ * these states and always was — this road refuses free.
  */
-type ReadFailure = "threw" | "truncated" | "unparsed";
+type ReadFailure = "threw" | "account" | "truncated" | "unparsed";
 
 /**
  * One sampling. Returns null when the reply was unusable, so the caller retries.
@@ -1656,8 +1782,14 @@ async function runOnce(
       instead of hers; the return value is unchanged, so every other caller
       behaves exactly as before.
     */
-    if (trace) trace.last = "threw";
-    log.warn({ err: error }, "[refineInterpreter] the reader did not answer");
+    const ours = providerAccountRefused(error);
+    if (trace) trace.last = ours ? "account" : "threw";
+    log.warn(
+      { err: error, cause: ours ? "account" : "threw" },
+      ours
+        ? "[refineInterpreter] the provider refused OUR account — no retry reaches it"
+        : "[refineInterpreter] the reader did not answer",
+    );
     return null;
   }
 

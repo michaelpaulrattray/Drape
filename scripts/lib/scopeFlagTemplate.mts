@@ -28,9 +28,9 @@ export type ScopeFlagSpec = {
   env: string;
   /** The identifier stem, e.g. `CastingFaceScan` → `parseCastingFaceScanScope`. */
   stem: string;
-  /** The parent scope's env const, e.g. `CASTING_REFERENCE_LIBRARY_SCOPE_ENV`. */
+  /** The parent scope's env const, e.g. `CASTING_V2_SCOPE_ENV`. */
   parentEnvConst: string;
-  /** The parent's parse function, e.g. `parseCastingReferenceLibraryScope`. */
+  /** The parent's parse function, e.g. `parseCastingV2Scope`. */
   parentParse: string;
   /** The parent's own enabled predicate, ANDed at every call site. */
   parentEnabled: string;

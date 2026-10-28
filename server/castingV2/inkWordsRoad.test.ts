@@ -646,11 +646,26 @@ describe("and it stays retired (#1577 slice D3)", () => {
     expect(cataloguedFlags(CATALOGUE), "and the catalogue must still carry its entry")
       .toContain(RETIRED);
 
-    /* Anchored on the BULLET rather than on the first mention of the name
-       anywhere, so a neighbouring entry that merely cites this flag in its prose
-       cannot move where this slice starts. */
-    const bullet = CATALOGUE.indexOf(`- \`${RETIRED}\``);
-    expect(bullet, "the catalogue's own top-level entry for it").toBeGreaterThan(-1);
-    expect(CATALOGUE.slice(bullet, bullet + 6_000)).toMatch(/RETIRED/);
+    /* ⚠ THE PROPERTY IS THE ENTRY'S OPENING, NOT A CHARACTER COUNT — #2738.
+       This arm asked that /RETIRED/ appear within 6,000 characters of the
+       bullet, which `CASTING_SIDE_PHRASING_SCOPE` proved cannot express the
+       property: its entry was SHORTER than the window, so a retirement
+       recorded anywhere inside it passed while the entry opened as a live flag,
+       for twelve days. A bigger number is not the repair — THIS entry is 8,154
+       characters, the longest of the six retired ones, and the number would
+       have to chase every edit to it. The opening shape is the property, and it
+       is what the guarded siblings assert.
+
+       Line-based rather than offset-based, for the same reason the old arm
+       anchored on the bullet: one catalogue entry is one line, so a neighbouring
+       entry that merely cites this flag in its prose cannot move where this
+       slice starts. The flag name is written out in the regex rather than
+       interpolated from RETIRED, the siblings' own choice — a pattern built
+       from the constant it is checking can be weakened by editing the
+       constant. */
+    const entry = CATALOGUE.split("\n").find((line) => line.startsWith(`- \`${RETIRED}\``));
+    expect(entry, "the catalogue's own top-level entry for it").toBeTruthy();
+    expect(entry, "and it opens with the retirement, not with what the flag used to do")
+      .toMatch(/^- `CASTING_INK_WORDS_SCOPE` — ✅ \*\*RETIRED/);
   });
 });

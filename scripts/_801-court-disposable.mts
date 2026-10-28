@@ -59,7 +59,10 @@
 /* Production's own flag positions (scripts/lib/productionFlagPositions.mts),
    above the imports because module side effects read them at import time. */
 process.env.CASTING_V2_SCOPE = "all";
-process.env.CASTING_REFERENCE_LIBRARY_SCOPE = "all";
+/* `CASTING_REFERENCE_LIBRARY_SCOPE = "all"` stood here and is removed with the
+   flag (#1577 slice D5). It pinned the position production shipped at the time;
+   every Casting V2 refine builds the library now, so a re-run reads the same
+   rows it did. */
 /* `CASTING_REPAINT_SCOPE` (#1577 slice 4b) and `CASTING_OPEN_LANE_SCOPE` (slice D1)
    were set "all" here and are removed with their flags: nothing reads either name. */
 /* `CASTING_SIDE_PHRASING_SCOPE = "all"` stood here and is removed with the flag
