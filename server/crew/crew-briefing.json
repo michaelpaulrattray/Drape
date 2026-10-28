@@ -1,7 +1,7 @@
 {
-  "edition": 765,
-  "updatedAt": "2026-10-28T16:06:30.192Z",
-  "shift": "THE PAGE THAT TELLS US WHERE EVERY SWITCH STANDS WAS NEVER CHECKED AGAINST THE RECORD.\nNOW IT IS — AND IT WAS WRONG IN SIX PLACES.\n\nThere is a page the crew opens to answer one question: is this feature on, off, or on\nfor your account only? And there is a separate record that the deploy checks against the\nlive site every single time we ship. Nothing had ever compared the two. So the page\ndrifted, quietly, and nobody could see it drift.\n\nFive of those were found yesterday and fixed. Tonight's job was to build the thing that\ncompares them, so it cannot happen again. It found a sixth that yesterday's sweep could\nnot see: a switch that was retired weeks ago, whose variable is long gone from the live\nsite, and whose page still said it was on for your account and still said it 'widens on\nhis eye at the milestone gate and not before'. An instruction about something that does\nnot exist. That one is struck out now.\n\nTwo of the five had been wrong for 34 days, and both in the worse direction — they told\nevery shift that two features live for everyone were on your account alone.\n\nI then tried to break the new check nine different ways, and it caught eight. The ninth\nshowed me a hole and I filled it: one piece of the reading had no test behind it at all,\nbecause after yesterday's fixes no page entry happens to use the wording that exercises\nit. It had been used by three entries as recently as last week.\n\nONE THING I DID WRONG TONIGHT, AND IT IS WORTH YOU KNOWING.\n\nSeparately, I put a question on your desk about a different job — the brief that was\ntelling you what your character does NOT have. I should not have: another agent had\nalready claimed that job, built it and had it live forty minutes earlier, and its answer\nis better than the one I was going to ask you for. I had read the job's description and\nits labels, but not its messages, which is where the claim was. Everything I added is\nremoved and the job reads exactly as it did before I touched it. It is filed as evidence\nfor the process review, because a shift did almost exactly this a week ago.\n\nNothing a customer touches changed tonight.",
+  "edition": 766,
+  "updatedAt": "2026-10-28T17:22:09.826Z",
+  "shift": "WE BOUGHT A REAL READING OF A REAL FACE AND PHOTOGRAPHED WHAT CAME BACK.\nTHE FOUR THINGS YOU ASKED FOR ARE THERE. ONE THING ABOUT THE PANEL IS NOT RIGHT.\n\nLast night you looked at the face reader and gave five corrections. Four of them were\nbuilt and went live yesterday evening. Tonight's job was the last step on that card: put\na real reading in front of your eyes rather than a mock-up, and count what it costs.\n\nSo I opened a cyberpunk character on the test account, reached for the edit box the way\nyou would, and let the studio buy a genuine reading of the picture. Twice, on two\ndifferent faces, so one lucky result could not be mistaken for a rule.\n\nWHAT CAME BACK. No Build row. No Skin row. One Outfit row with the pieces folded inside\nit — jacket, undershirt, and two separate straps, each with its own cut-out of that\nexact thing. The chrome jaw implant got its own row. On the second face, the collar sat\ninside the outfit where you said it belongs. Every row carries a real cut-out: the\njacket is the jacket, the ears are the ears.\n\nWHAT IT COSTS. About twenty-five seconds for a first reading, and thirty-one calls. The\nsurprise is where the time goes: roughly twenty-one of those twenty-five seconds is the\nstudio READING the picture and describing what is on the character. The cutting itself\nis nine calls and about thirteen seconds. If we ever want this faster, that is where to\nlook — and it is the first time we have had that number.\n\nTWO OF YOUR FIVE I COULD NOT TEST, AND I AM NOT GOING TO PRETEND OTHERWISE. The\ncorrections about marks and about the tattoo that was missed both need a character who\nHAS a mark or a tattoo. The test account has none left — the old ones are from August\nand their pictures have been cleaned up. So those two still wait on your own look at\nyour own character. What I can say is that the new diagnostics work: on one of tonight's\nfaces the reading quietly dropped two things, and the log named both of them and why,\nwhich is exactly what we were missing last night.\n\nTHE THING THAT IS NOT RIGHT. The edit panel is see-through. The other faces on the sheet\nbehind it read straight through the rows — one row's sentence is written across a\nstranger's face. It happens in both light and dark. It is not the reader's fault and it\nis not new, but it matters here more than anywhere: a perfectly correct reading looks\nbroken when it is drawn over somebody else's portrait. I have written it up rather than\nguessing which way you want it fixed.\n\nNothing a customer touches changed tonight. No character was altered, no credits spent.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-28T16:08:16.686Z",
+      "readAt": "2026-10-28T17:23:04.534Z",
       "items": [
         {
           "issueNumber": 30,
@@ -4183,6 +4183,26 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "face-reader-real-scan-2566",
+      "title": "A real reading of a real face — the four corrections you asked for, and the panel you see them through",
+      "question": "WHAT YOU ARE LOOKING AT. The edit panel after the studio genuinely read a picture — not a mock-up, not a stand-in. A cyberpunk character on the test account, opened the way you would open one, with every row expanded so you can see what went where. Light first, then dark.\n\nWHAT I WOULD LIKE YOUR EYE ON, IN ORDER.\n\n1. The rows themselves. There is no Build row and no Skin row — that is your first two corrections. There is ONE Outfit row, and inside it the jacket, the undershirt and two separate straps. The chrome jaw implant has its own row at the bottom under \"Also on this character\".\n\n2. The cut-outs beside each row. Each one is a piece genuinely cut from this picture. The jacket thumbnail is the jacket; the two strap thumbnails are two different straps; the ears are the ears. This is the part a mock-up cannot show you and it is why tonight cost real money.\n\n3. THE THING I THINK IS WRONG. Look behind the rows. You can see other faces from the sheet straight through the panel — clearest around Nose, Lips, Teeth and Ears, and again behind Outfit. One row's sentence (\"top row faintly visible, lips parted slightly\") is written across a man's face. It is the same in both pictures, so it is not the lighting.\n\nThat last one is not the reader's doing and it is not new. But it is the panel you judge the reader through, and right now a correct reading and a broken one would look much the same at a glance. I have not changed it: making the panel solid, darkening what is behind it, or leaving it are three different looks, and which one is yours.\n\nTWO THINGS THESE PICTURES CANNOT SHOW YOU. Your correction about two names for one mark, and the tattoo that was missed, both need a character who has one. The test account has none left with a usable picture. Those two still wait on your own look at your own character.",
+      "state": "open",
+      "filedAt": "2026-10-28T17:22:09.827Z",
+      "issueNumber": 2566,
+      "frames": [
+        {
+          "key": "crew-eye/4e04bba7-b0bd-438b-9cd7-49e8a32226e9.png",
+          "arm": "Light — every row opened",
+          "caption": "The panel in light, with each row expanded. Eyes and brows split left and right; the Outfit row holds the jacket, the undershirt and two straps; the jaw implant sits on its own under \"Also on this character\". Now look behind the words: the man's face showing through from the sheet behind is the problem, and the row reading \"top row faintly visible, lips parted slightly\" sits right across it."
+        },
+        {
+          "key": "crew-eye/83201212-7fb8-4cad-8773-80dcf0b728e4.png",
+          "arm": "Dark — the same panel, same character",
+          "caption": "The same reading in dark. The grouping is identical, which is what we want. The see-through is still there and still shows two different faces behind the rows — quieter than in light, but the sentence on the Teeth row is still written over somebody's portrait."
+        }
+      ]
+    },
     {
       "id": "reference-take-court-2736",
       "title": "Take a garment from a photo — it works, and here is where it beats typing",
@@ -10951,6 +10971,13 @@
   ],
   "problems": [
     {
+      "id": "edit-panel-see-through-2761",
+      "severity": "warning",
+      "state": "open",
+      "title": "The edit panel is see-through — the sheet's other faces read through its rows (#2761)",
+      "detail": "When you open a character and reach for the edit box, the panel slides out over the\nsheet — and the faces behind it show straight through the rows. One row's sentence is\nwritten across a stranger's face. It happens in both light and dark, and it is worse in\nlight.\n\nMeasured rather than guessed: the panel itself has no background at all, its container\nis eight per cent of a tint, and the only other thing between the text and the sheet is\na dark wash and a two-pixel blur. On a sheet of large portraits that is not enough.\n\nIt is not new and no recent work caused it — the glass look is from the drawer you\napproved on 15 October. What was never checked is what the glass sits over.\n\nThe fix is one or two values, but which way is a look, not a bug fix: give the panel its\nown solid surface, or keep the glass and make what is behind it do its job. The\nrecommendation is the second. Your word."
+    },
+    {
       "id": "follow-brief-absence-2751",
       "severity": "warning",
       "state": "resolved",
@@ -11467,7 +11494,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-28T16:08:16.686Z",
+    "readAt": "2026-10-28T17:23:04.534Z",
     "items": [
       {
         "issueNumber": 14,
