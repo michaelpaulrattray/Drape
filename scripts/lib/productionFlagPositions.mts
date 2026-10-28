@@ -101,12 +101,92 @@ import { BOOT_GOVERNED_ENV_NAMES } from "./governedBootSettings.mts";
  */
 export const UNSET = "off";
 
+/**
+ * A SCOPE FLAG'S OWN THREE WORDS, AND THE PER-USER FORM (#2691).
+ *
+ * `off` is what {@link UNSET} resolves to, and the four rows that write the
+ * literal are rows whose paragraph talks about being off rather than unset.
+ */
+export type ScopeStanding =
+  | "off"
+  | "all"
+  | "true"
+  /**
+   * ⚠ **THE IDS ARE NOT EXPRESSIBLE HERE AND THE SUITE READS THEM INSTEAD.**
+   * A template literal cannot say *"a comma-separated list of positive
+   * integers"*: `users:${number}` would reject the legal `users:1,2`, and
+   * widening to `${string}` is what this says — so `users:UNSET` is a position
+   * this TYPE accepts. {@link positionIsLegal} is where that half is checked,
+   * and `server/productionFlagPositions.test.ts` drives it over the real table
+   * with a sabotage case. Named rather than left as a quiet hole: the type
+   * catches the shape the defect took and not the whole grammar.
+   */
+  | `users:${string}`;
+
+/**
+ * A FLAG WHOSE VALUE IS A NAMED SETTING RATHER THAN A SCOPE — which engine,
+ * which recipe.
+ *
+ * Written out by hand on purpose. Each of these is a founder-level choice, so a
+ * new legal value is a deliberate edit to this union rather than a free string
+ * nobody reviewed; and the alternative that reads tidier — letting the type be
+ * `string` for these two rows — is exactly the hole #2691 was filed about.
+ */
+export type NamedSetting =
+  /**
+   * `CASTING_ROLL_ENGINE_MODEL` — which GPT Image 2.5 model the scope's users
+   * roll on. `flare` is the other legal value and is named here even though no
+   * row holds it, so narrowing this type does not quietly hide the choice.
+   */
+  | "flare"
+  | "sunburst"
+  /** `R7_EVIDENCE_COMPOSER_RECIPE` — which recipe the composer runs. */
+  | "ink.add.front_upper_torso.v1";
+
 export type FlagPosition = {
-  /** What the service is expected to hold. `off` means the variable is unset. */
-  readonly position: string;
+  /**
+   * What the service is expected to hold. `off` means the variable is unset.
+   *
+   * ⚠ **A UNION RATHER THAN `string`, AND THE REASON IS A MEASURED INCIDENT
+   * (#2691, found by Janitor patrol #17).** A row wrote `position: "UNSET"` —
+   * the constant's NAME in quotes — and because this field was a bare `string`
+   * the record claimed production held the literal text `UNSET`. The
+   * typechecker was silent, all three local suites passed (45 tests), and the
+   * **deploy rite was the only reader that caught it** — after merge, where it
+   * blocked every rite anybody ran for about two hours, including the briefing
+   * edition that is the founder-facing page's only road.
+   *
+   * Production was never wrong and nothing on the service moved. The record
+   * was, for one token, and the earliest instrument that could see it ran last.
+   */
+  readonly position: ScopeStanding | NamedSetting;
   /** Why it stands there — name the ruling, not the feature. */
   readonly why: string;
 };
+
+/**
+ * WHETHER A POSITION IS IN THE LEGAL DOMAIN — the half the type cannot express.
+ *
+ * Exported so the suite and the rite read ONE grammar rather than two that
+ * drift (working law 4). It is deliberately not a second copy of any server
+ * scope parser: those live under `server/` and run at boot against
+ * `process.env`; this reads a tracked record in a build script, and importing a
+ * boot validator here would drag its refusal behaviour into a tool whose job is
+ * to report rather than to refuse.
+ *
+ * `users:` is where it earns its keep: the type accepts any suffix, and this
+ * requires at least one positive integer with no leading zero, comma-separated
+ * and with no repeats — which is the grammar every scope paragraph states.
+ */
+export function positionIsLegal(position: string): boolean {
+  if (position === "off" || position === "all" || position === "true") return true;
+  if (position === "flare" || position === "sunburst") return true;
+  if (position === "ink.add.front_upper_torso.v1") return true;
+  if (!position.startsWith("users:")) return false;
+  const ids = position.slice("users:".length).split(",");
+  if (ids.length === 0 || ids.some((id) => !/^[1-9][0-9]*$/.test(id))) return false;
+  return new Set(ids).size === ids.length;
+}
 
 /**
  * Read off the production service by the deploy rite on 2026-08-23, receipt
@@ -355,12 +435,19 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "Widening past users:1 is his word, and the flag retires at the end of its road "
       + "(N2's law: flags go home)",
   },
-  CASTING_REFINE_DISPATCH_SCOPE: {
-    position: "all",
-    why:
-      "founder ruling 2026-08-25 on the Desk (register card #3): fixes the "
-      + "1.7% lost-answer defect at the ~305s gateway wall; parent V2 is all",
-  },
+  /* ⚠ `CASTING_REFINE_DISPATCH_SCOPE` had a row here at `all` and it is RETIRED
+     (#1577 slice D4, his word of 2026-10-15). The row is REMOVED rather than
+     moved to `off`, which is the framing trim's and the repaint flag's
+     precedent and what `productionFlagPositions.test.ts` enforces from both
+     directions: nothing in the code declares the variable any more, so a row
+     for it could never disagree with anything.
+
+     ⚠ ORDER, and it is the expensive half: the code stops reading the variable
+     in this commit and the variable leaves the SERVICE after the merge. The
+     other order is the costly one — with the old build still serving, an absent
+     variable parses as `off`, which would put every customer back on the held
+     road and the 1.7% lost answers with it. Between the merge and the deletion
+     `comparePositions` reports exactly that one mismatch, by design. */
   CASTING_DIAGNOSTIC_CAPTURE_SCOPE: {
     position: "users:1",
     why: "keeps the frame from a refused render, on the private evidence adapter",

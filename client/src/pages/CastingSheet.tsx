@@ -2338,10 +2338,13 @@ export default function CastingSheet() {
           not about whether a sentence was drawn.
         */
         /*
-          A RECEIPT IS NOT AN OUTCOME (Landing C, behind
-          `CASTING_REFINE_DISPATCH_SCOPE`).
+          A RECEIPT IS NOT AN OUTCOME (Landing C). ⚠ This said *behind
+          `CASTING_REFINE_DISPATCH_SCOPE`* until that flag retired (#1577 slice
+          D4); it had stood at `all` since 2026-08-25, so this branch has been
+          the ONLY road a customer takes for two months and is no longer behind
+          anything.
 
-          When the paid half stops holding the request, the mutation resolves in
+          The paid half does not hold the request: the mutation resolves in
           milliseconds with the row it just dispatched — the render has not
           happened, so there is nothing on this screen yet that came from the
           server about how it went. Two consequences, and both are the reason
@@ -2359,6 +2362,17 @@ export default function CastingSheet() {
         */
         if (result?.kind === "dispatched") {
           if (result.variantId) boughtHere.current.add(result.variantId);
+          /*
+            THE DROPPED-CLAUSE CONFESSION RIDES THE RECEIPT (#2695). It is a
+            fact of the READING, not of the render: "make her hair copper in a
+            studio" filed the copper and dropped the studio before any paint
+            began, so the sentence is true now and stays true however the paint
+            ends. It is the ONE kind of note a receipt can carry, and it is
+            shown WITHOUT marking the outcome — the render's own outcome is
+            still owed, and the mark belongs to it (the paragraph above).
+          */
+          const dropped = refineOutcomeNote(result);
+          if (dropped) setRefineOutcome({ text: dropped, origin: "server", requestId });
           await variants.refetch();
           await invalidate();
           return;

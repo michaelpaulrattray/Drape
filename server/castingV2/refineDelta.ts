@@ -659,6 +659,31 @@ export type RefineRefusal =
    * charged. The only thing that moves is the sentence.
    */
   | { reason: "reader_outage" }
+  /**
+   * THE READER CANNOT ANSWER AT ALL — and no retry reaches it (#2688, the
+   * sweep of #2686).
+   *
+   * `reader_outage` above splits in two, and only one half is weather.
+   * A sampling that threw on a deadline or a dead transport reads differently
+   * a minute later, so its *"try again in a moment"* is true. The provider
+   * refusing OUR key — a 401, 402 or 403, which
+   * `classifyOpenRouterTextHttp` maps to `provider_account` — is not weather:
+   * every retry fails identically, and so does an edit asked of a deployment
+   * with no reader configured at all.
+   *
+   * Measured on production, 2026-10-27 from 03:09Z: the text account's key was
+   * disabled, every call answered 401, and this road told the customer to try
+   * again in a moment for the whole outage. `runOnce`'s own catch already
+   * named the cause in a comment — *"or the account is overdrawn"* — so the
+   * module knew and the sentence did not, which is the same shape #2700 found
+   * in the two reference readers.
+   *
+   * Free, exactly as `reader_outage` and `unreadable` are: nothing is claimed
+   * and nothing is charged on any of them. The only thing that moves is the
+   * sentence, and `REFINE_REFUSALS` carries both halves side by side so the
+   * split can be read rather than reasoned about.
+   */
+  | { reason: "reader_down" }
   | { reason: "empty" }
   /**
    * THE ASK WAS ABSORBED — everything filed was already true of her.
@@ -1359,12 +1384,89 @@ export function stageWordIn(
   text: string,
   options: { garmentLicensed?: boolean } = {},
 ): string | null {
+  return stageWordsIn(text, options)[0] ?? null;
+}
+
+/**
+ * EVERY stage word their sentence names, in the lexicon's own order — the same
+ * carve-outs, the same licence, one owner (#2695).
+ *
+ * `stageWordIn` delegates here rather than the two sharing a copied predicate,
+ * for the reason its own docblock gives about `sceneryWordIn`: two readers of
+ * one list is the drift law 4 exists to stop. The plural exists because the
+ * dropped-clause detector below cannot stop at the first match — a sentence can
+ * serve one stage word (a filed coat, under licence) while dropping another
+ * (the backdrop beside it), and the first-match reading would call that
+ * sentence fully served.
+ */
+export function stageWordsIn(
+  text: string,
+  options: { garmentLicensed?: boolean } = {},
+): string[] {
   const lowered = text.toLowerCase();
-  return STAGE_WORDS.find(
+  return STAGE_WORDS.filter(
     (word) => !ACCESSORY_ALLOWED.has(word)
       && !(options.garmentLicensed === true && GARMENT_WORDS.has(word))
       && new RegExp(`\\b${word}\\b`).test(lowered),
-  ) ?? null;
+  );
+}
+
+/**
+ * Every string this delta actually filed, flattened — the detector's second
+ * source. Walked generically rather than field by field, so a lane added later
+ * (the way `wardrobe` and `open` were) is inside the check the day it exists
+ * instead of being a silent hole in it.
+ */
+function allFiledText(value: unknown, into: string[] = []): string[] {
+  if (typeof value === "string") into.push(value);
+  else if (Array.isArray(value)) for (const item of value) allFiledText(item, into);
+  else if (value && typeof value === "object") {
+    for (const item of Object.values(value)) allFiledText(item, into);
+  }
+  return into;
+}
+
+/**
+ * A CLAUSE THE READING DROPPED IN SILENCE — the half-served detector (#2695).
+ *
+ * # What it is for
+ *
+ * *"Make her hair copper red in a studio"* files `{hairColour: "copper"}` and
+ * the studio reaches nobody: the stage wall runs over the PARSED value, and a
+ * clause the model elided was never parsed. Measured through the real entrance:
+ * 20 of 21 such reads render with the scenery word dropped and nothing said.
+ * This reads the two halves the product already holds — their sentence, and the
+ * delta that was filed from it — and names a stage word that appears in the
+ * first and nowhere in the second.
+ *
+ * # It never refuses, which is why D-82 is not re-opened
+ *
+ * D-82 moved the lexicon off the raw sentence because a raw-prompt scan as a
+ * REFUSAL trigger wrongly refuses *"wearing small gold hoops"*. This detector
+ * can only ever annotate a render that was already served: the carve-outs
+ * travel with `stageWordsIn` exactly as at the wall, and the filed-text check
+ * removes every case where the clause was actually used — a value carrying the
+ * word already met wall (b), so on a served render the word's presence in the
+ * delta means a lane legitimately holds it (a licensed garment, a makeup
+ * phrase), never smuggled scenery.
+ *
+ * # Its absence is not evidence of absence
+ *
+ * Same floor as the wall's: no `beach`, no `sofa`, and no finite list ever
+ * would. A null here means "nothing this lexicon can see", never "nothing was
+ * dropped".
+ */
+export function sceneryLeftOut(
+  instruction: string,
+  delta: RefineDelta | null,
+  options: { garmentLicensed?: boolean } = {},
+): { word: string; kind: "scenery" | "garment" } | null {
+  if (!delta) return null;
+  const filed = allFiledText(delta).join("\n").toLowerCase();
+  const word = stageWordsIn(instruction, options)
+    .find((candidate) => !new RegExp(`\\b${candidate}\\b`).test(filed));
+  if (!word) return null;
+  return { word, kind: GARMENT_WORDS.has(word) ? "garment" : "scenery" };
 }
 
 /** Runtime validation of the interpreter's reply — a closed vocabulary is only

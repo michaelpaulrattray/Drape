@@ -70,7 +70,7 @@ const flags: Record<string, string> = {};
 for (const flag of declaredFlags()) {
   /* ⚠ The reference library was named here too and is retired (#1577 slice D5). */
   if (flag === "CASTING_V2_SCOPE") flags[flag] = "all";
-  else if (["CASTING_SCAN_TABLE_SCOPE", "CASTING_REFINE_DISPATCH_SCOPE"].includes(flag)) flags[flag] = "off";
+  else if (flag === "CASTING_SCAN_TABLE_SCOPE") flags[flag] = "off";
   else flags[flag] = `users:${account.id}`;
 }
 for (const [key, value] of Object.entries(flags)) process.env[key] = value;

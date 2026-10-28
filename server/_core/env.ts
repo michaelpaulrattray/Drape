@@ -33,7 +33,6 @@ import {
   CASTING_INK_TRANSFORM_SCOPE_ENV,
   CASTING_INK_REGION_CROP_SCOPE_ENV,
   CASTING_INK_STUDIO_SCOPE_ENV,
-  CASTING_REFINE_DISPATCH_SCOPE_ENV,
   CASTING_RETRY_SCOPE_ENV,
   CASTING_ROLL_ENGINE_SCOPE_ENV,
   CASTING_ROLL_ENGINE_MODEL_ENV,
@@ -65,7 +64,6 @@ import {
   CASTING_REFERENCE_ATTACH_SCOPE_ENV,
   validateCastingInkReferenceEnvironment,
   CASTING_INK_REFERENCE_SCOPE_ENV,
-  validateCastingRefineDispatchEnvironment,
   validateCastingRetryEnvironment,
   validateCastingRollEngineEnvironment,
   validateCastingScanTableEnvironment,
@@ -518,16 +516,17 @@ export function validateEnv(): void {
     cleanupWorker: process.env.ENABLE_STORAGE_CLEANUP_WORKER,
   });
   /*
-    Whether the paid half of a refine stops holding the request. Checked against
-    the CASTING scope rather than the repaint one, and that is the road question
-    answered: the swap changes WHEN the answer arrives and never what is
-    painted, so a paste-road customer is a legitimate subject — what it cannot
-    be armed over is a user with no refine to dispatch.
+    ⚠ WHETHER THE PAID HALF STOPS HOLDING THE REQUEST WAS CHECKED HERE AND HAS
+    NO FENCE ANY MORE — `CASTING_REFINE_DISPATCH_SCOPE` is retired (#1577 slice
+    D4), so there is no scope to refuse and no parent to check it against.
+
+    Every refine answers with a receipt now, which is what the flag already did
+    at `all` on the service from the founder's 2026-08-25 widening until it came
+    out — so this fence had nothing left to refuse. The road that HOLDS the
+    request survives, reached by a caller saying `cannotTakeAReceipt` on the
+    call itself (#2560); that is a fact about the caller rather than about an
+    account, so it never had a boot question and gains none.
   */
-  validateCastingRefineDispatchEnvironment({
-    scope: process.env[CASTING_REFINE_DISPATCH_SCOPE_ENV],
-    castingScope: process.env[CASTING_V2_SCOPE_ENV],
-  });
   /*
     The Retry button (#122 shape 1). Parent is the CASTING scope alone: what a
     retry re-renders is a slice of a roll, so a user with no roll has nothing

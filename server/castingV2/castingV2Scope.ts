@@ -1117,109 +1117,41 @@ export function validateCastingHairReferenceEnvironment(input: {
   return child;
 }
 
-/* ------------------------------------------- the dispatch sub-flag */
+/* --------------------- the dispatch sub-flag, RETIRED (#1577 slice D4)
 
-/**
- * WHETHER THE PAID HALF STOPS HOLDING THE REQUEST (Landing C,
- * `CASTING_V2_REFINE_DISPATCH_DESIGN.md` §3; countersigned fable-973).
- *
- * Off — and absent means off — `castingV2.refine` awaits the entire render
- * before it answers, so the customer's exposure is the operation's own life:
- * median 121 s, p95 276 s, and 1.7% of them answered past the observed ~305 s
- * gateway wall, where the socket carrying the answer is gone before the answer
- * exists. On, the paid half returns a receipt the moment the work is genuinely
- * under way, and the outcome arrives on the surface like every other durable
- * fact — the rows, the sweep and the three lists that read them are all already
- * live, which is why this is a flag rather than a rebuild.
- *
- * # Its parent is the CASTING scope, and that choice is the road question
- *
- * Every other sub-flag on this road hangs off the repaint scope because it
- * changes what is PAINTED. This one changes only WHEN THE ANSWER ARRIVES: the
- * same render, the same recipe, the same bytes, on whichever road the user is
- * already travelling. A paste-road customer is a legitimate subject and gains
- * exactly what a repaint-road one gains. What it cannot be armed over is a user
- * with no refine to dispatch, so the parent is the scope that opens the door at
- * all.
- *
- * # What is NOT gated on it, deliberately
- *
- * The settled list (Landing A) is unconditional and already shipped: a terminal
- * refine failure reaches the surface whether or not the request was still
- * holding. That is the ordering this design turns on — take the socket away
- * before the surface can represent its own terminal outcome and the outcome
- * reaches nobody ALWAYS, which is strictly worse than the 1.7% being fixed.
- *
- * # Turning it on is its own recorded decision
- *
- * Off everywhere at landing. A dev walk comes before any thought of `users:1`,
- * and that step is a separate, written act rather than a consequence of this
- * code existing (fable-973 §3e).
- */
-export const CASTING_REFINE_DISPATCH_SCOPE_ENV = "CASTING_REFINE_DISPATCH_SCOPE";
+   `CASTING_REFINE_DISPATCH_SCOPE` stood here with its env constant, its two
+   error classes, `parseCastingRefineDispatchScope`,
+   `captureCastingRefineDispatchEnabled` and
+   `validateCastingRefineDispatchEnvironment`. It decided whether the paid half
+   of a refine stopped holding the request. It is retired on his word of
+   2026-10-15 (*"yes approve the plan and switch off the six settings"*), the
+   ghost audit's row D4.
 
-export class CastingRefineDispatchScopeConfigurationError extends Error {
-  constructor() {
-    super(
-      `${CASTING_REFINE_DISPATCH_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
-    );
-    this.name = "CastingRefineDispatchScopeConfigurationError";
-  }
-}
+   ⚠ THIS ONE IS THE ODD MEMBER OF THE SIX AND THE REASON IS WORTH KEEPING: its
+   OFF arm was the DEFECT, not the old feature. Every other flag in that batch
+   chose between a retired road and a current one, so retiring it deleted dead
+   code. Here, off meant the request was held for the whole render — median
+   121 s, p95 276 s, and 1.7% of refines answering past the observed ~305 s
+   gateway wall, where the socket carrying the answer is gone before the answer
+   exists, the money safe and the REASON lost. The flag was raised to FIX that
+   and reached `all` on 2026-08-25, so nothing was on the off arm, and retiring
+   it means the fix can no longer be switched off by a variable.
 
-export class CastingRefineDispatchCoverageError extends Error {
-  constructor(detail: string) {
-    super(`${CASTING_REFINE_DISPATCH_SCOPE_ENV} ${detail}`);
-    this.name = "CastingRefineDispatchCoverageError";
-  }
-}
+   ⚠ AND THE HELD ROAD ITSELF DID NOT DIE WITH IT, WHICH IS WHY THIS SLICE
+   WAITED A FORTNIGHT. Our own measuring scripts need the awaited road — handed
+   a receipt they reach the end of their work and exit, abandoning a render they
+   paid for (`refineService`'s own `cannotTakeAReceipt` docblock records the
+   incident). While this flag was the only door to it, a script had to borrow a
+   CUSTOMER switch to describe a fact about itself. #2560 built that door on the
+   CALL, #2710 put it on all sixteen exposed callers, and only then was there
+   nothing left here to remove. The road survives; the question *may this
+   account answer early* is what is gone.
 
-export function parseCastingRefineDispatchScope(raw: string | undefined): CastingV2Scope {
-  return parseScopeGrammar(raw, () => {
-    throw new CastingRefineDispatchScopeConfigurationError();
-  });
-}
-
-/**
- * Whether this user's paid refine returns a receipt instead of a picture.
- *
- * An AND of the chain at the point of use, for its siblings' reason: the boot
- * check refuses a scope reaching past its parent, and a boot check nobody
- * invoked is the second way a flag pair goes wrong.
- */
-export function captureCastingRefineDispatchEnabled(userId: number): boolean {
-  const child = parseCastingRefineDispatchScope(process.env[CASTING_REFINE_DISPATCH_SCOPE_ENV]);
-  if (!castingV2EnabledForUser(child, userId)) return false;
-  return captureCastingV2Enabled(userId);
-}
-
-export function validateCastingRefineDispatchEnvironment(input: {
-  scope: string | undefined;
-  castingScope: string | undefined;
-}): CastingV2Scope {
-  const child = parseCastingRefineDispatchScope(input.scope);
-  if (child.kind === "off") return child;
-
-  const parent = parseCastingV2Scope(input.castingScope);
-  if (parent.kind === "off") {
-    throw new CastingRefineDispatchCoverageError(
-      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — there is no refine to dispatch`,
-    );
-  }
-  if (parent.kind === "all") return child;
-  if (child.kind === "all") {
-    throw new CastingRefineDispatchCoverageError(
-      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
-    );
-  }
-  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
-  if (uncovered.length > 0) {
-    throw new CastingRefineDispatchCoverageError(
-      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
-    );
-  }
-  return child;
-}
+   The parent was `CASTING_V2_SCOPE` rather than the repaint scope, because the
+   swap changed WHEN the answer arrived and never what was painted — the one
+   sub-flag on this road for which a paste-road customer was a legitimate
+   subject. That reasoning retires with it and is kept here because the next
+   flag to hang off this chain will have to answer the same question. */
 
 /* ------------------------------------- the tattoo-from-a-reference sub-flag */
 
