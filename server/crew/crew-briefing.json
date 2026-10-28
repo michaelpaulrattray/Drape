@@ -1,7 +1,7 @@
 {
-  "edition": 758,
-  "updatedAt": "2026-10-28T05:20:00.000Z",
-  "shift": "THE FEATURE PANEL'S REPAIR IS MOVING AGAIN, AND NOTHING NEEDS YOU. You gave five findings on the panel on 28 October. The hard part of that repair was a decision rather than a build — how found things should be grouped — and that decision is now written and agreed, so the work is back with the builders. THE DECISION, IN ONE BREATH: the reading itself now says what each thing IS, judged from your picture rather than looked up in a list — what sort of thing it is, what it sits on, and whether it is one thing or lots of little ones. That is what lets a lip ring sit under Lips, lets the whole outfit be one row, keeps makeup out of the list, and stops freckles being cut out like an object. Your own rule held throughout: nothing is confined to a set list. WHAT SHIPPED TONIGHT: the first build piece of it — the reading now carries those three facts. Nothing you can see changes yet, on purpose: the panel is rearranged in the next piece, and a panel rearranged on half a decision would be worse than today's. Building it turned up two faults nobody had seen. One is older than tonight and would have cost you a whole reading: a character with a lot going on could have its answer cut off halfway through, and the studio would quietly fall back to asking its twelve fixed questions with nothing looking wrong. The other read \"earring\" and \"earrings\" as two different things because the two looks at the picture disagreed on the plural. Both are fixed. ALSO TONIGHT: a red that was holding up the team's own outage detector is cleared, and five finished jobs that were still sitting open on the board are closed with their receipts — including the two that stopped the studio telling you your clear sentence \"didn't come through clearly\". NOTHING IS WAITING ON YOU, except the reference-picture mock from last night if you have not looked at it yet.",
+  "edition": 759,
+  "updatedAt": "2026-10-28T07:55:00.000Z",
+  "shift": "THE PHOTO-REFERENCE ROAD WAS TESTED TONIGHT ON YOUR OWN CHARACTERS, AND IT WORKS. ONE THING WANTS YOUR EYE.\n\nWHAT WAS TESTED. You asked for this on 28 October: attach a photo, say what to take from it — \"wear this jacket\" — and have the studio read it off the picture rather than off a list. The design for it was written yesterday. Tonight it was actually measured, on Chichi, Sifr2 and Kai, with twelve real pictures. It cost about 28 cents of our own money and no credits of yours.\n\nWHAT HAPPENED. The garment transfers. We cut a layered wrap jacket out of one of your characters pictures and put it on the other two, and it arrived with its own shape — the deep V front, the lapels, the pattern underneath, the sash at the waist, the buckle. Every one of the twelve pictures still shows the right character: same face, same pose, same light, same framing. That includes Kai, who is a creature, which is the hardest case we had.\n\nAND IT BEATS TYPING — BUT ONLY WHEN THE GARMENT IS SPECIFIC. We ran every picture twice: once with the photo, once with only the best words we could write for the same garment. For the distinctive jacket the photo wins clearly; the typed version gives a plausible but different coat. For a plain black cloak the two are close, because \"a long black cloak\" is a thing you can simply type. So the road earns its keep exactly where you would reach for a photo anyway.\n\nONE FAULT FOUND, AND IT IS THE RIGHT KIND TO FIND NOW. When the garment is being worn by someone in the photo, cutting it out does not yet remove all of that person: a patch of their bare skin, framed by the opening of their own jacket, comes along with the cut. None of it reached any finished picture tonight, and it never reaches anyone else. But it must be cleaned before this is built, and that is now written into the build.\n\nALSO TONIGHT: a finished repair that had been stuck for four hours is moving again — it could not even be checked, because it had drifted out of step with the rest of the code. That is fixed and its checks are running.\n\nWHAT NEEDS YOU: the pictures. Three strips are below. The one that decides it is Kai.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-28T04:59:57.831Z",
+      "readAt": "2026-10-28T07:38:28.512Z",
       "items": [
         {
           "issueNumber": 30,
@@ -308,6 +308,28 @@
     }
   },
   "needsYou": [
+    {
+      "id": "reference-take-court-eye-2736",
+      "title": "Look at tonight photo-reference pictures and say build or stop",
+      "productImpact": "You asked for this on 28 October: attach a photo, say what to take from it, and have the studio read it off the picture instead of a fixed list. Tonight it was measured for real on three of your characters — twelve pictures, about 28 cents of our money, none of your credits.\n\nIt works. A garment cut out of one character photograph lands on another with its own shape and detail, and every character stayed themselves. It beats typing clearly when the garment is distinctive, and only narrowly when it is something plain like a black cloak.\n\nNothing is being built on it until you have looked.",
+      "workedExample": "Open the picture strips on this page — the one headed \"Take a garment from a photo\". The strip that decides it is Kai: he is a creature, the jacket is complicated, and he is holding a sword. In the photo version the jacket arrives with its wrap, lapels, pattern, sash and buckle, and he still has the sword. In the typed-words version beside it the sword is gone and the coat is a different coat.",
+      "options": [
+        {
+          "key": "build",
+          "label": "BUILD",
+          "consequence": "I put the road in behind your account only, with the skin-cleaning fault fixed first. Nobody else sees it until you say so."
+        },
+        {
+          "key": "stop",
+          "label": "STOP",
+          "consequence": "The design and tonight measurement stay on the shelf and nothing is built."
+        }
+      ],
+      "recommendation": "BUILD. The jacket strips are the argument: that is a garment nobody would reach by typing, and you got it by pointing at a picture. One fault must be fixed on the way in — when the garment is worn by someone in the photo, a patch of their bare skin currently comes along with the cut. It reached none of tonight finished pictures and it never leaves your account, but it is cleaned before anything ships.",
+      "state": "open",
+      "filedAt": "2026-10-28T07:55:00.000Z",
+      "issueNumber": 2736
+    },
     {
       "id": "outfit-eye-2544",
       "title": "Try a clothing edit and say whether the outfits look right",
@@ -4161,6 +4183,31 @@
     }
   ],
   "eyeItems": [
+    {
+      "id": "reference-take-court-2736",
+      "title": "Take a garment from a photo — it works, and here is where it beats typing",
+      "question": "WHAT YOU ARE LOOKING AT. Three strips from tonight test of the photo-reference road you asked for on 28 October. In each one: your character as they are now, the garment we cut out of a photograph, then the same edit done two ways — once using the photo, once using only typed words describing the same garment.\n\nWHY THE SECOND VERSION IS THERE. If a photo gets you nothing that careful typing would not, the feature is not worth building. So every picture was made twice, and the typed version was given a full description rather than a lazy one. That makes the comparison a fair fight.\n\nWHAT I SEE, AND YOURS IS THE ONE THAT COUNTS. The photo version wins clearly on the specific jacket and only narrowly on the plain cloak. Every character stayed themselves in all twelve pictures, creature included. Nothing of the person in the source photograph shows up in any finished picture.\n\nSO: is this worth building?\n\nBUILD — I put the road in behind your account only, with the skin-cleaning fault fixed first.\nSTOP — the design and this measurement stay on the shelf and nothing is built.\n\nMY RECOMMENDATION: BUILD. The jacket strips are the reason — that is a garment nobody would get by typing, and you got it by pointing at a picture.",
+      "state": "open",
+      "filedAt": "2026-10-28T07:55:00.000Z",
+      "issueNumber": 2736,
+      "frames": [
+        {
+          "key": "crew-eye/5f537ddf-6dd4-4596-b002-6a34624e8c95.jpg",
+          "arm": "Kai — the hardest case in the set",
+          "caption": "Left to right: Kai as he is today · the jacket we cut out of Chichi picture · THE PHOTO VERSION · THE TYPED-WORDS VERSION. Look at the third one: the deep V front, the lapels, the pattern under it, the sash, the buckle on his right — all of it came off the photo. He is still himself, still holding his sword. In the fourth, built from words alone, the sword is gone."
+        },
+        {
+          "key": "crew-eye/3f741aef-6299-424f-8ff7-29f36720cf80.jpg",
+          "arm": "Sifr2 — the same jacket on a person",
+          "caption": "Same order: Sifr2 today · the cut-out jacket · the photo version · the typed-words version. The photo version keeps the jacket actual wrap and where the buckle sits. The typed one is a reasonable coat, but it is not that coat."
+        },
+        {
+          "key": "crew-eye/a1de6214-9a6c-4dc0-94fa-c447a2ca891f.jpg",
+          "arm": "The plain cloak — the narrowest win",
+          "caption": "Your own scorpion fashion photo, cut to the cloak alone, then Sifr2 and Kai each twice — photo version, then typed version. This is the honest limit: a long black cloak is something you can just type, so the two are close. What the photo still carries is how it hangs — hooded over the head, open at the front."
+        }
+      ]
+    },
     {
       "id": "closeup-line-1837",
       "title": "Where the close-up line now sits — seven of your own, in order, and one picture it turns away",
@@ -11371,7 +11418,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-28T04:59:57.830Z",
+    "readAt": "2026-10-28T07:38:28.511Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11492,8 +11539,8 @@
         "title": "N3: take anything from a reference picture — attach a photo, say what to take (\"wear this jacket\"), read from the picture, never a list (his word 2026-10-28)",
         "urgent": false,
         "held": {
-          "state": "fable",
-          "because": "a Fable seat — a DESIGN DECISION, and step 0 of this card's own road says so."
+          "state": "blocked",
+          "because": "YOU — your eye on tonight's court frames: build the photo-take road or stop? RECOMMENDATION: BUILD. Three strips are on your page."
         }
       }
     ]
