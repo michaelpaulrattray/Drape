@@ -113,6 +113,13 @@ export const CORPUS: readonly CorpusRow[] = [
     expect: "would-render", why: "the founder's own sentence; the mark lane is NOT the ink lane (opus-957 §2)" },
   { id: "mark.freckles", ask: "give her freckles", subject: "marks", verb: "add", state: "master",
     expect: "would-render", why: "the freckle court's class" },
+  /* #2730's door, and unlike `wall_too_long` it IS a row: nine unjoined marks
+     came back as nine items on 36 of 36 samplings through the real
+     interpreter (2026-10-28), so the sentence reaches the door rather than
+     probing the model. Not yet driven through the census entrance — the row
+     says what it believes until a drive says otherwise. */
+  { id: "mark.nine", ask: "give her freckles across her nose, a mole on her left cheek, a small scar on her chin, a birthmark on her neck, a beauty mark above her lip, a scar through her right eyebrow, a mole on her jaw, freckles on her shoulders, and a small scar on her forehead", subject: "marks", verb: "add", state: "master",
+    expect: "refused:wall_too_many", why: "#2730: more separate marks than a set keeps — named, free, and never `unreadable`; the same sentence with eight files every one" },
   /* ───────────────────────────── accessories ────────────────────────────── */
   { id: "acc.earrings.add", ask: "give her gold hoop earrings", subject: "statedAccessories", verb: "add", state: "master",
     expect: "would-render", why: "a matching pair, the stylist's ontology (law 8)" },
@@ -462,6 +469,22 @@ export const UNREACHABLE_DOORS: ReadonlyArray<{ id: string; reason: string; beco
   { id: "wall_too_long",
     reason: "answers a reply carrying one free-lane value, or the makeup value, longer than that subject's own cap (`FREE_SUBJECT_MAX_LENGTH`, else `MAX_FREE_LENGTH`; `MAX_MAKEUP_LENGTH` for makeup). Before #2714 this state set no wall at all: the whole delta nulled and it was delivered in `unreadable`'s words - telling somebody their clear sentence did not come through and advising them to do what they had just done. The LENGTH is a property of our own reply, so the door is ours rather than the picture or the phrasing - and for that same reason the interpreter still takes all three samplings before answering here, discarding this wall on attempts 1 and 2, because the next sampling of the same sentence may fit within the cap (the relay's finding on PR #2732). What #2714 changed is the SENTENCE, not the sampling count",
     becomesReachable: "deliberately never as a corpus row - the trigger is how long the model rendered its answer, so a fixture sentence probes the model rather than pinning the door. Its pin is `server/castingV2/overlongValueRefusal.test.ts`, which drives BOTH sites (the free lane and the makeup slot) through the real interpreter, including the two arms this door's cost turns on - a first-sampling-long, second-sampling-short ask must be SERVED, and three long samplings must answer in this door's words - each with a sabotage that names the arm it reddens" },
+  /*
+    #2731's DOOR, AND IT IS OURS BY CONSTRUCTION for `wall_too_long`'s reason —
+    the state that reaches it is a value in OUR OWN REPLY, not their sentence.
+
+    It answers a reply whose value for one subject was nothing but a brand
+    name, when that brand is one the customer typed. The prompt tells the model
+    to drop the name and keep the description, and measured through the real
+    interpreter it does: across 68 runs of the card's own sentences and three
+    described brand asks it filed a bare brand name in none of 108 readings.
+    So no corpus sentence reaches this door deterministically — "put her in
+    Gucci" reached `wall_unbacked` on 12 of 12 — and a row that tried would be
+    measuring whether the model slipped.
+  */
+  { id: "wall_brand_only",
+    reason: "answers a reply whose free-lane value, or the makeup value, was NOTHING BUT a brand name the customer's own sentence named — `scrubBrands` emptied it, and `bareBrandWall` found every removed mark in their words. Before #2731 this state set no wall: the whole delta nulled, the neighbouring changes died with it, and it was delivered in `unreadable`'s words. A brand the MODEL introduced keeps that old road on purpose, because this door's sentence tells somebody to stop naming one. The bare-name value is a slip of our rendering against the prompt's own instruction, so the interpreter re-samples it on attempts 1 and 2 and answers here only if the last sampling is still bare (`REFINE_REFUSALS.wall_brand_only.resampled`)",
+    becomesReachable: "deliberately never as a corpus row - the trigger is the model filing the bare name it was told to drop (measured 0 of 108 readings, 2026-10-28), so a fixture sentence probes the model rather than pinning the door. Its pin is `server/castingV2/brandOnlyAndTooManyRefusal.test.ts`, which drives both sites through the real reader and the re-sample through the real interpreter, each arm with a sabotage that names the arm it reddens" },
   /* ── request-shape doors: no SENTENCE constructs these; the request does.
      Each is pinned by C5's driven service arms (opus-980), which is their
      proof — the census documents why a corpus row cannot be one. ── */

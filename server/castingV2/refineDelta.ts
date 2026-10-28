@@ -40,7 +40,7 @@ import {
 } from "../../shared/castingRealization";
 import { HAIR_COLOURS, type HairColour } from "../../shared/castingVocabularies";
 import { REFINABLE_CUT_NAMES, hairStyleByName } from "./hairStyles";
-import { scrubBrands } from "./brandScrub";
+import { brandsNamedIn, scrubBrands } from "./brandScrub";
 /* Value import, and the edge back is TYPE-ONLY (`OpenKindAsk`), so it is erased
    and there is no runtime cycle. */
 import { readOpenKinds } from "./openLaneKind";
@@ -675,6 +675,156 @@ export type RefineRefusal =
    * the sentence can read it.
    */
   | { reason: "wall_too_long"; asked: string; length?: number; limit?: number }
+  /**
+   * MORE SEPARATE ITEMS UNDER ONE SUBJECT THAN A SET HOLDS — #2730.
+   *
+   * # The sentence this exists to stop saying
+   *
+   * A set subject (`marks`, `ink`, `statedAccessories` — `isPluralSubject`)
+   * arriving with more items than `MAX_ITEMS` used to return the whole-delta
+   * `null` with NO wall set, which falls out of the interpreter's samplings as
+   * `unreadable`: *"That one didn't come through clearly."* It had come through
+   * perfectly clearly. Nine marks, each well inside its own length cap, were
+   * read and understood and then discarded because there were nine; the same
+   * sentence with eight filed every one. Retyping it earns the same answer,
+   * because nothing about rephrasing changes a count.
+   *
+   * It is `wall_too_long`'s sibling and NOT that member, because its honest
+   * advice is different: nothing here is too long, so *"say that part in fewer
+   * words"* would be false. The fact is a count, so the advice is *fewer of
+   * them*.
+   *
+   * # ⚠ THE COUNT IS A PROPERTY OF OUR REPLY, SO IT IS THE LAST SAMPLING THAT
+   * # ANSWERS — the relay's lesson from PR #2732, applied rather than re-learned
+   *
+   * Read at the code rather than assumed, on two grounds:
+   *
+   *   1. **The model does the splitting.** The prompt tells it to give a set as
+   *      *"a JSON ARRAY of separate items … Each item is one thing"*, and the
+   *      free lane's own comment says why the code does not: *"a code split on
+   *      'and' is a phrasing list by another name and D-163 outlaws that
+   *      class"*. So *"freckles across her nose and cheeks"* is one item or two
+   *      at the model's discretion — the count is how WE rendered the list.
+   *   2. **The count includes what it restated.** The same prompt line tells it
+   *      to *"restate ALL of them including ones stated earlier"*, beside *"One
+   *      entry per subject, holding the WHOLE current answer for that
+   *      subject"* — the set that comes back is the subject's whole answer,
+   *      carried items and all. So seven stored marks plus two asked-for is
+   *      nine by restatement — a
+   *      customer who typed two things can meet this wall, which is also why
+   *      the sentence talks about what it WOULD COME TO rather than what they
+   *      asked for.
+   *
+   * So a fresh sampling can come back under the cap, and the interpreter
+   * re-samples this wall on attempts 1 and 2 exactly as it does
+   * `wall_too_long` (`REFINE_REFUSALS[reason].resampled`). The persistent case
+   * costs the three samplings it cost before this card, with a true sentence
+   * at the end of it.
+   *
+   * **Measured, and the measurement cuts both ways, so both halves are
+   * written** (the real interpreter, text only, house money, 2026-10-28).
+   * The split IS ours: a sentence naming nine marks with two of them joined by
+   * "and" — *"a mole and a small scar on her chin"* — came back as eight items
+   * on 12 of 12 and was served, where nine unjoined marks came back as nine.
+   * And on an unambiguous list the count does not move at this temperature:
+   * nine marks, and seven stored plus two asked, each came back as nine on
+   * every one of 36 samplings, so **0 of the 48 re-samples landed under the
+   * cap**. The two extra samplings therefore buy nothing on a list like those;
+   * they are kept because they cost exactly what this state cost before the
+   * card, and because which phrasings the model merges is its choice, not a
+   * property this reader can see. That is the trade, stated rather than
+   * assumed (the disappearing-technology law, 3).
+   *
+   * ⚠ **A declared limit, not a fix**: the cap counts the items AS THEY ARRIVE,
+   * before `supersedeWithinSet` retires a restated item that a fresh one
+   * replaces. A reply that restated the replaced item on a full set would read
+   * one over and meet this wall, whose *"would come to more"* is then false.
+   * Driven twice on full sets of eight (a swap of earrings, a mole made
+   * bigger), the model replaced in place on 12 of 12 and never reached it.
+   * Moving the count past the supersession would change what the cap MEANS,
+   * which #2730 says not to do here.
+   *
+   * # The all-or-nothing rule is kept, and the cap is not touched
+   *
+   * The delta still nulls — keeping eight of nine and dropping one the customer
+   * stated is #2552's rejected option (a), and choosing WHICH one would be the
+   * code deciding what they meant. And #2730's own body: *do not fix this by
+   * raising it*. `MAX_ITEMS`'s reason (*"a set is a handful, not a second brief
+   * arriving as a list"*) stands; this card is about what is said at the cap.
+   *
+   * `count` and `limit` ride for the operator log and never cross a projection
+   * — a count the customer must interpret is clause 6's own example, and the
+   * copy entry states the fact without it. `asked` is the subject key for the
+   * same record, and the sentence does not name it for `wall_too_long`'s
+   * declared reason: there is no customer-facing label per subject.
+   */
+  | { reason: "wall_too_many"; asked: string; count?: number; limit?: number }
+  /**
+   * A VALUE THAT WAS NOTHING BUT A BRAND NAME — AND THE CUSTOMER'S OWN — #2731.
+   *
+   * # The sentence this exists to stop saying
+   *
+   * `scrubBrands` removes a house name from every free value, correctly, and
+   * keeps the rest: *"Gucci dress"* files as *"dress"*. When nothing is LEFT —
+   * the value was the name — the whole delta used to `null` with NO wall set,
+   * which falls out of the samplings as `unreadable`: *"That one didn't come
+   * through clearly."* It came through perfectly; the product removed the name
+   * on purpose and then blamed their English for the hole. And it took the
+   * neighbour with it: a bare brand under `wardrobe` beside an ordinary brows
+   * ask filed neither. The guard is not in question and is not touched — only
+   * the silence.
+   *
+   * # Two cases, and only one of them gets this sentence
+   *
+   * The bare name is checked against the customer's words — the same MARK,
+   * read off the one brand list (`bareBrandWall`, which says why it is not
+   * whole-value containment). **Their sentence names it** → this wall, whose sentence tells
+   * them a brand name is not put into a picture and to describe the look.
+   * **It does not** → the model introduced a brand nobody typed, and telling
+   * somebody to stop naming one would be false. That case keeps its old road
+   * — a bare `null`, re-sampled — and is declared rather than fixed here: it is
+   * a reply that broke two prompt rules at once, and its honest sentence is a
+   * different card's question.
+   *
+   * # ⚠ IT IS RE-SAMPLED, AND THE OBVIOUS READING SAYS THE OPPOSITE
+   *
+   * *"They named the brand themselves, so re-sampling cannot change it"* is
+   * true of their sentence and false of this wall, because this wall is not
+   * raised by their sentence. It is raised by a VALUE THAT WAS ONLY THE NAME,
+   * and that value is our rendering: the prompt tells the model *"Never name a
+   * brand … SERVE THE ASK ANYWAY … keep every word describing what they want
+   * and drop only the name"*, with *"miu miu styled glasses" files ["styled
+   * glasses"]* as its example. A bare-name value is a reply that did the
+   * opposite of both halves.
+   *
+   * Measured through the real interpreter before this was decided (text only,
+   * house money, no credit, 2026-10-28): across the card's own sentences and
+   * three described brand asks — 68 runs of six sentences, one of them both
+   * with and without the wardrobe subject served — **the model filed a bare
+   * brand name in none of 108 readings** (first samplings, re-samples,
+   * re-looks and echo passes together), and every described ask (*"a Chanel
+   * red lip"* and *"Cartier earrings"* on today's setting, *"a Gucci dress"*
+   * on an account the wardrobe subject serves) was served with the name
+   * dropped and the description kept, 24 of 24. So a sampling that filed the bare name
+   * is a slip the next sampling is overwhelmingly likely not to repeat, and
+   * where their sentence carries a description, that next sampling SERVES it.
+   * Walling on the first such parse would refuse those asks to save cents —
+   * PR #2732's trade, which its relay finding refused. The persistent case
+   * costs the three samplings it cost before this card.
+   *
+   * ⚠ **What that measurement also says, and this card does not fix**: on the
+   * live interpreter this door is a BACKSTOP that the card's own sentences do
+   * not reach. *"Put her in Gucci"* met `wall_unbacked` (the stage claim) on all
+   * twelve, and *"give her Gucci makeup"* filed `makeup: "makeup"`. The scrub
+   * site is still where a bare-name reply would land and is fixed for that
+   * reason (law 3: a backstop needs a test the model cannot rescue); what the
+   * customer meets on those other roads is filed on its own card, **#2742**.
+   *
+   * `asked` is the subject key and `value` the bare name as the reply had it —
+   * both for the log, never crossing a projection, exactly as
+   * `wall_unfileable`'s `value` is.
+   */
+  | { reason: "wall_brand_only"; asked: string; value?: string }
   /** Not a wall — a GATE. It names what does work and what is coming (D-137). */
   /**
    * ⚠ IT CARRIES WHICH PLACES THE ROAD SERVES THIS ACCOUNT (census 4(c)).
@@ -1577,6 +1727,34 @@ export function sceneryLeftOut(
   return { word, kind: GARMENT_WORDS.has(word) ? "garment" : "scenery" };
 }
 
+/**
+ * THE BARE-BRAND WALL — or `null`, which keeps the old silent road (#2731).
+ *
+ * Called only where `scrubBrands` has already emptied a value. Two questions,
+ * both answered from `BRAND_PATTERN` through `brandsNamedIn`, the one list:
+ *
+ *   1. **Was it a brand that emptied it?** A value can scrub to nothing for
+ *      other reasons — `""`, a lone `"and"`, a stray comma — and those are
+ *      reply-shape slips, not a brand the customer can be told about.
+ *   2. **Is every brand it named one THEIR sentence names?** Only then is the
+ *      sentence *"I can't put a brand name into a picture … describe the look"*
+ *      true of them. A brand the model introduced — or swapped for theirs —
+ *      fails here and keeps the bare `null`, which the loop re-samples.
+ *
+ * Deliberately NOT `stemmedContainment` over the whole value, which is the
+ * tempting reuse: *"inspired by Gucci"* is a bare-brand value whose connective
+ * the model added, and containment would refuse it on the word *inspired* and
+ * send a customer who typed "Gucci" back to *"didn't come through clearly"*.
+ * The question is about the MARK, so the mark is what is compared.
+ */
+function bareBrandWall(asked: string, value: string, instruction: string): RefineRefusal | null {
+  const named = brandsNamedIn(value);
+  if (named.length === 0) return null;
+  const theirs = new Set(brandsNamedIn(instruction));
+  if (!named.every((brand) => theirs.has(brand))) return null;
+  return { reason: "wall_brand_only", asked, value: value.trim() };
+}
+
 /** Runtime validation of the interpreter's reply — a closed vocabulary is only
     closed if something checks. */
 export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | null {
@@ -1650,7 +1828,17 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
     if (typeof raw.makeup !== "string") return null;
     const scrubbed = scrubBrands(raw.makeup.trim());
     const cleaned = scrubbed?.trim() ?? "";
-    if (!cleaned) return null;
+    /* Nothing survived the scrub — and when what it removed was a brand the
+       customer typed, that is #2731's wall rather than a silence. The free
+       lane's site below says why it is the same fact; this is the second of
+       the two instances #2714's sweep found in this function. */
+    if (!cleaned) {
+      if (check) {
+        const bare = bareBrandWall("makeup", raw.makeup, check.instruction);
+        if (bare) check.wall = bare;
+      }
+      return null;
+    }
     /*
       AND THE SAME REFUSAL AS THE FREE LANE'S, because it is the same fact —
       law 7's sweep on #2714 rather than a second opinion.
@@ -1782,7 +1970,25 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
       const plural = isPluralSubject(subject as FreeSubject);
       const rawItems = Array.isArray(entry) ? entry : [entry];
       if (!plural && rawItems.length > 1) return null;
-      if (rawItems.length > MAX_ITEMS) return null;
+      /*
+        MORE ITEMS THAN A SET HOLDS NAMES ITS OWN REFUSAL (#2730).
+
+        This was `return null` with no wall: the whole delta went, and the
+        customer was told their clear sentence "didn't come through clearly".
+        The cap and the all-or-nothing rule are both unchanged — see the union
+        member for why neither moves. What changes is that the caller can say
+        the true thing. The re-sample decision is NOT made here: this reader
+        has no idea which sampling it is on, and the count is how our reply
+        split and restated the set, so the loop decides (the member's docblock).
+
+        ⚠ **A caller with no `check` is byte-unchanged** — our own record
+        re-entering, where an over-full set is corruption with nobody to tell.
+      */
+      if (rawItems.length > MAX_ITEMS) {
+        if (!check) return null;
+        check.wall = { reason: "wall_too_many", asked: subject, count: rawItems.length, limit: MAX_ITEMS };
+        return null;
+      }
       /* Each item carries WHERE ITS WARRANT CAME FROM, because that is what
          tells a replacement from an addition below (`supersedeWithinSet`). */
       const kept: SetItem[] = [];
@@ -1792,9 +1998,33 @@ export function readDelta(value: unknown, check?: FreeLaneCheck): RefineDelta | 
       if (typeof rawItem !== "string") return null;
 
       const scrubbed = scrubBrands(rawItem.trim())?.trim() ?? "";
-      /* Nothing survived the brand scrub — see the split below for why that is
-         its own line now, and its own fact. */
-      if (!scrubbed) return null;
+      /*
+        NOTHING SURVIVED THE BRAND SCRUB — and since #2731 that names its own
+        refusal, when the name removed was one the customer typed.
+
+        #2714 split this line off the length cap below because the two are
+        different facts; this is the other half getting its own sentence. The
+        delta still nulls (the all-or-nothing rule, and the scrub itself, are
+        untouched). What changes is that "put her in Gucci with thick and
+        straight brows" is told the truth about BOTH halves dying instead of
+        "that one didn't come through clearly".
+
+        ⚠ **Only when their sentence named it** (`bareBrandWall`): a brand the
+        model introduced keeps today's bare `null`, because a sentence telling
+        somebody to stop naming a brand they never named is false. And the
+        re-sample is the loop's decision, not this reader's — see the union
+        member for why this one IS re-sampled.
+
+        ⚠ **A caller with no `check` is byte-unchanged** — our own record
+        re-entering, where there is nobody to tell.
+      */
+      if (!scrubbed) {
+        if (check) {
+          const bare = bareBrandWall(subject, rawItem, check.instruction);
+          if (bare) check.wall = bare;
+        }
+        return null;
+      }
       /*
         AN OVER-LONG VALUE NAMES ITS OWN REFUSAL (#2714).
 

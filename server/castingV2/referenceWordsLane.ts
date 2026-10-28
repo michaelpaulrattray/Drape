@@ -116,11 +116,38 @@ export function wordsTakeIntentFor(instruction: string): ReferenceReadIntent | n
  * reference IS attached and the sentence IS a words-take intent. In that one
  * shape the useful answer is the picture's own words — shorter than the typed
  * description by construction — and this lane only ever OFFERS them
- * (`WordsTakeReading`; nothing is filed until the customer says so). The three
- * samplings are still saved, so the road is reached on the first parse and ends
- * in the same place.
+ * (`WordsTakeReading`; nothing is filed until the customer says so).
+ * ⚠ **This paragraph then read ~~*"The three samplings are still saved, so the
+ * road is reached on the first parse and ends in the same place."*~~ and that
+ * stopped being true inside #2714's own PR**: the relay's finding there made the
+ * interpreter re-sample this wall on attempts 1 and 2, and the repair struck the
+ * same claim in four other places and missed this fifth. The road is reached
+ * after the LAST sampling, and still ends in the same place. Corrected while
+ * adding #2731's id beside it, because the sentence is read by whoever adds the
+ * next one.
+ *
+ * ⚠ **`wall_brand_only` JOINS FOR THE SAME TWO REASONS, AND THE SECOND IS
+ * STRONGER THAN `wall_too_long`'s (#2731).** The history is identical: a
+ * bare-brand value nulled the delta with no wall and arrived here as
+ * `unreadable`. And the criterion is met exactly — *"copy her Chanel makeup
+ * from this picture"* is a look named by its label, and the picture's own
+ * words ARE that look without the label, which is precisely the answer the
+ * wall's sentence asks the customer to give by hand.
+ *
+ * ⚠ **`wall_too_many` DOES NOT JOIN, AND THAT CLOSES A ROAD ON PURPOSE —
+ * said here so it is not mistaken for the silent kind (#2730).** It too used
+ * to arrive as `unreadable`, so a words-take sentence that ALSO carried an
+ * over-full set reached a reader. But the readers read hair colour and makeup,
+ * and neither is a set: the gap is a count of marks, tattoos or accessories,
+ * which no picture reading fills. The old road answered with an offer about
+ * the makeup while the over-full set was dropped and nothing said so — the
+ * very silence #2730 is about. So the honest refusal is the better answer
+ * there, and the customer's next sentence, with fewer, meets this lane as
+ * before.
  */
-const ANSWERABLE_REFUSALS = ["unreadable", "wall_likeness", "wall_unfileable", "wall_too_long"] as const;
+const ANSWERABLE_REFUSALS = [
+  "unreadable", "wall_likeness", "wall_unfileable", "wall_too_long", "wall_brand_only",
+] as const;
 
 export function refusalIsAnswerableByAReader(reason: string): boolean {
   return (ANSWERABLE_REFUSALS as readonly string[]).includes(reason);

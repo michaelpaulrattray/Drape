@@ -14235,6 +14235,10 @@
       "path": "server/castingV2/bornWornDetector.test.ts"
     },
     {
+      "id": "test:server/castingV2/brandOnlyAndTooManyRefusal.test.ts",
+      "path": "server/castingV2/brandOnlyAndTooManyRefusal.test.ts"
+    },
+    {
       "id": "test:server/castingV2/brandScrub.test.ts",
       "path": "server/castingV2/brandScrub.test.ts"
     },
@@ -42720,10 +42724,10 @@
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/referenceWordsLane.ts:202",
+      "id": "finding:redeclared-shape:server/castingV2/referenceWordsLane.ts:229",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/referenceWordsLane.ts:202",
+      "subject": "server/castingV2/referenceWordsLane.ts:229",
       "message": "Names 2 of HairColourSection's 3 fields (server/castingV2/hairColourFromReference.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
