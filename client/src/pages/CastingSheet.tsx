@@ -1996,7 +1996,27 @@ export default function CastingSheet() {
       the heading and this line, rather than a blank column for the seconds a
       scan takes. `enabled` keeps this false whenever no refinable face is open.
     */
-    || (viewerRefinable && face.isPending);
+    || (viewerRefinable && face.isPending)
+    /*
+      AND FOR AS LONG AS A READING THAT NAMES NOTHING AHEAD OF TIME SAYS IT IS
+      STILL FINDING THINGS (#2566 slice 3, his *"loader is still showing the
+      default list"*).
+
+      On the catalogue road the part-filled answers carry named placeholder
+      rows, and those rows are the sign that more is coming. On the discovery
+      road the server draws none — nothing is named before it is found — so
+      without this the panel would go quiet after the first part-answer while
+      the reading was still landing rows. `pendingUnnamed` is the scan's OWN
+      answer, true only while it is unfinished, so the line still ends when
+      the reading does.
+
+      Two conditions keep it from outliving its work: `faceScanArmed`, because
+      a face nobody is editing polls nothing, so a part-answer kept in the
+      cache is not a reading in progress; and `!faceScan.isError`, because a
+      poll that has died leaves the last part-answer in place and must not
+      leave "Reading…" with it.
+    */
+    || (Boolean(faceScan.data?.pendingUnnamed) && faceScanArmed && !faceScan.isError);
   const scannedFaceData = faceScan.data?.enabled ? faceScan.data : null;
   const facePanelData = scannedFaceData ?? (face.data?.enabled ? face.data : null);
   const faceRows = facePanelData?.groups.flatMap((group) => group.rows) ?? [];
@@ -2363,16 +2383,18 @@ export default function CastingSheet() {
         if (result?.kind === "dispatched") {
           if (result.variantId) boughtHere.current.add(result.variantId);
           /*
-            THE DROPPED-CLAUSE CONFESSION RIDES THE RECEIPT (#2695). It is a
-            fact of the READING, not of the render: "make her hair copper in a
-            studio" filed the copper and dropped the studio before any paint
-            began, so the sentence is true now and stays true however the paint
-            ends. It is the ONE kind of note a receipt can carry, and it is
-            shown WITHOUT marking the outcome — the render's own outcome is
-            still owed, and the mark belongs to it (the paragraph above).
+            WHAT THE READING ALREADY KNOWS RIDES THE RECEIPT (#2695, #2713).
+            Each sentence on it is a fact of the READING, not of the render:
+            "make her hair copper in a studio" filed the copper and dropped the
+            studio before any paint began; a picture nothing could take from
+            was set aside before the claim. So it is true now and stays true
+            however the paint ends. Several are joined into one line by the
+            server, exactly as a delivered take's are. It is shown WITHOUT
+            marking the outcome — the render's own outcome is still owed, and
+            the mark belongs to it (the paragraph above).
           */
-          const dropped = refineOutcomeNote(result);
-          if (dropped) setRefineOutcome({ text: dropped, origin: "server", requestId });
+          const owed = refineOutcomeNote(result);
+          if (owed) setRefineOutcome({ text: owed, origin: "server", requestId });
           await variants.refetch();
           await invalidate();
           return;
@@ -3886,6 +3908,10 @@ export default function CastingSheet() {
               groups={facePanelData?.groups ?? []}
               possessive={facePanelData?.possessive ?? "their"}
               working={faceScanWorking}
+              /* The places a discovery reading keeps have no names (#2566
+                 slice 3) — the server's word, read off whichever answer is on
+                 screen, so the strip and the rows always come from one reply. */
+              pendingUnnamed={Boolean(facePanelData?.pendingUnnamed)}
               /*
                 THE DAY'S READINGS ARE SPENT (#2170, his ruling).
 

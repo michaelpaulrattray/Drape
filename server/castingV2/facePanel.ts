@@ -463,6 +463,19 @@ export type PanelInstance = {
 export type FacePanel = {
   possessive: string;
   groups: readonly { group: PanelSection; heading: string; rows: readonly PanelRow[] }[];
+  /**
+   * A READING IS RUNNING, AND THE PLACES IT KEEPS HAVE NO NAMES (#2566 slice 3).
+   *
+   * True exactly while `scanning` and `discovering` both hold: the panel has
+   * drawn no named placeholder row, so the browser keeps the places itself — a
+   * short unnamed strip under the working line, picture square and bar, no noun.
+   * False on every other panel, including the catalogue road, where the named
+   * `pending` rows are the places and this strip would be a second loader.
+   *
+   * A fact about the READING, never a list: it says nothing about how many rows
+   * are coming or what they are, because nobody knows yet.
+   */
+  pendingUnnamed: boolean;
 };
 
 type SlotState = {
@@ -663,6 +676,25 @@ export function facePanel(input: {
    * panel. Nothing about a SETTLED row depends on it.
    */
   scanning?: boolean;
+  /**
+   * DOES THIS READING ASK THE PICTURE WHAT IS ON IT (#2566 slice 3 — the
+   * discovery road, `CASTING_FACE_DISCOVERY_SCOPE`)?
+   *
+   * It changes one thing, and only while `scanning` is true: the places kept
+   * for rows not answered yet are NOT NAMED. His words on the first look,
+   * verbatim: *"loader is still showing the default list"* — a placeholder row
+   * called Horns or Nose stud over a cast who has neither is a promise about a
+   * feature nobody has seen, and the approved design already ruled it: *"Rows
+   * appear whole or not at all … There is no word-only placeholder that fills
+   * in later."* So no catalogue row is held open here, and the panel says
+   * {@link FacePanel.pendingUnnamed} instead.
+   *
+   * ⚠ **Only the loader changes.** Every catalogue question is still asked —
+   * the gate the relay's second #2570 finding deleted stays deleted — and every
+   * row that has its picture lands exactly as it would off this road. Absent or
+   * false is today's panel byte for byte.
+   */
+  discovering?: boolean;
   /**
    * THE TATTOOS THIS CAST IS WEARING, from the delivery-crop store.
    *
@@ -1174,8 +1206,14 @@ export function facePanel(input: {
     a read that is not running, which is fable-521's own warning: a working
     state that can outlive its work.
   */
+  /*
+    AND ON THE DISCOVERY ROAD THE GRACE KEEPS NO NAMED PLACE AT ALL (#2566
+    slice 3) — see `discovering`. The places are kept unnamed in the browser,
+    from `pendingUnnamed` below, so the panel never names what nobody has seen.
+  */
+  const namedGrace = input.scanning === true && input.discovering !== true;
   const keep = (row: PanelRow): boolean => hasContent(row)
-    || (input.scanning === true && row.group !== "open");
+    || (namedGrace && row.group !== "open");
   const stateOfRow = (row: PanelRow): PanelRow => (
     hasContent(row) ? row : { ...row, state: "pending" }
   );
@@ -1579,6 +1617,7 @@ export function facePanel(input: {
         rows: (rowsOf.get(section.group) ?? []).filter(keep).map(stateOfRow),
       }))
       .filter((section) => section.rows.length > 0),
+    pendingUnnamed: input.scanning === true && input.discovering === true,
   };
 }
 

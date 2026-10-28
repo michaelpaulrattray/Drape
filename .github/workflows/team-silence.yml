@@ -1,0 +1,169 @@
+# Has the team stopped? (#2719, Retro recurrence R23)
+#
+# The team stopped for six days — 2026-10-21 to 2026-10-27 — and no reader the
+# team owns could see it. No rule was broken: there was no park, every shift row
+# was properly closed, and every alarm the team has keys on work IN FLIGHT
+# (`CREW_SHIFT_STALL_MS` fires on an OPEN row; the close-stamp verifies an entry
+# that EXISTS; the park notice describes a park that HAPPENED). Nothing anywhere
+# measures the ABSENCE of runs.
+#
+# ⚠ THIS JOB EXISTS HERE AND NOT IN A SHIFT BECAUSE OF THE PARADOX THE CARD
+# NAMES: every reading the team owns is performed BY a shift, and during an
+# outage no shift runs. It is also the only one of the card's three proposed
+# repairs a seat may build — the other two live in `.agents/foreman/`, which is
+# untracked, so no seat may ship them and no suite may guard them.
+#
+# It is a READING, not a gate on anything: it blocks no merge, restarts nothing,
+# and changes no state beyond filing at most one card.
+#
+# The decision, the threshold and every verdict live in
+# `scripts/lib/teamSilence.mts`; the command is
+# `scripts/team-silence-check.mts`. One command, so a hand reading and this
+# scheduled one cannot disagree — the knip nightly's own rule.
+#
+# By hand:  npx tsx scripts/team-silence-check.mts
+#           gh workflow run team-silence.yml
+
+name: Team silence (every 3 hours)
+
+on:
+  schedule:
+    # Every three hours. The threshold is 18 hours (TEAM_SILENCE_HOURS), so the
+    # cadence only decides how soon a real outage is seen inside that window,
+    # never whether it is seen — and three hours is already far finer than the
+    # six days this exists to catch.
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: "Override the silence threshold in hours (default 18)"
+        required: false
+        type: string
+
+# A hand-dispatched run beside a scheduled one would read the same repository
+# twice; let the later one wait (zizmor concurrency-limits, #35).
+concurrency:
+  group: team-silence
+  cancel-in-progress: false
+
+# Least privilege at the workflow level (zizmor excessive-permissions, #35):
+# nothing here may write, and the one job that files a card declares that
+# beside its reason. This is the shape `gate.yml` and `deploy-verify.yml`
+# already pass with.
+permissions:
+  contents: read
+
+jobs:
+  reading:
+    name: reading
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # the tree the reading needs (the briefing's ladder), checked out at `main`
+      issues: write # `gh issue create` files at most ONE team-outage card, and `gh label create` makes that label on its first real run
+      pull-requests: read # `gh pr list` reads the open pull requests that tell a park from a stall
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          # The reading needs the tree (the briefing's ladder); `gh` uses
+          # GH_TOKEN below. Nothing here pushes.
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Read whether the team has stopped
+        id: read
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TEAM_SILENCE_HOURS: ${{ inputs.hours }}
+        run: |
+          set +e
+          npx tsx scripts/team-silence-check.mts > reading.txt 2>&1
+          STATUS=$?
+          set -e
+          cat reading.txt
+          # 0 running or correctly parked · 2 the finding · 1 could not read.
+          # Anything else is the command itself having fallen over, which is
+          # also "could not read" and must not file a card.
+          if [ "$STATUS" -eq 0 ]; then
+            echo "verdict=ok" >> "$GITHUB_OUTPUT"
+          elif [ "$STATUS" -eq 2 ]; then
+            echo "verdict=stopped" >> "$GITHUB_OUTPUT"
+          else
+            echo "verdict=unreadable" >> "$GITHUB_OUTPUT"
+          fi
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Team silence"
+            echo
+            echo '```'
+            sed -n '1,4p' reading.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      # ⚠ AT MOST ONE OPEN CARD, EVER. A detector that filed every three hours
+      # through a six-day outage would bury the board it is trying to protect —
+      # and an alarm that fires routinely is the state this card is about,
+      # arriving by the opposite road. The dedupe is the `team-outage` label on
+      # an OPEN card; the label is created if missing, so this needs no hand act
+      # before its first real run.
+      - name: File one card, if the team has stopped and no card says so yet
+        if: ${{ steps.read.outputs.verdict == 'stopped' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create team-outage --color B60205 --description "The team has stopped and no reader the team owns could see it (#2719)" || echo "the team-outage label already exists"
+          OPEN=$(gh issue list --label team-outage --state open --limit 1 --json number --jq 'length')
+          if [ "$OPEN" != "0" ]; then
+            echo "a team-outage card is already open — not filing a second one"
+            exit 0
+          fi
+          # The body is assembled in a FILE from a tracked template rather than
+          # inline: a quoting mistake in a step that only ever runs during an
+          # outage is a mistake nobody would find until the one moment it
+          # mattered.
+          cp .github/team-outage-card.md card.md
+          {
+            echo ""
+            echo "## What this run read"
+            echo ""
+            echo '```'
+            sed -n '1,4p' reading.txt
+            echo '```'
+          } >> card.md
+          TITLE=$(sed -n '1p' reading.txt | sed 's/^.*STOPPED — //')
+          gh issue create --title "The team has stopped — $TITLE" --label team-outage --label bug --body-file card.md
+
+      # The red belongs in the Actions tab too — a card nobody has opened yet
+      # and a job that passed would be a finding with no surface at all.
+      # ⚠ EVERY `${{ … }}` REACHES THE SHELL THROUGH `env:`, NEVER INLINE IN A
+      # `run:` BLOCK. The gate lints these with zizmor on the PEDANTIC persona
+      # and fails on ANY finding, and an inline step output is its
+      # template-injection shape. It is also simply correct: a value that
+      # travels as an environment variable cannot be read as script.
+      - name: Fail on the finding, or on a reading that did not happen
+        if: ${{ steps.read.outputs.verdict != 'ok' }}
+        env:
+          VERDICT: ${{ steps.read.outputs.verdict }}
+          STATUS: ${{ steps.read.outputs.status }}
+        run: |
+          if [ "$VERDICT" = "stopped" ]; then
+            echo "::error::the team has stopped — a team-outage card is open on the board"
+          else
+            # ⚠ NEITHER CRYING WOLF NOR GOING QUIET: a reading that did not
+            # happen files NO card — it cannot tell a park from a stall, so any
+            # card it wrote would be a guess — and fails, so the silence is
+            # visible without being asserted.
+            echo "::error::the team's silence could not be judged (exit $STATUS) — no card filed, because a park and a stall cannot be told apart from this reading"
+          fi
+          exit 1

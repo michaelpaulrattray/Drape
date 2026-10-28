@@ -340,10 +340,50 @@ export function drawnGroups(
 export const FACE_SCAN_CAPPED_LINE =
   "You've looked at a lot of faces today — readings come back tomorrow.";
 
+/**
+ * HOW MANY UNNAMED PLACES THE STRIP DRAWS WHILE A READING NAMES NOTHING YET
+ * (#2566 slice 3).
+ *
+ * A texture, not a count of anything: three rows of picture-square-and-bar is
+ * enough to read as "rows are coming here" and few enough not to read as a
+ * promise of how many. It is deliberately NOT derived from the catalogue or the
+ * reading — the whole point of the strip is that nobody knows yet what this
+ * cast has, so no number here may be a claim about it.
+ */
+export const UNNAMED_PLACE_COUNT = 3;
+
+/**
+ * THE PLACES KEPT WHILE A READING FINDS THINGS NOBODY HAS NAMED YET.
+ *
+ * His word on the first look at the discovery panel, verbatim: *"loader is
+ * still showing the default list"*. The named placeholder rows — Eyes, Brows,
+ * Horns, Nose stud — were a list of features read off the catalogue and drawn
+ * over a cast before anything had been seen, several of them things that cast
+ * does not have. So on that road the places carry no noun at all: a picture
+ * square and a bar, the same shapes a pending row has, with the name gone.
+ *
+ * `aria-hidden` because it says nothing: the working line above is the
+ * `role="status"` announcement, and a screen reader walking three empty shapes
+ * would be told less than nothing.
+ */
+export function UnnamedPlaces() {
+  return (
+    <ul className="dpc-face__unnamed" aria-hidden="true">
+      {Array.from({ length: UNNAMED_PLACE_COUNT }, (_, at) => (
+        <li key={at} className="dpc-face__unnamedRow">
+          <span className="dpc-face__thumb dpc-face__unnamedThumb" />
+          <span className="dpc-face__unnamedBar" />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function FacePanel({
   groups,
   possessive,
   working,
+  pendingUnnamed = false,
   capped = false,
   carried = false,
   selection,
@@ -379,6 +419,17 @@ export function FacePanel({
    * its work is the invisible-run lesson wearing UI clothes.
    */
   working: boolean;
+  /**
+   * THE READING NAMES NOTHING BEFORE IT FINDS IT (#2566 slice 3) — the
+   * server's `pendingUnnamed`, carried straight through.
+   *
+   * True only on the discovery road, where the server drew no named
+   * placeholder rows. It draws {@link UnnamedPlaces} under whatever has landed,
+   * and only while `working` — so the strip can never outlive the line, which is
+   * the one that is derived from the scan query (see `working` above). False is
+   * today's panel exactly: the named `pending` rows are the places.
+   */
+  pendingUnnamed?: boolean;
   /**
    * THE DAY'S READINGS ARE SPENT, SO NO NEW ONE IS COMING (#2170).
    *
@@ -653,6 +704,21 @@ export function FacePanel({
           </ul>
         </section>
       ))}
+      {/*
+        THE UNNAMED PLACES SIT AT THE FOOT OF WHAT HAS LANDED (#2566 slice 3).
+
+        On a fresh cast nothing has landed, so this is directly under the
+        working line — the design's own position. Once rows start arriving they
+        land ABOVE it, and that is the reason it is here rather than in the
+        head: when the reading ends the strip leaves from the bottom and not one
+        row moves under the customer's aim, where a strip in the head would
+        shove every landed row up by its own height at the moment they are
+        reaching for one.
+
+        `!capped` because the capped line outranks the working line: nothing is
+        being read while the day is shut.
+      */}
+      {working && pendingUnnamed && !capped ? <UnnamedPlaces /> : null}
     </div>
   );
 }

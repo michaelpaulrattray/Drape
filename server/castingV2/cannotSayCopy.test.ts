@@ -424,14 +424,14 @@ describe("the likeness confession names what it filed, and nothing else", () => 
   it("names the subject the parse actually wrote", async () => {
     const { likenessSetAsideNote } = await import("./cannotSayCopy");
     expect(likenessSetAsideNote({ subjects: ["SKIN"] }))
-      .toBe("Made the change to skin as you described. Refining can't copy a real person's "
-        + "features, so that part of the comparison was set aside.");
+      .toBe("The change to the skin went ahead as you described. Refining can't copy a real "
+        + "person's features, so that part of the comparison was set aside.");
   });
 
   it("names both when an ask wrote two", async () => {
     const { likenessSetAsideNote } = await import("./cannotSayCopy");
     expect(likenessSetAsideNote({ subjects: ["EYE COLOUR", "HAIR CUT"] }))
-      .toContain("eye colour and hair cut");
+      .toContain("The change to the eye colour and the hair cut went ahead");
   });
 
   it("claims NO feature when the parse filed nothing nameable", async () => {
@@ -439,8 +439,8 @@ describe("the likeness confession names what it filed, and nothing else", () => 
        says nothing rather than the last feature somebody hardcoded. */
     const { likenessSetAsideNote } = await import("./cannotSayCopy");
     const said = likenessSetAsideNote({ subjects: [] });
-    expect(said).toBe("Made that as you described. Refining can't copy a real person's "
-      + "features, so that part of the comparison was set aside.");
+    expect(said).toBe("The change went ahead as you described. Refining can't copy a real "
+      + "person's features, so that part of the comparison was set aside.");
     expect(said).not.toContain("eyes");
   });
 
@@ -449,6 +449,117 @@ describe("the likeness confession names what it filed, and nothing else", () => 
     const { likenessSetAsideNote } = await import("./cannotSayCopy");
     for (const subjects of [["SKIN"], ["BUILD"], ["MARKS"], []]) {
       expect(likenessSetAsideNote({ subjects }), subjects.join(",")).not.toContain("eyes");
+    }
+  });
+});
+
+/**
+ * THE UNUSED PICTURE SAYS WHY (card #2713).
+ *
+ * The founder attached a photograph of an outfit and asked for the outfit. No
+ * reference road takes clothing, so the picture went unused — and the only
+ * sentence the product had for that said the change "didn't ask for anything I
+ * could take from it". It had asked for exactly that. Three reasons now, each
+ * with its own sentence, and the original kept byte for byte for the one case
+ * it was always true of.
+ */
+describe("the unused picture says why it went unused", () => {
+  const ORIGINAL =
+    "The picture you attached wasn't used — this change didn't ask for anything I could take from it.";
+
+  it("keeps the original sentence, byte for byte, for a picture nothing was asked of", async () => {
+    const { attachedPictureUnusedNote } = await import("./cannotSayCopy");
+    expect(attachedPictureUnusedNote({ asked: "nothing" })).toBe(ORIGINAL);
+    /* And the bare call — the shape every caller used before the reasons. */
+    expect(attachedPictureUnusedNote()).toBe(ORIGINAL);
+  });
+
+  it("names the thing in the customer's own word when the picture was pointed at for something no road takes", async () => {
+    const { attachedPictureUnusedNote } = await import("./cannotSayCopy");
+    expect(attachedPictureUnusedNote({ asked: "unservable", theirNoun: "jacket" })).toBe(
+      "I can't take the jacket from a picture yet, so your picture wasn't used — "
+        + "the change went ahead from your words.",
+    );
+  });
+
+  it("names NOTHING when there is no word of theirs to say", async () => {
+    /* The likeness sentence's NO SUBJECT, NO CLAIM rule: with no word the
+       customer typed for the one thing filed, it says "that" rather than the
+       chip's heading or a guess. */
+    const { attachedPictureUnusedNote } = await import("./cannotSayCopy");
+    for (const theirNoun of [null, "", "  "]) {
+      const said = attachedPictureUnusedNote({ asked: "unservable", theirNoun });
+      expect(said, String(theirNoun)).toBe(
+        "I can't take that from a picture yet, so your picture wasn't used — "
+          + "the change went ahead from your words.",
+      );
+    }
+  });
+
+  it("never claims a road is missing when the road was open and the take could not be used", async () => {
+    const { attachedPictureUnusedNote } = await import("./cannotSayCopy");
+    const said = attachedPictureUnusedNote({ asked: "untaken" });
+    expect(said).toBe("Your picture wasn't used this time — the change went ahead from your words.");
+    expect(said).not.toContain("can't take");
+  });
+
+  it("never says the false clause to anyone who pointed at the picture — and never mentions money", async () => {
+    const { attachedPictureUnusedNote } = await import("./cannotSayCopy");
+    for (const why of [
+      { asked: "unservable" as const, theirNoun: "jacket" },
+      { asked: "unservable" as const, theirNoun: null },
+      { asked: "untaken" as const },
+    ]) {
+      const said = attachedPictureUnusedNote(why).toLowerCase();
+      expect(said, why.asked).not.toContain("didn't ask for anything");
+      /* A paid take: the owed-note family never says nothing was charged. */
+      expect(said, why.asked).not.toContain("charged");
+      expect(said, why.asked).not.toMatch(/\d/);
+    }
+  });
+});
+
+/**
+ * THE REST IS SPOKEN FOR ONCE (card #2713 — the relay's finding on PR #2740).
+ *
+ * Joined on one receipt, the customer read "Everything else you asked for was
+ * done" in the middle and "Everything else you asked for went ahead" at the
+ * end, while the picture was still being painted. The left-out members now say
+ * only what was left out, and the composer says the rest once, last.
+ */
+describe("the owed list says the rest went ahead once, at the end", () => {
+  it("adds the closing clause ONCE, after every left-out member, keeping order", async () => {
+    const { owedSentences, THE_REST_WENT_AHEAD } = await import("./cannotSayCopy");
+    const said = owedSentences({
+      said: ["likeness", null, "picture"],
+      leftOut: ["frame", null, "orb", "studio"],
+    });
+    expect(said).toEqual(["likeness", "picture", "frame", "orb", "studio", THE_REST_WENT_AHEAD]);
+    expect(THE_REST_WENT_AHEAD).toBe("Everything else you asked for went ahead.");
+  });
+
+  it("CONTROL — with nothing left out, the rest is not spoken for at all", async () => {
+    /* Without this arm the rule is satisfied by a list that always ends with
+       the clause, including a take where nothing was left out. */
+    const { owedSentences, THE_REST_WENT_AHEAD } = await import("./cannotSayCopy");
+    expect(owedSentences({ said: ["likeness"], leftOut: [null, null] })).toEqual(["likeness"]);
+    expect(owedSentences({ said: [], leftOut: [] })).toEqual([]);
+    expect(owedSentences({ said: ["likeness"], leftOut: [] })).not.toContain(THE_REST_WENT_AHEAD);
+  });
+
+  it("no left-out member carries its own closing any more — the composer is the only voice", async () => {
+    const { sceneryLeftOutNote } = await import("./cannotSayCopy");
+    const { partlyOutOfFrameNote } = await import("./castingFrame");
+    const { namedButNotServedNote } = await import("./openLaneAccept");
+    const members = [
+      sceneryLeftOutNote({ word: "studio", kind: "scenery" }),
+      partlyOutOfFrameNote("hips"),
+      namedButNotServedNote({ unserved: ["orb"], instruction: "give them an orb", servedFacets: new Set() }) ?? "",
+    ];
+    for (const member of members) {
+      expect(member.toLowerCase(), member).not.toContain("everything else you asked for");
+      /* And none claims a finished paint: each is read while the paint runs. */
+      expect(member, member).not.toMatch(/\bwas done\b|\bMade the\b/);
     }
   });
 });
