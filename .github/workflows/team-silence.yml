@@ -46,18 +46,22 @@ concurrency:
   group: team-silence
   cancel-in-progress: false
 
+# Least privilege at the workflow level (zizmor excessive-permissions, #35):
+# nothing here may write, and the one job that files a card declares that
+# beside its reason. This is the shape `gate.yml` and `deploy-verify.yml`
+# already pass with.
 permissions:
   contents: read
-  # To file at most ONE card when the team has stopped, and to read the ordered
-  # band and the open pull requests that tell a park from a stall.
-  issues: write
-  pull-requests: read
 
 jobs:
   reading:
     name: reading
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read # the tree the reading needs (the briefing's ladder), checked out at `main`
+      issues: write # `gh issue create` files at most ONE team-outage card, and `gh label create` makes that label on its first real run
+      pull-requests: read # `gh pr list` reads the open pull requests that tell a park from a stall
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
