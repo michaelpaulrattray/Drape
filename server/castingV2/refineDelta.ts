@@ -52,6 +52,7 @@ import { tokensComeFromBrief } from "./castingIntent";
 import {
   FREE_SUBJECT_KEYS,
   FREE_SUBJECTS,
+  SUBJECT_NOUNS,
   bindsOnPresence,
   isPluralSubject,
   isPresentationSubject,
@@ -3569,6 +3570,56 @@ export function filedSubjectsOf(deltas: unknown): string[] {
   }
   subjects.push(...open);
   return Array.from(new Set(subjects));
+}
+
+/**
+ * THE CUSTOMER'S OWN WORD FOR THE ONE THING THIS ASK FILED, or null (#2713 —
+ * the relay's finding on PR #2740).
+ *
+ * # Why this exists
+ *
+ * *"I can't take the wardrobe from a picture yet"* named the chip's HEADING,
+ * and nobody calls a jacket "the wardrobe". Law 8: the customer's own
+ * description is the spec, so the sentence says the word they typed.
+ *
+ * # What it reads, and the two things it refuses to do
+ *
+ * A word counts only when BOTH halves of the request hold it: the customer
+ * typed it (their sentence), and the reading filed it for this subject (the
+ * subject's own nouns — the vocabulary the open lane's collision check already
+ * reads, `SUBJECT_NOUNS` — found in the value the reading filed; or, for an
+ * open kind, the kind's own noun). It never adds a heading-to-noun table, and
+ * it never guesses:
+ *
+ * - **Exactly one filed subject, or nothing.** With two subjects filed, the
+ *   sentence cannot know which one the picture was for, and naming the other
+ *   would be specific and wrong (`filedSubjectsOf` is the count, one owner).
+ * - **A word outside those nouns is not invented.** *"parka"* is not in the
+ *   wardrobe subject's nouns, so it returns null and the caller says *"that"* —
+ *   less precise, never false, and never a refusal.
+ *
+ * The longest matching word wins, so *"t-shirt"* is said rather than *"shirt"*.
+ */
+export function theirNounForTheOneThingFiled(deltas: unknown, instruction: string): string | null {
+  if (filedSubjectsOf(deltas).length !== 1) return null;
+  const said = instruction.toLowerCase();
+  const typed = (word: string, text: string) =>
+    new RegExp(`(^|[^a-z0-9-])${word.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^a-z0-9-])`)
+      .test(text);
+  const open = Object.values(readOpenKinds(deltas) ?? {});
+  if (open.length === 1) {
+    const noun = open[0]!.noun.trim();
+    return noun.length > 0 && typed(noun, said) ? noun.toLowerCase() : null;
+  }
+  const delta = readDelta(deltas);
+  const free = Object.entries(delta?.free ?? {});
+  if (free.length !== 1) return null;
+  const [subject, value] = free[0]!;
+  const filed = allFiledText(value).join("\n").toLowerCase();
+  const found = (SUBJECT_NOUNS[subject as FreeSubject] ?? [])
+    .filter((noun) => typed(noun, said) && typed(noun, filed))
+    .sort((a, b) => b.length - a.length);
+  return found[0]?.toLowerCase() ?? null;
 }
 
 /**

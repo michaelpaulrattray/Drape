@@ -1914,3 +1914,61 @@ describe("a whole outfit fits under the subject that holds a whole outfit (#2552
     expect(readDelta({ teeth: "y".repeat(121) })).toBeNull();
   });
 });
+
+/**
+ * THE CUSTOMER'S OWN WORD FOR WHAT THE PICTURE WAS FOR (card #2713 — the
+ * relay's finding on PR #2740). "I can't take the wardrobe from a picture"
+ * named the chip's heading; nobody says that. The word must be one the
+ * customer typed AND one the reading filed for the one subject this ask wrote.
+ */
+describe("the customer's own word for the one thing filed", () => {
+  it("says the word they typed, never the heading", async () => {
+    const { theirNounForTheOneThingFiled } = await import("./refineDelta");
+    expect(theirNounForTheOneThingFiled(
+      { free: { wardrobe: "the jacket in the attached picture" } },
+      "put them in the jacket from this picture",
+    )).toBe("jacket");
+    expect(theirNounForTheOneThingFiled(
+      { free: { wardrobe: "the outfit in the attached picture" } },
+      "Give them the OUTFIT in this photo",
+    )).toBe("outfit");
+  });
+
+  it("the longest word wins — a t-shirt is not called a shirt", async () => {
+    const { theirNounForTheOneThingFiled } = await import("./refineDelta");
+    expect(theirNounForTheOneThingFiled(
+      { free: { wardrobe: "the t-shirt in the attached picture" } },
+      "copy the t-shirt from this picture",
+    )).toBe("t-shirt");
+  });
+
+  it("an open kind says its own noun when the customer typed it", async () => {
+    const { theirNounForTheOneThingFiled } = await import("./refineDelta");
+    expect(theirNounForTheOneThingFiled(
+      { open: { wings: { noun: "wings", words: "the wings in the attached picture" } } },
+      "give them the wings from this picture",
+    )).toBe("wings");
+  });
+
+  it("CONTROL — two subjects filed: it cannot know which the picture was for, so null", async () => {
+    const { theirNounForTheOneThingFiled } = await import("./refineDelta");
+    expect(theirNounForTheOneThingFiled(
+      { free: { wardrobe: "the jacket in the attached picture", lips: "a nude gloss" } },
+      "the jacket from this picture and a nude gloss on the lips",
+    )).toBeNull();
+  });
+
+  it("CONTROL — a word outside the subject's nouns is not invented, and a heading is never said", async () => {
+    const { theirNounForTheOneThingFiled } = await import("./refineDelta");
+    /* "parka" is not one of the wardrobe subject's nouns: less precise, never false. */
+    expect(theirNounForTheOneThingFiled(
+      { free: { wardrobe: "the parka in the attached picture" } },
+      "put them in the parka from this picture",
+    )).toBeNull();
+    /* A noun the reading filed but the customer never typed is not theirs. */
+    expect(theirNounForTheOneThingFiled(
+      { free: { wardrobe: "the jacket in the attached picture" } },
+      "copy what they're wearing in this picture",
+    )).toBeNull();
+  });
+});

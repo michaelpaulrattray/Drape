@@ -319,8 +319,7 @@ describe("what a paid take owes about the half it did not serve", () => {
       servedFacets: new Set(["horns"]),
     });
 
-    expect(note).toBe("Everything else you asked for was done. "
-      + "The orb isn't something I can do yet, so it was left out of this take.");
+    expect(note).toBe("The orb isn't something I can do yet, so it was left out of this take.");
   });
 
   it("⚠ AIM CONTROL — a COLLIDING key gets the vaguer sentence, never the wrong noun", () => {
@@ -337,8 +336,7 @@ describe("what a paid take owes about the half it did not serve", () => {
       servedFacets: new Set(["horns"]),
     });
 
-    expect(note).toBe("Everything else you asked for was done. "
-      + "There was one more thing in that sentence I couldn't do.");
+    expect(note).toBe("There was one more thing in that sentence I couldn't do.");
   });
 
   it("a key she did NOT type is not spoken back to her", () => {

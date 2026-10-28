@@ -296,8 +296,12 @@ export function outOfFrameMessage(what: string): string {
  * for a paid outcome would be the exact reverse of the honesty it is here for.
  */
 export function partlyOutOfFrameNote(what: string): string {
-  return `${FRAMED} ${withoutAPronoun(what)} is not in it — everything else you asked for was done, `
-    + "and that part was left out of this take.";
+  /* ⚠ "everything else you asked for was done" left this sentence with #2713:
+     it claimed a finished paint on a receipt read while the paint runs, and
+     the closing is now said once for the whole owed list (`owedSentences`,
+     `cannotSayCopy.ts`). What stays is the part that is true when the edit
+     is sent — that half was taken out of the ask before anything was paid. */
+  return `${FRAMED} ${withoutAPronoun(what)} is not in it, so that part was left out of this take.`;
 }
 
 /** The framing sentence this table is keyed to. Asserted, never assumed. */

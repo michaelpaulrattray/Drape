@@ -227,9 +227,13 @@ describe("what the photograph does not contain leaves the ask", () => {
 describe("the sentence a half-served ask is delivered with", () => {
   const said = partlyOutOfFrameNote("hips");
 
-  it("names the half that was not done, and says the rest was", () => {
+  it("names the half that was not done, and leaves the rest to the owed list's one closing", () => {
     expect(said).toContain("so the hips is not in it");
-    expect(said).toContain("everything else you asked for was done");
+    expect(said).toContain("so that part was left out of this take");
+    /* #2713: "everything else you asked for was done" claimed a finished paint
+       on a receipt read while the paint runs; the rest is now said ONCE for
+       the whole owed list (`owedSentences`). */
+    expect(said.toLowerCase()).not.toContain("everything else you asked for");
   });
 
   it("does NOT say nothing was charged, because something was", () => {

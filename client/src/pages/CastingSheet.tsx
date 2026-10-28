@@ -2383,16 +2383,18 @@ export default function CastingSheet() {
         if (result?.kind === "dispatched") {
           if (result.variantId) boughtHere.current.add(result.variantId);
           /*
-            THE DROPPED-CLAUSE CONFESSION RIDES THE RECEIPT (#2695). It is a
-            fact of the READING, not of the render: "make her hair copper in a
-            studio" filed the copper and dropped the studio before any paint
-            began, so the sentence is true now and stays true however the paint
-            ends. It is the ONE kind of note a receipt can carry, and it is
-            shown WITHOUT marking the outcome — the render's own outcome is
-            still owed, and the mark belongs to it (the paragraph above).
+            WHAT THE READING ALREADY KNOWS RIDES THE RECEIPT (#2695, #2713).
+            Each sentence on it is a fact of the READING, not of the render:
+            "make her hair copper in a studio" filed the copper and dropped the
+            studio before any paint began; a picture nothing could take from
+            was set aside before the claim. So it is true now and stays true
+            however the paint ends. Several are joined into one line by the
+            server, exactly as a delivered take's are. It is shown WITHOUT
+            marking the outcome — the render's own outcome is still owed, and
+            the mark belongs to it (the paragraph above).
           */
-          const dropped = refineOutcomeNote(result);
-          if (dropped) setRefineOutcome({ text: dropped, origin: "server", requestId });
+          const owed = refineOutcomeNote(result);
+          if (owed) setRefineOutcome({ text: owed, origin: "server", requestId });
           await variants.refetch();
           await invalidate();
           return;
