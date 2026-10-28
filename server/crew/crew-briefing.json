@@ -1,7 +1,7 @@
 {
-  "edition": 768,
-  "updatedAt": "2026-10-28T19:44:49.812Z",
-  "shift": "TWO DECISIONS WERE WRITTEN DOWN FOR YOU AND ASKED NOWHERE. THEY ARE ON YOUR\nDESK NOW. AND TWO FIXES WENT LIVE.\n\nLast night's shift found that the edit panel is see-through, wrote it up carefully with\nthree ways to fix it and a recommendation, and filed it. An hour before that, another\ncard was filed about the face reader listing Lips twice. Both were real questions for\nyou. Neither of them reached this page.\n\nI checked why, and it was the same reason both times. Your page only shows a question if\nthe card carries a small marker saying one is there, and neither card had one. Both\npeople who filed them wrote the question out properly and skipped the marker, which is\neasy to do, because the question reads perfectly well on the card itself. So the two\ndecisions sat somewhere nobody looks.\n\nBoth are below now, each with its options and what I would do. Neither needs more than a\nword from you.\n\nTHE SEE-THROUGH PANEL IS THE ONE THAT MATTERS TONIGHT, because it is the panel you are\nabout to judge for the face reader. A correct reading and a broken one look much the same\nwhen the rows are drawn over a stranger's portrait, so this one fault could make you\ndistrust a reading that is actually right. My recommendation is to keep the glass look you\napproved on 15 October and simply make the layer behind it do its job. It is one or two\nvalues, and nothing about the look you chose changes.\n\nLIPS TWICE. When the studio reads a face it draws one row for each thing it finds.\nSometimes a thing it finds is really a part it already names: it spotted a lip piercing,\ncut out the whole of the lips for it, and the panel ended up listing Lips twice. My\nrecommendation is to fold that repeat into the row we already name. A real, small piercing\nkeeps its own row either way, because its cut-out is a small patch rather than the whole\nmouth, so nothing genuine is lost.\n\nWHAT WENT LIVE TONIGHT. Your casts' descriptions no longer call anyone he or she. That was\nyour instruction on 9 October, and the one place still writing prose about a character had\ngone on doing it: on your own account it was every single case we could measure. It is\nfixed for everything written from now on. What is already stored is unchanged, and whether\nthose old paragraphs are worth rewriting is a separate question I have deliberately not\nfolded into this. The second fix is housekeeping you will never see: a page that described\na rule we had deleted now describes the rule we actually have.\n\nAND I WENT LOOKING FOR OTHERS LIKE THESE TWO. No other card has a question written down\nwith its marker missing. But I want to be straight about the limit rather than leave you\nwith a clean answer I cannot stand behind: nothing we own can find a card that asks you\nsomething in ordinary sentences with no marker at all, and that is exactly the state these\ntwo were in. A person reading the card found them, not a tool. I have written that up for\nthe team to fix properly instead of guessing at it tonight.",
+  "edition": 769,
+  "updatedAt": "2026-10-28T21:30:00.000Z",
+  "shift": "FIVE THINGS WAIT ON YOU, AND TWO HAVE BEEN WAITING SINCE LAST NIGHT.\n\nNothing new was built tonight and nothing a customer can see has changed. I spent the\nshift checking cards on the N3 list against the actual code, because several of them\ndescribed how things used to work. Two of those checks turned up something worth\ntelling you about.\n\nYOUR EYE ON THE FACE READER IS NOW ON THIS PAGE PROPERLY. The pictures from a real\nreading — your four corrections in place, light and dark — were already in your picture\ngallery, but the card itself was not asking you anything, so this page listed it as work\nin progress rather than as something waiting on your eye. It asks now, and what I would\ndo is written under it.\n\nMY RECOMMENDATION IS TO LOOK, BUT NOT TO SWITCH IT ON ANY WIDER YET. Two faults in that\nsame reader are sitting on your desk unanswered from last night: the edit panel is\nsee-through, and the reader can list Lips twice. Each needs one word from you. Answer\nthose two and the reader is ready to go wider; widening before them means shipping both\nfaults to anyone we open it to.\n\nAND I FOUND SOMETHING THE TEAM WAS ABOUT TO WALK INTO. Two cards that are waiting on\nyour eye were hours away from being handed to a builder as free work. What reserves a\ncard for someone only lasts twelve hours, and your eye is not on a twelve-hour clock —\nso once that ran out, nothing anywhere would have said those cards were yours to look\nat. Both now say so, and I checked that by running the thing that hands work out, not by\nreading the code and hoping.\n\nTHE REST WAS TIDYING AND YOU WILL SEE NONE OF IT. Three cards on the N3 list were\ndescribing roads that have since moved. One was an old promise about showing a cut-out\npicture of each piece of clothing instead of just words — that is already built, by the\nface reader work you are about to look at. One closed into the card that properly owns\nits question. The last was asking what we say when someone buys a tattoo as words only,\nand it was written when there was still a tattoo studio, which you retired. Each is now\neither closed with its receipt or says plainly what it is waiting for.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -308,6 +308,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "face-reader-eye-2566",
+      "title": "Your eye on the face reader — your four corrections are in",
+      "productImpact": "The studio can now read a character's picture and list what is actually on them, with a\ncut-out picture beside each row, instead of working from a fixed list of things it knows\nhow to ask about. That is the change you asked for when you said we cannot work from\nfixed lists in a fluid editing application.\n\nYour four corrections from your last look are in, and a real reading of a real character\nis photographed in both themes in your picture gallery. This is the last step before it\ncould go past your own account — everything else on it is done.",
+      "workedExample": "A cyberpunk character on the test account, opened the way you would open one, every row\nexpanded. There is no Build row and no Skin row — your first two corrections. There is one\nOutfit row holding the jacket, the undershirt and two separate straps. The chrome jaw\nimplant has its own row at the bottom. Each row carries a piece genuinely cut out of that\npicture, not a stand-in.",
+      "options": [
+        {
+          "key": "right",
+          "label": "It reads right — but fix the two known faults before it goes wider",
+          "consequence": "I clear the see-through panel and the Lips-twice repeat first, then it is ready for your word on opening it to other accounts."
+        },
+        {
+          "key": "wrong",
+          "label": "Something is wrong — name the row",
+          "consequence": "I fix what you name and photograph it again before anything else happens to it."
+        },
+        {
+          "key": "leave",
+          "label": "Leave it on my account for now",
+          "consequence": "Nothing changes and nobody else sees it. It stays exactly as it is until you come back to it."
+        }
+      ],
+      "recommendation": "Look at the pictures, and do not open it any wider yet. The reading itself looks right to me — the rows match what is on that character and every cut-out is real — but two faults in this same reader are already waiting on one word from you, and both of them would ship to anyone we opened it to. The see-through panel matters most, because it is the panel you judge this through: rows drawn over a stranger's face make a correct reading and a broken one look alike.",
+      "state": "open",
+      "filedAt": "2026-10-28T21:30:00.000Z",
+      "issueNumber": 2566
+    },
     {
       "id": "reference-take-court-eye-2736",
       "title": "Look at tonight photo-reference pictures and say build or stop",
