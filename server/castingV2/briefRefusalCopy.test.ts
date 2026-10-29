@@ -125,17 +125,17 @@ describe("the roll entrance's five walls each have a sentence", () => {
     */
     expect(LIKENESS_MESSAGE).toBe(
       "Casting makes people and creatures who are nobody in particular — not a named person, and not a "
-      + "character from a game, film or show. Describe the kind of face you want and we'll cast that. "
-      + "You have not been charged.",
+      + "character from a game, film or show. Describe the kind of face you want and we'll make that "
+      + "character. You have not been charged.",
     );
     expect(NOT_A_BEING_MESSAGE).toBe(
-      "This is a casting studio — it casts people and creatures, not objects, vehicles or places. "
-      + "Describe who you want in the frame and we'll cast them. You have not been charged.",
+      "Characters are people and creatures, not objects, vehicles or places. "
+      + "Describe who you want in the frame and we'll make them. You have not been charged.",
     );
     expect(READER_OUTAGE_MESSAGE).toMatch(/couldn't read your brief just now/);
     expect(READER_DOWN_MESSAGE).toBe(
       "The studio can't read briefs just now — that's something at our end, not your words. "
-      + "Nothing was cast and you have not been charged. Try again later.",
+      + "Nothing was made and you have not been charged. Try again later.",
     );
     expect(ROLL_REFUSAL_COPY.likeness).toBe(LIKENESS_MESSAGE);
     expect(ROLL_REFUSAL_COPY.not_a_being).toBe(NOT_A_BEING_MESSAGE);

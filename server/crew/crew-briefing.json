@@ -1,7 +1,7 @@
 {
-  "edition": 775,
-  "updatedAt": "2026-10-29T17:40:00.000Z",
-  "shift": "A FINISHED REPAIR THAT WAS STUCK IS NOW LIVE ON YOUR ACCOUNT. Last night's note told you a job had passed every check, needed no review, and still could not move because another job had landed on the same file first. One person had to put the two versions together. That is done, it is merged, and the site is serving it.\n\nWHAT IT CHANGES FOR YOU, in the face reader. Two things. When a character wears something on something else they are wearing — a pendant on a chain — the studio now checks the pendant against the chain it actually hangs on, instead of only against the parts of the face. And when the detector says it cannot find something your reading named, the studio asks once more about just that part of the picture rather than giving up. On your own reading, a word it found nothing for on the whole picture came back correctly when asked about the nose alone.\n\nTHE CARE IT NEEDED, because this is the kind of job that can quietly undo work. Two repairs you have already seen — one pair of tusks under one row, and a snout no longer drawn as the whole head — live in the same two pieces of code this job rewrote. Putting them together wrongly would have thrown one of them away with nothing going red. So the check was a count rather than a judgement: the three versions of the test file hold 111, 125 and 130 separate checks, and the joined one holds 144 — exactly all of them, none dropped, all passing. Everything else green too, and the live site confirmed on a fresh start rather than taken on trust.\n\nTWO MORE JOBS READ RATHER THAN BUILT, AND I TURNED ONE DOWN. A job said the studio silently loses a feature when a call to the detector drops, and that two of ten names were lost that way on one of your readings. The loss is real in principle. But the site's own records say it has never happened: across every reading this part of the studio has ever done on the live site, 80 names asked and not one dropped call. The job also said another part of the studio already asks again when a call drops, and should be copied — it does not; the code deliberately gives up on a dropped call there too. And the one place that does ask twice has asked seven times and recovered nothing. So building a retry would have made every reading slower, which is the opposite of what you asked for last week, to fix something nobody has hit. The numbers are on the job and it stays open in case it ever bites.\n\nONE THING WILL HAPPEN AGAIN. A crew member who finishes for the night cannot put their own job back on the board, and cannot tidy up a clash like tonight's either — so a finished job can sit looking like work in progress while nobody is able to pick it up. Nothing is lost when it happens; it costs a night. Changing that rule is on the process review's list, not something you need to decide.",
+  "edition": 776,
+  "updatedAt": "2026-10-29T18:55:00.000Z",
+  "shift": "THREE FINISHED JOBS WERE STUCK, AND THE REASON WAS A SENTENCE THE CREW WROTE ITSELF. All three are merged and on the live site now.\n\nLast night's note on this page ended with a warning: a crew member who finishes for the night cannot put their own job back on the board, so a finished job can sit looking like work in progress. That happened again tonight, three times over — and with a second cause worth more than the first. The night's handover said two of the three were waiting on a review. They were not. The crew has a tool that answers that exact question, and it says in one word that none of the three needed a review at all: they were ordinary jobs that merge on the automatic checks alone. Nobody was ever going to come and look at them, so they would have waited for nothing. I checked it three separate ways before trusting it, because getting this backwards in the other direction would merge something that really was waiting on a person.\n\nWHAT THE THREE CHANGE FOR YOU.\n\nFirst, in the face reader: when the studio asks about a pair — eyes, ears, brows, horns, earrings — and only finds one side, it now asks the blind side for its own half of the picture instead of asking the same whole-picture question over again. On the readings this was measured on, the missing side came back.\n\nSecond, seven more messages you can actually see stop calling your character a \"cast\", and the free picture read now says plainly that nothing was charged. Seven more lines like these are still waiting, and six of them are on screens rather than in messages, so those need a look at the real screens before they ship.\n\nThird, four measurements you had asked for, with no change to how anything behaves. Two of the four worries turned out not to be real, and saying so out loud matters: the number of things the detector finds is set by the picture, not by a ceiling we set, and asking for one hair shape versus several gives the identical answer on six different faces. The other two are real. One is that an edit to an ear wearing several earrings only gets one of them — that touches a paid edit, so it is its own job rather than something to slip in here. The other is larger than it looked: on the creature, the Lips row and the Teeth row outline nearly the same place, because that face has no lips at all and the question about lips answers with the teeth. Whether the panel should then show one row or two is your call, and it is on your desk.\n\nWHAT I DID NOT DO. I left the job that a crew member is working on right now completely alone, and I did not touch the two bigger jobs that other crew members have their names on. Nothing was generated and nothing was spent.\n\nONE THING FOR YOUR EYE IS TIDIED RATHER THAN CHANGED. The creature tusk pictures from round seven were still sitting on this page as though they were waiting for you. You already answered them — \"outfit worked good, and ears and horns\" — and the two things still wrong on that creature went forward to round eight, which is on your desk. So those pictures are marked as answered and the round-eight question is the live one.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-29T17:07:00.706Z",
+      "readAt": "2026-10-29T18:48:53.144Z",
       "items": [
         {
           "issueNumber": 30,
@@ -7706,7 +7706,7 @@
       "id": "face-reader-creature-tusks-2801",
       "title": "The first creature: one pair of tusks is now one row, not two",
       "question": "WHAT YOU ARE LOOKING AT. The same creature, the same panel, the same Teeth row tapped — before your round-7 fixes and after them. Nothing was generated for this: both sides were settled from readings already on record, so no picture was made and nothing was spent.\n\nWHAT YOU ASKED FOR. You said the tusks were split across a Teeth row and a separate Tusks row, that \"Brow ridge\" was a row you could not make sense of, and that a strap's buckle and ring were listed as accessories when they are part of the outfit.\n\nWHAT TO LOOK AT, IN ORDER.\n\n1. The picture itself. Before, tapping Teeth outlines ONE tusk. After, it outlines BOTH, labelled Teeth and Tusks.\n\n2. The right-hand panel. Before, there is a separate \"Tusks\" row sitting under \"Also on this character\". After, Teeth opens and Tusks sits inside it as its child, and the \"Also on this character\" section is gone.\n\n3. Both themes are here because the panel is yours to judge in either.\n\nWHAT THESE FRAMES CANNOT SHOW YOU, said plainly rather than left for you to find. The Brow ridge fix is real but invisible here: on the readings available, that cut already failed an earlier quality bar in BOTH arms, so the row is absent on both sides for a reason that is not the new rule. And on the reading where the buckle and ring move into the Outfit, those two were words-only, so no Buckle row exists in either picture. Both of those are proven by tests rather than by these frames — which is why the card still asks for your eye on a real creature panel in the app, not just on these two.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-29",
       "issueNumber": 2801,
       "frames": [
@@ -11086,6 +11086,27 @@
       "status": "merged",
       "prNumber": 2750,
       "note": "Merged fd5d5176. Gate 11/11 green on a tree main had not moved under (checked). Driven in the running app in both themes before it shipped, injected at the wire so no reading was bought and no row written — and the frames caught the chevron announcing \"Show each of their outfit\". Sabotage 25 of 26 red. Still owed on #2566: his eye on a real character."
+    },
+    {
+      "id": "pair-heal-crop-road-2802",
+      "title": "A half-answered pair's second look asks the blind side for its own half-picture, instead of re-asking the whole region (#2802)",
+      "status": "merged",
+      "prNumber": 2816,
+      "note": "Squash 0538d591; synced with main in a review worktree after its author seat closed, gate green, review declined, live on a 147-second uptime."
+    },
+    {
+      "id": "pair-instance-reads-2811",
+      "title": "The four instance-count readings measured on real frames: two worries do not reproduce, two do and are filed as their own jobs (#2811)",
+      "status": "merged",
+      "prNumber": 2820,
+      "note": "Squash a704b061; four reads measured, two reproduce and are filed as #2818 and #2819, no behaviour change, live on a 92-second uptime."
+    },
+    {
+      "id": "character-wording-2812",
+      "title": "Seven customer messages stop saying 'cast', and a free picture read says plainly that nothing was charged (#2812)",
+      "status": "merged",
+      "prNumber": 2822,
+      "note": "Squash 94631a0f; server copy only, gate green, review declined, live on a 13-second uptime. Its client-side sibling #2821 stays open for the relay's eye."
     }
   ],
   "problems": [
@@ -11620,7 +11641,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-29T17:07:00.705Z",
+    "readAt": "2026-10-29T18:48:53.143Z",
     "items": [
       {
         "issueNumber": 14,
