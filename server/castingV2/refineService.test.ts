@@ -17020,7 +17020,15 @@ describe("a named thing is taken out of the attached picture", () => {
     },
     mintTake: async ({ userId, thing }: { userId: number; thing: { noun: string } }) => {
       mints.push({ userId, noun: thing.noun });
-      return { key: CUT_KEY, sha: "f".repeat(64), contentType: "image/png" };
+      /* The REAL mint's own sha — of the bytes actually stored — because the
+         repaint hashes what it loads against this declaration and refuses a
+         reference whose bytes have moved. A fake sha here passed only while
+         nothing rode; the ride made the wire read it. */
+      return {
+        key: CUT_KEY,
+        sha: createHash("sha256").update(TAKEN.bytes).digest("hex"),
+        contentType: "image/png",
+      };
     },
     ...over,
   });
@@ -17067,43 +17075,23 @@ describe("a named thing is taken out of the attached picture", () => {
   });
 
   /**
-   * ⚠ THE WIRE ARM, AND IT IS DECLARED FAILING — this is the slice's blocker,
-   * written as an instrument rather than as a sentence in a report.
+   * ⚠ THE WIRE ARM — it stood declared-failing (`it.fails`) while the ride was
+   * the slice's escalated blocker, and was flipped to `it` in the commit that
+   * landed the ride, exactly as its own instruction ordered.
    *
    * It asserts the three promises the ride owes: the CUT's own bytes reach the
    * engine (not the photograph's), the sentence says what the picture IS, and
    * the scope sentence says what to do with it while keeping the rest of the
-   * outfit. **All three are built. The RIDE is not, and it cannot be built
-   * without a decision nobody has made.**
+   * outfit.
    *
-   * ⚠ **WHY, read at the code and then DRIVEN rather than inferred.** A
-   * `RecipeSource` must name a `FeatureSlot`, and the assembler refuses one
-   * whose slot no ask names (`sourceNotAsked`, correctly — a picture no sentence
-   * accounts for is a picture the painter may read as anything). **Clothing has
-   * no slot, by a decided ruling**: `FACET_SLOTS.wardrobe` is
-   * `{ notASlot: "presentation, not identity (D-136) — a follow must never
-   * inherit a costume … carried by the STORED LINE rather than by a crop" }`.
-   * Driven on the real `repaintAsksFor` with a wardrobe free delta:
-   * `asks: []`, one `presentation` clause, `askedNow.slots: []`. So the take's
-   * source is DROPPED with the loud log the branch writes, which is the branch
-   * behaving exactly as written.
-   *
-   * **Open kinds are no answer either** — `repaintAsks.ts`'s own open-kind
-   * paragraph says a crop door "is not built, and until it is an open kind is a
-   * feature carried in WORDS".
-   *
-   * So the three roads out are: give `wardrobe` a slot (overturning D-136), add
-   * a reference role that is not slot-keyed (changing the recipe's approved role
-   * vocabulary, fable-1096 §1), or carry the cut inside the wardrobe
-   * presentation clause (changing what that clause means). **Each changes what
-   * the engine is told and how, which is judgment-class work — escalated on
-   * #2736 rather than chosen here.**
-   *
-   * `it.fails` and not `it.todo`, deliberately: this arm goes RED the moment the
-   * ride lands, so the shift that builds it cannot leave the promise unasserted.
-   * Flip it to `it` in that commit.
+   * **The ride, as decided (2026-10-29, the escalated Fable shift):** clothing
+   * keeps no slot — D-136 and `FACET_SLOTS.wardrobe`'s `notASlot` are untouched
+   * — and the cut rides keyed on the wardrobe PRESENTATION CLAUSE instead
+   * (`presentationSources`, a clause-keyed `source` role). The invariant
+   * generalises rather than loosens: a picture rides only beside a sentence
+   * this render says about the thing it shows, and the clause is that sentence.
    */
-  it.fails("⚠ puts the CUT on the wire, described as what it is, with its scope beside it", async () => {
+  it("⚠ puts the CUT on the wire, described as what it is, with its scope beside it", async () => {
     await refineCandidate(road() as never, wearIt);
     expect(painted.length).toBeGreaterThan(0);
     const sent = painted[0]!;

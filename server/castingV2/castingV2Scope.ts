@@ -1211,57 +1211,22 @@ export function captureCastingReferenceTakeEnabled(userId: number): boolean {
   return captureCastingReferenceAttachEnabled(userId);
 }
 
-/**
- * ⚠ THE RIDE IS NOT BUILT, SO THIS GATE CANNOT BE OPENED — and this control is
- * a PRECEDENT rather than an invention (#2736 slice 2).
- *
- * `INK_REFERENCE_TAKE_BUILT` stood in this file for exactly this reason and in
- * exactly this shape: it refused any non-off `CASTING_INK_REFERENCE_SCOPE`
- * while nothing read a placement out of the customer's sentence, *"because an
- * opened gate with no take behind it is a tattoo rendered from words (D-137)"*.
- * Its own thrown string said to delete it in the commit that lands the take and
- * not before, and that is what happened. This is the same control pointed at
- * the other end of the same road.
- *
- * **What is built**: the cutter, the mint, the `thingOnTransparency` member, its
- * sentences, and the service branch that calls them — all driven, all dark.
- * **What is NOT built is the RIDE.** A `RecipeSource` must name a
- * `FeatureSlot`, the assembler refuses one whose slot no ask names
- * (`sourceNotAsked`), and clothing has NO slot by a decided ruling —
- * `FACET_SLOTS.wardrobe` is `notASlot`, *"presentation, not identity (D-136) —
- * a follow must never inherit a costume"*. Driven on the real `repaintAsksFor`
- * with a wardrobe free delta: `asks: []`, one presentation clause, no slots. So
- * the take's source is dropped, with the loud log the service branch writes.
- *
- * **Without this fence, flipping the flag would buy a segmenter read and a
- * stored cut on every clothing ask and then throw the cut away** — money spent
- * for a picture that reaches no engine, which is worse than the road not
- * existing. The fence is what makes the rest of this slice safe to ship before
- * the decision that unblocks it.
- *
- * ⚠ **DELETE THIS CONSTANT AND ITS CHECK IN THE COMMIT THAT LANDS THE RIDE, AND
- * NOT BEFORE.** `refineService.test.ts`'s declared-failing wire arm is the other
- * half of this instruction: it turns RED in that same commit.
- */
-const REFERENCE_TAKE_RIDE_BUILT = false;
-
+/*
+  THE RIDE FENCE STOOD HERE AND IS DELETED IN THE COMMIT THAT LANDS THE RIDE,
+  exactly as its own thrown string ordered (#2736 slice 2; the
+  `INK_REFERENCE_TAKE_BUILT` precedent, clause for clause).
+  `REFERENCE_TAKE_RIDE_BUILT = false` refused every non-off position while the
+  cut had nowhere to ride; the ride exists now — a clause-keyed `source` on the
+  wardrobe presentation clause (`PresentationSource`, `recipeAssembler.ts`),
+  the escalated decision of 2026-10-29 — so an opened gate buys a cut that
+  reaches the engine, and the fence's reason is discharged rather than loosened.
+*/
 export function validateCastingReferenceTakeEnvironment(input: {
   scope: string | undefined;
   attachScope: string | undefined;
 }): CastingV2Scope {
   const child = parseCastingReferenceTakeScope(input.scope);
   if (child.kind === "off") return child;
-
-  if (!REFERENCE_TAKE_RIDE_BUILT) {
-    throw new CastingReferenceTakeCoverageError(
-      "cannot be enabled yet — the cut is made and the RIDE is not: clothing has no reference "
-      + "slot (FACET_SLOTS.wardrobe is notASlot, D-136), the recipe refuses a source whose slot "
-      + "no ask names, and a wardrobe ask names none. Opening this gate would buy a segmenter "
-      + "read and store a cut on every clothing ask and then drop it. The decision is escalated "
-      + "on #2736; delete REFERENCE_TAKE_RIDE_BUILT in the commit that lands the ride, and not "
-      + "before",
-    );
-  }
 
   const parent = parseCastingReferenceAttachScope(input.attachScope);
   if (parent.kind === "off") {

@@ -6,21 +6,13 @@
  * seen refuse, and a validator proven only by its refusals could be one that
  * refuses everything.
  *
- * ⚠ **THE ARM CARRYING THE MOST WEIGHT IS THE RIDE-NOT-BUILT ONE, and it is the
- * only arm in this file about something other than coverage.** The cutter, the
- * mint and the service branch are built; the RIDE into the recipe is not,
- * because clothing has no reference slot (`FACET_SLOTS.wardrobe` is `notASlot`,
- * D-136) and the assembler refuses a source whose slot no ask names. Flipping
- * this flag today would buy a segmenter read and store a cut on every clothing
- * ask and then drop it — **money spent for a picture that reaches no engine.**
- * `REFERENCE_TAKE_RIDE_BUILT` is the fence, the `INK_REFERENCE_TAKE_BUILT`
- * precedent exactly, and the arm below is how anybody knows it fires.
- *
- * ⚠ **THAT ARM IS WRITTEN SO IT GOES RED WHEN THE RIDE LANDS**, not so it has to
- * be remembered: it asserts the refusal AND names the constant to delete, which
- * is the same instruction the fence's own thrown string carries and the same one
- * `refineService.test.ts`'s declared-failing wire arm carries. Three places, one
- * commit, and each of the three fails loudly if that commit forgets it.
+ * ⚠ **THE RIDE FENCE'S ARM STOOD HERE AND WENT RED EXACTLY AS DESIGNED** — the
+ * commit that landed the ride (the clause-keyed `source` on the wardrobe
+ * presentation clause, the escalated decision of 2026-10-29) deleted
+ * `REFERENCE_TAKE_RIDE_BUILT` and this suite's every-position-refused arm in
+ * one act, which is what that arm's own docblock ordered. The coverage arms
+ * below now do the work they were written for, asserting the SENTENCES their
+ * comments named in advance.
  */
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -79,59 +71,42 @@ describe("the flag's own grammar", () => {
 describe("the boot guard refuses", () => {
   const OPEN = { scope: "users:1", attachScope: "users:1" };
 
-  /**
-   * ⚠ THE FENCE, AND THE ARM THAT MUST GO RED WHEN THE RIDE LANDS.
-   *
-   * Today every non-off position is refused, whatever its coverage, because the
-   * cut has nowhere to ride. When `REFERENCE_TAKE_RIDE_BUILT` is deleted this
-   * arm fails on the first line, and the arms below it start doing the work
-   * they were written for.
-   */
-  it("⚠ refuses EVERY non-off position while the ride is not built", () => {
-    for (const scope of ["users:1", "all", "users:1,2"]) {
-      expect(() => validateCastingReferenceTakeEnvironment({ scope, attachScope: "all" }), scope)
-        .toThrow(CastingReferenceTakeCoverageError);
-      expect(() => validateCastingReferenceTakeEnvironment({ scope, attachScope: "all" }), scope)
-        .toThrow(/the cut is made and the RIDE is not/);
-    }
-    /* And it says what to delete, so the fence cannot be removed by somebody
-       who has not read why it is there. */
-    expect(() => validateCastingReferenceTakeEnvironment(OPEN))
-      .toThrow(/delete REFERENCE_TAKE_RIDE_BUILT in the commit that lands the ride/);
-  });
-
   /*
-    THE COVERAGE ARMS, WRITTEN NOW AND MEANINGFUL LATER.
-
-    They are kept rather than deferred because the chain is what the flag is FOR
-    and because a fence added later is a fence nobody drove — but while the ride
-    fence stands they can only assert the TYPE of the error, which both refusals
-    share. Each names the sentence it will assert once the ride lands, so the
-    shift that deletes the constant has the arms already written.
+    THE COVERAGE ARMS. Written before the ride landed (while the fence refused
+    every non-off position they could only assert the error's TYPE); each now
+    asserts the SENTENCE its own comment named in advance, so a refusal passing
+    for the wrong reason has nowhere to hide.
   */
   it("refuses while the attach door is shut — the picture could never arrive", () => {
-    /* Once the ride lands: `.toThrow(/CASTING_REFERENCE_ATTACH_SCOPE is off/)`. */
     expect(() => validateCastingReferenceTakeEnvironment({ ...OPEN, attachScope: undefined }))
-      .toThrow(CastingReferenceTakeCoverageError);
+      .toThrow(/CASTING_REFERENCE_ATTACH_SCOPE is off/);
     expect(() => validateCastingReferenceTakeEnvironment({ ...OPEN, attachScope: "off" }))
       .toThrow(CastingReferenceTakeCoverageError);
   });
 
   it("refuses to reach past its parent, in both of the ways a scope can", () => {
-    /* Once the ride lands: `/cannot be "all"/` and `/names users outside/`. */
     expect(() => validateCastingReferenceTakeEnvironment({ ...OPEN, scope: "all" }))
-      .toThrow(CastingReferenceTakeCoverageError);
+      .toThrow(/cannot be "all"/);
     expect(() => validateCastingReferenceTakeEnvironment({ ...OPEN, scope: "users:1,9" }))
-      .toThrow(CastingReferenceTakeCoverageError);
+      .toThrow(/names users outside/);
   });
 
   /**
-   * ⚠ THE POSITIVE CONTROL, and without it every arm above could be passing
+   * ⚠ THE POSITIVE CONTROLS, and without them every arm above could be passing
    * because the validator refuses everything it is handed.
    *
-   * `off` is the position production holds, so this is also the arm that proves
-   * the fence above cannot crash a boot that has not opted in.
+   * The covered non-off position is the arm the fence's deletion opened: until
+   * the ride landed, `users:1` under a covering parent was refused like
+   * everything else, and this is the proof the deletion changed the one thing
+   * it was meant to change.
    */
+  it("⚠ allows a covered position now the ride is built", () => {
+    expect(validateCastingReferenceTakeEnvironment(OPEN))
+      .toEqual({ kind: "users", userIds: [1] });
+    expect(validateCastingReferenceTakeEnvironment({ scope: "all", attachScope: "all" }))
+      .toEqual({ kind: "all" });
+  });
+
   it("says nothing about anything while it is off — the whole chain is skipped", () => {
     expect(validateCastingReferenceTakeEnvironment({ scope: undefined, attachScope: undefined }))
       .toEqual({ kind: "off" });

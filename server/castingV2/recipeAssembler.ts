@@ -140,7 +140,33 @@ export type ReferenceRole =
    * ask holds its `referenceId`, so the source re-rides and the failed
    * attempt's harvest never enters.
    */
-  | { kind: "source"; slot: FeatureSlot };
+  | { kind: "source"; slot: FeatureSlot }
+  /**
+   * THE SAME FOURTH ROLE, KEYED ON A PRESENTATION CLAUSE INSTEAD OF A SLOT
+   * (#2736 slice 2's ride — the escalated decision, taken 2026-10-29).
+   *
+   * A wardrobe edit has no slot BY A DECIDED RULING (D-136 through
+   * `FACET_SLOTS.wardrobe`: presentation, not identity — a follow must never
+   * inherit a costume), and that ruling is untouched here: nothing about this
+   * member files anything, mints a library row, or survives the one render it
+   * rides. What it changes is only what KEYS the picture to its sentence. The
+   * invariant generalises rather than loosens — **a picture rides only beside a
+   * sentence this render says about the thing it shows** — and a presentation
+   * clause IS such a sentence; `sourceNotSaid` refuses a clause-keyed source
+   * whose clause this render does not say, exactly as `sourceNotAsked` refuses
+   * a slot-keyed one whose slot no ask names.
+   *
+   * It is `kind: "source"` and not a fifth kind, deliberately: to every
+   * consumer whose question is *did the customer supply this picture for this
+   * edit* the answer is yes — the attachment chip filters on the spelled-once
+   * `SUPPLIED_REFERENCE_KIND`, and the fit's source branch (a picture that is
+   * not in the cast's frame rides unpadded) is exactly right for it. The
+   * alternative — a slot-keyed source wearing the clause's noun as a fake
+   * `FeatureSlot` — is fable-1096 §1's own rejected shape: a key meaning two
+   * things is how a key loses its meaning three shifts later. `"slot" in role`
+   * is the discriminator.
+   */
+  | { kind: "source"; clause: string };
 
 /**
  * Which carrier the tier boundary gives this feature (§3.0a, fable-192).
@@ -365,6 +391,16 @@ export type AssembleInput = {
    */
   sources?: readonly RecipeSource[];
   /**
+   * PICTURES THE CUSTOMER SUPPLIED FOR PRESENTATION FACTS — see
+   * {@link PresentationSource}. Keyed on a clause's noun rather than a slot,
+   * because the facts they ride with have no slot by decision (D-136).
+   *
+   * Absent is *no picture rides a clause*, which is every render before #2736's
+   * take existed and every render whose attachment became a slot source
+   * instead.
+   */
+  presentationSources?: readonly PresentationSource[];
+  /**
    * THE DESIGNS ALREADY ON HER THAT THIS RENDER IS NOT ABOUT — see
    * {@link CarriedInkDesign}.
    *
@@ -551,6 +587,27 @@ export type RecipeSource = SourceKind & {
    * take. This module splices; it does not decide what a take claims, because
    * that list lives beside the facets it is derived from.
    */
+  scope: string;
+};
+
+/**
+ * A PICTURE THE CUSTOMER SUPPLIED FOR A PRESENTATION FACT (#2736 slice 2's
+ * ride). {@link RecipeSource}'s shape with the key swapped: a slot source
+ * belongs to an ASK, this belongs to a PRESENTATION CLAUSE — the clause's own
+ * noun, exactly as the clause says it — because a presentation fact has no slot
+ * by decision (D-136) and the sentence that accounts for the picture is the
+ * clause itself.
+ *
+ * Narrowed to `thingOnTransparency`, deliberately: it is the one carrier that
+ * exists on this road today, and widening the union here is a decision about
+ * what a presentation clause may be handed, not a type annotation. `scope` is
+ * REQUIRED for {@link RecipeSource.scope}'s own reason — a crop cannot scope
+ * itself, and optional is what the defect looked like.
+ */
+export type PresentationSource = Extract<SourceKind, { pictures: "thingOnTransparency" }> & {
+  /** The presentation clause this picture rides with — the clause's own noun. */
+  clause: string;
+  image: ReferenceImage;
   scope: string;
 };
 
@@ -781,6 +838,19 @@ type RecipeRefusal = {
      * D-181 exists to prevent — one layer too late to say anything about it.
      */
     | "sourceNotAsked"
+    /**
+     * A PRESENTATION SOURCE WHOSE CLAUSE THIS RENDER DOES NOT SAY — the exact
+     * mirror of `sourceNotAsked`, one lane over (#2736 slice 2's ride).
+     *
+     * A clause-keyed picture is accounted for by a presentation clause the way
+     * a slot-keyed one is accounted for by an ask, and the refusal exists for
+     * the same reason: a reference no sentence accounts for is a picture the
+     * painter may read as anything. Refused rather than dropped, because this
+     * is the last door before an engine sees bytes; the caller that can afford
+     * to drop (a dropped take renders from words, no worse than the road not
+     * existing) drops BEFORE assembly and says so loudly.
+     */
+    | "sourceNotSaid"
     /**
      * AN INK DESIGN WHOSE BYTES NOBODY HAS LOOKED AT (ruled fable-1137 §4).
      *
@@ -1614,6 +1684,25 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
       };
     }
   }
+  /*
+    A CLAUSE-KEYED SOURCE BELONGS TO A PRESENTATION CLAUSE, and the clause list
+    is what says so — `sourceNotAsked`'s own check, one lane over (#2736 slice
+    2's ride). Deduped by clause through the Map exactly as `sourceOf` dedupes
+    by slot, so at most one picture rides per clause by construction; the
+    `claimed` fence is not consulted because it is a fence about SLOTS and a
+    presentation fact has none (D-136).
+  */
+  const presentationSourceOf = new Map(
+    input.presentationSources?.map((source) => [source.clause, source]) ?? [],
+  );
+  for (const source of Array.from(presentationSourceOf.values())) {
+    if (!(input.presentation ?? []).some((clause) => clause.noun.trim() === source.clause)) {
+      return {
+        ok: false, reason: "sourceNotSaid", slot: null,
+        detail: `a picture was attached for ${source.clause}, which this render's presentation clauses say nothing about`,
+      };
+    }
+  }
   const pronouns = input.pronouns;
   const possessive = pronouns.possessive;
   const has = pronouns.plural ? "have" : "has";
@@ -1827,6 +1916,30 @@ export function assembleRecipe(input: AssembleInput): AssembleResult {
     references.push({
       role: { kind: "anchor", slot: ask.slot },
       image: entry.anchor,
+      sentence: sentences[sentences.length - 1]!,
+    });
+  }
+
+  /* ---- a picture riding a PRESENTATION clause (#2736 slice 2's ride) ---- */
+
+  /*
+    With the EDITED material and before the carries, because that is what it is:
+    the thing this render is changing, in pixels. The sentence is the slot
+    source's own two-part form — what the picture IS (`sourceSentence`'s
+    `thingOnTransparency` case, with the customer's own noun), then what it may
+    give them (the required `scope`, composed by the take's owner) — and the
+    clause's own words still ride the "Change only …" sentence untouched, so
+    the picture and the words are one instruction said in two registers, never
+    two authors.
+  */
+  for (const source of Array.from(presentationSourceOf.values())) {
+    const ordinal = nextOrdinal();
+    sentences.push(
+      `${sourceSentence(ordinal, source, pronouns, source.noun)} ${source.scope}`.trim(),
+    );
+    references.push({
+      role: { kind: "source", clause: source.clause },
+      image: source.image,
       sentence: sentences[sentences.length - 1]!,
     });
   }

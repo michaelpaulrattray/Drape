@@ -109,6 +109,7 @@ import {
   FREE_SUBJECT_KEYS,
   FREE_SUBJECTS,
   isDepartableSubject,
+  presentationNounOf,
   type FreeSubject,
 } from "./refineSubjects";
 import { readResolvedIdentity } from "./rollService";
@@ -7930,46 +7931,53 @@ async function refineCandidateCounted(
           })()
           : {}),
         /*
-          AND THE NAMED THING CUT OUT OF THE PICTURE (#2736 slice 2).
+          AND THE NAMED THING CUT OUT OF THE PICTURE (#2736 slice 2 — the RIDE,
+          the escalated decision taken 2026-10-29).
 
-          The ink and hair sources' shape, clause for clause, and the slot comes
-          off the ASK LIST for their identical reason: the assembler refuses a
-          source naming a slot no ask names, and that refusal throws into the
-          refund. Here the agreement is structural — the pre-claim road only
-          minted a take because the delta filed the WARDROBE facet, and that is
-          the same facet this lookup reads the slot from.
+          Clothing has no slot by a decided ruling (D-136 through
+          `FACET_SLOTS.wardrobe`), so the cut rides keyed on the PRESENTATION
+          CLAUSE instead of on an ask: `presentationSources`, the slot sources'
+          shape with the key swapped. The clause noun comes off the ASK MODULE'S
+          OWN OUTPUT (`asks.presentation`) rather than being derived a second
+          time, for the identical reason the hair and ink splices take their
+          slots off the ask list: the assembler refuses a clause-keyed source
+          whose clause this render does not say (`sourceNotSaid`), and that
+          refusal throws into the refund. The agreement is structural — the
+          pre-claim road only minted a take because the delta filed the
+          WARDROBE facet, and the presentation loop writes a wardrobe clause
+          from that same facet.
 
-          ⚠ **IT SITS LAST AND THAT IS SAFE BECAUSE IT IS EXCLUSIVE, NOT BECAUSE
-          IT IS LAST.** These are object spreads of one `sources` key, so a
-          second non-empty one would silently overwrite the first. `takeSource`
-          is non-null only where `hairSource` and `inkSource` are both null (the
-          take road's own condition, written out at the branch), so at most one
-          of the three spreads ever carries a key. A fourth road added here must
-          either prove the same exclusivity or build one array — and if it does
-          neither, the picture that loses is silent.
+          ⚠ **ITS OWN KEY, so the exclusivity note on the three `sources`
+          spreads above does not carry it** — `presentationSources` cannot
+          overwrite `sources` or be overwritten by it. The take road's own
+          condition (non-null only where `hairSource` and `inkSource` are both
+          null) still holds and is still written out at the branch.
 
           IT DROPS RATHER THAN REFUSING, like the hair carrier and unlike the
           transform: a dropped take renders the outfit from the customer's own
-          words, which is exactly what today's road does and is no worse than
-          the state before this slice. A loud log, because two derivations
-          disagreeing is a defect of ours.
+          words, which is exactly what the road before this slice did and is no
+          worse than it. A loud log, because two derivations disagreeing is a
+          defect of ours.
         */
         ...(takeSource
           ? (() => {
-            const wardrobeSlot = slotsForFacet(facetOfSubject("wardrobe"))[0]?.slot ?? null;
-            const slot = asks.asks
-              .map((ask) => ask.slot)
-              .find((candidate) => candidate === wardrobeSlot);
-            if (slot === undefined) {
+            const wardrobeNoun = presentationNounOf("wardrobe");
+            const clause = (asks.presentation ?? [])
+              .find((one) => wardrobeNoun !== null && one.noun.trim() === wardrobeNoun);
+            if (clause === undefined) {
               log.error(
-                { operationId, variant: variant.publicId, slots: asks.asks.map((ask) => ask.slot) },
-                "[refineService] a thing was taken for an ask whose recipe names no wardrobe slot — dropping it rather than sending a reference nothing says anything about",
+                {
+                  operationId,
+                  variant: variant.publicId,
+                  presentation: (asks.presentation ?? []).map((one) => one.noun),
+                },
+                "[refineService] a thing was taken for an ask whose recipe says no wardrobe clause — dropping it rather than sending a reference nothing says anything about",
               );
               return {};
             }
             return {
-              sources: [{
-                slot,
+              presentationSources: [{
+                clause: clause.noun,
                 image: { key: takeSource.key, sha: takeSource.sha },
                 pictures: "thingOnTransparency" as const,
                 /* The customer's own word for what was cut — carried on the
@@ -8102,7 +8110,13 @@ async function refineCandidateCounted(
             */
             sentGeometry: sent.geometry[at] ?? null,
             kind: role?.kind ?? null,
-            slot: role && role.kind !== "master" ? role.slot : null,
+            /* The record's `slot` string answers *which feature was this
+               picture for*. A clause-keyed source (#2736's ride) has no slot
+               by D-136, so the clause's own noun is the truthful answer — a
+               projection string for a reader, never a key anything resolves. */
+            slot: role && role.kind !== "master"
+              ? ("slot" in role ? role.slot : role.clause)
+              : null,
           };
         }),
         edited: recipe.edited,
@@ -8200,7 +8214,12 @@ async function refineCandidateCounted(
             nothing for it to pass through the same measurement, and a condition
             written as "ink source, except that one" is the second list.
           */
-          if (role.kind === "source" && !isInkSlot(role.slot)) return unpadded();
+          /* A clause-keyed source (#2736's ride) has no slot to even ask the
+             ink question about: it is a customer-supplied picture not in the
+             cast's frame, which is exactly the case this branch decides. */
+          if (role.kind === "source" && (!("slot" in role) || !isInkSlot(role.slot))) {
+            return unpadded();
+          }
           /*
             AND AN INK CARRY GOES OUT BIG ENOUGH TO BE READ (opus-941 §5,
             granted fable-1280 §1).
@@ -8221,7 +8240,7 @@ async function refineCandidateCounted(
             fits AFTER it takes that digest, by contract), and it dies with
             the request.
           */
-          if ((role.kind === "carry" || role.kind === "source") && isInkSlot(role.slot)) {
+          if ((role.kind === "carry" || role.kind === "source") && "slot" in role && isInkSlot(role.slot)) {
             return await inkCarryAtFloor({
               bytes: reference.bytes,
               contentType: reference.contentType,
