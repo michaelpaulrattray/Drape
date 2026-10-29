@@ -14475,6 +14475,10 @@
       "path": "server/castingV2/diagnosticCapture.test.ts"
     },
     {
+      "id": "test:server/castingV2/earWornPair.test.ts",
+      "path": "server/castingV2/earWornPair.test.ts"
+    },
+    {
       "id": "test:server/castingV2/eyeShapeRouting.test.ts",
       "path": "server/castingV2/eyeShapeRouting.test.ts"
     },
@@ -29678,6 +29682,11 @@
     },
     {
       "from": "module:server/castingV2/faceScan.ts",
+      "to": "module:server/castingV2/accessoryKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/faceScan.ts",
       "to": "module:server/castingV2/bornWornDetector.ts",
       "kind": "imports"
     },
@@ -31248,12 +31257,22 @@
     },
     {
       "from": "module:server/castingV2/pointerCut.ts",
+      "to": "module:server/castingV2/accessoryKinds.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/pointerCut.ts",
       "to": "module:server/castingV2/faceDiscovery.ts",
       "kind": "imports"
     },
     {
       "from": "module:server/castingV2/pointerCut.ts",
       "to": "module:server/castingV2/facePanel.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/pointerCut.ts",
+      "to": "module:server/castingV2/faceScan.ts",
       "kind": "imports"
     },
     {

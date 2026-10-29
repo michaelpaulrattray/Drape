@@ -97,6 +97,8 @@
  * is the property slice 1 was held on twice and it is the one to protect.
  */
 import { boundsOf } from "./segmentCuts";
+import { accessoryEntry } from "./accessoryKinds";
+import { scanPlan } from "./faceScan";
 import { catalogueSlots } from "./referenceSlotCatalogue";
 import { createModuleLogger } from "../logging/logger";
 import type { DiscoveredFeature, FeatureKind } from "./faceDiscovery";
@@ -244,7 +246,20 @@ export type NamedNotCut = {
  */
 function catalogueVocabulary(): ReadonlySet<string> {
   const words = new Set<string>();
+  const asked = scanAskedSlots();
   for (const definition of catalogueSlots()) {
+    /*
+      ⚠ AN ACCESSORY THE SCAN DOES NOT ASK IS NOT COVERED (#2781).
+
+      The catalogue holds a slot for every worn kind, and the scan asks only
+      the ones whose court has passed (`scanPlan`, `armedBornWornClasses`) —
+      so `nose stud` has a question and nobody sends it. Counted as covered, a
+      reading that said "nose stud" took the catalogue road, the scan never
+      bought it, and the pointer road never cut it: a visible piercing with no
+      road at all. The header's own sentence is the test — *the scan is already
+      buying a question for it* — and for an unasked accessory it is false.
+    */
+    if (definition.group === "accessories" && !asked.has(definition.slot)) continue;
     for (const word of [
       definition.question,
       definition.display,
@@ -291,6 +306,47 @@ export function normalisedName(name: string): string {
  */
 export function coveredByCatalogue(name: string): boolean {
   return catalogueVocabulary().has(normalisedName(name));
+}
+
+/** Every slot the scan actually asks a question for — read off `scanPlan`, the
+ *  one place that decides it, never re-derived from the arming rule here. */
+function scanAskedSlots(): ReadonlySet<string> {
+  return new Set(scanPlan().flatMap((entry) => entry.slots.map((slot) => slot.slot)));
+}
+
+/**
+ * THE PRODUCT'S OWN WORD FOR A WORN THING THE DETECTOR COULD NOT PLACE (#2781),
+ * or `null`.
+ *
+ * His cast's septum ring was named `septum ring` by the reading on 4 of 4
+ * reads, and the detector answered NO box for it on every one — nor for
+ * `septum` or `septum piercing` — while `nose stud`, `nose ring` and
+ * `nose piercing` each boxed the ring (measured on his screenshot crop). The
+ * reading's word was right; the detector does not know it.
+ *
+ * The accessory table already knows it: `septum` is one of the nose piercing's
+ * own words (#2612), so the kind is `nose stud`, and that is the word the
+ * product asks about that kind in. So when the detector declines a found
+ * ACCESSORY the table recognises, it is asked once more in the table's word,
+ * and the row still carries the reading's own noun.
+ *
+ * Two refusals, each for a reason:
+ *
+ *   **a kind the scan already asks** (an earring, glasses) — the catalogue reads
+ *   that kind itself, so a found duplicate cut here would be the same thing
+ *   twice on the panel (#2757's class);
+ *   **anything that is not an accessory** — `nostril` is a nose-piercing word,
+ *   and an anatomy find called "nostril" re-asked as "nose stud" would put the
+ *   nostril's row on a stud.
+ */
+export function productWordFor(feature: { name: string; kind: FeatureKind }): string | null {
+  if (feature.kind !== "accessory") return null;
+  const kind = accessoryEntry(feature.name);
+  if (kind === null) return null;
+  if (normalisedName(kind.region) === normalisedName(feature.name)) return null;
+  const asked = new Set(scanPlan().map((entry) => entry.question));
+  if (asked.has(kind.region)) return null;
+  return kind.region;
 }
 
 /**
@@ -714,6 +770,8 @@ export async function cutDiscovered(input: {
   const regions: DiscoveredRegion[] = [];
   const declined: string[] = [];
   const failed: string[] = [];
+  /* Every found noun the detector placed only in the product's own word. */
+  const askedAs: { noun: string; as: string }[] = [];
   let asked = 0;
 
   /* Known without asking anybody: no outline to cut, or makeup. Gathered before
@@ -764,6 +822,17 @@ export async function cutDiscovered(input: {
         name: feature.name,
         imageUrl: input.frame.url,
       });
+      /* Declined in the reading's word — once more in the product's, for a
+         worn thing the accessory table knows (see `productWordFor`). */
+      const product = boxes.length === 0 ? productWordFor(feature) : null;
+      if (product !== null) {
+        boxes = await pointer.call(input.reader, {
+          image: input.frame.bytes,
+          name: product,
+          imageUrl: input.frame.url,
+        });
+        if (boxes.length > 0) askedAs.push({ noun: feature.name, as: product });
+      }
     } catch (error) {
       /* A transport failure is NOT an absence — see `RegionReader.pointer`. It
          costs this one row and nothing else. */
@@ -943,6 +1012,9 @@ export async function cutDiscovered(input: {
       },
       declinedNouns: declined,
       failedNouns: failed,
+      /* Placed only when asked in the accessory table's word (#2781) — both
+         words are nouns, the reading's and the product's. */
+      askedAs,
       /* What the place rules decided, so a merged or moved row can be traced to
          the pixels that decided it rather than looking like a lost one. */
       samePlace: settled.samePlace,

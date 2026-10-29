@@ -501,6 +501,161 @@ function centroidX(mask: Mask): number | null {
 }
 
 /**
+ * THE FACE ACROSS — its midline and its two sides, from the one face read the
+ * pairs already make (#2781). Same pixel space as {@link centroidX}, because it
+ * is the same mask: the axis the frame is cut on and the sides an ear sits at
+ * cannot disagree about where the face is.
+ */
+type FaceSpan = { axis: number; left: number; right: number };
+
+function spanOf(mask: Mask): FaceSpan | null {
+  const axis = centroidX(mask);
+  if (axis === null) return null;
+  let left = mask.width;
+  let right = -1;
+  for (let y = 0; y < mask.height; y += 1) {
+    const row = y * mask.width;
+    for (let x = 0; x < mask.width; x += 1) {
+      if (mask.data[row + x] === 0) continue;
+      if (x < left) left = x;
+      if (x > right) right = x;
+    }
+  }
+  return { axis, left, right };
+}
+
+/** One connected piece of a side's answer that was not kept, for the log. */
+export type DroppedPiece = { pixels: number; centreX: number };
+
+/**
+ * ONLY THE PIECES THAT ARE WHERE AN EAR IS — one side of an ear-worn pair
+ * (#2781, his eye round 3: *"the earring boxes are massive?"*).
+ *
+ * # What his panel showed, and what the segmenter actually answered
+ *
+ * Asked `earring` of his cast, SAM 3 answered THREE masks at the same score
+ * (0.58, 0.54, 0.54): a hoop on each ear, and **the septum ring**. A ring on
+ * the face's midline is cut in two by the split every pair is read through,
+ * and each half joins its side's real earring — so each side's rectangle ran
+ * from the ear to the nose and the two met above the ring. Read on his
+ * screenshot crop through this reader's own road (pair road: her right side
+ * x240–362 against his panel's 241–369, the same rectangle), and on the crop
+ * road it is worse: each half-frame answered the ring's half and NOT the ear.
+ *
+ * # The rule, and why it is not a tuned number
+ *
+ * An earring hangs from an ear, and an ear is at the SIDE of the face. So a
+ * connected piece of one side's answer is kept when its centre is at least as
+ * near that side of the face as it is to the face's midline, and dropped when
+ * it is nearer the middle. "Nearer" is the whole rule — the halfway point
+ * between two places the face read already gives — and the measurement says
+ * how far the real pieces sit from it:
+ *
+ *     his cast    hoops       |side| 8 and 12 px against |middle| 124 and 141
+ *                 septum ring |middle| 13 against |side| 103
+ *     cast 2456   two dangles and a stud on one ear: |side| 33–51 against
+ *                 |middle| 140–154 — all three kept, the stud and the dangle
+ *                 on one ear staying TWO (#2565 §6)
+ *     cast 2472   the ears themselves: |side| 39–42 against |middle| 138–142
+ *
+ * ⚠ **Why not "the part inside the face mask"**: on cast 2472 SAM 3's `face`
+ * mask holds 92–93% of each EAR, so a rule keyed on the mask's inside would
+ * have thrown away every earring on a face whose read includes its ears. The
+ * mask's EXTENT is the robust half of it.
+ *
+ * ⚠ **What it cannot judge, declared**: a face read that came back as one
+ * fragment on one side gives that side an edge AT the midline, and then every
+ * piece there is nearer its side — so the rule falls open to today's answer
+ * rather than taking a real earring off the panel. And a thing worn near the
+ * ear that is not an earring (a cheek stud by the tragus) is not this rule's
+ * to catch.
+ *
+ * Returns the same mask object when nothing was dropped, and `null` for
+ * `kept` when nothing is left — the reading's own "this side holds nothing".
+ */
+export function keepPiecesAtTheSide(
+  mask: Mask,
+  side: "imageLeft" | "imageRight",
+  face: { midline: number; left: number; right: number },
+): { kept: Mask | null; dropped: DroppedPiece[] } {
+  const { width, height, data } = mask;
+  /* Labelled inside the mask's own bounds only: a side's answer is a few
+     small pieces on a frame of millions of pixels, and a label buffer the size
+     of the frame is tens of megabytes for nothing. */
+  let x0 = width;
+  let y0 = height;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = 0; y < height; y += 1) {
+    const row = y * width;
+    for (let x = 0; x < width; x += 1) {
+      if (data[row + x] === 0) continue;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+  }
+  if (x1 < 0) return { kept: null, dropped: [] };
+  const boxWidth = x1 - x0 + 1;
+  const boxHeight = y1 - y0 + 1;
+  const label = new Uint32Array(boxWidth * boxHeight);
+  const pieces: { pixels: number; sumX: number }[] = [];
+  const stack: number[] = [];
+  for (let by = 0; by < boxHeight; by += 1) {
+    for (let bx = 0; bx < boxWidth; bx += 1) {
+      const at = by * boxWidth + bx;
+      if (label[at] !== 0 || data[(by + y0) * width + bx + x0] === 0) continue;
+      const id = pieces.length + 1;
+      let pixels = 0;
+      let sumX = 0;
+      label[at] = id;
+      stack.push(at);
+      while (stack.length > 0) {
+        const p = stack.pop() as number;
+        const px = p % boxWidth;
+        const py = (p - px) / boxWidth;
+        pixels += 1;
+        sumX += px + x0;
+        for (let dy = -1; dy <= 1; dy += 1) {
+          for (let dx = -1; dx <= 1; dx += 1) {
+            const nx = px + dx;
+            const ny = py + dy;
+            if (nx < 0 || ny < 0 || nx >= boxWidth || ny >= boxHeight) continue;
+            const q = ny * boxWidth + nx;
+            if (label[q] !== 0 || data[(ny + y0) * width + nx + x0] === 0) continue;
+            label[q] = id;
+            stack.push(q);
+          }
+        }
+      }
+      pieces.push({ pixels, sumX });
+    }
+  }
+  const edge = side === "imageLeft" ? face.left : face.right;
+  const drop = pieces.map(({ pixels, sumX }) => {
+    const centreX = sumX / pixels;
+    /* A tie is kept: the answer that cannot take a real earring away. */
+    return Math.abs(centreX - face.midline) < Math.abs(centreX - edge);
+  });
+  if (!drop.some(Boolean)) return { kept: mask, dropped: [] };
+  const out = Buffer.from(data);
+  let left = 0;
+  for (let by = 0; by < boxHeight; by += 1) {
+    for (let bx = 0; bx < boxWidth; bx += 1) {
+      const id = label[by * boxWidth + bx]!;
+      if (id === 0) continue;
+      if (drop[id - 1]) out[(by + y0) * width + bx + x0] = 0;
+      else left += 1;
+    }
+  }
+  const dropped = pieces
+    .filter((_, at) => drop[at])
+    .map(({ pixels, sumX }) => ({ pixels, centreX: Math.round(sumX / pixels) }));
+  return { kept: left === 0 ? null : { data: out, width, height }, dropped };
+}
+
+/**
  * A HALF-FRAME MASK BACK INTO THE WHOLE FRAME'S COORDINATES.
  *
  * The caller asked about one picture and must be answered in that picture's
@@ -957,6 +1112,28 @@ export function createFalRegionReader(input: {
    * genuinely different picture is a different object, so a stale axis cannot
    * cross frames. The cost of a miss is one face read, which is today's price.
    */
+  /**
+   * THE FACE ACROSS, once per picture — the read `axisOf` turns into a midline
+   * and an ear-worn pair turns into the face's two sides (#2781).
+   *
+   * One promise per buffer for `axes`' own reason (parallel askers join one
+   * read), and the request under it is the `SHARED_PROMPT` memo's, so holding
+   * the span costs no call: the axis was always this mask's centroid, and the
+   * span is the same mask's extent.
+   */
+  const faces = new Map<Buffer, Promise<FaceSpan | null>>();
+  const faceOf = (image: Buffer, imageUrl?: string): Promise<FaceSpan | null> => {
+    const held = faces.get(image);
+    if (held) return held;
+    const asked = (async () => {
+      const face = await askRegion(image, SHARED_PROMPT, "all", imageUrl);
+      return face ? spanOf(face) : null;
+    })();
+    faces.set(image, asked);
+    asked.catch(() => faces.delete(image));
+    return asked;
+  };
+
   const axes = new Map<Buffer, Promise<number | null>>();
   const axisOf = (image: Buffer, imageUrl?: string, axisKey?: string): Promise<number | null> => {
     /*
@@ -977,10 +1154,7 @@ export function createFalRegionReader(input: {
     if (shared) return shared;
     const held = axes.get(image);
     if (held) return held;
-    const asked = (async () => {
-      const face = await askRegion(image, "face", "all", imageUrl);
-      return face ? centroidX(face) : null;
-    })();
+    const asked = faceOf(image, imageUrl).then((span) => span?.axis ?? null);
     axes.set(image, asked);
     if (axisKey !== undefined) rememberAxis(axisKey, asked);
     /* A failed read is not remembered: the next pair asks again rather than
@@ -1013,9 +1187,58 @@ export function createFalRegionReader(input: {
        across callers, so one deadline would abort a read another caller is
        awaiting. The shared-read rule, same as `addressIfIdentical`. */
     callSignal?: AbortSignal,
+    /** Keep only the pieces where an ear is — `regionSides`' `onTheEars`. */
+    onTheEars = false,
   ): Promise<{
     atImageLeft: Mask | null;
     atImageRight: Mask | null;
+  } | null> => {
+    const halves = await readHalves(image, name, imageUrl, axisKey, callSignal);
+    if (halves === null) return null;
+    if (!onTheEars) return halves.split;
+    /*
+      AN EAR IS AT THE SIDE OF THE FACE (#2781) — applied to BOTH roads,
+      because both take a thing on the midline into a side: the pair road cuts
+      it in half, and the crop road hands each half-frame its half of it. See
+      `keepPiecesAtTheSide` for the measurement.
+
+      The face read here is the one the midline came from (`faceOf` is the memo
+      `axisOf` reads), so it costs no request. With no face, there is no side
+      to judge by and the answer is today's.
+    */
+    const span = await faceOf(image, imageUrl);
+    if (span === null) return halves.split;
+    const face = { midline: halves.midline, left: span.left, right: span.right };
+    const left = halves.split.atImageLeft === null
+      ? { kept: null, dropped: [] }
+      : keepPiecesAtTheSide(halves.split.atImageLeft, "imageLeft", face);
+    const right = halves.split.atImageRight === null
+      ? { kept: null, dropped: [] }
+      : keepPiecesAtTheSide(halves.split.atImageRight, "imageRight", face);
+    if (left.dropped.length > 0 || right.dropped.length > 0) {
+      /* Numbers only — where the dropped pieces were and how big. Never a
+         word of the reading. */
+      log.info(
+        {
+          name,
+          midline: face.midline,
+          faceSides: [face.left, face.right],
+          droppedAtImageLeft: left.dropped,
+          droppedAtImageRight: right.dropped,
+        },
+        "[falRegionReader] an ear-worn pair answered something nearer the middle of the face — not that side's",
+      );
+    }
+    return { atImageLeft: left.kept, atImageRight: right.kept };
+  };
+
+  /** The two halves as read, and the midline they were cut at. */
+  const readHalves = async (
+    image: Buffer, name: string, imageUrl: string | undefined, axisKey: string | undefined,
+    callSignal: AbortSignal | undefined,
+  ): Promise<{
+    split: { atImageLeft: Mask | null; atImageRight: Mask | null };
+    midline: number;
   } | null> => {
     const sharp = (await import("sharp")).default;
     const meta = await sharp(image).metadata();
@@ -1070,7 +1293,7 @@ export function createFalRegionReader(input: {
         },
         "[falRegionReader] bilateral read, one request for both sides",
       );
-      return split;
+      return { split, midline };
     }
 
     const crops = [{ left: 0, width: midline }, { left: midline, width: width - midline }] as const;
@@ -1093,7 +1316,7 @@ export function createFalRegionReader(input: {
       },
       "[falRegionReader] bilateral read, one side to a picture",
     );
-    return { atImageLeft: sides[0], atImageRight: sides[1] };
+    return { split: { atImageLeft: sides[0], atImageRight: sides[1] }, midline };
   };
 
   /**
@@ -1238,7 +1461,7 @@ export function createFalRegionReader(input: {
      * the same assumption the tilt reader has always made, and it is the reason
      * the mapping lives in one function instead of at four call sites.
      */
-    async regionSides({ image, name, absentIsAnswer, imageUrl, axisKey, declaredTwoSided }): Promise<SideRegions | null> {
+    async regionSides({ image, name, absentIsAnswer, imageUrl, axisKey, declaredTwoSided, onTheEars }): Promise<SideRegions | null> {
       assertPicture(image, name);
       /*
         THE CLOSED LIST IS THIS READER'S OWN KNOWLEDGE, AND IT IS NOT THE ONLY
@@ -1261,7 +1484,7 @@ export function createFalRegionReader(input: {
          `regionSides` has one consumer, the masked refine, and a refine has no
          deadline to cancel on. Widening the interface for a signal nobody
          passes is a control that is not invoked. */
-      const halves = await bilateralHalves(image, name, imageUrl, axisKey);
+      const halves = await bilateralHalves(image, name, imageUrl, axisKey, undefined, onTheEars === true);
       if (halves === null) return null;
 
       if (halves.atImageLeft === null && halves.atImageRight === null) {
