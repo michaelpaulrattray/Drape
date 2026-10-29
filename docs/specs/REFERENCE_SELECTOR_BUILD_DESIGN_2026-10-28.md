@@ -150,14 +150,37 @@ is what happens after the picture lands.
 
 ## 4 · THE ENGINE ROAD — mostly built, read at the code
 
+⚠ **THE STATE COLUMN DECAYED IN ONE DAY, AND TWO ROWS ARE CORRECTED HERE
+(2026-10-30, #2827, re-read at `origin/main` `294cfe97a`).** The design is
+right as of its own date — the header says every claim was read on 2026-10-28,
+and #2565 slice 2 and #2736 slice 2 both landed on the 29th. **Why it was worth
+a card rather than a shrug: both corrected rows said UNBUILT of something that
+is live, and a slice-4 builder reading them would have built a second copy of
+each — the one thing §5 and #2736 both forbid.**
+
+**The other six rows were re-read at that same commit and all six hold**:
+attach `users:1`; boxing (#2692) and tap→cut (#2566 slice 2) built;
+`casting_reference_crops` still a table and a purge path with **no writer of
+any kind** — every `castingReferenceCrops` reference under `server/` outside
+tests is a select, a delete, a purge count or a deletion disposition, and not
+one is an insert; and the single
+`referenceId` wire live with the chosen-cuts field still this build's. **Row 2
+is the next one to move** — the reference reading variant was still unbuilt at
+that commit, and it is PR #2826, open while this was read.
+
+⚠ **What the corrections do NOT touch is any obligation.** Every struck
+sentence was a claim about STATE; the instruction each one carried — consume
+that road, never write a second one — is kept verbatim beside the correction,
+because that half was never stale.
+
 | step | what runs | state |
 |---|---|---|
 | attach | `referenceAttachDoor.ts` → `casting_reference_attachments` | **LIVE**, `users:1` |
 | read the picture | the discovery shape (`faceDiscovery.ts`), pointed at the REFERENCE | **BUILT for casts** (#2566); the reference variant is this build's |
 | box each found thing | `pointer` (detect) — `falRegionReader.ts:1319` | **BUILT** (#2692) |
 | tap → cut | detect-box → `regionInBox` (SAM 3, one box prompt) — `pointerCut.ts`, `falRegionReader.ts:1375` | **BUILT and measured** (#2566 slice 2, #2532 bench — one box per call, the cap rule) |
-| clean the cut, refuse a broken one | gaps closed, feather outside only, holes = words instead | **UNBUILT** — it is #2565 slice 2's, and `pointerCut.ts`'s own docblock says so; this build consumes it, never writes a second one |
-| person-free bytes | Q4's face subtraction — subtract `face`, zero the pixels | **ruled, unbuilt** (the hair cutter's `cutOutPixels` lesson is the shape) |
+| clean the cut, refuse a broken one | gaps closed, feather outside only, holes = words instead | ⚠ **BUILT 2026-10-29** (#2565 slice 2) — ~~"**UNBUILT** — it is #2565 slice 2's, and `pointerCut.ts`'s own docblock says so"~~. `cutQuality.ts`'s `judgeCut` and `cleanCut`, judged raw then cleaned (widening raises fill, so the other order loosens the bar silently); `CUT_FILL_FLOOR` 20%, measured — correct cuts 42.3–73.5%, the known-bad 8.3%. `pointerCut.ts`'s header now carries the struck sentence itself. **The instruction is unchanged and is the half worth keeping: this build CONSUMES it and never writes a second one** |
+| person-free bytes | Q4's face subtraction — subtract `face`, zero the pixels | ⚠ **BUILT 2026-10-29** (#2736 slice 2) — ~~"**ruled, unbuilt** (the hair cutter's `cutOutPixels` lesson is the shape)"~~. `subtractFaces` in `referenceTake.ts` zeroes the mask inside every detected face box and `cutOutPixels` writes `0,0,0,0` below threshold, so the BYTES are person-free and not merely the alpha — which is exactly the `cutOutPixels` lesson the struck note named as the shape. The detector's question is `TAKE_FACE_NOUN`, one call bought only once there is a cut worth keeping, and the count rides out on `facesRemoved`. **Consumed here, never written a second time** |
 | mint the row | `casting_reference_crops` first-ever write, keeper-receipt order | table + purge path **exist**, writer is this build's |
 | the ask carries it | `referenceId` + chosen-cut ids on the refine input | the single-`referenceId` wire is **LIVE**; the chosen-cuts field is this build's |
 | the edit renders | the repaint road (every paid refine since #1577 4b), cuts as references | **#2736's design owns how a cut rides the repaint** — see §5 |
@@ -317,10 +340,17 @@ reads this document and the mock verdict first):
    `casting_reference_crops` mint, nouns + cuts on the interpreter call, the
    landed edit's re-cut-from-the-cast (#2565's rule). Hair, jewellery,
    tattoos and every named non-garment thing work end to end here.
-   ⚠ **Depends on #2565 slice 2's clean-and-refuse pipeline** (unbuilt at
-   the time of writing, per `pointerCut.ts`'s own docblock) — a cut with
-   holes or broken edges is not used and the edit rides on words; this build
-   consumes that pipeline and never writes a second one.
+   ⚠ **Depends on #2565 slice 2's clean-and-refuse pipeline — and that
+   dependency is DISCHARGED, not removed (2026-10-30, #2827).** It read
+   ~~"(unbuilt at the time of writing, per `pointerCut.ts`'s own
+   docblock)"~~; the pipeline landed 2026-10-29 as `cutQuality.ts`, and that
+   docblock now carries its own struck sentence. **Nothing else in this
+   slice moves**: a cut with holes or broken edges is still not used and the
+   edit still rides on words, and **this build consumes that pipeline and
+   never writes a second one** — which is why the line is corrected rather
+   than deleted. The same holds for the face subtraction it is paired with
+   (`subtractFaces`, `referenceTake.ts`, #2736 slice 2): built, consumed,
+   never rebuilt here.
 5. **Garments through the seam** — WITH #2736's consumer (one PR or two
    adjacent, whichever the two cards' builders agree, but one road).
 
