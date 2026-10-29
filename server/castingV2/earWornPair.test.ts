@@ -102,7 +102,7 @@ describe("the reader, both roads, with a segmenter answering the way his crop me
    * the half of the ring that fell in it — which is what the crop road did on
    * his crop, on both sides.
    */
-  function stub(): { prompts: string[] } {
+  function stub(instances?: Mask[]): { prompts: string[] } {
     const prompts: string[] = [];
     vi.stubGlobal("fetch", async (_url: unknown, init: any) => {
       const body = JSON.parse(String(init?.body ?? "{}"));
@@ -116,7 +116,8 @@ describe("the reader, both roads, with a segmenter answering the way his crop me
       );
       if (prompt === "face") return reply([await uri(maskWith([{ x: 60, y: 20, width: 80, height: 90 }]))]);
       if (meta.width === W) {
-        return reply(await Promise.all([maskWith([LEFT_HOOP]), maskWith([RIGHT_HOOP]), maskWith([RING])].map(uri)));
+        const whole = instances ?? [maskWith([LEFT_HOOP]), maskWith([RIGHT_HOOP]), maskWith([RING])];
+        return reply(await Promise.all(whole.map(uri)));
       }
       /* A half frame: only its half of the ring, in the half's own pixels. */
       const half = meta.width as number;
@@ -127,15 +128,55 @@ describe("the reader, both roads, with a segmenter answering the way his crop me
     return { prompts };
   }
 
-  it("POSITIVE CONTROL — without the option, the pair road reproduces his rectangle", async () => {
+  /**
+   * ⚠ THIS ARM MEASURED HIS RECTANGLE UNTIL #2783 LANDED BESIDE IT, AND WHAT
+   * CHANGED IT IS THE POINT RATHER THAN A BROKEN TEST.
+   *
+   * It read `box.x + box.width === 100` — the hoop at x 52 joined by the ring's
+   * left half running to the midline, which is what he saw. #2783's midline
+   * rule (`withoutPiecesOnTheCut`, the same file) drops a smaller piece sitting
+   * ON the cut whichever noun was asked, so on THIS road his rectangle can no
+   * longer be reproduced with the option off: two independent repairs each
+   * prevent it and either alone is enough. Driven on the merged tree
+   * 2026-10-29 — the hoop alone, on both sides, where the old arm read 100.
+   *
+   * The crop-road control below is untouched and still answers the ring halves,
+   * because geometry cannot repair that road (#2783's docblock, #2784).
+   */
+  it("the midline rule alone already keeps the ring out of both sides", async () => {
     stub();
     const reader = createFalRegionReader({ apiKey: "k", pairInOneRead: true });
+    /* The cast's RIGHT is the image's left. */
     const sides = await reader.regionSides!({ image: await frame(), name: "earring", absentIsAnswer: true });
-    /* The cast's RIGHT is the image's left: the hoop at x 52 joined by the ring's
-       left half, which runs to the midline. */
-    const box = boundsOf(sides!.right)!;
-    expect(box.x).toBe(52);
-    expect(box.x + box.width).toBe(100);
+    expect(boundsOf(sides!.right)).toEqual(LEFT_HOOP);
+    expect(boundsOf(sides!.left)).toEqual(RIGHT_HOOP);
+  });
+
+  /**
+   * POSITIVE CONTROL FOR THE WIRING, AND IT IS OWED RATHER THAN EXTRA.
+   *
+   * With the arm above true, the pair road answers the SAME box with the option
+   * on and off on the shared fixture — so nothing on that fixture proves the
+   * reader still hands `onTheEars` to the rule at all, and #2781's repair on
+   * this road would read as covered while testing nothing (invariant 7).
+   *
+   * This fixture separates the two repairs: a stud beside the nose, OFF the
+   * midline, which the midline rule KEEPS (it touches no cut column) and
+   * `onTheEars` DROPS (its centre, x 90, is 10 from the midline and 30 from the
+   * face's own left edge).
+   */
+  const STUD_BY_THE_NOSE = { x: 88, y: 78, width: 6, height: 6 };
+  const hoopsAndStud = (): Mask[] => [maskWith([LEFT_HOOP]), maskWith([RIGHT_HOOP]), maskWith([STUD_BY_THE_NOSE])];
+
+  it("a stud beside the nose: the midline rule keeps it and only the option drops it", async () => {
+    stub(hoopsAndStud());
+    const off = await createFalRegionReader({ apiKey: "k", pairInOneRead: true })
+      .regionSides!({ image: await frame(), name: "earring", absentIsAnswer: true });
+    expect(boundsOf(off!.right)).toEqual({ x: 52, y: 50, width: 42, height: 34 });
+    stub(hoopsAndStud());
+    const on = await createFalRegionReader({ apiKey: "k", pairInOneRead: true })
+      .regionSides!({ image: await frame(), name: "earring", absentIsAnswer: true, onTheEars: true });
+    expect(boundsOf(on!.right)).toEqual(LEFT_HOOP);
   });
 
   it("pair road, on the ears: each side is its hoop, and the face is still read ONCE", async () => {

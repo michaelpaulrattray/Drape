@@ -86,6 +86,24 @@ async function bands(width: number, height: number, xs: Array<[number, number]>)
   return `data:image/png;base64,${png.toString("base64")}`;
 }
 
+/**
+ * A MASK AT A GIVEN HEIGHT BAND — `bands` paints the middle third only, and a
+ * feature on the FOREHEAD has to sit above the eyes to be its own piece (#2783).
+ */
+async function rect(
+  width: number,
+  height: number,
+  xs: [number, number],
+  ys: [number, number],
+): Promise<string> {
+  const data = Buffer.alloc(width * height, 0);
+  for (let y = Math.floor(height * ys[0]); y < Math.floor(height * ys[1]); y += 1) {
+    data.fill(255, y * width + Math.floor(width * xs[0]), y * width + Math.floor(width * xs[1]));
+  }
+  const png = await sharp(data, { raw: { width, height, channels: 1 } }).png().toBuffer();
+  return `data:image/png;base64,${png.toString("base64")}`;
+}
+
 /** A centred rectangle covering `share` of each axis — the whole-frame answer. */
 async function blob(width: number, height: number, share: number): Promise<string> {
   const x0 = Math.floor(width * (0.5 - share / 2));
@@ -99,9 +117,9 @@ const coverage = (mask: { data: Buffer }): number => mask.data.reduce((n, byte) 
  * The shape a pair answer comes back in — arm 1 measured the first two on real
  * frames, and the last two are the readings the scan's own controls rest on.
  */
-type Shape = "spanning" | "perSide" | "oneSided" | "none";
+type Shape = "spanning" | "perSide" | "oneSided" | "none" | "midlinePiece" | "midlineOnly" | "bandAndSpeck";
 
-const BANDS: Record<Exclude<Shape, "none">, Array<[number, number]>> = {
+const BANDS: Record<"spanning" | "perSide" | "oneSided", Array<[number, number]>> = {
   /* One mask across her midline covering both — `eyes`, `eyebrows`. */
   spanning: [[0.2, 0.8]],
   /* Two masks, one per side — `ear`, `earring`. Returned as two entries. */
@@ -167,6 +185,37 @@ function stubFal(shape: Shape): Wire {
       /* `perSide` comes back as TWO entries, which is the half of arm 1's
          reading that a reader picking instances apart would have got right and
          the spanning half it would have got wrong. */
+      /*
+        A FEATURE ON HER MIDLINE, as the elder alien's forehead eye came back
+        (#2783). Three instances in one answer: her two real eyes, well clear of
+        the cut, and one piece ACROSS it, higher up the frame so it is its own
+        connected piece rather than part of either eye. Returned as separate
+        entries, which is how the real read arrived (four masks, four scores).
+      */
+      if (shape === "midlinePiece") {
+        return reply({ masks: [
+          { url: await rect(width, height, [0.10, 0.20], [1 / 3, 2 / 3]) },
+          { url: await rect(width, height, [0.80, 0.90], [1 / 3, 2 / 3]) },
+          { url: await rect(width, height, [0.46, 0.54], [0.10, 0.20]) },
+        ] });
+      }
+      /*
+        A BIG PIECE ON THE CUT BESIDE A SMALL ONE AWAY FROM IT — the shape that
+        tells the rule apart from "drop whatever crosses the midline". A brow
+        band across her midline with a speck of noise out at the edge: the band
+        is the row and must survive, the speck is harmless and must not displace
+        it.
+      */
+      if (shape === "bandAndSpeck") {
+        return reply({ masks: [
+          { url: await rect(width, height, [0.40, 0.60], [1 / 3, 2 / 3]) },
+          { url: await rect(width, height, [0.90, 0.93], [1 / 3, 2 / 3]) },
+        ] });
+      }
+      /* And the measured crop-road answer: the midline piece and NOTHING else. */
+      if (shape === "midlineOnly") {
+        return reply({ masks: [{ url: await rect(width, height, [0.46, 0.54], [0.10, 0.20]) }] });
+      }
       const xs = BANDS[shape];
       const masks = shape === "perSide"
         ? await Promise.all(xs.map(async (band) => ({ url: await bands(width, height, [band]) })))
@@ -286,6 +335,124 @@ describe("one request for both sides", () => {
     expect(sideOfCut(sides!.right), "and her right is the image's left half")
       .toEqual({ left: expect.any(Number), right: 0 });
     expect(sideOfCut(sides!.right).left).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * A FEATURE ON HER MIDLINE BELONGS TO NEITHER SIDE OF THE PAIR (#2783).
+ *
+ * Measured through this very reader on a local copy of candidate 2472, the
+ * elder alien with an eye in the middle of its forehead (#2566's
+ * `B-full-2472.png`, 768x1152, no production read). `eyes` on the pair road
+ * answered one box per side running from the eye up to the forehead —
+ * `74x104` and `73x101`, where the real eyes measure `45x22` and `41x20` —
+ * because the forehead eye was cut at the midline and each half joined its
+ * side. After the repair the same drive answers `45x22` and `41x20`.
+ *
+ * The rule is *a side's biggest piece is always kept; a smaller piece is kept
+ * only when it does not touch the cut*, and the two arms that matter most here
+ * are the ones holding it OFF a real pair: a unibrow spans the midline
+ * legitimately, and a side whose only piece is on the midline is left alone.
+ */
+describe("a piece on her midline is neither side's", () => {
+  /** The x range a mask actually occupies, in the frame's own pixels. */
+  const spanX = (mask: { data: Buffer; width: number; height: number }) => {
+    let left = mask.width;
+    let right = -1;
+    for (let y = 0; y < mask.height; y += 1) {
+      for (let x = 0; x < mask.width; x += 1) {
+        if (mask.data[y * mask.width + x] === 0) continue;
+        if (x < left) left = x;
+        if (x > right) right = x;
+      }
+    }
+    return right < 0 ? null : { left, right };
+  };
+
+  it("leaves each eye row holding its own eye, and nothing on the midline", async () => {
+    const { sides } = await readPair({ pairInOneRead: true, shape: "midlinePiece" });
+    const midline = WIDTH / 2;
+    /* Her left is the image's RIGHT half: it must hold the eye at 0.80–0.90 and
+       stop well clear of the cut, where before the repair it reached it. */
+    expect(spanX(sides!.left)).toEqual({ left: Math.floor(WIDTH * 0.8), right: Math.floor(WIDTH * 0.9) - 1 });
+    expect(spanX(sides!.right)).toEqual({ left: Math.floor(WIDTH * 0.1), right: Math.floor(WIDTH * 0.2) - 1 });
+    /* The forehead piece is in NEITHER answer — the defect's own symptom. */
+    expect(spanX(sides!.left)!.left).toBeGreaterThan(midline);
+    expect(spanX(sides!.right)!.right).toBeLessThan(midline);
+  });
+
+  it("drops only the piece, never the row: both eyes still land", async () => {
+    /* The arm that would pass if the rule emptied a side, so it is asserted
+       beside the span rather than left to the reading above. */
+    const { sides } = await readPair({ pairInOneRead: true, shape: "midlinePiece" });
+    expect(coverage(sides!.left)).toBeGreaterThan(0);
+    expect(coverage(sides!.right)).toBeGreaterThan(0);
+  });
+
+  it("KEEPS a unibrow, which is one real pair whose own mask spans the cut", async () => {
+    /*
+      The counterexample the obvious rule fails, and the reason this one keeps
+      the biggest piece unconditionally. `spanning` is exactly that shape —
+      arm 1 measured `eyes` and `eyebrows` answering as ONE mask across her
+      midline — and dropping whatever crosses the cut would answer "no
+      eyebrows" on a face that has them, which is the failure `BILATERAL` in
+      the reader was written about.
+    */
+    const { sides } = await readPair({ pairInOneRead: true, shape: "spanning", name: "eyebrows" });
+    const midline = WIDTH / 2;
+    expect(spanX(sides!.left)).toEqual({ left: midline, right: Math.floor(WIDTH * 0.8) - 1 });
+    expect(spanX(sides!.right)).toEqual({ left: Math.floor(WIDTH * 0.2), right: midline - 1 });
+  });
+
+  it("keeps the biggest piece even when IT is the one on the cut", async () => {
+    /*
+      THE CLAUSE THE UNIBROW ARM CANNOT REACH, and it was found by sabotage
+      rather than by reading: a one-piece unibrow returns before the keep rule
+      is consulted at all, so dropping every crossing piece leaves that arm
+      green. This is the shape that consults it — a brow band across her
+      midline WITH a speck of noise out at the edge. The band is her row and
+      survives; the speck is kept too, because it is not on the cut.
+    */
+    const { sides } = await readPair({ pairInOneRead: true, shape: "bandAndSpeck", name: "eyebrows" });
+    const midline = WIDTH / 2;
+    expect(spanX(sides!.left), "the band reaches the cut and the speck is still there")
+      .toEqual({ left: midline, right: Math.floor(WIDTH * 0.93) - 1 });
+    expect(coverage(sides!.left)).toBeGreaterThan(0);
+  });
+
+  it("leaves a side whose ONLY piece is on the midline exactly as it was", async () => {
+    /*
+      The measured crop-road answer, pinned here as the limit rather than
+      claimed as a fix: asked a half-frame at a time, the segmenter answered
+      with only its half of the forehead eye and neither real eye. Geometry
+      cannot invent an eye the reader never got, so this road hands the piece
+      back — the caller's question, and #2784's.
+    */
+    const { sides } = await readPair({ pairInOneRead: true, shape: "midlineOnly" });
+    const midline = WIDTH / 2;
+    expect(spanX(sides!.left)).toEqual({ left: midline, right: Math.floor(WIDTH * 0.54) - 1 });
+    expect(spanX(sides!.right)).toEqual({ left: Math.floor(WIDTH * 0.46), right: midline - 1 });
+  });
+
+  it("changes nothing about two clean per-side masks", async () => {
+    /* The no-op control: `ear` and `earring` come back as two masks neither of
+       which touches the cut, so the rule must not move a pixel of them. */
+    const { sides } = await readPair({ pairInOneRead: true, shape: "perSide", name: "ear" });
+    expect(spanX(sides!.left)).toEqual({ left: Math.floor(WIDTH * 0.7), right: Math.floor(WIDTH * 0.95) - 1 });
+    expect(spanX(sides!.right)).toEqual({ left: Math.floor(WIDTH * 0.05), right: Math.floor(WIDTH * 0.3) - 1 });
+  });
+
+  it("is the PAIR road's geometry only — the crop road is untouched", async () => {
+    /*
+      The boundary this repair must not cross. A masked refine is on the crop
+      road by construction and PAINTS on the mask it gets back, so a rule with
+      one fixture behind it does not reach a paid picture: the same answer on
+      the crop road keeps its midline piece, at two half-frame reads.
+    */
+    const { sides, wire } = await readPair({ pairInOneRead: false, shape: "midlinePiece" });
+    expect(wire.halfFrameAsks).toBe(2);
+    expect(coverage(sides!.left)).toBeGreaterThan(0);
+    expect(coverage(sides!.right)).toBeGreaterThan(0);
   });
 });
 
