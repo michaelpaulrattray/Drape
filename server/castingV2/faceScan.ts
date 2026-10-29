@@ -580,13 +580,34 @@ export async function scanFace(input: {
           empty is a different thing and is already served by the empty-anatomy
           re-ask below; asking here as well would only make it careful twice.
 
-          # ONE RE-READ, AND ITS OUTCOME IS WRITTEN DOWN
+          # ONE RE-READ, AND IT IS A DIFFERENT QUESTION (#2802)
 
-          Whether a re-read actually RECOVERS the side is not yet measured —
-          D-194's reader disagrees with itself 21% of the time, which is a
-          reason to expect it might, not a measurement of this question. So the
-          outcome is logged, and the recovery rate arrives free from his own use
-          rather than from another bought sitting.
+          ⚠ **It was the SAME question until this card, and on production's
+          road that made it unable to answer.** A pair is read in one
+          whole-picture request now (`ENABLE_CASTING_PAIR_ONE_READ`), so the
+          second look went out as the identical request — same endpoint, same
+          prompt, same bytes — and came back with the identical answer.
+          Measured through the product's own reader on the founder's round-6
+          cast, `ear` at 1024 and at 598, five draws a size: **the pair road
+          answered nothing on either side, 10 of 10.**
+
+          So the blind side is asked for its OWN half-picture instead
+          (`sideByCrop`). That is the one thing this module has measured to be a
+          different question rather than the same one louder — `falRegionReader`'s
+          `BILATERAL` block: *"the same twelve features, asked as a PLAIN noun
+          of a picture containing one side only, read 12 of 12."* On the same
+          ten draws it found both ears every time, on a cast whose two ears the
+          founder's eye reads plainly, and on two casts whose ears are genuinely
+          hidden it recovered nothing on the blind side in 12 of 12 — it does
+          not invent a side that is not there. **One read either way**, which is
+          what the second look already spends.
+
+          A reader that cannot read one side alone keeps the old road: re-asking
+          the whole region is what it has, and on a reader already reading a
+          side at a time that re-ask IS the blind side's own half-picture.
+
+          The outcome is still logged, with the road it took, so the recovery
+          rate goes on arriving free from his own use.
         */
         const zeroOf = (side: Mask) => binaryCoverage(side) === 0;
         /* The two masks this reading files, held locally: a heal replaces what
@@ -596,34 +617,63 @@ export async function scanFace(input: {
         let rightMask = sides.right;
         if (region.slots.length === 2 && zeroOf(leftMask) !== zeroOf(rightMask)) {
           const blindSide = zeroOf(leftMask) ? "left" : "right";
-          const again = await input.reader.regionSides({
+          const ask = {
             image: input.frame.bytes,
             name: region.question,
-            absentIsAnswer: true,
             ...(input.frame.url ? { imageUrl: input.frame.url } : {}),
             ...(onTheEars ? { onTheEars: true as const } : {}),
-          });
-          const healed = again !== null && !zeroOf(blindSide === "left" ? again.left : again.right);
+          };
+          /* Bound here rather than reached for inside the closure below: the
+             reader is an interface whose optional members a `?.` chain cannot
+             narrow across an `await`. */
+          const askItsOwnHalf = input.reader.sideByCrop?.bind(input.reader);
+          const askTheRegion = input.reader.regionSides.bind(input.reader);
+          const onItsOwnHalf = askItsOwnHalf !== undefined;
+          /* A SECOND LOOK MAY NOT DESTROY THE FIRST READING. The half-picture
+             is a narrower call than the one that produced the side already in
+             hand, so a transport failure in it costs this look and nothing
+             else — the same bargain the other-ear look below strikes, and the
+             reason it is caught here rather than left to the region's own
+             catch, which would file the whole pair as failed. */
+          const again = await (async () => {
+            try {
+              return askItsOwnHalf
+                ? await askItsOwnHalf({ ...ask, side: blindSide })
+                : (await askTheRegion({ ...ask, absentIsAnswer: true }))?.[blindSide] ?? null;
+            } catch (error) {
+              log.warn(
+                {
+                  question: region.question,
+                  blindSide,
+                  why: error instanceof Error ? error.message : String(error),
+                },
+                "[faceScan] the second look at the blind side did not answer — the pair stays as read",
+              );
+              return null;
+            }
+          })();
+          const healed = again !== null && !zeroOf(again);
           log.info(
             {
               question: region.question,
               blindSide,
               healed,
-              /* Both sides of the second reading, so a re-read that moved the
-                 OTHER side is visible rather than averaged away. */
-              retryLeft: again === null ? null : binaryCoverage(again.left),
-              retryRight: again === null ? null : binaryCoverage(again.right),
+              /* Which question the second look actually asked, so a road change
+                 is readable in his own logs rather than inferred from a rate. */
+              road: onItsOwnHalf ? "the blind side's own half-picture" : "the whole region again",
+              retry: again === null ? null : binaryCoverage(again),
             },
             healed
               ? "[faceScan] half-answered pair — the second look found the missing side"
               : "[faceScan] half-answered pair — the second look found nothing either",
           );
-          /* Only a reading that actually recovered the side replaces the first.
-             A second answer that is also blind is not better information, and
-             swapping it in would discard a good side for a coin flip. */
+          /* ONLY THE BLIND SIDE IS EVER REPLACED. A second answer that is also
+             blind is not better information, and the side that DID land is not
+             traded for a coin flip — which is why the second look is asked
+             about one side rather than about the pair. */
           if (healed && again !== null) {
-            leftMask = again.left;
-            rightMask = again.right;
+            if (blindSide === "left") leftMask = again;
+            else rightMask = again;
           }
         }
         /*

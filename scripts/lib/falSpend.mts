@@ -97,10 +97,10 @@ export const FAL_LOW_BALANCE_USD = 20;
  *   fewest 18  one per whole-frame question (7), two per pair — one per side —
  *              (5 pairs, 10), and the face asked ONCE: the midline the pairs are
  *              split on and the head the build row is cut under are one answer
- *   most   38  an anatomy question asked twice (lips, nose, hair, skin: +4);
+ *   most   33  an anatomy question asked twice (lips, nose, hair, skin: +4);
  *              an anatomy pair asked again AND healed inside that second look
- *              (eyes, brows, ears: 6 each, +12); a worn pair healed once
- *              (horns, earrings: 4 each, +4); worn whole-frame questions are
+ *              (eyes, brows, ears: 5 each, +9); a worn pair healed once
+ *              (horns, earrings: 3 each, +2); worn whole-frame questions are
  *              never asked twice (glasses, facial hair); and TEETH are never
  *              asked twice either (#2525)
  *
@@ -137,11 +137,26 @@ export const FAL_LOW_BALANCE_USD = 20;
  * it was spending. So the band below is expected at **20–26 at worst and lower
  * on a closed mouth**, and it STILL is not written by arithmetic, for the same
  * reason the paragraph above gives.
+ *
+ * ⚠ **AND `most` CAME DOWN BY FIVE ON 2026-10-30 (#2802) WITHOUT A SINGLE
+ * SECOND LOOK BEING GIVEN UP — THE CROP ROAD'S HEAL SIMPLY STOPPED BUYING TWO
+ * READS TO LOOK AT ONE SIDE.** It read 38. A half-answered pair's second look
+ * asks the blind side for its own half-picture now (`RegionReader.sideByCrop`)
+ * rather than re-asking the whole region, so on THIS road — which reads a side
+ * at a time anyway — it is the same question at one read instead of two, five
+ * pairs, −5. **The pair road's ceiling does not move** (25): its re-ask was
+ * already one request, and what changed there is which question it asks, not
+ * how many. ⚠ **`fewest` does not move on either road**, because the floor is
+ * the every-question-answered-first-time path and never held a second look.
+ * Both figures are re-derived by the same drive and the same three policies
+ * (`server/faceScanSpend.test.ts`), and **the measured band below still does
+ * not move by arithmetic** — it is a bought reading, and it is now three reads
+ * behind the code on the crop road rather than two.
  */
 export const FACE_SCAN_FAL_CALLS = {
   sam3: {
     fewest: 18,
-    most: 38,
+    most: 33,
     /**
      * WHAT THE SAME DRIVE COUNTS WITH `ENABLE_CASTING_PAIR_ONE_READ` ON — a road that
      * is BUILT AND OFF, so these are not what production does (#2191).
@@ -149,7 +164,7 @@ export const FACE_SCAN_FAL_CALLS = {
      * A bilateral region costs two reads above, one per half-frame. On this
      * road one whole-frame read answers both sides and `splitAtMidline` cuts
      * them apart, so the five pairs cost five reads instead of ten:
-     * **13 instead of 18 at the floor, and 25 instead of 38 at the ceiling.**
+     * **13 instead of 18 at the floor, and 25 instead of 33 at the ceiling.**
      *
      * Both are DERIVED by the same drive and the same three policies as the two
      * figures above (`server/faceScanSpend.test.ts`, which is why they live in
