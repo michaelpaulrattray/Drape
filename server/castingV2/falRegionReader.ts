@@ -1715,6 +1715,20 @@ export function createFalRegionReader(input: {
      * it — the law's clause 4, read what the engine already gives you — and
      * nothing here reads it yet, which is stated rather than implied: the
      * presence head is #246's unfinished business and not this slice's.
+     *
+     * ⚠ **AND IT CANNOT SAY *WHICH NOUN* — DRIVEN 2026-10-29 (#2787), SO THE
+     * NEXT HAND DOES NOT BUY THESE CALLS AGAIN TO FIND OUT.** The score is a
+     * real signal and it is about the MASK rather than about the word: the
+     * prompt goes out empty two paragraphs above, so the segmenter is never
+     * told which noun the rectangle came from and two nouns whose rectangles
+     * agree get the same answer. Measured on the selector's own reference
+     * stand-in, where the detector returned `hoop earring` and `nose ring` as
+     * one object — boxes identical to the last bit (`305,462 44x56`) and
+     * therefore scores identical to the last bit (**0.89453125** each), while
+     * the correct `earring` at `306,462 42x56` scored 0.8984 and the nose's
+     * own box scored 0.8164. **So where two nouns land on one place this score
+     * is flat by construction**: it says how good a cut is, never whose it is.
+     * #246's absent-feature question is still the one it is for.
      */
     async regionInBox({ image, name, box, imageUrl, signal: callSignal }): Promise<Mask | null> {
       assertPicture(image, name);
