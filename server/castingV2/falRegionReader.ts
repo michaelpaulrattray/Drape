@@ -548,6 +548,118 @@ async function placeInFrame(
 }
 
 /**
+ * A FEATURE ON HER MIDLINE BELONGS TO NEITHER SIDE OF A PAIR (#2783, the
+ * law-7 sibling of the earring boxes on #2781).
+ *
+ * # What it is for, measured rather than reasoned
+ *
+ * On a cast with an eye in the middle of the forehead, `splitAtMidline` cut
+ * that eye in half and each half joined its side's row. Read through this very
+ * reader on #2566's local copy of candidate 2472 (768x1152, no production
+ * read), `eyes` on the pair road answered:
+ *
+ * ```
+ *   her left    x 389-462, y 211-314  (74x104)  = her real eye + half the third
+ *   her right   x 316-388, y 211-311  (73x101)  = her real eye + half the third
+ * ```
+ *
+ * Each box runs from the eye up to the middle of the forehead, and the real
+ * eyes alone measure 45x22 and 41x20. Broken into pieces, every side held
+ * exactly two: its own eye, away from the cut, and a slice of the forehead eye
+ * sitting ON the cut.
+ *
+ * # The rule, and why it is this one rather than "anything crossing the cut"
+ *
+ * **A side's biggest piece is always kept; a smaller piece is kept only when it
+ * does not touch the cut.**
+ *
+ * The obvious rule — drop whatever crosses the midline — is the one this must
+ * not be, and the counterexample is a UNIBROW: one continuous band is a real
+ * pair whose own mask spans the cut, so dropping every crossing piece would
+ * answer *"no eyebrows"* on a face that plainly has them, which is the exact
+ * failure `BILATERAL` above was written about. Keeping the biggest piece
+ * unconditionally means this can never empty a side and can never take the
+ * largest thing on it: a unibrow is its side's only piece, so it survives
+ * untouched, and so does a pair that merely reaches the midline.
+ *
+ * On the fixture it returns `x 418-462, y 293-314` and `x 316-356, y 292-311` —
+ * the real eyes, at the size the card measured them.
+ *
+ * # Where it does NOT apply, stated rather than left to be discovered
+ *
+ * This is the PAIR road's geometry only, which is the face scan's road
+ * (`pairInOneRead` is the scan's and the refine is on the crop road by
+ * construction — see the constructor). The crop road has the same defect and
+ * geometry cannot repair it: asked a half-frame at a time, the segmenter
+ * answered with ONLY its half of the forehead eye and neither real eye, so
+ * there is no real eye in the answer to keep. That is #2784's shape — the
+ * caller has to say what it wants — and it is left to that card rather than
+ * half-fixed here on a paid road with no measurement behind it.
+ *
+ * The forehead eye is not lost by this: the discovery reading gives it its own
+ * row (`third eye`, anatomy, forehead — read in #2566's own grouping output on
+ * this same candidate).
+ */
+function withoutPiecesOnTheCut(
+  slice: { data: Buffer; width: number; height: number },
+  cutColumn: number,
+): { data: Buffer; width: number; height: number } {
+  /* One labelling pass, 4-neighbour, with an explicit stack: a mask is up to a
+     megapixel and a recursive fill on a long thin piece overflows. */
+  const label = new Int32Array(slice.width * slice.height).fill(-1);
+  const pixels: number[] = [];
+  const onTheCut: boolean[] = [];
+  const stack: number[] = [];
+  for (let start = 0; start < label.length; start += 1) {
+    if (label[start] !== -1 || slice.data[start] === 0) continue;
+    const piece = pixels.length;
+    pixels.push(0);
+    onTheCut.push(false);
+    label[start] = piece;
+    stack.push(start);
+    while (stack.length > 0) {
+      const at = stack.pop() as number;
+      const x = at % slice.width;
+      pixels[piece] += 1;
+      if (x === cutColumn) onTheCut[piece] = true;
+      const around = [
+        x > 0 ? at - 1 : -1,
+        x < slice.width - 1 ? at + 1 : -1,
+        at >= slice.width ? at - slice.width : -1,
+        at + slice.width < label.length ? at + slice.width : -1,
+      ];
+      for (const next of around) {
+        if (next < 0 || label[next] !== -1 || slice.data[next] === 0) continue;
+        label[next] = piece;
+        stack.push(next);
+      }
+    }
+  }
+  /* Nothing to decide between: one piece is its side's biggest by definition. */
+  if (pixels.length < 2) return slice;
+  let biggest = 0;
+  for (let piece = 1; piece < pixels.length; piece += 1) {
+    if (pixels[piece] > pixels[biggest]) biggest = piece;
+  }
+  const dropped = pixels.map((_, piece) => piece !== biggest && onTheCut[piece]);
+  if (!dropped.some(Boolean)) return slice;
+  const data = Buffer.from(slice.data);
+  for (let at = 0; at < label.length; at += 1) {
+    if (label[at] !== -1 && dropped[label[at]]) data[at] = 0;
+  }
+  log.debug(
+    {
+      pieces: pixels.length,
+      droppedPieces: dropped.filter(Boolean).length,
+      droppedPixels: pixels.reduce((n, px, piece) => (dropped[piece] ? n + px : n), 0),
+      cutColumn,
+    },
+    "[falRegionReader] a piece on her midline belongs to neither side of this pair",
+  );
+  return { data, width: slice.width, height: slice.height };
+}
+
+/**
  * ONE WHOLE-FRAME MASK CUT INTO THE TWO SIDES IT SPANS — the `pairInOneRead`
  * road's geometry (#2191).
  *
@@ -602,7 +714,16 @@ async function splitAtMidline(
       whole.data.copy(data, y * sliceWidth, row + from, row + to);
     }
     if (!data.some((byte) => byte !== 0)) return null;
-    return placeInFrame({ data, width: sliceWidth, height: whole.height }, crop, width, height);
+    /* A FEATURE ON HER MIDLINE IS NEITHER SIDE'S (#2783). The cut is this
+       slice's inner edge — the last column of the left half, the first of the
+       right — read in the slice's own pixels, so a mask returned at another
+       resolution is judged at the same place it was cut. */
+    const kept = withoutPiecesOnTheCut(
+      { data, width: sliceWidth, height: whole.height },
+      crop.left === 0 ? sliceWidth - 1 : 0,
+    );
+    if (!kept.data.some((byte) => byte !== 0)) return null;
+    return placeInFrame(kept, crop, width, height);
   }));
   return { atImageLeft: sides[0] ?? null, atImageRight: sides[1] ?? null };
 }
