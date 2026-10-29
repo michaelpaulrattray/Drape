@@ -190,8 +190,31 @@ export type CardClaimVerdict =
    * re-declares the card, so the two reasons for not refusing had to stop being
    * one word. A stale claim of this seat's own is still `free`: it has aged out
    * of the board's window, and a fresh one is exactly what should be written.
+   *
+   * ⚠ **AND IT IS NARROWER THAN IT READS SINCE #2773: it means this seat's own
+   * live claim AND NOTHING LIVE UNDERNEATH IT.** A rival's live claim beneath it
+   * is `contested` below — the case this kind used to swallow in silence.
    */
   | { readonly kind: "mine"; readonly at: string }
+  /**
+   * ⚠ **THIS SEAT'S OWN LIVE CLAIM IS THE NEWEST FACT *AND* ANOTHER SEAT'S LIVE
+   * CLAIM SITS UNDER IT — #2773, measured on 2026-10-29.**
+   *
+   * It is a separate KIND and not a field on `mine` for the reason this file's
+   * own `state` argues at {@link readCardClaim}: an optional field defaulting to
+   * safe can be forgotten by anything that compiles, and that is the shape that
+   * left **0 of 5 refusals on #1669 invisible**. A new kind cannot be.
+   *
+   * `seat` and `at` are the RIVAL's, so every message that names a seat goes on
+   * naming the one that matters; `mine` is this seat's own line, because the
+   * sentence a seat needs is *both* claims and which of them it wrote.
+   */
+  | {
+    readonly kind: "contested";
+    readonly seat: string | null;
+    readonly at: string;
+    readonly mine: string;
+  }
   /** The board could not be read. Never a refusal — an unread board is not a clean one. */
   | { readonly kind: "unreadable" }
   /**
@@ -221,12 +244,82 @@ function sameSeat(a: string | null | undefined, b: string | null | undefined): b
   return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
+/** One live claim and the seat that wrote it. */
+type LiveClaim = { readonly seat: string | null; readonly at: string };
+
+/**
+ * ⚠ **IS THERE A RIVAL'S LIVE CLAIM *UNDER* THIS SEAT'S OWN? — #2773, AND IT IS
+ * THE ONE QUESTION EVERY READER IN THIS FILE USED TO ANSWER BY ACCIDENT.**
+ *
+ * # What was measured, and it is the sharpest shape this hole has taken
+ *
+ * {@link readCardClaim} consulted the newest fact and nothing else, and answered
+ * `mine` whenever that fact was this seat's. So **a claim a seat writes BY HAND
+ * on top of a rival's live claim makes the rival invisible to the whole reader
+ * family** — the start refusal, the `--card` heartbeat's re-declaration refusal,
+ * and {@link readNoteForeignClaims}'s probe alike. The order of the two writes
+ * decided the answer: rival-then-mine was silence, mine-then-rival refused, on
+ * the same two facts.
+ *
+ * Driven over the real board of 2026-10-29, at 00:38:33Z, with its control:
+ *
+ * | board | verdict | refusal | probe |
+ * |---|---|---|---|
+ * | the real one (seat1's hand claim newest, foreman's under it) | `mine` | none | silent |
+ * | the same, seat1's own line removed | `claimed` | *"already claimed by foreman-20261029-1005, 31 minutes ago"* | speaks |
+ *
+ * **So the unsafe act removed the one signal still watching it**, and it removed
+ * it for the full {@link CREW_CLAIM_LIVE_MS}. #2773 was filed reading the gap as
+ * *the claim check only protects the first card of a batch*; the rows say worse,
+ * because **the repair that card proposes is blinded by the same thing.** A
+ * seat that claims by hand — which is what the standing orders tell it to do —
+ * and *then* re-declares through `--card` gets `mine` and moves onto the card
+ * with the rival never seen. That was driven too, and it is why the fix is here
+ * at the judge and not in an instruction.
+ *
+ * # Why it walks rather than grouping by seat
+ *
+ * A `release` and a `refusal` carry **no seat** (`crewCardCommentFact` captures
+ * one on a claim alone), so "what is seat A's newest fact" is not a question the
+ * facts can answer. The existing rule is that the newest fact of ANY kind wins —
+ * a release newer than a claim puts the card back on offer, for everybody — so
+ * this walks newest-first and **stops dead at the first release or refusal**,
+ * which is that same rule read one line deeper rather than a second rule beside
+ * it. A stale claim stops it too: the list is sorted, so everything under a
+ * stale claim is staler.
+ */
+function liveRivalUnderOwnClaim(
+  facts: readonly { readonly kind: string; readonly seat?: string | null; readonly at: string }[],
+  mine: string | null | undefined,
+  now: number,
+): LiveClaim | null {
+  for (const fact of facts) {
+    /* Cancels everything older, for every seat — the reader's existing rule. */
+    if (fact.kind === "release" || fact.kind === "refusal") return null;
+    if (fact.kind !== "claim") continue;
+    /* This seat's own earlier lines are not rivals, however many it wrote. */
+    if (sameSeat(fact.seat, mine)) continue;
+    const atMs = Date.parse(fact.at);
+    if (!Number.isFinite(atMs) || now - atMs > CREW_CLAIM_LIVE_MS) return null;
+    return { seat: fact.seat ?? null, at: fact.at };
+  }
+  return null;
+}
+
 /**
  * IS ANOTHER SEAT LIVE ON THIS CARD — the judgement, pure over facts already read.
  *
  * Newest comment wins, exactly as `crewCardBuildState` decides it: a RELEASE or
- * a REFUSAL newer than a claim puts the card back on offer, so only the newest
- * fact of the card's own comments is consulted.
+ * a REFUSAL newer than a claim puts the card back on offer, so the newest fact
+ * of the card's own comments is what decides the verdict.
+ *
+ * ⚠ **ONE ROAD READS PAST IT, AND ONLY ONE (#2773).** When the newest fact is
+ * THIS seat's own live claim, the facts beneath it are walked for a rival's live
+ * claim — `contested` rather than `mine` — because a claim written by hand over
+ * a live one used to make that one invisible to every reader in this file for
+ * twelve hours. {@link liveRivalUnderOwnClaim} carries the measurement and the
+ * reason it walks rather than groups. **Nothing about which fact wins has
+ * moved**: on every other road this reader consults the newest and stops.
  *
  * ⚠ **AN UNATTRIBUTED CLAIM COUNTS AS SOMEBODY ELSE'S**, and the asymmetry is
  * the reason. A claim whose seat could not be parsed is either another seat's
@@ -272,7 +365,12 @@ export function readCardClaim(input: {
   if (input.comments === null) return { kind: "unreadable" };
 
   const now = input.now ?? Date.now();
-  const newest = input.comments
+  /* ⚠ THE WHOLE SORTED LIST IS KEPT NOW, NOT ONLY `[0]` (#2773). It was
+     `….sort(…)[0]`, and the discarded tail is exactly where a rival's live claim
+     hides under this seat's own — `liveRivalUnderOwnClaim` carries the
+     measurement. Nothing about which fact WINS has moved: `newest` is still the
+     first of this same list, and the tail is consulted on one road only. */
+  const facts = input.comments
     .map((comment) =>
       crewCardCommentFact({
         card,
@@ -286,7 +384,8 @@ export function readCardClaim(input: {
        than ranked, or the newest thing on a card could be an answer to a
        different question. */
     .filter((fact) => fact.kind !== "verdict")
-    .sort((a, b) => b.at.localeCompare(a.at))[0];
+    .sort((a, b) => b.at.localeCompare(a.at));
+  const newest = facts[0];
 
   if (!newest || newest.kind !== "claim") return { kind: "free" };
 
@@ -298,7 +397,18 @@ export function readCardClaim(input: {
      claim has aged off the board and wants a fresh one, while its own LIVE
      claim wants silence. Both still refuse nothing, which is the only thing
      the refusal path ever asked. */
-  if (sameSeat(newest.seat, input.mine)) return live ? { kind: "mine", at: newest.at } : { kind: "free" };
+  if (sameSeat(newest.seat, input.mine)) {
+    if (!live) return { kind: "free" };
+    /* ⚠ **AND NOW IT LOOKS UNDER IT (#2773).** A seat's own live claim is still
+       silence — unless a rival's live claim is sitting beneath it, which is a
+       collision whichever order the two writes landed in. `spent` applies here
+       for #1879's own reason and on the rival road alone, exactly as below: a
+       rival's claim on a CLOSED card is holding nobody off anything, and this
+       seat's own line is then the only fact left standing. */
+    const rival = liveRivalUnderOwnClaim(facts, input.mine, now);
+    if (rival === null || cardStateSpendsClaim(input.state)) return { kind: "mine", at: newest.at };
+    return { kind: "contested", seat: rival.seat, at: rival.at, mine: newest.at };
+  }
   if (!live) return { kind: "free" };
   /* ⚠ #1879, AND IT SITS HERE RATHER THAN ABOVE THE LIVENESS TEST ON PURPOSE.
      A STALE claim is already `free` and a closed card cannot make it more so;
@@ -337,6 +447,25 @@ export function renderCardClaimRefusal(
   verdict: CardClaimVerdict,
   now: number = Date.now(),
 ): string | null {
+  /* ⚠ `contested` REFUSES TOO (#2773), AND ITS SENTENCE IS DIFFERENT BECAUSE
+     THE SEAT'S SITUATION IS DIFFERENT: it is not being told a card is taken, it
+     is being told that the claim it already wrote did not take it and hid the
+     rival's instead. A seat handed the `claimed` wording here would read its own
+     line as the rival's and reach straight for `--same-card`. */
+  if (verdict.kind === "contested") {
+    const who = verdict.seat ?? "a seat that did not name itself";
+    return `${cardRef} carries TWO live claims — this seat's (${verdict.mine}) and`
+      + ` ${who}'s, ${agePhrase(verdict.at, now)} (${verdict.at}).`
+      + "\n\n   THEIRS IS THE OLDER ONE, so this seat's claim did not take the card — it"
+      + "\n   HID the rival's. Every reader in this family consults the newest claim line, so"
+      + "\n   a claim written by hand over a live one makes that one invisible for twelve hours"
+      + "\n   (#2773). On 2026-10-29 that cost a full builder-seat session and a pull request"
+      + "\n   closed unmerged: the rival's claim had been readable for seventeen minutes."
+      + "\n\n   Stand off this card and take the next one, and say in your entry that you did."
+      + `\n   Withdraw your own line with a \`${crewCardReleaseLine()}\` comment while you are`
+      + "\n   here, or the next seat reads YOUR claim and not theirs."
+      + "\n   If you really are meant to share it, pass --same-card.";
+  }
   if (verdict.kind !== "claimed") return null;
   const who = verdict.seat ?? "a seat that did not name itself";
   return `${cardRef} is already claimed by ${who}, ${agePhrase(verdict.at, now)} (${verdict.at}).`
@@ -506,6 +635,19 @@ export function postCardClaim(input: {
        than assumed, because a second caller must not be able to paper over a
        rival's live claim with its own. */
     return { kind: "skipped", why: `another seat holds it (${input.verdict.seat ?? "unnamed"})` };
+  }
+  /* ⚠ **AND NEITHER DOES A CONTESTED BOARD (#2773), WHICH IS THE ONE KIND THIS
+     WRITER MUST NOT TREAT AS A FALL-THROUGH.** A second line from this seat
+     would bury the rival's one comment deeper, which is the defect itself —
+     and there is nothing to gain by it, because this seat's claim is already
+     the newest fact on the card. The reason names both, so a seat reading the
+     skip can tell it from `already claimed by this seat`. */
+  if (input.verdict.kind === "contested") {
+    return {
+      kind: "skipped",
+      why: `this seat already claimed it at ${input.verdict.mine} and`
+        + ` ${input.verdict.seat ?? "another seat"}'s live claim sits under that line`,
+    };
   }
   /* ⚠ `spent` IS NOT IN THE LIST ABOVE AND THAT IS A DECISION, NOT AN OMISSION
      (#1879). A verdict reaching the post road by falling past four `if`s is
@@ -680,8 +822,15 @@ export function readNoteForeignClaims(input: {
        reasons — the type above says which. Only another seat's live hands on an
        OPEN card are worth a word; a claim the card's own close has spent is the
        case this probe met on its very first live firing (#1879). */
-    if (verdict.kind === "claimed") claims.push({ card, seat: verdict.seat, at: verdict.at });
-    else if (verdict.kind === "unreadable") unreadable.push(card);
+    /* ⚠ `contested` JOINS `claimed` HERE (#2773), AND THIS IS THE ROAD THE
+       MEASURED COLLISION ACTUALLY TOOK. Row #850's note named #2769 while its
+       own `cardRef` never left #2764, so this probe was the last reader with a
+       chance — and it was silent, because the seat's own hand claim was the
+       newest line on that card. A rival under this seat's own claim is the
+       same fact as a rival over it, and the warning says the same thing. */
+    if (verdict.kind === "claimed" || verdict.kind === "contested") {
+      claims.push({ card, seat: verdict.seat, at: verdict.at });
+    } else if (verdict.kind === "unreadable") unreadable.push(card);
   }
   return { claims, unreadable };
 }

@@ -861,3 +861,54 @@ describe("⚠ a refusal's hold — the sentence #2707 added, and the claim it ma
       .toBeNull();
   });
 });
+
+describe("the `take it` entry says not to write a claim by hand (#2773)", () => {
+  const SEAT = "seat1-20261029-112410";
+  const AT = "2026-10-29T01:40:28Z";
+
+  /*
+    ⚠ THE HALF A SEAT CAN BE TOLD ON. `readCardClaim`'s `contested` verdict is
+    the mechanical repair and it catches the collision on the NEXT read; this
+    stops the hand claim being written at all, which is the only thing that
+    catches it before the work is spent. The launch orders say the opposite in
+    prose and live in `.agents/`, which is not a seat's to edit — the same split
+    #1701 and #2707 left owed, answered the same way they answered it.
+  */
+  it("names the tool and the flag that posts it, so the sentence is actionable", () => {
+    const text = crewCardHandbackInstruction(SEAT);
+    expect(text).toContain("scripts/crew-shift-start.mts");
+    expect(text).toContain("--card '#N'");
+    expect(text.toLowerCase()).toContain("do not write by hand");
+  });
+
+  it("carries the mechanism and the cost, so it reads as a reason not more ceremony", () => {
+    const text = crewCardHandbackInstruction(SEAT);
+    expect(text).toContain("#2773");
+    /* The mechanism in one clause: it is the NEWEST line that gets consulted. */
+    expect(text).toContain("NEWEST line");
+    expect(text).toContain("HIDES a rival's live claim");
+    /* And why the row's own refusal did not save that seat. */
+    expect(text).toContain("the card your ROW names");
+  });
+
+  it("still shows the claim LINE itself, in the spelling the board reads", () => {
+    /*
+      ⚠ THE ARM THAT KEEPS THE ESCAPE OPEN. `postCardClaim` prints this exact
+      command when `gh` refuses, and `--same-card` leaves a seat claiming by
+      hand on purpose — so a seat must still be able to see what to write. An
+      instruction that only forbade the hand claim would strand both roads.
+    */
+    const text = crewCardHandbackInstruction(SEAT);
+    expect(text).toContain(crewCardClaimLine(SEAT));
+    expect(crewCardCommentFact({ card: 2773, body: crewCardClaimLine(SEAT), createdAt: AT }))
+      .toMatchObject({ kind: "claim", seat: SEAT });
+  });
+
+  it("⚠ and the longer instruction STILL does not parse as a handback of its own card", () => {
+    /* The arm that matters most about adding to this text, re-asserted for the
+       ten lines added here: a line opening a block with a read word would file
+       the help text as a refusal of whatever card it was printed under. */
+    expect(crewCardCommentFact({ card: 2773, body: crewCardHandbackInstruction(SEAT), createdAt: AT }))
+      .toBeNull();
+  });
+});
