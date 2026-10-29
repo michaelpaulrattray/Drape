@@ -40793,6 +40793,11 @@
     },
     {
       "from": "module:shared/crewNextUpHold.ts",
+      "to": "module:shared/crewQueuePossiblyDone.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:shared/crewNextUpHold.ts",
       "to": "module:shared/crewWorkSwitches.ts",
       "kind": "imports"
     },

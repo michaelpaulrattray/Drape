@@ -72,7 +72,25 @@ export function stripBlockLead(line: string): string {
  * catch it if it ever did.
  */
 export function decoratedLines(body: string): string[] {
-  return body.split(/\r?\n/).map(stripBlockLead);
+  return bodyLines(body).map(stripBlockLead);
+}
+
+/**
+ * Every line of a body, **undecorated** — the one splitter, exported.
+ *
+ * ⚠ **IT EXISTS BECAUSE A CALLER NEEDED THE DECORATION ITSELF, AND THE GUARD
+ * CAUGHT IT KEEPING ITS OWN SPLITTER (#2777).** `planStaleHoldCitations` asks
+ * whether the hold line his page shows is written inside a `>` blockquote, and
+ * that is precisely the character `stripBlockLead` removes — so it cannot read
+ * `decoratedLines`, and `server/crewMarkdownLead.test.ts` rightly refuses a
+ * second line split beside the shared one.
+ *
+ * So the split is said ONCE and both shapes derive from it, rather than a
+ * consumer being made to choose between a reader that drops what it needs and
+ * a copy of the walk this module exists to own.
+ */
+export function bodyLines(body: string): string[] {
+  return body.split(/\r?\n/);
 }
 
 /** A line markdown itself treats as opening a block: an ATX heading, allowing

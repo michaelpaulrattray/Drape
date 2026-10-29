@@ -46,7 +46,8 @@
  * definition of "he is blocking this". It stays derived; putting it in a label
  * would let the queue claim he owes an answer he has already given.
  */
-import { blockOpeningLines, decoratedLines } from "./crewMarkdownLead";
+import { blockOpeningLines, bodyLines, decoratedLines, stripBlockLead } from "./crewMarkdownLead";
+import { cardNumbersIn } from "./crewQueuePossiblyDone";
 import { CREW_WORK_CATEGORIES, type CrewWorkCategoryKey } from "./crewWorkSwitches";
 
 /**
@@ -715,6 +716,193 @@ export function planLiveHoldReRead(input: {
       owner,
       founderHeld: FOUNDER_HELD_CARDS.get(row.issueNumber) ?? null,
     });
+  }
+  return found.sort((a, b) => a.issueNumber - b.issueNumber);
+}
+
+/** One live hold line whose leading clause names an artifact that has finished. */
+export type StaleHoldCitation = {
+  readonly issueNumber: number;
+  /** The sentence his page shows, verbatim — never a paraphrase of it. */
+  readonly reason: string;
+  /** The cited numbers that are no longer open, lowest first. */
+  readonly finished: readonly number[];
+};
+
+/**
+ * A `#N` the line calls a RULE rather than a dependency — *"#541 rule 3"*,
+ * *"his #1840 rule"*. Bounded to a dozen characters and stopped at clause
+ * punctuation so it cannot reach across a sentence into an unrelated word.
+ */
+const CITED_AS_A_RULE = /#(\d+)\b[^.;—]{0,12}\brules?\b/gi;
+
+/**
+ * Everything before the first `;` or em dash — the line's LEADING CLAUSE.
+ *
+ * ⚠ **THIS IS THE WHOLE NARROWING, AND IT IS POSITION RATHER THAN MEANING.**
+ * A hold line in this repository states its condition first and then explains
+ * itself: *"#2565 slice 2 — kept items, which waits on #2566 landing (PR
+ * #2570)"*. The condition is the leading clause; the tail is a RECEIPT, a
+ * history or an aside, and a number in it is being reported rather than waited
+ * on. Telling those apart by meaning needs a judgement about English, which is
+ * the instrument #737 measured and declined; position is mechanical, and it
+ * was chosen because it measured well rather than because it reads well.
+ */
+function leadingClauseOf(reason: string): string {
+  const cut = reason.search(/[;—]/);
+  return cut === -1 ? reason : reason.slice(0, cut);
+}
+
+/** Is the line his page shows written inside a `>` blockquote? */
+function holdLineIsQuoted(body: string, reason: string): boolean {
+  const bare = reason.endsWith("…") ? reason.slice(0, -1) : reason;
+  for (const line of bodyLines(body)) {
+    const text = stripBlockLead(line).trim();
+    if (!text.startsWith(CREW_HOLD_MARKER)) continue;
+    /* The FIRST one is the line `holdReasonFromBody` returned, so the answer is
+       about that line and never about a later one that happens to match. */
+    const written = text.slice(CREW_HOLD_MARKER.length).trim();
+    return written.startsWith(bare) && /^[ \t]*>/.test(line);
+  }
+  return false;
+}
+
+/**
+ * ⚠ **A LIVE HOLD LINE WHOSE STATED CONDITION HAS ALREADY BEEN MET — #2777.**
+ *
+ * `planLiveHoldReRead` above prints every live hold sentence so a shift can
+ * re-read it by eye. **This is the one row in that list a machine can judge**:
+ * the sentence names a pull request or a card, and that artifact is no longer
+ * open, so the thing it says it waits for has finished.
+ *
+ * **The instance it was filed from, #2603**, named *"PR #2600 merging, then his
+ * word admitting an account to CASTING_OUTFIT_EDIT_SCOPE"*; the pull request
+ * merged on 2026-10-27 and his word came the same day. **For two days that card
+ * told every shift that read it that the flag was unset** — while he is served
+ * and tests on production.
+ *
+ * # ⚠ THE NAIVE BAND WAS DECLINED TWICE, AND THIS IS THE NARROWING
+ *
+ * *Print any hold line naming a merged pull request or a closed card* was
+ * refused by #2303's candidate 1 (0 true, 1 false, 1 latent) and again by
+ * #2764, on one measured rule: **a checker whose finding is always the same
+ * teaches its reader to skim the rows beside it that are real.** Re-driven over
+ * the whole open board on 2026-10-29 — 72 cards, 41 carrying a hold label, 43
+ * unstruck hold lines in their bodies and **40 in this band's own population**,
+ * which is `planLiveHoldReRead`'s — the naive band prints **6 rows and 5 of them
+ * are wrong**:
+ *
+ * ```
+ *   naive (any cited artifact finished)      6 rows
+ *   + drop a blockquoted line                6 rows   <- 0 today, see below
+ *   + leading clause only                    1 row
+ *   + a rule citation is not a dependency    1 row
+ * ```
+ *
+ * The five it drops are every shape the card predicted: a RECEIPT (*"item 1
+ * shipped in PR #2627"*, *"only slice 1 has merged (#2571)"*, *"Shape 1 is
+ * unblocked now #2712 has merged"*), a RULE citation (*"#541 rule 3"*), and a
+ * chain described after the real condition (*"#2565 slice 2 — … which waits on
+ * #2566 landing (PR #2570)"*, where the leading clause's #2565 is open and the
+ * hold is real). **The one that survives is the one that should**: #65's line
+ * waits on *"the N3 focus settling"*, and N3 has been the confirmed focus since
+ * 2026-10-15.
+ *
+ * ⚠ **TWO OF THE CARD'S OWN FIGURES DID NOT SURVIVE THE RE-READ, AND BOTH
+ * CORRECTIONS ARE IN THIS CODE.** It reported two of four rows coming from `>`
+ * lines quoting a past waiting line — measured here, **0 of 43 live lines are
+ * quoted**, because the card's sweep read EVERY unstruck `**Waiting on:**` line
+ * in a body while the band reads the one `holdReasonFromBody` returns, which is
+ * the first. The drop is kept anyway and is not dead code: `decoratedLines` strips
+ * `>` before the marker test, so a quoted line written FIRST would be read as
+ * the hold — latent rather than live, and a drop can only ever remove a row.
+ * And **#2603 itself is no longer on the board in that shape**, having been
+ * repaired the hour it was found; #65 is today's specimen.
+ *
+ * # ⚠ "NO LONGER OPEN" RATHER THAN "MERGED OR CLOSED" — CHEAPER AND HONESTER
+ *
+ * The card asked for merged pull requests and closed cards. That needs the
+ * STATE of each cited number, and `crew-desk-sweep.mts` reads over REST first
+ * on purpose (#1399: GitHub's burst limiter refused every GraphQL call for
+ * hours a day for four days running) — so it would be one call per citation.
+ * **Asking instead whether the number is still OPEN costs nothing**: that sweep
+ * already reads every open card and every open pull request for other blocks,
+ * and the union of the two is the answer. It is also the better question — a
+ * pull request CLOSED UNMERGED is no longer pending either, and a hold waiting
+ * on one deserves the same re-read.
+ *
+ * ⚠ **AND A NUMBER THAT NEVER EXISTED MUST NOT READ AS FINISHED.** #2303 named
+ * this as candidate 1's latent second defect: `cardNumbersIn` reads *"patrol
+ * #14"* as card #14. Cards and pull requests share one sequence, so anything
+ * above the highest number the caller can see cannot have been issued yet and
+ * is skipped; below it, the artifact existed.
+ *
+ * ⚠ **IT REPORTS AND NEVER LABELS, AND THAT IS #586'S RULE RATHER THAN
+ * CAUTION**: removing a hold is the act that lets work start, and a hold lifted
+ * on a guess takes a takeable card off every seat's offer. The repair stays a
+ * person's, and this makes it a cheap one.
+ *
+ * **It is a FLOOR and says so**: a hold stale in words with no number in it at
+ * all — *"waiting on the Janitor's next run"* — is invisible to this and always
+ * will be.
+ */
+export function planStaleHoldCitations(input: {
+  /** Every OPEN card, with the labels and body `gh issue list` returns. */
+  readonly open: ReadonlyArray<{
+    readonly issueNumber: number;
+    readonly labels: readonly string[];
+    readonly body: string;
+  }>;
+  /**
+   * Every number still OPEN — cards and pull requests together, because they
+   * share one sequence and a hold line cites either without saying which.
+   */
+  readonly stillOpen: ReadonlySet<number>;
+}): readonly StaleHoldCitation[] {
+  /*
+    THE CEILING, AND IT IS ALSO THE UNREAD-BOARD GUARD — ONE MECHANISM, SAID
+    ONCE.
+ *
+    ⚠ **AN EXPLICIT `stillOpen.size === 0` EARLY RETURN STOOD HERE AND CAME OUT
+    BECAUSE IT SURVIVED ITS OWN SABOTAGE GREEN.** With the set empty the ceiling
+    is 0, so every citation is above it and nothing prints — the identical
+    fail-closed answer — which made the early return a statement no arm could
+    ever distinguish from its absence. A control nothing can tell apart from
+    nothing is not a control, and two spellings of one rule is the drift this
+    module is otherwise careful about.
+
+    So the reasoning lives here: an unread board has no highest number, every
+    citation reads as never issued, and the band prints nothing rather than
+    calling every citation finished — which would be the loudest possible way
+    to be wrong.
+  */
+  let ceiling = 0;
+  input.stillOpen.forEach((n) => { if (n > ceiling) ceiling = n; });
+
+  const found: StaleHoldCitation[] = [];
+  /* DERIVED FROM THE PRINTED BAND, never a second walk of the held set
+     (working law 4): a row here can then only ever name a sentence the re-read
+     above is already showing, and a filter that drifts in that reader takes
+     this one with it rather than leaving the two disagreeing. */
+  for (const hold of planLiveHoldReRead({ open: input.open })) {
+    if (hold.reason === null) continue;
+    const row = input.open.find((one) => one.issueNumber === hold.issueNumber);
+    if (!row || holdLineIsQuoted(row.body, hold.reason)) continue;
+
+    const rules = new Set<number>();
+    let ruleMatch = CITED_AS_A_RULE.exec(hold.reason);
+    while (ruleMatch !== null) {
+      rules.add(Number(ruleMatch[1]));
+      ruleMatch = CITED_AS_A_RULE.exec(hold.reason);
+    }
+    CITED_AS_A_RULE.lastIndex = 0;
+
+    const finished = cardNumbersIn(leadingClauseOf(hold.reason), hold.issueNumber)
+      .filter((cited) => !rules.has(cited) && cited <= ceiling && !input.stillOpen.has(cited))
+      .sort((a, b) => a - b);
+    if (finished.length > 0) {
+      found.push({ issueNumber: hold.issueNumber, reason: hold.reason, finished });
+    }
   }
   return found.sort((a, b) => a.issueNumber - b.issueNumber);
 }

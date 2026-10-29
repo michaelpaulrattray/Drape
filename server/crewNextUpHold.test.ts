@@ -16,6 +16,7 @@ import {
   planDeskHoldLabels,
   planFounderHeldDrift,
   planLiveHoldReRead,
+  planStaleHoldCitations,
   planUnheldDecisions,
   planUnreadableHolds,
   recommendationFromBody,
@@ -919,5 +920,157 @@ describe("a decision declared on a card nothing can see as a question gets NAMED
       open: [card(90, SPECIMEN_2761), card(9, SPECIMEN_2761), card(50, SPECIMEN_2761)],
     }).map((d) => d.issueNumber)).toEqual([9, 50, 90]);
     expect(planUnheldDecisions({ open: [] })).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ **A LIVE HOLD LINE WHOSE STATED CONDITION HAS ALREADY BEEN MET — #2777.**
+ *
+ * The naive band was declined twice on measurement (#2303 candidate 1, #2764)
+ * and `planStaleHoldCitations` is its narrowing. Re-driven over the real open
+ * board on 2026-10-29: the naive reading prints **6 rows, 5 of them wrong**;
+ * the shipped one prints **1**, and that one is genuinely stale.
+ *
+ * ⚠ **THE POSITIVE CONTROL IS LOAD-BEARING HERE ABOVE ANYWHERE ELSE.** The
+ * honest answer on a healthy board is ZERO rows, so a suite of "it stays
+ * silent" arms would pass perfectly against a band that can never fire — which
+ * is the whole #2303 class wearing a test's clothes. Every negative arm below
+ * sits under a positive one driving the same sentence.
+ *
+ * The fixtures are REAL hold lines off the board, so an arm fails when the
+ * shape a shift actually writes changes, rather than when a shape invented
+ * here does.
+ */
+describe("a hold line naming something that has finished (#2777)", () => {
+  const held = (issueNumber: number, reason: string, quoted = false) => ({
+    issueNumber,
+    labels: [CREW_HOLD_LABELS.blocked],
+    body: ["Some prose first.", "", `${quoted ? "> " : ""}${CREW_HOLD_MARKER} ${reason}`, "", "After it."].join("\n"),
+  });
+  /* A board the band can see: the held card itself, plus a ceiling high enough
+     that every number in these fixtures reads as one that was issued. */
+  const board = (cards: number[]) => new Set<number>([...cards, 999_999]);
+
+  it("THE POSITIVE CONTROL — #2603's own sentence, and the artifact it names", () => {
+    const found = planStaleHoldCitations({
+      open: [held(2603, "PR #2600 merging, then his word admitting an account to the scope.")],
+      stillOpen: board([2603]),
+    });
+
+    expect(found).toEqual([{
+      issueNumber: 2603,
+      reason: "PR #2600 merging, then his word admitting an account to the scope.",
+      finished: [2600],
+    }]);
+  });
+
+  it("⚠ and goes SILENT on the same sentence while that pull request is still open", () => {
+    expect(planStaleHoldCitations({
+      open: [held(2603, "PR #2600 merging, then his word admitting an account to the scope.")],
+      stillOpen: board([2603, 2600]),
+    })).toEqual([]);
+  });
+
+  it("⚠ A RECEIPT IN THE TAIL IS NOT A CONDITION — the shape that made the naive band noise", () => {
+    /* Three real lines off the board, each naming a finished artifact AFTER
+       its real condition. All three printed under the naive reading. */
+    const receipts = [
+      held(2616, "#30 and the side-inference court — item 1 shipped in PR #2627; item 2 needs renders."),
+      held(2565, "its own slices 2–5 — only slice 1 has merged (#2571). Claimed and being built."),
+      held(2713, "a Fable shift — DESIGN DECISION: shape 1 or shape 2. Shape 1 is unblocked now #2712 has merged."),
+    ];
+    expect(planStaleHoldCitations({
+      open: receipts,
+      stillOpen: board([2616, 2565, 2713, 30]),
+    })).toEqual([]);
+  });
+
+  it("⚠ and the SAME lines print the moment their real condition finishes", () => {
+    /* The arm that stops the one above passing for the wrong reason: if the
+       band were simply blind to those cards, this would stay silent too. */
+    const found = planStaleHoldCitations({
+      open: [held(2616, "#30 and the side-inference court — item 1 shipped in PR #2627; item 2 needs renders.")],
+      stillOpen: board([2616]),
+    });
+
+    expect(found.map((row) => row.finished)).toEqual([[30]]);
+  });
+
+  it("⚠ A RULE CITATION IS NEVER A DEPENDENCY, even in the leading clause", () => {
+    const rule = "#541 rule 3 and the Fable arm, because it is a design decision.";
+    expect(planStaleHoldCitations({
+      open: [held(2742, rule)],
+      stillOpen: board([2742]),
+    })).toEqual([]);
+
+    /* The positive beside it: the same number, not called a rule, prints. */
+    expect(planStaleHoldCitations({
+      open: [held(2742, "#541 landing, because it is a design decision.")],
+      stillOpen: board([2742]),
+    }).map((row) => row.finished)).toEqual([[541]]);
+  });
+
+  it("⚠ A BLOCKQUOTED LINE IS A QUOTATION — latent on the real board, driven here", () => {
+    /* `decoratedLines` strips `>` before the marker test, so a quoted line
+       written FIRST is read as the hold. 0 of 43 live lines were quoted on the
+       day this landed, which is why this arm exists rather than a measurement. */
+    expect(planStaleHoldCitations({
+      open: [held(2603, "PR #2600 merging, then his word.", true)],
+      stillOpen: board([2603]),
+    })).toEqual([]);
+
+    /* The same line unquoted must print, or the arm above proves nothing. */
+    expect(planStaleHoldCitations({
+      open: [held(2603, "PR #2600 merging, then his word.")],
+      stillOpen: board([2603]),
+    })).toHaveLength(1);
+  });
+
+  it("⚠ A NUMBER NEVER ISSUED IS NOT A FINISHED ONE — #2303's latent second defect", () => {
+    /* `cardNumbersIn` reads "patrol #14" as card #14. Cards and pull requests
+       share one sequence, so anything above the highest number the caller can
+       see cannot have been issued and is skipped. */
+    expect(planStaleHoldCitations({
+      open: [held(1882, "the Janitor's next run, scheduled as patrol #99000.")],
+      stillOpen: new Set([1882, 2800]),
+    })).toEqual([]);
+
+    /* Below the ceiling, the same shape is judged — the control that stops the
+       skip from swallowing every citation. */
+    expect(planStaleHoldCitations({
+      open: [held(1882, "the Janitor's next run, scheduled as patrol #2700.")],
+      stillOpen: new Set([1882, 2800]),
+    })).toHaveLength(1);
+  });
+
+  it("⚠ AN UNREAD BOARD PRINTS NOTHING rather than calling every citation finished", () => {
+    /*
+      ⚠ THIS ARM AND THE CEILING ARM ABOVE DRIVE THE SAME MECHANISM, WHICH IS
+      WHY THE EXPLICIT EARLY RETURN CAME OUT. It survived its own sabotage
+      green: with the set empty the ceiling is 0 anyway, so deleting the guard
+      changed no behaviour and the arm passed for the wrong reason. The
+      reasoning is on the ceiling now, and sabotaging it reddens both.
+    */
+    expect(planStaleHoldCitations({
+      open: [held(2603, "PR #2600 merging, then his word.")],
+      stillOpen: new Set<number>(),
+    })).toEqual([]);
+  });
+
+  it("⚠ IT IS A SUBSET OF THE PRINTED BAND, never a second walk of the held set", () => {
+    /* Working law 4: a row here must always name a sentence the re-read band is
+       already showing, so an unheld card can never reach this one. */
+    const unheld = {
+      issueNumber: 2604,
+      labels: ["bug"],
+      body: `${CREW_HOLD_MARKER} PR #2600 merging.`,
+    };
+    expect(planStaleHoldCitations({ open: [unheld], stillOpen: board([2604]) })).toEqual([]);
+
+    const queue = [held(2603, "PR #2600 merging, then his word."), unheld];
+    const printed = planLiveHoldReRead({ open: queue }).map((hold) => hold.issueNumber);
+    for (const row of planStaleHoldCitations({ open: queue, stillOpen: board([2603, 2604]) })) {
+      expect(printed).toContain(row.issueNumber);
+    }
   });
 });
