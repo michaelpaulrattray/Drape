@@ -167,6 +167,18 @@ describe("R7-7C5A private evidence cleanup backend", () => {
       // public key, and the manifest is what collects it if the write fails
       // anywhere before the row commits.
       "server/castingV2/referenceMint.ts",
+      // The take from an attached picture (#2736 slice 2, 2026-10-29) registers
+      // the CUT's key before the bytes are stored and names `public_r2` for it.
+      // It is the THIRD caller whose artifact came out of something that was
+      // never ours: a jacket cut out of a photograph a customer handed us, with
+      // every detected face already zeroed in the bytes. Bytes there with no row
+      // pointing at them would be a piece of somebody's photograph at a
+      // permanently public key that nothing can find and nothing will collect.
+      // ⚠ The `inkUploadService.ts` note above anticipated this road and called
+      // it "(HELD, N3)" — his word of 2026-10-29 lifted that hold ("BUILD IT"),
+      // and the road now has a module of its own rather than riding that
+      // wrapper. What the pin requires of it is unchanged.
+      "server/castingV2/referenceTake.ts",
       // The Sign ceremony (M7) registers its anchor copy for deletion BEFORE it
       // makes the copy, and names `public_r2` for it — a Cast's images live in
       // the public bucket, evidence does not, and a manifest that left the
