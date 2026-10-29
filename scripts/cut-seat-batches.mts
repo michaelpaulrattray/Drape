@@ -1162,9 +1162,16 @@ if (!ARGS.flag("quiet")) {
     const cardWord = read === undefined || read.cards.length === 0
       ? " | no open card named in its title"
       : ` | card ${read.cards.map((card) => `#${card}`).join(", ")}`;
+    /* ⚠ EVERY live claim on that card, not the newest (#2775) — a contested
+       card has two seats on it and this line is read by a person deciding who
+       to talk to, so naming one of them was naming the wrong one 2 times in 3
+       (`liveCardClaimsFromFacts` carries the measurement). */
     const claimWord = read?.claim == null
       ? ""
-      : ` | ⚠ #${read.claim.card} CLAIMED by ${read.claim.seat ?? "a seat that did not name itself"} at ${read.claim.at}`;
+      : ` | ⚠ #${read.claim.card} CLAIMED by `
+        + read.claim.claims
+          .map((claim) => `${claim.seat ?? "a seat that did not name itself"} at ${claim.at}`)
+          .join(" and ");
     console.log(
       `REPAIR OWED | PR #${repair.pullRequest} | held ${Number.isFinite(hours) ? hours.toFixed(1) : "?"}h`
       + ` | ${repair.headRefName || "no branch read"}${cardWord}${claimWord} | ${repair.title}`,

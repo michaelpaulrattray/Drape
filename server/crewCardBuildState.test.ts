@@ -33,6 +33,8 @@ import {
   crewCardBuildViews,
   crewCardCommentFact,
   isNotBuiltLabelled,
+  liveCardClaimFromFacts,
+  liveCardClaimsFromFacts,
   notBuiltCards,
   indexCardBuilds,
   pullRequestBuildsCard,
@@ -329,7 +331,7 @@ describe("the refusal label", () => {
   it("⚠ A LIVE CLAIM OUTRANKS THE LABEL — somebody's hands are on it right now", () => {
     const live = new Date(NOW - 60 * 60 * 1000).toISOString();
     expect(crewCardBuildState({ ...base, facts: [claim(1217, live)], notBuilt: new Set([1217]) }))
-      .toMatchObject({ kind: "claimed", seat: "seat-desk" });
+      .toMatchObject({ kind: "claimed", claims: [{ seat: "seat-desk", at: live }] });
   });
 
   it("⚠ A RELEASE FALLS THROUGH TO THE LABEL rather than erasing it", () => {
@@ -507,6 +509,98 @@ describe("has this pull request been reviewed? (his desk, 2026-09-26)", () => {
 });
 
 /**
+ * ⚠ **EVERY LIVE CLAIM, AND THE SINGULAR READER AS THIS LIST'S HEAD (#2775).**
+ *
+ * The defect was the NAME and never the lock: on a card two seats both hold,
+ * the reader named the seat that got there LAST, and three surfaces print that
+ * as *whose hands are on it*. The measurement that chose the repair is in
+ * `liveCardClaimsFromFacts`'s own docblock — over the three collisions the
+ * record holds, oldest-wins is right 2 times in 3 and newest-wins 1 in 3, so
+ * no single name is a rule and the list is the honest answer.
+ */
+describe("every live claim on a card", () => {
+  const CARD = 2769;
+
+  it("reports both seats, newest first, when two are live", () => {
+    const run = liveCardClaimsFromFacts({
+      card: CARD,
+      facts: [
+        claim(CARD, "2026-09-26T02:15:00Z", "seat1-20261029-095243"),
+        claim(CARD, "2026-09-26T01:00:00Z", "foreman-20261029-1005"),
+      ],
+      nowMs: NOW,
+    });
+    expect(run.map((entry) => entry.seat))
+      .toEqual(["seat1-20261029-095243", "foreman-20261029-1005"]);
+  });
+
+  /**
+   * ⚠ **THE EQUIVALENCE THAT MAKES THIS REPAIR SAFE.** `liveCardClaimFromFacts`
+   * is now `run[0]`, so every verdict it has ever given on a single claim is
+   * unchanged — which is why the walk STOPS at the first non-claim fact rather
+   * than skipping past it. This is the arm that would redden if the walk were
+   * loosened to skip, because then a claim under a release would surface.
+   */
+  it("the singular reader is exactly this list's head, on every shape", () => {
+    const boards = [
+      [claim(CARD, "2026-09-26T02:15:00Z", "a")],
+      [claim(CARD, "2026-09-26T02:15:00Z", "a"), claim(CARD, "2026-09-26T01:00:00Z", "b")],
+      [release(CARD, "2026-09-26T02:20:00Z"), claim(CARD, "2026-09-26T02:15:00Z", "a")],
+      [refusal(CARD, "2026-09-26T02:20:00Z"), claim(CARD, "2026-09-26T02:15:00Z", "a")],
+      /* Stale: the window is 12 h and NOW is 02:30, so this is long gone. */
+      [claim(CARD, "2026-09-25T10:00:00Z", "a")],
+      [],
+    ];
+    for (const facts of boards) {
+      const single = liveCardClaimFromFacts({ card: CARD, facts, nowMs: NOW });
+      const head = liveCardClaimsFromFacts({ card: CARD, facts, nowMs: NOW })[0] ?? null;
+      expect(single).toEqual(head);
+    }
+  });
+
+  it("a release or a refusal cancels EVERY claim under it, not only the newest", () => {
+    /* The rule this module has always applied, now read one line deeper: a
+       release puts the card back on offer for everybody, so neither of the two
+       seats beneath it is still holding anything. */
+    for (const canceller of [release(CARD, "2026-09-26T02:20:00Z"), refusal(CARD, "2026-09-26T02:20:00Z")]) {
+      expect(liveCardClaimsFromFacts({
+        card: CARD,
+        facts: [
+          canceller,
+          claim(CARD, "2026-09-26T02:15:00Z", "a"),
+          claim(CARD, "2026-09-26T01:00:00Z", "b"),
+        ],
+        nowMs: NOW,
+      })).toEqual([]);
+    }
+  });
+
+  it("a stale claim stops the walk, and everything under it is staler", () => {
+    /* NOW is 02:30 and the window is 12 h, so the 10:00 line of the previous day
+       is dead. A list is sorted, so nothing beneath a dead claim can be alive —
+       which is why one `break` is the whole rule. */
+    const run = liveCardClaimsFromFacts({
+      card: CARD,
+      facts: [
+        claim(CARD, "2026-09-26T02:15:00Z", "live"),
+        claim(CARD, "2026-09-25T10:00:00Z", "stale"),
+        claim(CARD, "2026-09-25T09:00:00Z", "staler"),
+      ],
+      nowMs: NOW,
+    });
+    expect(run.map((entry) => entry.seat)).toEqual(["live"]);
+  });
+
+  it("another card's claims are never counted, and a verdict is not a claim", () => {
+    expect(liveCardClaimsFromFacts({
+      card: CARD,
+      facts: [claim(1322, "2026-09-26T02:15:00Z", "elsewhere")],
+      nowMs: NOW,
+    })).toEqual([]);
+  });
+});
+
+/**
  * ⚠ **WHICH STATES TAKE A CARD OFF OFFER — the predicate the five queue readers
  * act on (#1094 piece 2), and it is TWO of the three.**
  */
@@ -514,7 +608,21 @@ describe("is this card still on offer?", () => {
   it("an open pull request and a live claim hold it off offer", () => {
     expect(buildStateHoldsOffOffer({ kind: "pull-request", pullRequest: 1, stage: "gate" })).toBe(true);
     expect(buildStateHoldsOffOffer({ kind: "pull-request", pullRequest: 1, stage: "passed" })).toBe(true);
-    expect(buildStateHoldsOffOffer({ kind: "claimed", seat: "seat-x", at: "2026-09-26T02:00:00Z" })).toBe(true);
+    expect(buildStateHoldsOffOffer({
+      kind: "claimed",
+      claims: [{ seat: "seat-x", at: "2026-09-26T02:00:00Z" }],
+    })).toBe(true);
+    /* ⚠ AND A CONTESTED CARD IS HELD OFF OFFER EXACTLY AS A SINGLY-CLAIMED ONE
+       IS (#2775). The card's own sentence is *"the LOCK is intact; only the NAME
+       is wrong"*, so this is the arm that proves the repair did not widen into
+       the lock: two live claims must not make a card MORE takeable than one. */
+    expect(buildStateHoldsOffOffer({
+      kind: "claimed",
+      claims: [
+        { seat: "seat-b", at: "2026-09-26T02:00:00Z" },
+        { seat: "seat-a", at: "2026-09-26T01:00:00Z" },
+      ],
+    })).toBe(true);
   });
 
   it("⚠ A REFUSAL DOES NOT — it is a judgement the next reader may overturn", () => {
@@ -548,12 +656,54 @@ describe("the phrase his page draws", () => {
   });
 
   it("a claim names the seat and how long ago, and the first hour says so in words", () => {
-    expect(crewCardBuildPhrase({ kind: "claimed", seat: "seat-desk-2", at: "2026-09-26T02:15:00Z" }, NOW))
-      .toBe("claimed by seat-desk-2, under an hour ago");
-    expect(crewCardBuildPhrase({ kind: "claimed", seat: "seat-atlas", at: "2026-09-25T23:30:00Z" }, NOW))
-      .toBe("claimed by seat-atlas, 3 h ago");
-    expect(crewCardBuildPhrase({ kind: "claimed", seat: null, at: "2026-09-25T23:30:00Z" }, NOW))
-      .toBe("claimed 3 h ago");
+    expect(crewCardBuildPhrase({
+      kind: "claimed",
+      claims: [{ seat: "seat-desk-2", at: "2026-09-26T02:15:00Z" }],
+    }, NOW)).toBe("claimed by seat-desk-2, under an hour ago");
+    expect(crewCardBuildPhrase({
+      kind: "claimed",
+      claims: [{ seat: "seat-atlas", at: "2026-09-25T23:30:00Z" }],
+    }, NOW)).toBe("claimed by seat-atlas, 3 h ago");
+    expect(crewCardBuildPhrase({
+      kind: "claimed",
+      claims: [{ seat: null, at: "2026-09-25T23:30:00Z" }],
+    }, NOW)).toBe("claimed 3 h ago");
+  });
+
+  /**
+   * ⚠ **TWO SEATS READ AS TWO, AND THE AGE IS THE FIRST ARRIVAL (#2775).** The
+   * sentence for one claim is UNCHANGED above — that is the ordinary case and
+   * every claim this board has drawn but three — so this is the only wording
+   * the card adds.
+   */
+  it("two live claims are counted rather than resolved to one name", () => {
+    expect(crewCardBuildPhrase({
+      kind: "claimed",
+      claims: [
+        { seat: "seat1-20261029-095243", at: "2026-09-26T02:15:00Z" },
+        { seat: "foreman-20261029-1005", at: "2026-09-25T23:30:00Z" },
+      ],
+    }, NOW)).toBe("claimed by 2 seats, 3 h ago");
+    /* ⚠ THE AGE IS THE OLDEST CLAIM'S, NOT THE NEWEST — the question is how
+       long the card has been held at all, which is what "3 h ago" answers on a
+       single claim. Sabotaging this to `claims[0]` makes it "under an hour
+       ago", which is a different and wronger fact. */
+    expect(crewCardBuildPhrase({
+      kind: "claimed",
+      claims: [
+        { seat: "b", at: "2026-09-26T02:15:00Z" },
+        { seat: "a", at: "2026-09-26T02:10:00Z" },
+      ],
+    }, NOW)).toBe("claimed by 2 seats, under an hour ago");
+    /* Three is not a shape the record has ever held, and it must still read. */
+    expect(crewCardBuildPhrase({
+      kind: "claimed",
+      claims: [
+        { seat: "c", at: "2026-09-26T02:15:00Z" },
+        { seat: "b", at: "2026-09-26T01:00:00Z" },
+        { seat: null, at: "2026-09-25T23:30:00Z" },
+      ],
+    }, NOW)).toBe("claimed by 3 seats, 3 h ago");
   });
 
   it("no phrase carries a term of art from the pipeline", () => {
@@ -561,7 +711,30 @@ describe("the phrase his page draws", () => {
       crewCardBuildPhrase({ kind: "pull-request", pullRequest: 1, stage: "gate" }, NOW),
       crewCardBuildPhrase({ kind: "pull-request", pullRequest: 1, stage: "review" }, NOW),
       crewCardBuildPhrase({ kind: "refused", at: "2026-09-26T00:00:00Z" }, NOW),
-      crewCardBuildPhrase({ kind: "claimed", seat: "s", at: "2026-09-26T02:00:00Z" }, NOW),
+      crewCardBuildPhrase({
+        kind: "claimed",
+        claims: [{ seat: "s", at: "2026-09-26T02:00:00Z" }],
+      }, NOW),
+      /* ⚠ THE CONTESTED PHRASE IS IN THIS CAP ON PURPOSE (#2775) — the cell is
+         `flex: none` beside a title that ellipsises, so every character here is
+         taken off the card's own title. Naming both seats would be ~110
+         characters, which is why the names go to the two terminal lines instead.
+
+         ⚠ **AND THIS CAP IS WEAKER THAN IT LOOKS, MEASURED RATHER THAN
+         ASSUMED (#2775).** Every seat name in this arm is a short invented one,
+         so 42 is a bound on the FIXTURES and not on the phrase: driven over the
+         real board, a single live claim by `foreman-20261029-1005` renders
+         **50** characters and has done since #1094. The contested phrase is 37.
+         Left as it stands rather than widened, because tightening or loosening
+         it is a judgement about his page that belongs on its own card — filed
+         as such — and not inside this repair. */
+      crewCardBuildPhrase({
+        kind: "claimed",
+        claims: [
+          { seat: "seat1-20261029-095243", at: "2026-09-26T02:15:00Z" },
+          { seat: null, at: "2026-09-26T02:14:00Z" },
+        ],
+      }, NOW),
     ];
     for (const phrase of phrases) {
       expect(phrase.length).toBeLessThanOrEqual(42);

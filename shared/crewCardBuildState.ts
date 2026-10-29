@@ -102,6 +102,9 @@ import {
 export const CREW_CLAIM_LIVE_MS = 12 * 60 * 60 * 1000;
 
 /** What the page draws on a row, and what a queue reader stops offering. */
+/** One live claim and the seat that wrote it. */
+export type CrewLiveClaim = { readonly seat: string | null; readonly at: string };
+
 export type CrewCardBuildState =
   | {
     readonly kind: "pull-request";
@@ -115,7 +118,18 @@ export type CrewCardBuildState =
     /** Only ever set on `finding`; the relay's own words for the hold (#1705). */
     readonly findingNote?: string | null;
   }
-  | { readonly kind: "claimed"; readonly seat: string | null; readonly at: string }
+  /**
+   * ⚠ **EVERY LIVE CLAIM, NEWEST FIRST, AND NEVER ONE NAME (#2775).** This was
+   * `{ seat, at }` — the newest live claim — and on a card two seats both hold
+   * that named the seat which got there LAST. The pair is replaced rather than
+   * added to, because keeping a single `seat` beside the list would store the
+   * same fact twice (working law 4) and would have to choose which name it
+   * holds — and the measurement below is that NO single name is reliable.
+   *
+   * Non-empty by construction: {@link crewCardBuildState} returns this kind
+   * only when {@link liveCardClaimsFromFacts} found at least one.
+   */
+  | { readonly kind: "claimed"; readonly claims: readonly CrewLiveClaim[] }
   /**
    * ⚠ **`at` IS NULLABLE BECAUSE A LABEL HAS NO TIMESTAMP ANY READER HERE CAN
    * SEE (#1337).** GitHub's search API and `gh issue list` both hand back a
@@ -1009,15 +1023,82 @@ export function liveCardClaimFromFacts(input: {
   readonly card: number;
   readonly facts: readonly CrewCardCommentFact[];
   readonly nowMs: number;
-}): { readonly seat: string | null; readonly at: string } | null {
-  const newest = input.facts
+}): CrewLiveClaim | null {
+  return liveCardClaimsFromFacts(input)[0] ?? null;
+}
+
+/**
+ * ⚠ **EVERY LIVE CLAIM ON THIS CARD, NEWEST FIRST — THE ONE OWNER OF THE WALK,
+ * AND THE READER {@link liveCardClaimFromFacts} IS NOW THE HEAD OF (#2775).**
+ *
+ * # What was wrong, and it was the NAME rather than the lock
+ *
+ * The singular reader above took the newest live claim and nothing else, so on
+ * a card two seats both hold it reported the seat that got there **last** — and
+ * three surfaces print that name as *whose hands are on it*: his page, the
+ * seat cut's per-card line, and #2769's repair hand-out. The lock was never
+ * affected ({@link buildStateHoldsOffOffer} is `true` on one claim or five), so
+ * no third seat could ever be handed a contested card. What was wrong is that
+ * the one reader a relay consults to find out **who to talk to** pointed at the
+ * wrong seat, on exactly the occasion — a collision — when somebody needs to
+ * know, and said nothing about there being a second seat at all.
+ *
+ * # ⚠ WHY IT RETURNS A LIST RATHER THAN PICKING THE OLDEST, MEASURED
+ *
+ * #2775 offered two candidates and the plain-reading one was *the oldest live
+ * claim wins — whose hands is who got there first*. **It was driven over all
+ * three collisions the record holds and it is wrong 1 time in 3**, which is why
+ * it is declined rather than simply not chosen. Each row read at the artifacts
+ * — which seat's pull request actually survived, tied to a seat by the card's
+ * own `PR #n open — <seat>` line:
+ *
+ * | collision | the holder | this reader before | oldest-wins |
+ * |---|---|---|---|
+ * | #1554 (2026-09-30) | the **newer** seat (`foreman-20260930-1553`, PR #1576 merged) | right | **wrong** |
+ * | #1872 (2026-10-03) | the **older** seat (`foreman-20261004-0635`, PR #1874 merged) | wrong | right |
+ * | #2769 (2026-10-29) | the **older** seat (`foreman-20261029-1005`, PR #2771 merged) | wrong | right |
+ *
+ * **So oldest-wins is 2 of 3 and newest-wins is 1 of 3, and neither is a rule.**
+ * The reason is structural rather than bad luck: in **3 of 3** collisions BOTH
+ * seats went on to open a pull request, and which one became the holder was
+ * decided AFTERWARDS — by the relay choosing which to merge, or by a seat
+ * writing `RELEASED` once it saw the clash. Nothing in the claim comments can
+ * know that at the moment the question is asked. **A reader that must answer
+ * with one name is therefore guessing, and the honest answer is the one fact
+ * that IS knowable and would have helped every time: there are two seats here,
+ * and here is when each arrived.**
+ *
+ * # The walk, which is the existing newest-wins rule read one line deeper
+ *
+ * Newest first, and it **stops at the first fact that is not a live claim**. A
+ * release or a refusal cancels everything older for every seat — the rule this
+ * module has always applied — and so does a stale claim, because the list is
+ * sorted and everything under a stale claim is staler. One rule, not two.
+ *
+ * ⚠ **STOPPING (rather than skipping past a non-claim) IS WHAT MAKES THE
+ * SINGULAR READER PROVABLY THIS LIST'S HEAD**, so #2775 changes no verdict
+ * anywhere a single claim is involved. `scripts/lib/cardClaimComments.mts`'s
+ * `liveRivalUnderOwnClaim` walks the same way with one refinement of its own —
+ * it skips the asking seat's own lines, which it can because it is handed
+ * `mine` and his page is not a seat.
+ */
+export function liveCardClaimsFromFacts(input: {
+  readonly card: number;
+  readonly facts: readonly CrewCardCommentFact[];
+  readonly nowMs: number;
+}): readonly CrewLiveClaim[] {
+  const own = input.facts
     .filter((fact): fact is Exclude<CrewCardCommentFact, { kind: "verdict" }> =>
       fact.card === input.card && fact.kind !== "verdict")
-    .sort((a, b) => b.at.localeCompare(a.at))[0];
-  if (newest === undefined || newest.kind !== "claim") return null;
-  const atMs = Date.parse(newest.at);
-  if (!Number.isFinite(atMs) || input.nowMs - atMs > CREW_CLAIM_LIVE_MS) return null;
-  return { seat: newest.seat, at: newest.at };
+    .sort((a, b) => b.at.localeCompare(a.at));
+  const live: CrewLiveClaim[] = [];
+  for (const fact of own) {
+    if (fact.kind !== "claim") break;
+    const atMs = Date.parse(fact.at);
+    if (!Number.isFinite(atMs) || input.nowMs - atMs > CREW_CLAIM_LIVE_MS) break;
+    live.push({ seat: fact.seat, at: fact.at });
+  }
+  return live;
 }
 
 /**
@@ -1100,8 +1181,8 @@ export function crewCardBuildState(input: {
        repairs lane has to ask the same question about a card this function can
        only answer `pull-request` about (#2769). The answer is identical: that
        reader keys on the newest non-verdict fact exactly as `latest` does. */
-    const claim = liveCardClaimFromFacts({ card, facts, nowMs });
-    if (claim !== null) return { kind: "claimed", seat: claim.seat, at: claim.at };
+    const claims = liveCardClaimsFromFacts({ card, facts, nowMs });
+    if (claims.length > 0) return { kind: "claimed", claims };
     /* A release, or a claim that has aged out — both fall through to the label,
        per the order in the docblock. Neither erases a refusal nobody withdrew. */
   }
@@ -1212,10 +1293,41 @@ export function crewCardBuildPhrase(state: CrewCardBuildState, nowMs: number): s
     case "refused":
       return "not built — the reason is on the card";
     case "claimed": {
-      const since = sinceWord(state.at, nowMs);
-      return state.seat === null
-        ? `claimed ${since}`
-        : `claimed by ${state.seat}, ${since}`;
+      /* ⚠ ONE CLAIM KEEPS TODAY'S SENTENCE WORD FOR WORD (#2775) — the ordinary
+         case is every claim this board has ever drawn but three, and a new
+         wording for it would be a change his page shows daily in exchange for
+         nothing. `claims` is non-empty by construction. */
+      const [newest, ...rest] = state.claims;
+      if (rest.length === 0) {
+        const since = sinceWord(newest.at, nowMs);
+        return newest.seat === null ? `claimed ${since}` : `claimed by ${newest.seat}, ${since}`;
+      }
+      /* ⚠ TWO SEATS ARE COUNTED, NOT RESOLVED TO ONE NAME, and the names are
+         deliberately NOT here — the cell is `flex: none` beside a title that
+         ellipsises, so every character of this phrase is taken off the card's
+         own title. Naming both seats reads ~110 characters (a seat id is ~21),
+         which is more than DOUBLE the longest phrase this page draws today;
+         counting them is 37. The shape is the single-claim sentence with the
+         count where the name was, so the two read down the page as one thing.
+
+         ⚠ The arm beside this caps a phrase at 42 characters, and that is the
+         ARM'S bound rather than the cell's: driven over the real board, a
+         single claim by `foreman-20261029-1005` already renders 50, because
+         every fixture in that arm uses a short invented seat name. So the
+         honest statement is the comparative one above — this phrase is shorter
+         than what the page already draws — and not that 42 is a limit anything
+         enforces.
+
+         WHERE THE NAMES GO INSTEAD is the surface a person untangling a
+         collision actually reads: the seat cut's `REPAIR OWED` line and
+         `repairClaimWord`, both terminal lines with no cell to fit, both of
+         which name every seat and every age since #2775. His page needs to know
+         that something is odd here; the relay needs to know who to talk to.
+
+         The age is the FIRST arrival — how long the card has been held at all —
+         which is the same question "3 h ago" answers on a single claim. */
+      const first = state.claims[state.claims.length - 1];
+      return `claimed by ${state.claims.length} seats, ${sinceWord(first.at, nowMs)}`;
     }
   }
 }

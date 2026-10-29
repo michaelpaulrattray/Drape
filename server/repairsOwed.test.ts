@@ -456,11 +456,16 @@ describe("⚠ the cut offers the repair before the card (#1977)", () => {
     /* THE MACHINE-READABLE HALF: the runner builds its own sentence out of these
        fields, and the one line that prints `claim` is the relay's to land. */
     const items = (plan.repairsOwed as {
-      items: { pullRequest: number; cards: number[]; claim: { card: number; seat: string } | null }[];
+      items: {
+        pullRequest: number;
+        cards: number[];
+        claim: { card: number; claims: { seat: string | null; at: string }[] } | null;
+      }[];
     }).items;
     expect(items[0]!.pullRequest).toBe(1924);
     expect(items[0]!.cards).toEqual([1903]);
-    expect(items[0]!.claim).toMatchObject({ card: 1903, seat: "seat1-20261029-095243" });
+    expect(items[0]!.claim).toMatchObject({ card: 1903 });
+    expect(items[0]!.claim!.claims.map((entry) => entry.seat)).toEqual(["seat1-20261029-095243"]);
     expect(items[1]!.cards).toEqual([1937]);
     expect(items[1]!.claim).toBeNull();
   });
@@ -692,8 +697,7 @@ describe("the card behind a repair, and the claim on it (#2769)", () => {
     const read = repairCardClaims({ repairs: HELD, openCards: BOARD, facts, nowMs: NOW });
     expect(read[0]!.claim).toEqual({
       card: 1903,
-      seat: "seat1-20261029-095243",
-      at: "2026-10-28T23:54:00Z",
+      claims: [{ seat: "seat1-20261029-095243", at: "2026-10-28T23:54:00Z" }],
     });
     /* And only that one — eight repairs with nothing said about their cards. */
     expect(read.filter((row) => row.claim !== null)).toHaveLength(1);
@@ -746,8 +750,8 @@ describe("the card behind a repair, and the claim on it (#2769)", () => {
       releaseFact(1903, "seat1", "2026-10-28T22:00:00Z"),
       claimFact(1903, "seat2", "2026-10-28T23:30:00Z"),
     ]);
-    expect(repairCardClaims({ repairs: HELD, openCards: BOARD, facts: reclaimed, nowMs: NOW })[0]!.claim?.seat)
-      .toBe("seat2");
+    expect(repairCardClaims({ repairs: HELD, openCards: BOARD, facts: reclaimed, nowMs: NOW })[0]!
+      .claim?.claims[0]?.seat).toBe("seat2");
   });
 
   it("the word for the runner's line: empty with nothing to say, the seat and the age when there is", () => {
@@ -755,13 +759,13 @@ describe("the card behind a repair, and the claim on it (#2769)", () => {
     expect(repairClaimWord([{ pullRequest: 1924, cards: [1903], claim: null }], NOW)).toBe("");
 
     const minutes = repairClaimWord(
-      [{ pullRequest: 1924, cards: [1903], claim: { card: 1903, seat: "seat1", at: "2026-10-28T23:54:00Z" } }],
+      [{ pullRequest: 1924, cards: [1903], claim: { card: 1903, claims: [{ seat: "seat1", at: "2026-10-28T23:54:00Z" }] } }],
       NOW,
     );
     expect(minutes).toBe(" | repair claims: PR #1924 -> card #1903 claimed by seat1 6m ago");
 
     const hours = repairClaimWord(
-      [{ pullRequest: 1924, cards: [1903], claim: { card: 1903, seat: "seat1", at: "2026-10-28T13:00:00Z" } }],
+      [{ pullRequest: 1924, cards: [1903], claim: { card: 1903, claims: [{ seat: "seat1", at: "2026-10-28T13:00:00Z" }] } }],
       NOW,
     );
     expect(hours).toContain("11.0h ago");
@@ -769,8 +773,43 @@ describe("the card behind a repair, and the claim on it (#2769)", () => {
     /* An unattributed claim is still somebody's — the asymmetry `readCardClaim`
        states: a missed claim costs an hour of a seat, a named one costs a word. */
     expect(repairClaimWord(
-      [{ pullRequest: 1924, cards: [1903], claim: { card: 1903, seat: null, at: "2026-10-28T23:54:00Z" } }],
+      [{ pullRequest: 1924, cards: [1903], claim: { card: 1903, claims: [{ seat: null, at: "2026-10-28T23:54:00Z" }] } }],
       NOW,
     )).toContain("a seat that did not name itself");
+  });
+
+  /**
+   * ⚠ **A CONTESTED CARD NAMES BOTH SEATS HERE, AND EACH AGE (#2775).** This is
+   * the line a person untangling a collision reads, and it is where the names
+   * live now that his page counts rather than names them: it is a terminal line
+   * with no cell to fit, where the 42-character bound on the page's phrase does
+   * not apply.
+   */
+  it("two live claims on one card name both seats, each with its own age", () => {
+    const word = repairClaimWord(
+      [{
+        pullRequest: 1924,
+        cards: [1903],
+        claim: {
+          card: 1903,
+          claims: [
+            { seat: "seat1-20261029-095243", at: "2026-10-28T23:54:00Z" },
+            { seat: "foreman-20261029-1005", at: "2026-10-28T13:00:00Z" },
+          ],
+        },
+      }],
+      NOW,
+    );
+    expect(word).toBe(
+      " | repair claims: PR #1924 -> card #1903 claimed by seat1-20261029-095243 6m ago"
+      + " and foreman-20261029-1005 11.0h ago",
+    );
+    /* ⚠ THE TWO AGES ARE THE POINT, not decoration: this function's own docblock
+       says three minutes is somebody at a keyboard and eleven hours is a
+       finished shift that never released — and on a contested card the two
+       seats can be one of each, which is exactly what this row is. A reader
+       given one name and one age could not have told those apart. */
+    expect(word).toContain("6m ago");
+    expect(word).toContain("11.0h ago");
   });
 });
