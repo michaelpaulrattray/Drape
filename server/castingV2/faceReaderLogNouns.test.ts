@@ -79,9 +79,30 @@ describe("the pointer road's line names what it could not draw, and why", () => 
       reader,
     });
     const fields = line("pointer road");
-    expect(fields.wordsOnly).toEqual({ scattered: ["freckles"], uncut: ["neck tattoo", "lace tattoo"] });
+    /*
+      ⚠ **`lace tattoo` LEFT `wordsOnly.uncut` AT #2805, AND THAT IS THE POINT
+      OF THAT CARD RATHER THAN A LOSS HERE.** Its detector call THREW, so it is
+      a `dropped` name now and not an `uncut` one — `uncut`'s own sentence is
+      *the detector was asked*, which of a thrown call was never true. This arm
+      used to show one noun filed under two roads at once, which is precisely
+      the ambiguity its own header is about: it now appears under exactly one.
+    */
+    expect(fields.wordsOnly).toEqual({ scattered: ["freckles"], uncut: ["neck tattoo"] });
     expect(fields.declinedNouns).toEqual(["neck tattoo"]);
     expect(fields.failedNouns).toEqual(["lace tattoo"]);
+    /* And the count says a name was lost to a dropped call, which is the number
+       the kept reading now carries a word for. */
+    expect(fields.gated).toEqual({ scattered: 1, makeup: 0, uncut: 1, dropped: 1 });
+    /*
+      ⚠ **THE DERIVATION, DRIVEN RATHER THAN PROMISED IN A COMMENT.** There is
+      deliberately no `wordsOnly.dropped` list — it would be a third copy of
+      nouns this line already carries (working law 4) — so the claim that a
+      dropped name is still READABLE off one line has to be shown: it is a noun
+      in `failedNouns` that no row came back for.
+    */
+    const drew = (fields.rows as Array<{ noun: string }>).map((one) => one.noun);
+    expect((fields.failedNouns as string[]).filter((noun) => !drew.includes(noun)))
+      .toEqual(["lace tattoo"]);
   });
 
   it("and what the place rules decided, so a merged row never reads as a lost one", async () => {
