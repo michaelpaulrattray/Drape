@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CREW_DECISION_WORK_LABELS,
   CREW_HELD_STATES,
   CREW_HOLD_LABELS,
   CREW_HOLD_MARKER,
@@ -15,9 +16,12 @@ import {
   planDeskHoldLabels,
   planFounderHeldDrift,
   planLiveHoldReRead,
+  planUnheldDecisions,
   planUnreadableHolds,
+  recommendationFromBody,
   resolveHold,
 } from "../shared/crewNextUpHold.js";
+import { CREW_WORK_CATEGORIES } from "../shared/crewWorkSwitches.js";
 
 /**
  * The hold verdict's own arms (#298) — the two readers `crew-desk-sweep.mts`
@@ -757,5 +761,163 @@ describe("every live hold's sentence is handed back for a re-read", () => {
       open: [held(90, "the relay"), held(9, "YOU"), held(50, "#1788, the workspace")],
     }).map((h) => h.issueNumber)).toEqual([9, 50, 90]);
     expect(planLiveHoldReRead({ open: [] })).toEqual([]);
+  });
+});
+
+/**
+ * ⚠ **THE CELL NEITHER HOLD READER CAN REACH — #2764.**
+ *
+ * Both readers above gate on a hold LABEL, which is what makes the cell below
+ * structurally invisible: a card that declares a decision and carries no label
+ * is outside the population of `liveWaitingOnYou`, of `planUnreadableHolds`
+ * and of `planLiveHoldReRead` at once. Two cards were in it hours apart
+ * (#2761, #2757), and these arms are driven on their real shapes.
+ *
+ * ⚠ **THE CONTROLS THAT MATTER ARE THE NEGATIVE ONES.** The card's own ⚠ is
+ * that a reader-side repair must not say more than it knows, and the two ways
+ * this one could is by reaching past its measured population — the three
+ * `design-unbuilt`/`research` cards it is narrowed away from, and the held
+ * cards its siblings already own.
+ */
+describe("a decision declared on a card nothing can see as a question gets NAMED, never repaired", () => {
+  const card = (
+    issueNumber: number,
+    body: string,
+    labels: readonly string[] = ["bug"],
+  ) => ({ issueNumber, labels, body });
+
+  /* #2761's own line, verbatim from the card as filed. */
+  const SPECIMEN_2761 = [
+    "The panel is see-through and the three ways out are these.",
+    "",
+    "**Recommendation:** option 2 — keep the look he approved, and make the scrim",
+    "actually do its job. It is one or two values.",
+  ].join("\n");
+
+  /* #2757's, verbatim — the marker carries the whole sentence inside the bold. */
+  const SPECIMEN_2757 = [
+    "A found mark doubles the Lips row, and it needs deciding first.",
+    "",
+    "**Recommendation: fold it in.** When a spotted thing covers a whole part we",
+    "already name, that is the studio mis-cutting.",
+  ].join("\n");
+
+  it("⚠ names both of the cards that proved the class — the whole point of the reader", () => {
+    const found = planUnheldDecisions({
+      open: [card(2761, SPECIMEN_2761), card(2757, SPECIMEN_2757, ["bug", "rung:N3"])],
+    });
+    expect(found.map((d) => d.issueNumber)).toEqual([2757, 2761]);
+    expect(found[0].recommendation).toContain("fold it in");
+    expect(found[1].recommendation).toContain("option 2");
+    expect(found[0].workLabels).toEqual(["bug"]);
+  });
+
+  it("⚠ is silent the moment a hold label exists — its siblings own those rows", () => {
+    /* Both specimens as they stand TODAY, repaired with `blocked`. A reader
+       that still named them would print every repaired card for ever. */
+    for (const state of CREW_HELD_STATES) {
+      expect(planUnheldDecisions({
+        open: [card(2761, SPECIMEN_2761, ["bug", CREW_HOLD_LABELS[state]])],
+      }), `hold label ${CREW_HOLD_LABELS[state]}`).toEqual([]);
+    }
+  });
+
+  it("⚠ is silent when the filer DID write the marker — a different and measured population", () => {
+    /* Three cards on the live queue of 2026-10-29 are in that cell and all
+       three name somebody who is not him. Sweeping them in here would put
+       `parked` rows in a band about questions he cannot see. */
+    const withMarker = [
+      "Some prose.",
+      "",
+      `${CREW_HOLD_MARKER} nobody — today's behaviour is one of the three answers.`,
+      "",
+      "**Recommendation:** leave it until N3.",
+    ].join("\n");
+    expect(planUnheldDecisions({ open: [card(1922, withMarker)] })).toEqual([]);
+  });
+
+  it("⚠ CONTROL — the narrowing to bug/small-fix is load-bearing and measured", () => {
+    /* Widening past these two labels adds three rows on the real queue, every
+       one `design-unbuilt` or `research` — a card waiting its turn, whose
+       recommendation is a note to whoever picks it up. Without this arm the
+       narrowing could be dropped and nothing would say so. */
+    expect(planUnheldDecisions({ open: [card(2554, SPECIMEN_2761, ["design-unbuilt"])] })).toEqual([]);
+    expect(planUnheldDecisions({ open: [card(1552, SPECIMEN_2761, ["research"])] })).toEqual([]);
+    expect(planUnheldDecisions({ open: [card(29, SPECIMEN_2761, ["debt", "rung:N8"])] })).toEqual([]);
+    /* …and the positive half, or the arm above passes by rejecting everything. */
+    expect(planUnheldDecisions({ open: [card(1, SPECIMEN_2761, ["small-fix"])] })
+      .map((d) => d.issueNumber)).toEqual([1]);
+  });
+
+  it("⚠ the two labels are DERIVED from his switch panel, never typed here", () => {
+    /* Working law 4: a second spelling of `small-fix` is the drift. If the
+       switch panel renames a queue label, this reader follows it. */
+    expect(CREW_DECISION_WORK_LABELS).toEqual(
+      CREW_WORK_CATEGORIES
+        .filter((category) => category.key === "bugs" || category.key === "smallFixes")
+        .map((category) => category.queueLabel),
+    );
+    expect(CREW_DECISION_WORK_LABELS).toEqual(["bug", "small-fix"]);
+  });
+
+  it("⚠ CONTROL — prose ABOUT a recommendation is not one, which is this band's whole honesty", () => {
+    /* Every Retro card on this subject discusses recommendations at length.
+       A reader that counted a mid-paragraph mention would print the cards
+       that describe the mechanism, for ever — candidate 1's measured cost. */
+    const prose = [
+      "This card offers three candidates and the recommendation is nobody's to make",
+      "yet; a recommendation in a tool reads as coverage, which is the risk.",
+    ].join("\n");
+    expect(planUnheldDecisions({ open: [card(2764, prose)] })).toEqual([]);
+  });
+
+  it("reads a declaration through the emphasis a filer puts on it, and only at a line start", () => {
+    expect(recommendationFromBody("**Recommendation:** do the thing.")).toBe("**Recommendation:** do the thing.");
+    expect(recommendationFromBody("Recommendation (approved)")).toBe("Recommendation (approved)");
+    expect(recommendationFromBody("_Recommended:_ the second shape.")).toBe("_Recommended:_ the second shape.");
+    /* Decoration a filer wraps a line in is stripped by the same reader the
+       hold marker uses — #1559's blockquote lesson, one function along. */
+    expect(recommendationFromBody("> **Recommendation:** inside a quote.")).toBe("**Recommendation:** inside a quote.");
+    /* Not a declaration: the word inside a sentence, and the word as a prefix. */
+    expect(recommendationFromBody("My recommendation is to wait.")).toBeNull();
+    expect(recommendationFromBody("Recommendations were taken from the court.")).toBeNull();
+    expect(recommendationFromBody("A body with nothing of the kind in it.")).toBeNull();
+  });
+
+  it("⚠ takes the FIRST declaration, so a quoted example at the foot cannot win", () => {
+    const body = [
+      "**Recommendation:** the filer's own line.",
+      "",
+      "Later, quoting another card:",
+      "",
+      "> **Recommendation:** somebody else's line.",
+    ].join("\n");
+    expect(recommendationFromBody(body)).toBe("**Recommendation:** the filer's own line.");
+  });
+
+  it("⚠ hands the line back WHOLE — the caller does the cutting and says so", () => {
+    /* A truncation inside the reader is how a shortened sentence comes to be
+       quoted as the sentence (`shortening changes a fact`). */
+    const long = `**Recommendation:** ${"x".repeat(CREW_HOLD_REASON_MAX * 2)}`;
+    expect(recommendationFromBody(long)).toBe(long);
+    expect(recommendationFromBody(long)).not.toContain("…");
+  });
+
+  it("⚠ a card of HIS stays in the population and carries his words with it (#2117)", () => {
+    const his = [...FOUNDER_HELD_CARDS.keys()][0];
+    const found = planUnheldDecisions({ open: [card(his, SPECIMEN_2761)] });
+    expect(found.map((d) => d.issueNumber)).toEqual([his]);
+    expect(found[0].founderHeld).toBe(FOUNDER_HELD_CARDS.get(his));
+  });
+
+  it("⚠ CONTROL — an ordinary card is NOT marked as his, or the field excuses everything", () => {
+    expect(planUnheldDecisions({ open: [card(4242, SPECIMEN_2761)] })[0].founderHeld).toBeNull();
+  });
+
+  it("is sorted by card number and reports an empty queue as empty", () => {
+    expect(planUnheldDecisions({
+      open: [card(90, SPECIMEN_2761), card(9, SPECIMEN_2761), card(50, SPECIMEN_2761)],
+    }).map((d) => d.issueNumber)).toEqual([9, 50, 90]);
+    expect(planUnheldDecisions({ open: [] })).toEqual([]);
   });
 });
