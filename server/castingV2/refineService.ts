@@ -11606,3 +11606,52 @@ export function lineageChainsOf(
   }
   return chains;
 }
+
+/**
+ * WHAT A SIGNED FACE'S OWN SENTENCES NO LONGER ASK FOR (#2669).
+ *
+ * The same answer the describe road's seed takes, for the two readers that are
+ * handed those sentences AFTER the Sign — the drafted persona and voice lines
+ * (`castPersona.ts`) and the six alternative reads (`castReads.ts`). Both get
+ * the selected version's `instructions` verbatim, and a pruned step keeps its
+ * sentence (D-171), so without this they are told the cast has a feature that
+ * was taken back. Measured on both before it landed; the reading is on #2669.
+ *
+ * ⚠ **IT IS HERE AND NOT COPIED AT THE TWO CALL SITES**, because the describe
+ * road, the Sign and the reads door would then hold three answers to one
+ * question and the first of them to be corrected would be the only one
+ * corrected — working law 4, on a road this repository has already paid for it
+ * on (`castPersonaEditBlock`'s own heading was written out once per reader).
+ *
+ * **It returns an empty list for almost every cast, and every one of those is
+ * honest rather than a miss**: a cast never refined, a cast refined without a
+ * removal, a row from before `stepDeltas` existed (`readChain` refuses a chain
+ * whose two lists disagree), or a lineage whose pre-prune version is gone.
+ * `takenFromKeptSentences`' own header states that direction — a miss, never a
+ * false entry, because every word it returns was held by a same-sentence step
+ * and is held by nothing now.
+ */
+export function takenBackForSelectedVariant(
+  variants: ReadonlyArray<{
+    id: number;
+    parentVariantId: number | null;
+    instructions: unknown;
+    stepDeltas: unknown;
+    deltas: unknown;
+  }>,
+  selectedVariantId: number | null | undefined,
+): string[] {
+  if (selectedVariantId == null) return [];
+  const selected = variants.find((row) => row.id === selectedVariantId);
+  if (!selected) return [];
+  const chain = readChain(readInstructions(selected.instructions), readStepDeltas(selected.stepDeltas));
+  if (!chain) return [];
+  /*
+    `now` IS THE ROW'S OWN COMPOSED RECIPE, and the recomposition is the
+    fallback rather than the other way round: a feature taken off and asked for
+    again by a LATER step is on the cast, and naming it here would tell the
+    reader to leave out something the photograph plainly shows.
+  */
+  const now = readStoredDelta(selected.deltas) ?? composeChain(chain);
+  return takenFromKeptSentences(chain, lineageChainsOf(variants, selected), now);
+}

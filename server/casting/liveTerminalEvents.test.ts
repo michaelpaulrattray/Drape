@@ -501,6 +501,10 @@ describe("each live road records AFTER its settlement, read at the bytes", () =>
     const settles = at(body, /^\s+await finalizeGenerationOperationSuccess\(/m);
     const composed = at(body, /^\s+deliveredEvent = \{$/m);
     const records = at(body, /^\s+recordDirectOperationDelivered\(deliveredEvent\);$/m);
+    /* ⚠ THE OUTER catch, found by being the first `catch (error)` in the body —
+       so an INNER catch must not use that binding, or it becomes this match and
+       the arm reads as a broken ordering. #2669's lineage read is named
+       `lineageError` for exactly this reason, and said so when it landed. */
     const catches = at(body, /^\s+\} catch \(error\) \{$/m);
     const backstop = at(body, /^\s+if \(deliveredEvent\) recordDirectOperationDelivered\(deliveredEvent\);$/m);
 

@@ -147,6 +147,14 @@ export type CastPersonaRequest = {
   brief: string | null;
   /** Her own correction sentences, oldest first; empty when she refined nothing. */
   editSentences: readonly string[];
+  /**
+   * What a kept sentence above once asked for and no longer does (#2669).
+   *
+   * Optional because most Casts never had a step pruned, and a caller that
+   * cannot derive the ancestry passes nothing rather than guessing — the
+   * reader then behaves exactly as it did before this card.
+   */
+  takenBack?: readonly string[];
   /** The three words the product uses for her, so the lines read as English. */
   pronouns: CastPronouns;
   signal?: AbortSignal;
@@ -324,6 +332,98 @@ export function castPersonaEditBlock(sentences: readonly string[]): string {
   return kept.map((sentence) => `- ${sentence}`).join("\n");
 }
 
+/**
+ * THE CORRECTIONS, AND WHAT A LATER STEP TOOK BACK OUT OF ONE (#2669).
+ *
+ * ============================================================================
+ * WHAT GOES WRONG, MEASURED BEFORE IT WAS FIXED
+ * ============================================================================
+ *
+ * A pruned refine step KEEPS ITS SENTENCE — `chainAfterRemoval`, D-171, because
+ * the record is what the customer typed and rewriting it to match the outcome
+ * is the record drifting from the person. So after *"remove the fangs"* the
+ * record still reads *"add fangs and horns"*, and both of these readers were
+ * handed that sentence under the line *"each one is the customer telling you
+ * who this person is"* with nothing beside it saying half of it was taken back.
+ *
+ * ⚠ **THE CARD THAT FILED THIS CALLED IT LOWER RISK BECAUSE BOTH READERS WRITE
+ * CAMERA-VISIBLE MANNER RATHER THAN FEATURES. THE MEASUREMENT RAN THE OTHER
+ * WAY, AND THE CRAFT RULE IS THE MECHANISM.** `castPersonaCraftRules` asks for
+ * a baseline and then *"the ONE thing that breaks the rest"* — so a reader
+ * hunting a distinctive break reaches for the most distinctive thing in front
+ * of it, which is the sentence. Driven through both real entrances on a dev
+ * signed cast with **no external ears at all** and a closed mouth of small even
+ * teeth, three repeats an arm (`_2669-pruned-leak-court-disposable.mts`):
+ *
+ * ```
+ *                    persona   six reads
+ *   control            0/3        0/3     ← its own sentences; nothing pruned
+ *   a pruned sentence  3/3        1/3
+ *   "add fangs …"      0/3        2/3
+ * ```
+ *
+ * The control is what makes it attributable: neither reader invents these from
+ * the photograph. What it wrote, verbatim, on a cast that has no ears — *"the
+ * one break is the notched left ear, which twitches at any sound from that
+ * side"* — three times out of three, in the very slot the craft rule asks for.
+ *
+ * ============================================================================
+ * ⚠ AND A REWORDING WAS TRIED FIRST AND MEASURED NOT TO WORK
+ * ============================================================================
+ *
+ * The cheaper repair is one clause naming the photograph as the authority over
+ * the sentences: no read at either entrance, and it would have covered a
+ * correction that was never painted as well as one taken back. It was built and
+ * re-driven on the same fixture, and it is **not here because it did not
+ * work** — leaking rows went **6 of 18 → 7 of 18**, and the arm that leaks
+ * worst did not move at all (persona 3/3 → 3/3). Both runs are on #2669.
+ *
+ * That is this repository's own measured class rather than a surprise — #1612:
+ * *"a vision model reading a two-part prose rule answers the easy half"*, after
+ * three rewordings were courted on #1582 and each one broke a correct picture.
+ * **So the words are handed over as a LIST of what is no longer true**, which
+ * is the shape the description writer already proved on this exact defect
+ * (`currentDescription.ts`'s `takenBack`, #2665/#2668) rather than a second
+ * invention. Measured the same way: **0 of 12**, both readers, both features.
+ *
+ * ⚠ **WHAT THIS DOES NOT DO, NAMED:** it does not make the photograph beat the
+ * sentence in general, so a correction that was never PAINTED — the same defect
+ * from the same slot, with nothing in the lineage to derive — is untouched by
+ * it. That is a floor rather than coverage.
+ */
+export function castPersonaEditAsk(input: {
+  sentences: readonly string[];
+  /**
+   * What a kept sentence above once asked for and no longer does.
+   *
+   * `takenFromKeptSentences` (`refineRemoval.ts`) derives these from the
+   * version ancestry; empty is the ordinary case and costs nothing.
+   */
+  takenBack?: readonly string[];
+}): string {
+  const heading = [
+    "CORRECTIONS THE CUSTOMER MADE while refining this face, oldest first.",
+    "Each one is the customer telling you who this person is:",
+    castPersonaEditBlock(input.sentences),
+  ];
+  const taken = (input.takenBack ?? [])
+    .map((words) => words.trim())
+    .filter((words) => words !== "")
+    .slice(0, PERSONA_EDIT_SENTENCE_LIMIT)
+    .map((words) => words.slice(0, PERSONA_EDIT_SENTENCE_MAX_CHARS));
+  /* Nothing to say when nothing was taken back, which is almost every cast —
+     a paragraph about an empty list is tokens spent to confuse. */
+  if (taken.length === 0) return heading.join("\n");
+  return [
+    ...heading,
+    "",
+    "PART OF A CORRECTION ABOVE WAS TAKEN BACK AFTERWARDS. The words below are",
+    "no longer true of this performer and the photograph does not show them.",
+    "Nothing you write may name any of them:",
+    ...taken.map((words) => `- ${words}`),
+  ].join("\n");
+}
+
 export function createCastPersonaReader(config: { engine: TextEngine }): CastPersonaReader {
   return {
     async read(request) {
@@ -353,9 +453,7 @@ export function createCastPersonaReader(config: { engine: TextEngine }): CastPer
         "WHAT THE CUSTOMER ASKED FOR when casting, in their own words:",
         brief ? brief : "Nothing was typed — read the photograph alone.",
         "",
-        "CORRECTIONS THE CUSTOMER MADE while refining this face, oldest first.",
-        "Each one is the customer telling you who this person is:",
-        castPersonaEditBlock(request.editSentences),
+        castPersonaEditAsk({ sentences: request.editSentences, takenBack: request.takenBack }),
       ].join("\n");
 
       let text: string;

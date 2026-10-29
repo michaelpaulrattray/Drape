@@ -348,3 +348,46 @@ describe("#2238 — every read says where the eyes are, and only visible things 
     expect(sign).not.toContain("Aim for about 300 to 330 characters");
   });
 });
+
+/**
+ * WHAT A PRUNED STEP TOOK BACK REACHES THIS DOOR TOO (#2669).
+ *
+ * The six alternatives are handed the same `editSentences` the drafted line is,
+ * from the same column, so they inherit the same defect: a pruned step keeps
+ * its sentence (D-171) and nothing beside it said half of it was taken back.
+ * Measured on this door through its real entrance — *"the fangs showing before
+ * the sound does"*, on a cast whose closed mouth shows small even teeth — 2 of
+ * 3 before, 0 of 3 after.
+ *
+ * Asserted at the WIRE rather than on the composed block, because this file's
+ * job is that the door PASSES the words on: `castPersonaEditAsk`'s own arms
+ * live beside it in `castPersona.test.ts` and are not repeated here.
+ */
+describe("a sentence that was partly taken back (#2669)", () => {
+  it("carries the taken-back words into the outgoing request", async () => {
+    const { engine, seen } = engineReturning(goodReply);
+    await createCastReadsReader({ engine }).read({
+      anchor,
+      brief: "a lizard man, emerald scales",
+      editSentences: ["add fangs and horns"],
+      takenBack: ["fangs"],
+      current: null,
+      pronouns,
+    });
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.user).toContain("- add fangs and horns");
+    expect(seen[0]?.user).toContain("TAKEN BACK");
+    expect(seen[0]?.user).toContain("- fangs");
+  });
+
+  it("sends no such clause for the ordinary Cast, which has nothing taken back", async () => {
+    const { engine, seen } = engineReturning(goodReply);
+    await createCastReadsReader({ engine }).read({
+      anchor, brief: null, editSentences: ["give them shorter hair"], current: null, pronouns,
+    });
+
+    expect(seen[0]?.user).toContain("give them shorter hair");
+    expect(seen[0]?.user).not.toContain("TAKEN BACK");
+  });
+});
