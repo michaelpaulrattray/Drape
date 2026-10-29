@@ -245,6 +245,19 @@ describe("2. the closed grammar is unchanged for every non-open key", () => {
       spreads it conditionally exactly as it does `noThumbnail`; and the open
       branch is, for the fifth time, not in this list to move. A founder ruling
       about what the panel shows, so not expected to move back.
+
+      MOVED 2026-10-29, `1a56845ec4354124` → `c40efb3e4d34e6cb`, by his eye
+      round 8 (#2810, verbatim: *"teeth highlighted his tooth/tusk thing"*):
+      `several` is authored on ONE slot, `teeth`, beside its measurement (the
+      segmenter answered one tusk asked for one answer, and both tusks asked
+      for several). The reading this pin asks for, taken before re-pinning:
+      **still 25 slots** (the length assertion below passed through the move);
+      exactly one slot carries the new field, which
+      `falRegionReader.test.ts` drives over the WHOLE catalogue (*"a region
+      that is several separate things"*, `toEqual(["teeth"])`); an ordinary
+      slot does not carry the key, because `definitionOf` spreads it
+      conditionally exactly as it does `noRowOnDiscovery`; and the open branch
+      is, for the sixth time, not in this list to move.
     */
     const digest = crypto
       .createHash("sha256")
@@ -252,7 +265,7 @@ describe("2. the closed grammar is unchanged for every non-open key", () => {
       .digest("hex")
       .slice(0, 16);
     expect(catalogueSlots()).toHaveLength(25);
-    expect(digest).toBe("1a56845ec4354124");
+    expect(digest).toBe("c40efb3e4d34e6cb");
   });
 });
 
