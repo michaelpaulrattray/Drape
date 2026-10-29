@@ -35,6 +35,8 @@
  * before #1974. A finding on an earlier head is a repair already pushed and is
  * not owed at all; `tallyRounds` keeps those apart as `staleFindings`.
  */
+import { pullRequestBuildsCard } from "../../shared/crewCardBuildState.js";
+
 import { reviewPresence, tallyRounds, type HandVerdictReading } from "./reviewRounds.mjs";
 
 /**
@@ -200,4 +202,96 @@ export function repairsOwedWord(reading: RepairsOwedReading, nowMs: number): str
   const age = hours === null ? "age unreadable" : `oldest ${hours.toFixed(1)}h`;
   return ` | repairs ${reading.repairs.length} (${age}, PR #${oldest.pullRequest})`
     + (reading.partial ? " — page full, may be short" : "");
+}
+
+/** A live claim sitting on the card a held pull request is for. */
+export type RepairCardClaim = {
+  readonly card: number;
+  readonly seat: string | null;
+  readonly at: string;
+};
+
+/** A repair, with whatever the board says about the card behind it. */
+export type AnnotatedRepair = RepairOwed & {
+  /** Live claims on the card(s) this pull request's TITLE names. Empty is the common answer. */
+  readonly claims: readonly RepairCardClaim[];
+};
+
+/**
+ * ⚠ **WHAT THE BOARD ALREADY KNOWS ABOUT THE CARD BEHIND A REPAIR — #2769.**
+ *
+ * The whole road that hands a repair to a seat —
+ * `cut-seat-batches.mts` → `plan.repairsOwed.items` → the runner's round-robin
+ * — **never asked whether somebody is already on the card behind that pull
+ * request**, at any point. `crew-shift-start.mts` asks, and asks well, but it
+ * is reached only when a seat DECLARES A CARD on its row; a seat told to check
+ * out somebody's branch and push never declares one, so none of those readers
+ * fires. The orders' repair road says to claim by hand — and that is prose a
+ * dispatch brief can omit, which is exactly what happened.
+ *
+ * **Measured on #2680, 21 Oct:** a claim was published, was **six minutes
+ * old**, and sat on the card the repair was for. `relay-agent-2672` had
+ * RELEASED that card at 09:32, came back at 09:48 without re-claiming, and its
+ * own `CLAIMED —` landed at 09:49:11Z — thirty seconds after the verdict —
+ * while seat1 had claimed it cleanly at 09:42 and was working it. Cost: one
+ * full Opus session producing one comment.
+ *
+ * ⚠ **IT INFORMS AND IT NEVER HOLDS, which is the asymmetry the card names
+ * and the only rule here that is not negotiable.** A held pull request with a
+ * repair owed is the highest-priority work on the board (his word, #1977), so
+ * a stale or mistaken claim must never be able to stall one: this returns the
+ * same repairs in the same order, with a fact attached. The two candidates
+ * that SKIP or HOLD an item would each need an escape hatch, and neither was
+ * built.
+ *
+ * ⚠ **THE TITLE LIMB ONLY, AND THAT IS MEASURED RATHER THAN BORROWED.** A
+ * repair carries a title and a head branch; `pullRequestBuildsCard`'s branch
+ * limb reads digit RUNS, and driven over the real board on 2026-10-29 (120
+ * pull requests against 72 open cards) it names a card the title does not
+ * **exactly once — and that one is wrong**:
+ * `dependabot/npm_and_yarn/minor-and-patch-466a51cc62` → the run `62` → card
+ * **#62**, which dependabot has nothing to do with. The title convention needs
+ * no help: **107 of those 120 titles carry an explicit `(Card: #N)`**, and
+ * `shared/crewShippedNotClosed.ts` narrows to the same limb for a related
+ * reason. A false claim line here would tell a seat to hesitate over a repair,
+ * which is the one direction this annotator may not fail in.
+ */
+export function annotateRepairClaims(input: {
+  readonly repairs: readonly RepairOwed[];
+  /** The open cards, as the cut already read them. */
+  readonly openCards: readonly number[];
+  /** `CardBuildBoard.claimFor` — the one owner of "is somebody on this card". */
+  readonly claimFor: (card: number) => { readonly seat: string | null; readonly at: string } | null;
+}): readonly AnnotatedRepair[] {
+  return input.repairs.map((repair) => {
+    const claims: RepairCardClaim[] = [];
+    for (const card of input.openCards) {
+      /* Title only — see the header. `headRefName` is deliberately not passed,
+         so the branch limb cannot fire however this is called. */
+      if (!pullRequestBuildsCard({ number: repair.pullRequest, title: repair.title }, card).includes("title")) {
+        continue;
+      }
+      const claim = input.claimFor(card);
+      if (claim === null) continue;
+      claims.push({ card, seat: claim.seat, at: claim.at });
+    }
+    return { ...repair, claims: claims.sort((a, b) => a.card - b.card) };
+  });
+}
+
+/**
+ * The words that go on a repair's line when the card behind it is claimed, or
+ * `null` when nothing is — so the common case adds no noise at all.
+ *
+ * It says CLAIMED and never *skip this*: the seat reads it before checking
+ * anything out and decides, which is the whole of what #2769 asks for.
+ */
+export function repairClaimWord(repair: AnnotatedRepair, nowMs: number): string | null {
+  if (repair.claims.length === 0) return null;
+  const parts = repair.claims.map((claim) => {
+    const ageMs = nowMs - Date.parse(claim.at);
+    const age = Number.isFinite(ageMs) ? `${Math.max(0, ageMs / 3_600_000).toFixed(1)}h ago` : "time unread";
+    return `#${claim.card} CLAIMED by ${claim.seat ?? "an unnamed seat"}, ${age}`;
+  });
+  return ` | ⚠ ${parts.join("; ")} — read the card before you check the branch out`;
 }

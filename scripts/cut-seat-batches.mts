@@ -88,10 +88,13 @@ import { resolve } from "node:path";
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
 import {
   oldestRepairAgeHours,
+  annotateRepairClaims,
+  repairClaimWord,
   repairsOwedFrom,
   repairsOwedWord,
   REPAIRS_OWED_LIST_ARGS,
   type RepairPullRequestRow,
+  type AnnotatedRepair,
   type RepairsOwedReading,
 } from "./lib/repairsOwed.mts";
 import { GH_READ_MAX_BUFFER } from "./lib/ghQueueTransport.mts";
@@ -666,6 +669,28 @@ const candidates = inBand.filter((card) => {
 });
 const openCardNumbers = cards.map((card) => card.number);
 
+/*
+  ⚠ **THE LIVE CLAIM ON THE CARD BEHIND EACH REPAIR — #2769.**
+
+  The repairs lane had no claim awareness at ANY point: `repairsOwed.mts`
+  contained not one occurrence of the word, and a seat handed a PULL REQUEST
+  never declares a card on its row, so `crew-shift-start.mts`'s three claim
+  readers — which ask well — are never reached. Measured on #2680: a claim six
+  minutes old, on the card the repair was for, read by nothing, costing one
+  Opus session.
+
+  ⚠ **IT CHANGES NO ORDER AND SKIPS NOTHING.** `annotateRepairClaims` returns
+  the same repairs in the same sequence with a fact attached; a held pull
+  request is the highest-priority work on the board (his word, #1977) and a
+  stale claim must never be able to stall one. It rides the board read and the
+  card read this pass already made — no extra `gh` call.
+*/
+const annotatedRepairs: readonly AnnotatedRepair[] = annotateRepairClaims({
+  repairs: repairsReading.repairs,
+  openCards: openCardNumbers,
+  claimFor: board.claimFor,
+});
+
 /* ── THE INDEPENDENCE READING, MECHANICAL FIRST, JEV ONLY WHERE SILENT ─────── */
 
 const jev = ARGS.flag("no-jev")
@@ -1011,8 +1036,9 @@ const out = {
       const hours = oldestRepairAgeHours(repairsReading, nowMs);
       return hours === null ? null : Number(hours.toFixed(2));
     })(),
-    /* Oldest first — `repairsOwedFrom` owns the order and the reason. */
-    items: repairsReading.repairs,
+    /* Oldest first — `repairsOwedFrom` owns the order and the reason; the
+       claim on each one's card rides along (#2769) and moves nothing. */
+    items: annotatedRepairs,
     /* The page came back full, so a repair may be unseen (#1977). */
     partial: repairsReading.partial,
     /* Open pull requests with no commits: they cannot be dated, so they are
@@ -1101,11 +1127,14 @@ if (!ARGS.flag("quiet")) {
      pull request, which is what a seat picking up a repair actually needs. They
      are printed even when `SEATS 0`, because a pass that offers no cards is
      exactly the pass whose repairs would otherwise go unmentioned. */
-  for (const repair of repairsReading.repairs) {
+  for (const repair of annotatedRepairs) {
     const hours = (nowMs - Date.parse(repair.heldSince)) / 3_600_000;
     console.log(
       `REPAIR OWED | PR #${repair.pullRequest} | held ${Number.isFinite(hours) ? hours.toFixed(1) : "?"}h`
-      + ` | ${repair.headRefName || "no branch read"} | ${repair.title}`,
+      + ` | ${repair.headRefName || "no branch read"} | ${repair.title}`
+      /* ⚠ Only when there IS one (#2769) — a word on every line is noise the
+         eye learns to skip, and the common answer is none. */
+      + (repairClaimWord(repair, nowMs) ?? ""),
     );
   }
   if (repairsReading.undatable.length > 0) {

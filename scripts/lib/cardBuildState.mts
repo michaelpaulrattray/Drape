@@ -76,10 +76,12 @@ import {
   crewCardBuildState,
   handFindingNoteForPullRequest,
   handVerdictForPullRequest,
+  liveCardClaim,
   notBuiltCards,
   type CrewBuildPullRequest,
   type CrewCardBuildState,
   type CrewCardCommentFact,
+  type CrewCardLiveClaim,
 } from "../../shared/crewCardBuildState.js";
 
 import { OPEN_PR_LIST_ARGS, type OpenPullRequest } from "./cardClaimWarning.mts";
@@ -351,6 +353,17 @@ export type CardBuildBoard = {
   readonly phraseFor: (card: number) => string | null;
   /** `true` when this card must not be OFFERED to a shift as takeable work. */
   readonly holdsOffOffer: (card: number) => boolean;
+  /**
+   * SOMEBODY'S LIVE CLAIM ON THIS CARD, or `null` — and it is **not** derivable
+   * from `stateFor` (#2769).
+   *
+   * That judgement short-circuits on an open pull request, which is correct for
+   * *what is happening to this card* and blind for *is another seat on it*: the
+   * repairs lane hands out a PULL REQUEST, so its own card always has one open
+   * and the claim underneath could never be read. Same facts, same instant, same
+   * twelve-hour window — `liveCardClaim` owns the rule for both.
+   */
+  readonly claimFor: (card: number) => CrewCardLiveClaim | null;
   /** Why this board is less than the whole answer; empty when both reads landed. */
   readonly unreadable: readonly string[];
   /** `true` when either read failed or was skipped. */
@@ -438,6 +451,9 @@ export function buildBoard(input: {
       return state === null ? null : crewCardBuildPhrase(state, nowMs);
     },
     holdsOffOffer: (card) => buildStateHoldsOffOffer(stateFor(card)),
+    /* ⚠ NOT CACHED THROUGH `stateFor` — see the field's own note: the two
+       answer different questions and one hides the other. */
+    claimFor: (card) => liveCardClaim({ card, facts, nowMs }),
     unreadable,
     partial: unreadable.length > 0,
   };

@@ -954,6 +954,65 @@ export function repairFlaggedAtForPullRequest(input: {
     .sort((a, b) => b.at.localeCompare(a.at))[0];
   return newest?.kind === "finding" ? newest.at : null;
 }
+/** A claim on a card that is still inside {@link CREW_CLAIM_LIVE_MS}. */
+export type CrewCardLiveClaim = {
+  readonly seat: string | null;
+  readonly at: string;
+};
+
+/**
+ * IS SOMEBODY'S HANDS ON THIS CARD RIGHT NOW — the one owner of that reading.
+ *
+ * ⚠ **IT WAS INLINE IN {@link crewCardBuildState} AND THAT MADE IT UNREACHABLE
+ * FOR THE ONE CALLER THAT NEEDED IT MOST — #2769.** That judgement short-circuits
+ * on an OPEN PULL REQUEST, which is right for *what is happening to this card*
+ * and is exactly wrong for *is another seat on it*: a repair is handed out as a
+ * pull request, so its own card always has one open, and the claim underneath
+ * could never be seen. Measured on #2680, 21 Oct: a claim was published, was six
+ * minutes old, sat on the card the repair was for — and nothing on the repairs
+ * road read it, costing one full Opus session that produced one comment.
+ *
+ * So the rule is lifted out whole rather than written a second time beside the
+ * repairs lane (working law 4, in the place this repository has been bitten
+ * before — #1673 exists because two readers disagreed about one header).
+ * `crewCardBuildState` calls this, so the two can never answer differently.
+ *
+ * ⚠ **NEWEST FACT WINS, INCLUDING ONE THAT IS NOT A CLAIM.** A RELEASE or a
+ * REFUSAL newer than a claim puts the card back on offer, so this answers `null`
+ * for them rather than reaching past to an older claim — the same ordering
+ * `crewCardBuildState` has always applied, and the reason #180 read as claimed
+ * for twelve hours after it had been handed back (#1559).
+ *
+ * ⚠ **A `verdict` NAMES A PULL REQUEST, NOT A CARD**, so it is dropped rather
+ * than ranked, or the newest thing on a card could be an answer to a different
+ * question.
+ */
+export function liveCardClaim(input: {
+  readonly card: number;
+  readonly facts: readonly CrewCardCommentFact[];
+  readonly nowMs: number;
+}): CrewCardLiveClaim | null {
+  const latest = newestCardFact(input.facts, input.card);
+  if (latest === undefined || latest.kind !== "claim") return null;
+  const atMs = Date.parse(latest.at);
+  if (!Number.isFinite(atMs) || input.nowMs - atMs > CREW_CLAIM_LIVE_MS) return null;
+  return { seat: latest.seat, at: latest.at };
+}
+
+/** The newest of a card's own comment facts, verdicts dropped. One owner, two readers. */
+function newestCardFact(
+  facts: readonly CrewCardCommentFact[],
+  card: number,
+): Exclude<CrewCardCommentFact, { kind: "verdict" }> | undefined {
+  return facts
+    /* ⚠ A `verdict` NAMES A PULL REQUEST, NOT A CARD, so it is filtered out
+       here rather than sorted with the rest — see the vocabulary's own note.
+       Its consumer is `prStage`, through the caller that dates it. */
+    .filter((fact): fact is Exclude<CrewCardCommentFact, { kind: "verdict" }> =>
+      fact.card === card && fact.kind !== "verdict")
+    .sort((a, b) => b.at.localeCompare(a.at))[0];
+}
+
 /**
  * THE ONE JUDGEMENT — what is happening to this card right now, or `null` when
  * nothing is.
@@ -1019,22 +1078,15 @@ export function crewCardBuildState(input: {
       ? { kind: "pull-request", pullRequest: pr.number, stage, findingNote: pr.handFindingNote ?? null }
       : { kind: "pull-request", pullRequest: pr.number, stage };
   }
-  const mine = facts
-    /* ⚠ A `verdict` NAMES A PULL REQUEST, NOT A CARD, so it is filtered out
-       here rather than sorted with the rest — see the vocabulary's own note.
-       Its consumer is `prStage` above, through the caller that dates it. */
-    .filter((fact): fact is Exclude<CrewCardCommentFact, { kind: "verdict" }> =>
-      fact.card === card && fact.kind !== "verdict")
-    .sort((a, b) => b.at.localeCompare(a.at));
-  const latest = mine[0];
+  const latest = newestCardFact(facts, card);
   if (latest !== undefined) {
     if (latest.kind === "refusal") return { kind: "refused", at: latest.at };
-    if (latest.kind === "claim") {
-      const atMs = Date.parse(latest.at);
-      if (Number.isFinite(atMs) && nowMs - atMs <= CREW_CLAIM_LIVE_MS) {
-        return { kind: "claimed", seat: latest.seat, at: latest.at };
-      }
-    }
+    /* ⚠ THE LIVE-CLAIM RULE IS {@link liveCardClaim}'S AND IS NOT RE-DECIDED
+       HERE (#2769) — the repairs lane needs the same answer from under this
+       function's pull-request short-circuit, and two readers of "is somebody on
+       this card" is the drift working law 4 is about. */
+    const claim = liveCardClaim({ card, facts, nowMs });
+    if (claim !== null) return { kind: "claimed", seat: claim.seat, at: claim.at };
     /* A release, or a claim that has aged out — both fall through to the label,
        per the order in the docblock. Neither erases a refusal nobody withdrew. */
   }

@@ -33,13 +33,22 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import { CHILD_PROCESS_TEST_TIMEOUT_MS } from "./testing/childProcessTimeout";
 
 import {
+  annotateRepairClaims,
   oldestRepairAgeHours,
   REPAIR_PR_PAGE,
   REPAIRS_OWED_LIST_ARGS,
+  repairClaimWord,
   repairsOwedFrom,
   repairsOwedWord,
+  type RepairOwed,
   type RepairPullRequestRow,
 } from "../scripts/lib/repairsOwed.mts";
+import {
+  CREW_CLAIM_LIVE_MS,
+  crewCardBuildState,
+  liveCardClaim,
+  type CrewCardCommentFact,
+} from "../shared/crewCardBuildState.js";
 
 /**
  * ⚠ **A SPAWNING SUITE TAKES THE CLASS'S OWN TIMEOUT, NOT ONE OF ITS OWN.**
@@ -309,7 +318,22 @@ describe("⚠ the cut offers the repair before the card (#1977)", () => {
     createdAt: "2026-10-08T06:00:00Z",
   };
 
-  const runCut = (repairsFixture: RepairPullRequestRow[]): { stdout: string; plan: Record<string, unknown> } => {
+  const runCut = (
+    repairsFixture: RepairPullRequestRow[],
+    /* The card comments the cut reads, in `gh api` row shape. Defaulting to
+       none keeps every arm written before #2769 reading exactly as it did. */
+    commentsFixture: readonly unknown[] = [],
+    /*
+      ⚠ **THE OPEN PULL REQUESTS, AND THIS PARAMETER IS LOAD-BEARING — #2769.**
+      On the real board a held pull request is BOTH a repair and an open pull
+      request, so `crewCardBuildState` answers `pull-request` for its card and
+      the claim underneath is invisible to it. The first shape of these arms
+      left this empty, and a sabotage routing `claimFor` back through
+      `stateFor` — the exact blindness this card measured — **survived green**.
+      A fixture that cannot ask the question proves nothing about the answer.
+    */
+    openPrsFixture: readonly unknown[] = [],
+  ): { stdout: string; plan: Record<string, unknown> } => {
     const dir = scratch();
     const write = (name: string, value: unknown): string => {
       const path = join(dir, name);
@@ -326,8 +350,8 @@ describe("⚠ the cut offers the repair before the card (#1977)", () => {
         "--batch-size", "5",
         "--no-jev",
         "--cards", write("cards.json", [CARD]),
-        "--open-prs", write("prs.json", []),
-        "--comments", write("comments.json", []),
+        "--open-prs", write("prs.json", openPrsFixture),
+        "--comments", write("comments.json", commentsFixture),
         "--not-built", write("not-built.json", []),
         "--repairs", write("repairs.json", repairsFixture),
         "--repairs-owner", LIVE.ownerLogin,
@@ -389,6 +413,78 @@ describe("⚠ the cut offers the repair before the card (#1977)", () => {
        ORDER of the work, never whether a card exists. */
     expect(plan.repairsOwed).toBeDefined();
     expect(JSON.stringify(plan)).toContain("4242");
+  });
+
+  /**
+   * ⚠ **AND THE CLAIM ON THE CARD BEHIND IT, ON THAT SAME LINE — #2769.**
+   *
+   * The arms above prove the repair is offered first; these prove the seat is
+   * told, in the same breath, that somebody is already on the card. Driven
+   * through the real cut, on #2680's own shape: a claim six minutes old sitting
+   * on the card a held pull request is for.
+   */
+  it("⚠ the REPAIR OWED line carries a live claim on the card the pull request is for", () => {
+    const CLAIMED_CARD = 4242;
+    const heldPr = LIVE.rows.find((row) => row.number === 1924)!;
+    const title = `fix(crew): the thing (Card: #${CLAIMED_CARD})`;
+    const { stdout, plan } = runCut(
+      [{ ...heldPr, title }],
+      [{
+        issue_url: `https://api.github.com/repos/owner/repo/issues/${CLAIMED_CARD}`,
+        body: "CLAIMED — seat2-other, 2026-10-08T08:29:00Z",
+        created_at: new Date(Date.now() - 6 * 60 * 1000).toISOString(),
+        user: { login: "someone" },
+      }],
+      /* ⚠ THE SAME PULL REQUEST, OPEN — which is what the board sees on the
+         real road, and is what makes `crewCardBuildState` answer
+         `pull-request` for this card and hide the claim from `stateFor`. */
+      [{ number: heldPr.number, title, headRefName: heldPr.headRefName, isDraft: false, labels: [], updatedAt: new Date().toISOString() }],
+    );
+
+    const owed = stdout.split(/\r?\n/).filter((line) => line.startsWith("REPAIR OWED |"));
+    expect(owed).toHaveLength(1);
+    expect(owed[0]).toContain("PR #1924");
+    expect(owed[0]).toContain(`#${CLAIMED_CARD} CLAIMED by seat2-other`);
+    expect(owed[0]).toContain("read the card before you check the branch out");
+
+    /* ⚠ AND THE PLAN CARRIES IT, because the runner reads the plan and the
+       printed line is only what a person sees. */
+    const items = (plan.repairsOwed as { items: { pullRequest: number; claims: unknown[] }[] }).items;
+    expect(items).toHaveLength(1);
+    expect(items[0].claims).toEqual([
+      { card: CLAIMED_CARD, seat: "seat2-other", at: expect.any(String) },
+    ]);
+  });
+
+  it("⚠ CONTROL — the same repair, nobody on the card: the line is unchanged and silent", () => {
+    /*
+      Without this the arm above passes on a cut that printed the warning
+      unconditionally. Same pull request, same card, no claim comment.
+    */
+    const heldPr = LIVE.rows.find((row) => row.number === 1924)!;
+    const { stdout, plan } = runCut([{ ...heldPr, title: "fix(crew): the thing (Card: #4242)" }], []);
+    const owed = stdout.split(/\r?\n/).filter((line) => line.startsWith("REPAIR OWED |"));
+    expect(owed).toHaveLength(1);
+    expect(owed[0]).not.toContain("CLAIMED");
+    expect(owed[0]).toContain("PR #1924");
+    expect((plan.repairsOwed as { items: { claims: unknown[] }[] }).items[0].claims).toEqual([]);
+  });
+
+  it("⚠ CONTROL — a claim on a DIFFERENT card does not reach this repair's line", () => {
+    /* The reading is per-card, not per-board: a claim anywhere on the queue
+       must not decorate every repair. */
+    const heldPr = LIVE.rows.find((row) => row.number === 1924)!;
+    const { stdout } = runCut(
+      [{ ...heldPr, title: "fix(crew): the thing (Card: #4242)" }],
+      [{
+        issue_url: "https://api.github.com/repos/owner/repo/issues/9999",
+        body: "CLAIMED — seat2-other, 2026-10-08T08:29:00Z",
+        created_at: new Date().toISOString(),
+        user: { login: "someone" },
+      }],
+    );
+    expect(stdout.split(/\r?\n/).filter((line) => line.startsWith("REPAIR OWED |"))[0])
+      .not.toContain("CLAIMED");
   });
 
   it("⚠ a repairs list that cannot be read NEVER refuses the pass — it says so and cuts as before", () => {
@@ -468,5 +564,171 @@ describe("⚠ the cut offers the repair before the card (#1977)", () => {
       ],
       { encoding: "utf8", timeout: CHILD_PROCESS_TEST_TIMEOUT_MS, stdio: ["ignore", "pipe", "pipe"] },
     )).toThrow();
+  });
+});
+
+/**
+ * ⚠ **NOTHING READ A LIVE CLAIM BEFORE A REPAIR WAS HANDED OUT — #2769.**
+ *
+ * `scripts/lib/repairsOwed.mts` contained **zero** occurrences of `claim` or
+ * `CLAIMED`, and the whole road — the cut, `plan.repairsOwed.items`, the
+ * runner's round-robin — never asked whether somebody was already on the card
+ * behind that pull request. `crew-shift-start.mts` asks, and asks well, but a
+ * seat handed a PULL REQUEST never declares a card on a row, so none of its
+ * three readers is reached.
+ *
+ * **Measured on #2680, 21 Oct:** the claim was published, was six minutes old,
+ * and sat on the card the repair was for — `relay-agent-2672` came back to a
+ * card it had RELEASED at 09:32 without re-claiming, while seat1 had claimed it
+ * cleanly at 09:42. One Opus session for one comment.
+ *
+ * ⚠ **The arm that matters most is the one proving it does not HOLD.** A held
+ * pull request with a repair owed is the highest-priority work on the board
+ * (his word, #1977), so a stale or mistaken claim must never stall one.
+ */
+describe("the claim on the card behind a repair is READ and never acted on (#2769)", () => {
+  const CLAIMED_AT = "2026-10-08T08:29:00Z";
+  const repair = (pullRequest: number, title: string): RepairOwed => ({
+    pullRequest,
+    title,
+    headRefName: `team/whatever-${pullRequest}`,
+    draft: false,
+    heldSince: "2026-10-08T05:00:00Z",
+    findings: 1,
+  });
+
+  const claimOn = (cards: readonly number[]) =>
+    (card: number) => (cards.includes(card) ? { seat: "seat1-live", at: CLAIMED_AT } : null);
+
+  it("⚠ attaches the live claim on the card the TITLE names — #2680's own shape", () => {
+    const annotated = annotateRepairClaims({
+      repairs: [repair(2681, "fix(crew): the repair road (Card: #2680)")],
+      openCards: [2680, 2764],
+      claimFor: claimOn([2680]),
+    });
+    expect(annotated).toHaveLength(1);
+    expect(annotated[0].claims).toEqual([{ card: 2680, seat: "seat1-live", at: CLAIMED_AT }]);
+    expect(repairClaimWord(annotated[0], READ_AT_MS)).toContain("#2680 CLAIMED by seat1-live");
+    expect(repairClaimWord(annotated[0], READ_AT_MS)).toContain("read the card before you check the branch out");
+  });
+
+  it("⚠ CONTROL — it NEVER drops, reorders or holds a repair, whatever the claim says", () => {
+    /* The asymmetry the card names: a reading that INFORMS is safe, one that
+       HOLDS needs an escape. Without this arm a later edit could make a stale
+       claim stall the highest-priority work on the board. */
+    const repairs = [repair(1, "a (Card: #2680)"), repair(2, "b (Card: #2764)"), repair(3, "c (Card: #9999)")];
+    const annotated = annotateRepairClaims({
+      repairs,
+      openCards: [2680, 2764],
+      claimFor: claimOn([2680, 2764]),
+    });
+    expect(annotated.map((a) => a.pullRequest)).toEqual([1, 2, 3]);
+    expect(annotated).toHaveLength(repairs.length);
+    /* …and every field of the original survives untouched. */
+    for (const [index, row] of annotated.entries()) {
+      expect({ ...row, claims: undefined }).toEqual({ ...repairs[index], claims: undefined });
+    }
+  });
+
+  it("says nothing at all when nobody is on the card — the common answer adds no noise", () => {
+    const annotated = annotateRepairClaims({
+      repairs: [repair(2681, "fix(crew): something (Card: #2680)")],
+      openCards: [2680],
+      claimFor: () => null,
+    });
+    expect(annotated[0].claims).toEqual([]);
+    expect(repairClaimWord(annotated[0], READ_AT_MS)).toBeNull();
+  });
+
+  it("⚠ CONTROL — the BRANCH limb cannot fire, and the specimen is the one that measured wrong", () => {
+    /*
+      Driven over the real board on 2026-10-29 (120 pull requests, 72 open
+      cards): the branch limb names a card the title does not exactly once, and
+      that one is WRONG — `dependabot/…/minor-and-patch-466a51cc62` carries the
+      digit run `62`, and #62 is an open card about hair's owed court arms. A
+      false claim line tells a seat to hesitate over a repair, which is the one
+      direction this annotator may not fail in.
+    */
+    const dependabot: RepairOwed = {
+      pullRequest: 2660,
+      title: "chore(deps): bump the minor-and-patch group with 24 updates",
+      headRefName: "dependabot/npm_and_yarn/minor-and-patch-466a51cc62",
+      draft: false,
+      heldSince: "2026-10-08T05:00:00Z",
+      findings: 1,
+    };
+    const annotated = annotateRepairClaims({
+      repairs: [dependabot],
+      openCards: [62],
+      claimFor: claimOn([62]),
+    });
+    expect(annotated[0].claims).toEqual([]);
+  });
+
+  it("names every claimed card a title mentions, lowest first, and an unnamed seat honestly", () => {
+    const annotated = annotateRepairClaims({
+      repairs: [repair(9, "fix: two at once (Card: #2764) and (Card: #2680)")],
+      openCards: [2764, 2680],
+      claimFor: (card) => (card === 2680 ? { seat: null, at: CLAIMED_AT } : { seat: "seat2", at: CLAIMED_AT }),
+    });
+    expect(annotated[0].claims.map((c) => c.card)).toEqual([2680, 2764]);
+    expect(repairClaimWord(annotated[0], READ_AT_MS)).toContain("an unnamed seat");
+  });
+
+  it("⚠ an unparseable claim time is said, never printed as a plausible age", () => {
+    const annotated = annotateRepairClaims({
+      repairs: [repair(9, "fix: x (Card: #2680)")],
+      openCards: [2680],
+      claimFor: () => ({ seat: "seat1", at: "not a time" }),
+    });
+    expect(repairClaimWord(annotated[0], READ_AT_MS)).toContain("time unread");
+  });
+
+  it("⚠ the live-claim rule has ONE owner, and `crewCardBuildState` uses the same one", () => {
+    /*
+      The rule was inline in `crewCardBuildState`, under a short-circuit on an
+      OPEN PULL REQUEST — which is why the repairs lane could never reach it: a
+      repair IS a pull request on its own card. These two arms hold the extracted
+      reader to the window and the newest-fact ordering the judgement applies.
+    */
+    const facts: CrewCardCommentFact[] = [
+      { kind: "claim", card: 2680, seat: "seat1", at: "2026-10-08T08:00:00Z" },
+    ];
+    expect(liveCardClaim({ card: 2680, facts, nowMs: READ_AT_MS }))
+      .toEqual({ seat: "seat1", at: "2026-10-08T08:00:00Z" });
+    /* Past the twelve-hour window it is not live. */
+    expect(liveCardClaim({ card: 2680, facts, nowMs: READ_AT_MS + CREW_CLAIM_LIVE_MS })).toBeNull();
+    /* A RELEASE newer than the claim puts the card back on offer (#1559). */
+    expect(liveCardClaim({
+      card: 2680,
+      facts: [...facts, { kind: "release", card: 2680, at: "2026-10-08T08:10:00Z" }],
+      nowMs: READ_AT_MS,
+    })).toBeNull();
+    /* And a VERDICT names a pull request, never a card — it cannot outrank one. */
+    expect(liveCardClaim({
+      card: 2680,
+      facts: [...facts, { kind: "verdict", card: 2680, at: "2026-10-08T08:10:00Z" }],
+      nowMs: READ_AT_MS,
+    })).toEqual({ seat: "seat1", at: "2026-10-08T08:00:00Z" });
+  });
+
+  it("⚠ AND THE SHORT-CIRCUIT THAT HID IT IS STILL THERE — the board answers both questions", () => {
+    /*
+      The whole reason `claimFor` exists rather than `stateFor`. With the
+      repair's own pull request open on the card, the judgement says
+      `pull-request` and says nothing about the claim underneath — which is
+      correct for its question and is the blindness #2769 measured.
+    */
+    const facts: CrewCardCommentFact[] = [
+      { kind: "claim", card: 2680, seat: "seat1", at: "2026-10-08T08:00:00Z" },
+    ];
+    const state = crewCardBuildState({
+      card: 2680,
+      openPullRequests: [{ number: 2681, title: "fix (Card: #2680)" }],
+      facts,
+      nowMs: READ_AT_MS,
+    });
+    expect(state?.kind).toBe("pull-request");
+    expect(liveCardClaim({ card: 2680, facts, nowMs: READ_AT_MS })).not.toBeNull();
   });
 });
