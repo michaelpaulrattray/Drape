@@ -95,6 +95,7 @@ import {
 } from "../shared/crewCardResolution.js";
 import {
   type LiveHoldReRead,
+  type StaleHoldCitation,
   type UnheldDecision,
   type UnreadableHold,
   CREW_HOLD_LABELS,
@@ -102,6 +103,7 @@ import {
   planDeskHoldLabels,
   planFounderHeldDrift,
   planLiveHoldReRead,
+  planStaleHoldCitations,
   planUnheldDecisions,
   planUnreadableHolds,
 } from "../shared/crewNextUpHold.js";
@@ -433,6 +435,42 @@ const openPrsForShipped = gh([
   "pr", "list", "--state", "open", "--limit", "100",
   "--json", "number,title",
 ]) as Json[] | null;
+/*
+  ⚠ **AND THE ONE ROW OF THAT LIST A MACHINE CAN JUDGE (#2777).**
+
+  `liveHoldReReads` above prints every live hold sentence for a shift's eye.
+  This names the subset whose LEADING CLAUSE cites a card or a pull request
+  that is no longer open — the thing the sentence says it is waiting for has
+  finished. `planStaleHoldCitations` owns the narrowing, the two figures of
+  #2777's own that did not survive the re-read, and the floor it is.
+
+  ⚠ **IT COSTS NO `gh` CALL, AND THAT IS WHY IT ASKS "STILL OPEN" RATHER THAN
+  "MERGED OR CLOSED".** Both reads are already on this page for other blocks,
+  and this transport goes over REST FIRST on purpose (#1399) — so resolving
+  each citation's STATE would have been one call per citation, every shift.
+
+  ⚠ **AN UNREAD POPULATION PRINTS NOTHING AND SAYS SO**, with the same bite as
+  its neighbours: a board whose open pull requests could not be read would
+  otherwise call every citation finished, which is the loudest possible way to
+  be wrong.
+*/
+const staleHoldCitations: readonly StaleHoldCitation[] =
+  openForHolds === null || openPrsForShipped === null
+    ? []
+    : planStaleHoldCitations({
+      open: openForHolds,
+      stillOpen: new Set<number>([
+        ...openForHolds.map((row) => row.issueNumber),
+        ...openPrsForShipped.map((row) => Number((row as { number?: unknown })?.number)),
+      ]),
+    });
+if (openForHolds !== null && openPrsForShipped === null) {
+  skipped.push(
+    "HOLDS: the open pull requests could not be read, so no live hold line was checked for a"
+    + " condition that has already been met (#2777). That is unread, NOT clean.",
+  );
+}
+
 const asPullRequest = (row: Json): ShippedNotClosedPullRequest => ({
   number: Number((row as { number?: unknown })?.number),
   title: String((row as { title?: unknown })?.title ?? ""),
@@ -1117,6 +1155,20 @@ if (liveHoldReReads.length > 0) {
     const shown = title.length > 58 ? `${title.slice(0, 57)}…` : title;
     console.log(`  · #${hold.issueNumber} [${hold.heldStates.join(",")}]${whose}${mine} ${shown}`);
     console.log(`      ${hold.reason ?? "(no sentence — see the unreadable-hold block above)"}`);
+  }
+}
+
+if (staleHoldCitations.length > 0) {
+  console.log("");
+  console.log(
+    `⚠ ${staleHoldCitations.length} of those hold(s) NAME SOMETHING THAT HAS FINISHED (#2777):`,
+  );
+  console.log("  The sentence's own leading clause cites a card or a pull request that is no longer");
+  console.log("  open. #2603 told every shift that read it the opposite for two days. Still not a");
+  console.log("  verdict — re-point the sentence in the BODY, or drop the hold label, by hand.");
+  for (const stale of staleHoldCitations) {
+    console.log(`  · #${stale.issueNumber} names ${stale.finished.map((n) => `#${n}`).join(", ")} — finished`);
+    console.log(`      ${stale.reason}`);
   }
 }
 
