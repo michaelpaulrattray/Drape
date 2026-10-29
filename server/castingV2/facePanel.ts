@@ -71,7 +71,7 @@
  */
 import { capitalize, type CastPronouns } from "./castPronouns";
 import type { FeatureKind } from "./faceDiscovery";
-import { normalisedName, type NamedNotCut } from "./pointerCut";
+import { catalogueWordsOf, normalisedName, type NamedNotCut } from "./pointerCut";
 import type { FeatureSlot } from "./recipeAssembler";
 import { liveReferences, type StoredReference } from "./referenceLibrary";
 import {
@@ -684,14 +684,11 @@ function labelOf(definition: SlotDefinition, paired: boolean): string {
  * draws as *Eyes* and the reading says *eye* or *eyes*, both of which reach it
  * through `feature` and `question`.
  */
-function catalogueHostWords(definition: SlotDefinition): readonly (string | null | undefined)[] {
-  return [
-    definition.noun,
-    definition.pairNoun,
-    definition.display,
-    definition.feature,
-    definition.question,
-  ];
+function catalogueHostWords(definition: SlotDefinition): readonly string[] {
+  /* Read in ONE place since #2796: the pointer road's host check asks the same
+     question of the same five words (which drawn row does a reading's `on`
+     name), and a third copy of the list is the drift working law 4 names. */
+  return catalogueWordsOf(definition);
 }
 
 /**
