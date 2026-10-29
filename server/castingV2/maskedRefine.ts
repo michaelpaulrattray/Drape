@@ -438,6 +438,24 @@ export type RegionReader = {
     signal?: AbortSignal;
   }): Promise<Mask | null>;
   /**
+   * ONE SIDE OF AN EAR-WORN PAIR, LOOKED FOR WITH THE DETECTOR (#2800).
+   *
+   * For a pair whose segmenter answer held one side and not the other: the
+   * detector is asked for the noun, only a rectangle where THIS side's ear is
+   * is cut, and the cut is refused under the pointer road's fill floor. The
+   * face scan asks it, after its own second look has also come back
+   * one-sided, and only of a pair worn on the ears — a refine never does.
+   *
+   * `side` is anatomical, as `regionSides`' keys are. `null` is *nothing to
+   * keep there*, and a transport failure THROWS, as `pointer` does.
+   */
+  sideByDetector?(input: {
+    image: Buffer;
+    name: string;
+    side: "left" | "right";
+    imageUrl?: string;
+  }): Promise<Mask | null>;
+  /**
    * WHERE A THING WOULD BE, even when nothing can see it.
    *
    * A different capability from segmentation, not a worse one. A segmenter
