@@ -624,7 +624,7 @@ export async function createRoll(
       );
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
-        message: "The face you followed couldn't be loaded just now, so nothing was cast and nothing was charged. Try again in a moment.",
+        message: "The face you followed couldn't be loaded just now, so nothing was made and nothing was charged. Try again in a moment.",
       });
     }
     try {
@@ -644,7 +644,7 @@ export async function createRoll(
       );
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
-        message: "The face you followed couldn't be loaded just now, so nothing was cast and nothing was charged. Try again in a moment.",
+        message: "The face you followed couldn't be loaded just now, so nothing was made and nothing was charged. Try again in a moment.",
       });
     }
   }
