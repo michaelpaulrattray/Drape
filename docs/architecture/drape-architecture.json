@@ -14917,6 +14917,10 @@
       "path": "server/castingV2/packageRedoService.test.ts"
     },
     {
+      "id": "test:server/castingV2/pairEmptyBothSidesCropRoad.test.ts",
+      "path": "server/castingV2/pairEmptyBothSidesCropRoad.test.ts"
+    },
+    {
       "id": "test:server/castingV2/pairEmptySide.test.ts",
       "path": "server/castingV2/pairEmptySide.test.ts"
     },

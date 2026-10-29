@@ -530,6 +530,37 @@ export async function scanFace(input: {
        first reading and the half-answered heal's second, so the heal judges
        the same answer the panel will draw. */
     const onTheEars = bilateral && wornOnTheEars(region.question);
+    /**
+     * THE TWO SIDES OF A PAIR, FILED — one copy, because two roads now produce
+     * them: the pair's own reading, and the second look a pair empty on BOTH
+     * sides gets (#2817). A second copy would be working law 4 in the one place
+     * it would be worst: the floor, the box and the rule that a box and a mask
+     * are filed together would then be written twice and could disagree about
+     * the same answer.
+     *
+     * `null` is *nothing on that side*, which is what the crop road answers
+     * with; the pair road has no side it can leave out and hands two masks.
+     */
+    const fileSides = (left: Mask | null, right: Mask | null): "filed" | "empty" => {
+      const filed: Array<{ slot: FeatureSlot; box: ScanBox; mask: Mask }> = [];
+      for (const slot of region.slots) {
+        const mask = slot.instance === "left" ? left : right;
+        if (mask === null) continue;
+        const box = binaryCoverage(mask) > floor ? boxIn(mask, frame) : null;
+        /* Box and mask are set together, always: a slot with a rectangle and
+           no shape would render as a hard-edged crop beside its cutout
+           neighbours, and one with a shape and no rectangle has nowhere to
+           put it. They are one answer. */
+        if (box) {
+          boxes.set(slot.slot, box);
+          masks.set(slot.slot, mask);
+          filed.push({ slot: slot.slot, box, mask });
+        }
+      }
+      publish(filed);
+      return region.slots.some((slot) => boxes.has(slot.slot)) ? "filed" : "empty";
+    };
+
     /** One reading of this region: what it filed, without deciding anything. */
     const read = async (): Promise<"filed" | "empty" | "failed" | "capability"> => {
     const landed: Array<{ slot: FeatureSlot; box: ScanBox; mask: Mask }> = [];
@@ -717,21 +748,7 @@ export async function scanFace(input: {
             );
           }
         }
-        for (const slot of region.slots) {
-          const mask = slot.instance === "left" ? leftMask : rightMask;
-          const box = binaryCoverage(mask) > floor ? boxIn(mask, frame) : null;
-          /* Box and mask are set together, always: a slot with a rectangle and
-             no shape would render as a hard-edged crop beside its cutout
-             neighbours, and one with a shape and no rectangle has nowhere to
-             put it. They are one answer. */
-          if (box) {
-            boxes.set(slot.slot, box);
-            masks.set(slot.slot, mask);
-            landed.push({ slot: slot.slot, box, mask });
-          }
-        }
-        publish(landed);
-        return region.slots.some((slot) => boxes.has(slot.slot)) ? "filed" : "empty";
+        return fileSides(leftMask, rightMask);
       }
 
       const mask = await input.reader.region({
@@ -767,6 +784,110 @@ export async function scanFace(input: {
     }
   };
 
+    /**
+     * THE SECOND LOOK AT A PAIR EMPTY ON BOTH SIDES, ASKED OF EACH HALF'S OWN
+     * PICTURE (#2817, the law-7 sibling of #2802).
+     *
+     * #2802 fixed the second look a pair gets when ONE side comes back empty.
+     * A pair empty on BOTH sides takes a different road — the empty-anatomy
+     * re-ask below — and on the pair road that re-ask is the identical
+     * whole-picture request: same endpoint, same prompt, same bytes. So it
+     * cannot answer either, and the panel loses the whole row.
+     *
+     * Measured through the product's own reader on the founder's round-6 cast,
+     * `ear` at 1024 and at 598, three draws a size: **the pair road answered 0
+     * and 0 on 6 of 6, and the re-ask answered 0 and 0 on 6 of 6** — it is the
+     * same question getting the same answer, not a flaky read a second ask
+     * might catch. The same frame asked a half at a time found **both** ears on
+     * 6 of 6 (699–704px and 748px at 1024; 239px and 250px at 598), on a cast
+     * whose two ears the founder's own eye reads plainly.
+     *
+     * # It does not invent a pair that is not there
+     *
+     * The half this road is most likely to be wrong about is a creature's, and
+     * the card holds it against this module's own worst measured case:
+     * `DEPARTURE_GATE_SUBSTITUTION_2026-08-30.md` §7, where `eyebrows` asked of
+     * a browless anglerfish creature came back with two anatomically perfect
+     * brow shapes on bare ridged skin, OUTSCORING both present controls. That
+     * was the whole-frame ask. On the crop road, on those same §7 frames and on
+     * three further browless faces, and on a hooded cast with no ear anywhere
+     * in frame, it answered **nothing on either side** — the readings are in
+     * the pull request. A floor rather than a guarantee, and it is the floor
+     * the card asked for.
+     *
+     * # What it costs, said out loud
+     *
+     * Two reads where the wasted re-ask spent one, and only on a pair that came
+     * back empty on both sides: measured at 5 of 21 re-askable pair cells over
+     * seven frames, about **+0.7 of a read on a scan that spends ~20**. A
+     * better answer that costs more is a trade and not a free win.
+     *
+     * A reader that cannot read one side alone keeps the old road, which is
+     * what it has.
+     */
+    const readBothHalvesByCrop = async (
+      askItsOwnHalf: NonNullable<RegionReader["sideByCrop"]>,
+    ): Promise<"filed" | "empty" | "failed"> => {
+      const ask = {
+        image: input.frame.bytes,
+        name: region.question,
+        ...(input.frame.url ? { imageUrl: input.frame.url } : {}),
+        /* The same ear rule the first reading and the heal apply, so all three
+           roads judge the answer the panel will draw. No worn pair reaches here
+           — an empty earring read is the born-worn detector being careful and
+           is never re-asked — and carrying the rule rather than reasoning about
+           it is what stops the three roads drifting apart. */
+        ...(onTheEars ? { onTheEars: true as const } : {}),
+      };
+      /* EACH HALF'S FAILURE COSTS THAT HALF AND NOT THE OTHER. The first
+         reading was empty, so there is nothing here to trade away; a side that
+         throws is simply a side this look could not read. Both throwing is a
+         FAILED reading rather than an empty one, because the re-ask rate is
+         read by question and an outage must not file as an absence. */
+      const look = async (side: "left" | "right"): Promise<Mask | null | "threw"> => {
+        try {
+          return await askItsOwnHalf({ ...ask, side });
+        } catch (error) {
+          log.warn(
+            {
+              question: region.question,
+              side,
+              why: error instanceof Error ? error.message : String(error),
+            },
+            "[faceScan] the second look at this side did not answer — the pair stays as read",
+          );
+          return "threw";
+        }
+      };
+      const [left, right] = await Promise.all([look("left"), look("right")]);
+      if (left === "threw" && right === "threw") {
+        failed.push({
+          question: region.question,
+          why: "neither half answered the second look",
+        });
+        return "failed";
+      }
+      const leftMask = left === "threw" ? null : left;
+      const rightMask = right === "threw" ? null : right;
+      const outcome = fileSides(leftMask, rightMask);
+      log.info(
+        {
+          question: region.question,
+          /* The outcome rate arrives free from his own ordinary use, as the
+             half-answered pair's does, and names the road it took so a road
+             change is readable in his logs rather than inferred from a rate. */
+          road: "each half's own picture",
+          left: leftMask === null ? null : binaryCoverage(leftMask),
+          right: rightMask === null ? null : binaryCoverage(rightMask),
+          rescued: outcome === "filed",
+        },
+        outcome === "filed"
+          ? "[faceScan] a pair empty on both sides — the second look found a side"
+          : "[faceScan] a pair empty on both sides — the second look found nothing either",
+      );
+      return outcome;
+    };
+
     /*
       AND AN EMPTY ANATOMY READ IS ASKED ONCE MORE (fable-468 ruling 1, on the
       founder's own three specimens).
@@ -797,7 +918,15 @@ export async function scanFace(input: {
       if (first === "empty" || first === "capability") empty.push(region.question);
       return;
     }
-    const second = await read();
+    /* A PAIR EMPTY ON BOTH SIDES IS ASKED A DIFFERENT QUESTION, NOT THE SAME
+       ONE LOUDER (#2817). Bound here rather than reached for inside the call:
+       the reader is an interface whose optional members a `?.` chain cannot
+       narrow across an `await`. Two slots is the left-and-right pair this road
+       knows how to ask about; anything else keeps the re-ask it has. */
+    const askItsOwnHalf = input.reader.sideByCrop?.bind(input.reader);
+    const second = bilateral && region.slots.length === 2 && askItsOwnHalf !== undefined
+      ? await readBothHalvesByCrop(askItsOwnHalf)
+      : await read();
     /* Recorded before the early return, so a rescued question is in the map
        exactly as an unrescued one is — a record that only keeps its failures
        cannot produce a rate. */
