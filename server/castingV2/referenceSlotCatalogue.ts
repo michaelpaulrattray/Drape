@@ -482,8 +482,25 @@ type CatalogueEntry = {
    *
    * ⚠ **Authored per slot, beside its measurement, and never derived from a
    * plural noun.** A pair is two things too, and it already has its own road
-   * (`frame: "ownSide"`); `hair` is one thing even when it is in two buns, and
-   * nobody has measured what several would do to it.
+   * (`frame: "ownSide"`); `hair` is one thing even when it is in two buns.
+   *
+   * ⚠ **AND THAT LAST CLAUSE READ *"nobody has measured what several would do
+   * to it"* UNTIL #2811 (2026-10-30), WHICH MEASURED IT — AND THE HUNCH HOLDS.**
+   * `hair` asked for several against asked the plain way, on **six frames**
+   * (two casts whose hair falls either side of the face, one worn up, one
+   * curly, and two bearded casts): **one mask both ways, the same pixel count
+   * to the digit, every time** — 345,339 / 377,840 / 168,388 / 71,056 /
+   * 47,568 / 48,321. And `facial hair` on the two bearded casts, one of them a
+   * moustache and a chin beard with the cheeks shaved — which is exactly the
+   * *"two separate things"* the card worried about — answered **one mask both
+   * ways** (30,083 and 25,140/25,171), with a clean-shaven control at nothing
+   * both ways. **A mask may hold pieces that do not touch**, which is why one
+   * answer already covers a moustache and a chin, and why the plural noun was
+   * never the right thing to reason from.
+   *
+   * So neither entry gains `several`, and the one thing still unmeasured is
+   * named rather than implied: no cast wearing its hair in **two buns** is in
+   * the fixture set.
    */
   several?: { why: string };
 };
@@ -636,6 +653,26 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
     facets: ["lips"],
     instances: { of: "one" },
     question: { from: "facetRegion" },
+    /*
+      ⚠ ON A CREATURE WITH NO VISIBLE LIPS THIS QUESTION ANSWERS THE TEETH —
+      measured, #2811, 2026-10-30, and recorded here because it is a fact about
+      the WORD and not about this table.
+
+      Driven at two sizes on both of the founder's creatures: the cut this
+      question returns is the same rectangle as the `all the teeth` cut to
+      within three pixels, and **99.5% and 99.8% of the teeth cut sits inside
+      it** (on the horned one it is 89% of the lips cut by area). Painted back
+      on the frame, the lips cut is a thin rim round the two tusks plus the gum
+      strip between them. On a human control the teeth cut is 6.6% of the lips
+      cut and the two are plainly different things, so this is the creature case
+      and not the panel's.
+
+      It is the absent-feature class already on the record
+      (`docs/specs/DEPARTURE_GATE_SUBSTITUTION_2026-08-30.md`): asked for
+      something not in the picture, the segmenter answers with the nearest
+      thing. **Nothing is changed on that reading** — whether the panel then
+      draws one row or two is the founder's eye, and it is asked on #2819.
+    */
   },
   {
     feature: "teeth",
