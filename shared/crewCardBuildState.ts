@@ -507,6 +507,20 @@ export function crewCardRefusalLine(seat?: string | null, at = "<UTC time>"): st
  * filed about. What was wrong is what the seat was TOLD. The arm in
  * `server/crewCardBuildState.test.ts` drives that exact body, so this prose
  * cannot drift from the precedence it describes.
+ *
+ * ⚠ **AND THE `take it` ENTRY NOW SAYS NOT TO WRITE IT BY HAND — #2773.** It
+ * showed the claim line beside the other two and so read as an instruction to
+ * type one, which is what the launch orders say in prose. Measured on
+ * 2026-10-29: a claim typed by hand becomes the NEWEST line on the card, and
+ * every reader of that family consults the newest, so it **hid a rival's live
+ * claim for the whole of {@link CREW_CLAIM_LIVE_MS}** — the refusal, the
+ * `--card` heartbeat's re-declaration and the foreign-claim probe all went
+ * silent together, and a full builder-seat session was spent on a pull request
+ * closed unmerged. `readCardClaim`'s `contested` verdict is the mechanical half
+ * of that repair; this is the half that stops the hand claim being written at
+ * all, on the one road a seat can be told on — the launch orders and the shift
+ * digest live in `.agents/` and are not a seat's to edit, which is the same
+ * split #1701 and #2707 left owed above.
  */
 export function crewCardHandbackInstruction(seat?: string | null): string {
   const other = CREW_CARD_REFUSAL_WORDS.slice(1);
@@ -543,6 +557,15 @@ export function crewCardHandbackInstruction(seat?: string | null): string {
     "               free. Keep the words mid-sentence, or reword them.",
     "",
     `  take it      ${crewCardClaimLine(seat)}`,
+    "               ⚠ AND THIS IS THE ONE YOU DO NOT WRITE BY HAND. Declare the",
+    "               card on your Desk row instead and the tool posts it for you,",
+    "               after reading the board in the same act:",
+    "                 scripts/crew-shift-start.mts --shift <id> --note '…' --card '#N'",
+    "               A claim typed by hand is the NEWEST line on the card, so it",
+    "               HIDES a rival's live claim from every reader for twelve hours",
+    "               (#2773) — and the refusal that would have stopped you only",
+    "               ever reads the card your ROW names. On 2026-10-29 that cost a",
+    "               full builder-seat session and a pull request closed unmerged.",
     "",
     "Any other word — SKIPPED, WORKED, DONE, BUILT — is ordinary prose to the",
     "board and the fact is lost. 0 of 5 refusals on #1669 were seen, and that one",

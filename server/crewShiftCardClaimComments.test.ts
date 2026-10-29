@@ -1115,3 +1115,291 @@ describe("a live claim on a card that has CLOSED (#1879)", () => {
     }
   });
 });
+
+/**
+ * A RIVAL'S LIVE CLAIM *UNDER* THIS SEAT'S OWN (#2773) — the real board of
+ * 2026-10-29, driven with its control.
+ *
+ * # What was measured, and it is the sharpest shape this hole has taken
+ *
+ * Read at `crew_shift_runs` rather than at the card: at 00:07:13Z
+ * `foreman-20261029-1005` claimed #2769 **through the tool**, and at 00:24:47Z
+ * `seat1-20261029-095243` claimed the same card **by hand**, off a read it had
+ * taken at 00:03Z. Row #850's `cardRef` never left `#2764`, so `assertCardIsFree`
+ * was never asked about #2769 at all; its own note at 00:38:33Z NAMED #2769, so
+ * the foreign-claim probe (#1877) was the last reader with a chance — four
+ * minutes before the duplicate pull request opened.
+ *
+ * **It was silent, and so was every other reader**, because `readCardClaim`
+ * consulted the newest claim line and that line was seat1's own. Driven over
+ * the real comments before the repair, the verdict was `mine`, the refusal was
+ * `null` and the probe returned no claims; with seat1's own line removed, the
+ * same reader said *"already claimed by foreman-20261029-1005, 31 minutes ago"*.
+ *
+ * ⚠ **SO THE ORDER OF THE TWO WRITES DECIDED THE ANSWER ON THE SAME TWO FACTS**
+ * — rival-then-mine was silence, mine-then-rival refused — and the arm named
+ * *the asymmetry the repair removes* is the one that states that defect
+ * directly. Two live claims on one card is a collision whichever order they
+ * landed in.
+ *
+ * ⚠ **AND IT IS WHY #2773's OWN CANDIDATE 1 IS NOT ENOUGH BY ITSELF.** That
+ * card proposed re-declaring through `--card` on a heartbeat, which runs the
+ * full refusal — confirmed, and the last arm in this block pins it. But a seat
+ * that claims by hand FIRST, which is what the standing orders tell it to do,
+ * and re-declares afterwards got `mine` and moved onto the card with the rival
+ * never seen. The repair therefore sits at the judge, where no instruction has
+ * to be remembered for it to work.
+ */
+describe("a rival's live claim UNDER this seat's own (#2773)", () => {
+  const RIVAL = "foreman-20261029-1005";
+  const MINE = "seat1-20261029-095243";
+  /** The foreman's claim on #2769, posted by the tool. */
+  const RIVAL_AT = "2026-10-29T00:07:13Z";
+  /** Seat 1's own claim, seventeen minutes later and written by hand. */
+  const MINE_AT = "2026-10-29T00:24:47Z";
+  /** Seat 1's heartbeat, as `crew_shift_runs` recorded it on row #850. */
+  const NOW = Date.parse("2026-10-29T00:38:33Z");
+
+  /** The board as it really stood, newest comment last as `gh` returns them. */
+  const REAL_BOARD: CardComment[] = [
+    { body: crewCardClaimLine(RIVAL, "2026-10-29T00:06:16Z"), createdAt: RIVAL_AT },
+    { body: crewCardClaimLine(MINE, "2026-10-29T00:28Z"), createdAt: MINE_AT },
+  ];
+
+  const read = (comments: CardComment[], state: CrewCardReadState = "open", mine = MINE) =>
+    readCardClaim({ cardRef: "#2769", comments, state, mine, now: NOW });
+
+  it("both claims are LIVE by the clock — the premise every arm below rests on", () => {
+    /*
+      ⚠ WITHOUT THIS ARM EVERY ANSWER BELOW IS SATISFIABLE BY A STALE CLAIM, and
+      the block would pass over a reader that never looked under the top line.
+      Derived from the constant rather than from a typed date.
+    */
+    expect(NOW - Date.parse(RIVAL_AT)).toBeLessThan(CREW_CLAIM_LIVE_MS);
+    expect(NOW - Date.parse(MINE_AT)).toBeLessThan(CREW_CLAIM_LIVE_MS);
+  });
+
+  it("reads as contested, naming the RIVAL's claim and this seat's own line", () => {
+    /* A distinct kind rather than a field on `mine`, for the reason this
+       module's `state` argues: an optional field defaulting to safe can be
+       forgotten by anything that compiles. */
+    expect(read(REAL_BOARD)).toEqual({ kind: "contested", seat: RIVAL, at: RIVAL_AT, mine: MINE_AT });
+  });
+
+  it("is still plain `mine` when this seat's claim is the only one — the control", () => {
+    /* ⚠ THE ARM THAT KEEPS A BATCH WORKING. A seat heartbeats `--card` more than
+       once on one card, and its own claim must go on being silence. */
+    const verdict = read([{ body: crewCardClaimLine(MINE, MINE_AT), createdAt: MINE_AT }]);
+    expect(verdict).toEqual({ kind: "mine", at: MINE_AT });
+    expect(renderCardClaimRefusal("#2769", verdict, NOW)).toBeNull();
+  });
+
+  it("the asymmetry the repair removes: the same two facts, either order", () => {
+    /*
+      ⚠ THE ARM THAT STATES THE DEFECT. Before the repair these two boards were
+      read differently — `claimed` one way round and silence the other — and
+      nothing but the order of the writes separated them. Both must now refuse.
+    */
+    const mineOverTheirs = read(REAL_BOARD);
+    const theirsOverMine = read([
+      { body: crewCardClaimLine(MINE, MINE_AT), createdAt: "2026-10-29T00:07:00Z" },
+      { body: crewCardClaimLine(RIVAL, RIVAL_AT), createdAt: "2026-10-29T00:24:00Z" },
+    ]);
+    expect(theirsOverMine).toMatchObject({ kind: "claimed", seat: RIVAL });
+    expect(mineOverTheirs).toMatchObject({ kind: "contested", seat: RIVAL });
+    for (const verdict of [mineOverTheirs, theirsOverMine]) {
+      expect(renderCardClaimRefusal("#2769", verdict, NOW)).toContain(RIVAL);
+    }
+  });
+
+  it("stays contested however many of this seat's own lines are stacked on top", () => {
+    /* A seat that re-ran its start, or claimed twice, must not bury the rival
+       one line deeper and buy silence with it. */
+    expect(read([
+      ...REAL_BOARD,
+      { body: crewCardClaimLine(MINE, "2026-10-29T00:30Z"), createdAt: "2026-10-29T00:30:00Z" },
+      { body: crewCardClaimLine(MINE, "2026-10-29T00:33Z"), createdAt: "2026-10-29T00:33:00Z" },
+    ])).toMatchObject({ kind: "contested", seat: RIVAL, at: RIVAL_AT });
+  });
+
+  describe("what still puts the card back on offer — the existing rule, one line deeper", () => {
+    it("a RELEASE between the two claims, because it cancels everything older", () => {
+      /*
+        ⚠ THE ARM THAT KEEPS THE READER'S OWN RULE. A release and a refusal
+        carry NO seat (`crewCardCommentFact` captures one on a claim alone), so
+        "whose release was that" is not a question the facts can answer — the
+        walk therefore stops dead at one, exactly as the newest-fact reading
+        always has. Without this a seat that correctly took a RELEASED card
+        would be refused it for twelve hours.
+      */
+      expect(read([
+        { body: crewCardClaimLine(RIVAL, RIVAL_AT), createdAt: RIVAL_AT },
+        { body: crewCardReleaseLine(RIVAL, "2026-10-29T00:20Z"), createdAt: "2026-10-29T00:20:00Z" },
+        { body: crewCardClaimLine(MINE, MINE_AT), createdAt: MINE_AT },
+      ])).toEqual({ kind: "mine", at: MINE_AT });
+    });
+
+    it("a REFUSAL between them, for the same reason", () => {
+      expect(read([
+        { body: crewCardClaimLine(RIVAL, RIVAL_AT), createdAt: RIVAL_AT },
+        { body: `NOT BUILT — ${RIVAL}, 2026-10-29T00:20Z`, createdAt: "2026-10-29T00:20:00Z" },
+        { body: crewCardClaimLine(MINE, MINE_AT), createdAt: MINE_AT },
+      ])).toEqual({ kind: "mine", at: MINE_AT });
+    });
+
+    it("a rival claim that has aged out of the board's window", () => {
+      /* Nothing ages a claim but the clock, and a stale one holds nobody off. */
+      const stale = new Date(NOW - CREW_CLAIM_LIVE_MS - 60_000).toISOString();
+      expect(read([
+        { body: crewCardClaimLine(RIVAL, stale), createdAt: stale },
+        { body: crewCardClaimLine(MINE, MINE_AT), createdAt: MINE_AT },
+      ])).toEqual({ kind: "mine", at: MINE_AT });
+    });
+
+    it("the card itself having CLOSED — #1879's loosening, on the rival road as before", () => {
+      /* A rival's live claim on a closed card is holding nobody off anything,
+         so this seat's own line is the only fact left standing. */
+      expect(read(REAL_BOARD, "closed")).toEqual({ kind: "mine", at: MINE_AT });
+    });
+
+    it("but an UNREAD state leaves it contested — `unknown` is never `closed`", () => {
+      /* The direction that matters: a `gh` that answered no state must leave
+         this guard exactly as tight as an open card does. */
+      expect(read(REAL_BOARD, "unknown")).toMatchObject({ kind: "contested", seat: RIVAL });
+    });
+  });
+
+  describe("consumer 1 — the refusal a seat actually reads", () => {
+    const line = () => renderCardClaimRefusal("#2769", read(REAL_BOARD), NOW)!;
+
+    it("names BOTH claims and says whose is the older", () => {
+      expect(line()).toContain(RIVAL);
+      expect(line()).toContain(MINE_AT);
+      expect(line()).toContain("TWO live claims");
+      expect(line()).toContain("THEIRS IS THE OLDER ONE");
+    });
+
+    it("does NOT tell the seat the card is `already claimed by` somebody", () => {
+      /*
+        ⚠ THE ARM THAT KEEPS THE TWO SENTENCES APART. Handed `claimed`'s
+        wording, a seat reads its OWN line as the rival's — it wrote one
+        seventeen minutes ago — and reaches straight for `--same-card`, which
+        is the escape from the refusal that was right.
+      */
+      expect(line()).not.toContain("is already claimed by");
+      expect(renderCardClaimRefusal("#2769", read([
+        { body: crewCardClaimLine(RIVAL, RIVAL_AT), createdAt: RIVAL_AT },
+      ]), NOW)).toContain("is already claimed by");
+    });
+
+    it("tells the seat to withdraw its own line, in the spelling the board reads", () => {
+      /* Quoted from the constant, so the instruction cannot drift from the
+         reader that has to see the result (#1701). */
+      expect(line()).toContain(crewCardReleaseLine());
+    });
+
+    it("names the escape, and is not reported as an unread board", () => {
+      expect(line()).toContain("--same-card");
+      expect(renderCardClaimNote("#2769", read(REAL_BOARD))).toBeNull();
+    });
+  });
+
+  describe("consumer 2 — the probe on the heartbeat that declared no card", () => {
+    /** Row #850's own note, read off `crew_shift_runs` on production. */
+    const REAL_NOTE =
+      "#2764 shipped as PR #2770 (built on measurement: candidate 2, 0 false positives vs"
+      + " candidate 1 four). #2769 committed on team/repair-claim-2769, 10/10 sabotage red;"
+      + " preflight running before the PR.";
+
+    const probe = (comments: CardComment[]) => {
+      const found = readNoteForeignClaims({
+        note: REAL_NOTE,
+        /* The row was on #2764 and never moved — which is the only reason
+           #2769 is probed at all, and the whole reason this reader was last. */
+        ownCardRef: "#2764",
+        mine: MINE,
+        readComments: (card) => (card === 2769 ? { comments, state: "open" } : { comments: [], state: "open" }),
+        now: NOW,
+      });
+      return { found, line: renderNoteForeignClaimWarning(found, "#2764", NOW) };
+    };
+
+    it("speaks on the real board, and names the rival rather than this seat", () => {
+      const { found, line } = probe(REAL_BOARD);
+      expect(found.claims).toEqual([{ card: 2769, seat: RIVAL, at: RIVAL_AT }]);
+      expect(line).toContain(`#2769 — ${RIVAL}, 31 minutes ago`);
+    });
+
+    it("is still SILENT when the only claim on that card is this seat's own", () => {
+      /* The 79.8% case's sibling: a seat citing a card it holds itself must
+         never be warned off it. */
+      const { found, line } = probe([{ body: crewCardClaimLine(MINE, MINE_AT), createdAt: MINE_AT }]);
+      expect(found.claims).toEqual([]);
+      expect(found.unreadable).toEqual([]);
+      expect(line).toBeNull();
+    });
+  });
+
+  describe("the writer, which decides out loud rather than by falling through", () => {
+    /*
+      ⚠ A NEW VERDICT KIND ACQUIRES BEHAVIOUR BY FALLING PAST FIVE `if`s IN
+      `postCardClaim`, WHICH IS HOW A DECISION GETS MADE BY NOBODY — #1879's own
+      arm says so one block up. So this one is pinned: a contested board posts
+      NOTHING. A second line from this seat would bury the rival's one comment
+      deeper, which is the defect itself, and there is nothing to gain by it
+      because this seat's claim is already the newest fact on the card.
+    */
+    const AT = "2026-10-29T00:38:33Z";
+    const post = (comments: CardComment[]) => {
+      const posted: string[] = [];
+      const outcome = postCardClaim({
+        cardRef: "#2769", seat: MINE, verdict: read(comments), at: AT,
+        post: (_card, body) => { posted.push(body); },
+      });
+      return { outcome, posted };
+    };
+
+    it("posts nothing on a contested board, and the reason names both claims", () => {
+      const { outcome, posted } = post(REAL_BOARD);
+      expect(posted).toEqual([]);
+      expect(outcome.kind).toBe("skipped");
+      expect(outcome.kind === "skipped" && outcome.why).toContain(RIVAL);
+      expect(outcome.kind === "skipped" && outcome.why).toContain(MINE_AT);
+    });
+
+    it("the skip is distinguishable from the ordinary `already claimed by this seat`", () => {
+      /* Two silences for two different reasons, as every other pair in this
+         module is kept apart — a seat reading the line must be able to tell
+         "nothing to do" from "stand off this card". */
+      const contested = post(REAL_BOARD).outcome;
+      const mine = post([{ body: crewCardClaimLine(MINE, MINE_AT), createdAt: MINE_AT }]).outcome;
+      expect(mine.kind === "skipped" && mine.why).toContain("already claimed by this seat");
+      expect(contested.kind === "skipped" && contested.why).not.toContain("already claimed by this seat");
+    });
+
+    it("and still posts on a board this seat's own RELEASE put back on offer", () => {
+      /* The positive control for the writer: the walk stopping at a release
+         must not also stop a legitimate fresh claim being written. */
+      const { outcome, posted } = post([
+        { body: crewCardClaimLine(RIVAL, RIVAL_AT), createdAt: RIVAL_AT },
+        { body: crewCardReleaseLine(RIVAL, "2026-10-29T00:30Z"), createdAt: "2026-10-29T00:30:00Z" },
+      ]);
+      expect(outcome.kind).toBe("posted");
+      expect(posted).toEqual([crewCardClaimLine(MINE, AT)]);
+    });
+  });
+
+  it("the heartbeat runs the SAME refusal as a start — #2773's candidate 1, confirmed", () => {
+    /*
+      ⚠ THE CARD ASKED FOR THIS CHECK BY NAME — *"whether a heartbeat's `--card`
+      runs the same refusal as a start, or only records the card"* — and the
+      answer is the former, through one function and not a copy of it (#1580).
+      It is pinned here because the repair above is built on top of it: the
+      heartbeat road is sound, and what was unsound is what it read.
+    */
+    const SOURCE = readFileSync(resolve(__dirname, "../scripts/crew-shift-start.mts"), "utf8");
+    expect(SOURCE.match(/assertCardIsFree\(\{/g) ?? []).toHaveLength(2);
+    expect(SOURCE).toContain("const taken = renderCardClaimRefusal(input.cardRef, verdict);");
+    expect(SOURCE).toContain("if (taken !== null) refuse(taken);");
+  });
+});
