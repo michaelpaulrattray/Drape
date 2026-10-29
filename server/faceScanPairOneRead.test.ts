@@ -39,7 +39,7 @@ import sharp from "sharp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { scanFace } from "./castingV2/faceScan";
-import { createFalRegionReader } from "./castingV2/falRegionReader";
+import { createFalRegionReader, singularOf } from "./castingV2/falRegionReader";
 import { catalogueSlots } from "./castingV2/referenceSlotCatalogue";
 import { PAIR_ONE_READ_ENV, pairInOneReadEnabled } from "./castingV2/faceScanService";
 import { FACE_SCAN_FAL_CALLS } from "../scripts/lib/falSpend.mts";
@@ -133,6 +133,7 @@ type Wire = {
   multipleAsked: string[];
   maxMasks: number[];
   halfFrameAsks: number;
+  sam3Asked: { prompt: string; wholeFrame: boolean }[];
   birefnet: number;
 };
 
@@ -148,7 +149,7 @@ type Wire = {
  */
 function stubFal(shape: Shape): Wire {
   const wire: Wire = {
-    sam3ByPrompt: new Map(), multipleAsked: [], maxMasks: [], halfFrameAsks: 0, birefnet: 0,
+    sam3ByPrompt: new Map(), sam3Asked: [], multipleAsked: [], maxMasks: [], halfFrameAsks: 0, birefnet: 0,
   };
   vi.stubGlobal("fetch", async (url: unknown, init?: { body?: unknown }) => {
     const address = String(url);
@@ -171,6 +172,11 @@ function stubFal(shape: Shape): Wire {
 
     const prompt = String(body.prompt);
     wire.sam3ByPrompt.set(prompt, (wire.sam3ByPrompt.get(prompt) ?? 0) + 1);
+    /* AND AT WHAT WIDTH, because since #2802 a pair's two reads are two
+       DIFFERENT questions — the plural of the whole picture, then the singular
+       of one half — and a tally by prompt alone cannot tell them apart for a
+       noun whose singular and plural are the same word (`ear`, `earring`). */
+    wire.sam3Asked.push({ prompt, wholeFrame: width === WIDTH });
     if (body.return_multiple_masks === true) {
       wire.multipleAsked.push(prompt);
       wire.maxMasks.push(Number(body.max_masks));
@@ -468,11 +474,23 @@ describe("the readings the scan's own controls rest on", () => {
       rescue would have broken: `faceScan.ts` looks again when exactly one side
       is at literal zero, so a whole scan on this shape asks each pair TWICE —
       one read, then one more — and never three.
+
+      ⚠ **The SECOND of those two is no longer the same question (#2802).** It
+      was, and on this road that made it unable to answer: a whole-picture
+      request repeated verbatim came back with the same answer, measured 10 of
+      10 on the founder's own cast. The blind side is asked for its own
+      half-picture now — the singular noun of half the frame — so the bill is
+      unchanged and the question is not.
     */
     const scan = await driveScan(true, "oneSided");
     for (const question of PAIR_QUESTIONS) {
-      expect(scan.sam3ByPrompt.get(question), `${question} asked once, then healed once`).toBe(2);
+      const asked = scan.sam3Asked.filter((one) => one.prompt === question || one.prompt === singularOf(question));
+      expect(asked.map((one) => one.wholeFrame), `${question} asked once of the whole picture, then once of one half`)
+        .toEqual([true, false]);
     }
+    /* And nothing else in the scan cut a half frame, so the count above is the
+       heal and not something else wearing its shape. */
+    expect(scan.halfFrameAsks, "one half-picture per pair, and no other").toBe(PAIR_QUESTIONS.size);
   });
 
   it("reads an empty pair as empty, at one read instead of two", async () => {
