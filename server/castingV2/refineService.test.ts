@@ -17127,9 +17127,28 @@ describe("a named thing is taken out of the attached picture", () => {
     expect(mints).toEqual([]);
   });
 
-  it("says what it took, in the customer's own word", async () => {
+  /**
+   * ⚠ A TAKEN PICTURE IS NEVER ALSO CONFESSED AS UNUSED — and the SECOND half of
+   * this arm is here because the first half alone survived a sabotage.
+   *
+   * Removing `takeSource === null` from `pictureUnused` makes a successful take
+   * ALSO unused, so the receipt would carry *"Took the jacket from your
+   * picture."* and an unused-picture note in the same breath. The arm as first
+   * written asserted only that the positive sentence was PRESENT, and passed
+   * with the term gone — a guard checking the shape of its own output instead of
+   * the decision that output drives, which is #2565 slice 2's own lesson from
+   * the night before, repeating on the next road.
+   *
+   * So both halves, and the negative one is the load-bearing one.
+   */
+  it("⚠ says what it took, and never also says the picture went unused", async () => {
     const result = await refineCandidate(road() as never, wearIt);
-    expect(JSON.stringify(result)).toContain("Took the jacket from your picture.");
+    const said = JSON.stringify(result);
+    expect(said).toContain("Took the jacket from your picture.");
+    /* Not one of the three unused-picture sentences may appear beside it. */
+    expect(said).not.toContain("wasn't used");
+    expect(said).not.toContain("I can't take");
+    expect(said).not.toContain("didn't ask for anything I could take from it");
   });
 
   it("⚠ a REFUSED cut never claims the road does not exist", async () => {
