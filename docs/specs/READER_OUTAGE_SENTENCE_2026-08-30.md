@@ -44,6 +44,8 @@ controls.
 | **hair from a reference** | *"We couldn't read that picture — **try another one**."* |
 | **makeup from a reference** | *"We couldn't read that picture — **try another one**."* |
 
+⚠ **The roll row quotes the sentence AS IT STOOD IN AUGUST, and it is left that way because this table is what the drive read.** It has changed twice since: #1495 and, on 2026-10-30, **#2812** — which dropped the clause naming the reader (the disappearing-technology law, clause 6) and moved the customer's word from *cast* to *made*. The live sentence is `READER_OUTAGE_MESSAGE` in `server/castingV2/briefRefusalCopy.ts`, pinned at its bytes by that module's suite; read it there rather than here.
+
 The roll road tells the truth. The other three tell the customer that **her own
 words, or her own photograph, were the problem**, and instruct her to change
 them — advice she cannot follow, because nothing about her ask is wrong. She

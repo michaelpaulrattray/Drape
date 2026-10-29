@@ -19,10 +19,10 @@ _Called as:_ `castingV2.config` · `castingV2.createSession` · `castingV2.openS
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1246<br>server/castingV2/briefRefusalCopy.ts:176 | 9 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1249<br>server/castingV2/briefRefusalCopy.ts:182 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1225<br>server/castingV2/briefRefusalCopy.ts:192 | 5 test(s) | _documented-unreachable or gap — see findings_ |
-| `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1105<br>server/castingV2/briefRefusalCopy.ts:170 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.likeness` | roll-refusal |  | server/castingV2/briefCompiler.ts:1246<br>server/castingV2/briefRefusalCopy.ts:183 | 9 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.not_a_being` | roll-refusal |  | server/castingV2/briefCompiler.ts:1249<br>server/castingV2/briefRefusalCopy.ts:189 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.reader_outage` | roll-refusal |  | server/castingV2/briefCompiler.ts:1225<br>server/castingV2/briefRefusalCopy.ts:199 | 5 test(s) | _documented-unreachable or gap — see findings_ |
+| `roll.uninterpretable` | roll-refusal |  | server/castingV2/briefCompiler.ts:1105<br>server/castingV2/briefRefusalCopy.ts:177 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 
 > THE ROLL ENTRANCE'S WALLS ARE ON THE MAP AS OF #206, AND THERE ARE FOUR OF THEM SINCE #1495 RETIRED `roll.unsupported_cohort` WITH THE TWO-VALUED COHORT QUESTION THAT WAS ITS ONLY SOURCE — declared from `ROLL_REFUSAL_COPY`, entrance-qualified `roll.*`, each citing its own throw. They are DECLARED but not DRIVEN: the census sends a sentence at an existing Cast through `castingV2.refine`, and these are raised inside `castingV2.createRoll` before a roll row exists, so each carries its reason in UNREACHABLE_DOORS instead of a corpus row. A brief-carrying corpus row is the map's next growth ring, and it would be free at all four. The SIGN entrance is still outside the declared set entirely (fable-1357 §2).
 
@@ -291,13 +291,13 @@ _Called as:_ `castingV2.concept.describe`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `concept.no_being` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1322<br>server/castingV2/conceptDescribeCopy.ts:97 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.not_about_the_person` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:100 | 1 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.not_a_casting_note` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:105 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.ran_long` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:129 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1351<br>server/castingV2/conceptDescribeCopy.ts:135 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.no_transport` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1244<br>server/castingV2/conceptDescribeCopy.ts:173 | 4 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.reader_outage` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:174 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.no_being` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1322<br>server/castingV2/conceptDescribeCopy.ts:113 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.not_about_the_person` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:116 | 1 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.not_a_casting_note` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:121 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.ran_long` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:147 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1351<br>server/castingV2/conceptDescribeCopy.ts:153 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.no_transport` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1244<br>server/castingV2/conceptDescribeCopy.ts:194 | 4 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.reader_outage` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:195 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 
 > ⚠ THIS ROAD'S DOORS REACHED THE MAP BEFORE THE ROAD DID — the six were declared with #192 and every one of them is documented-unreachable (the corpus sends sentences, not pictures), while the ENTRANCE they belong to had no road until #1203. That is the forward/backward asymmetry in one specimen: the map could prove every door it named was real and could not notice it had never named the road. The FLAG and the two byte doors above the six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared `referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences reused rather than restated. ⚠ A SEVENTH ARRIVED WITH #2686 AND THE SIX ABOVE ARE WHY IT COULD: `concept.reader_outage` splits the case where the text provider refuses OUR account (401/402/403) out of `concept.unreadable`, which had been telling a customer to try again in a moment while our key was disabled. The arm that holds this list equal to the copy table is what caught the omission the same minute the door was declared.
 

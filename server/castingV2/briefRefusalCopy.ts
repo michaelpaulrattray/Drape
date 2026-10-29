@@ -73,19 +73,20 @@ import { BRIEF_TOO_SHORT_MESSAGE } from "@shared/briefLength";
  */
 export const LIKENESS_MESSAGE =
   "Casting makes people and creatures who are nobody in particular — not a named person, and not a "
-  + "character from a game, film or show. Describe the kind of face you want and we'll cast that. "
+  + "character from a game, film or show. Describe the kind of face you want and we'll make that "
+  + "character. "
   + "You have not been charged.";
 export const NOT_A_BEING_MESSAGE =
-  "This is a casting studio — it casts people and creatures, not objects, vehicles or places. "
-  + "Describe who you want in the frame and we'll cast them. You have not been charged.";
+  "Characters are people and creatures, not objects, vehicles or places. "
+  + "Describe who you want in the frame and we'll make them. You have not been charged.";
 
 /**
  * The sentence a reader outage answers with. Exported so the test that drives
  * the catch branch and the road note can cite the same words.
  */
 export const READER_OUTAGE_MESSAGE =
-  "The studio couldn't read your brief just now — the reader that turns your words into a casting call did not answer. "
-  + "Nothing was cast and you have not been charged. Try again in a moment.";
+  "The studio couldn't read your brief just now. "
+  + "Nothing was made and you have not been charged. Try again in a moment.";
 
 /**
  * THE SAME OUTAGE WHEN NO RETRY REACHES IT — our account, or no reader at all
@@ -133,7 +134,7 @@ export const READER_OUTAGE_MESSAGE =
  */
 export const READER_DOWN_MESSAGE =
   "The studio can't read briefs just now — that's something at our end, not your words. "
-  + "Nothing was cast and you have not been charged. Try again later.";
+  + "Nothing was made and you have not been charged. Try again later.";
 
 /*
   ⚠ `UNSUPPORTED_COHORT_MESSAGE` STOOD HERE AND IS GONE (#1495), and with it the
@@ -143,6 +144,12 @@ export const READER_DOWN_MESSAGE =
       particular — not a named person, not a character from a game or film, and
       not anime or illustration yet. Describe the kind of face you want and
       we'll cast that. You have not been charged."
+
+  ⚠ That quote keeps the word `cast` where every live sentence on this road
+  lost it (#2812, 2026-10-30), and it is left alone ON PURPOSE: the line above
+  it says *"It said:"*, so this is a record of what a retired message read, and
+  rewriting it would make the record claim words that sentence never carried.
+  A sweep for the old wording meets it here and stops.
 
   Two things about it, and the second is why this is a correction rather than a
   tidy-up. It was the TWO-VALUED cohort question's wall, and that question is

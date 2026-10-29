@@ -348,7 +348,7 @@ describe("the roll road is where this sentence comes from — the two agree", ()
       picture — and a customer who meets two of them in one sitting is being
       told about ONE outage. What is held is the ATTRIBUTION and the ADVICE,
       never the whole sentence: each names its own noun, and the roll road adds
-      "nothing was cast" because it casts.
+      "nothing was made" because something would have been.
     */
     const refine = REFINE_REFUSALS.reader_down.say();
     for (const said of [READER_DOWN_MESSAGE, refine, PICTURE_READER_DOWN_MESSAGE]) {

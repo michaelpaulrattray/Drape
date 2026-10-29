@@ -90,24 +90,40 @@ describe("the concept upload's refusal copy", () => {
       thing about whose problem it is.
 
       The assertion is the ATTRIBUTION and not the whole sentence, deliberately:
-      the roll road adds what happened to the money because a roll costs
-      credits, and this entrance is house money on every call so it has none to
-      report.
+      the two sentences legitimately differ after it — the roll road names its
+      credits and this one names none, because a concept read is house money
+      and what it says is that nothing was charged.
     */
     expect(READER_OUTAGE_MESSAGE).toContain("The studio");
     expect(CONCEPT_DESCRIBE_COPY.reader_outage).toContain("The studio");
   });
 
-  it("the outage sentence invents no charge and names no engine", () => {
+  it("the outage sentence says the money is safe, and names no engine", () => {
     /*
-      Two laws in one arm. A concept read is HOUSE MONEY on every call
-      (`routes/castingV2.ts`, above its rate limit), so the roll road's
-      "you have not been charged" would be telling her about money that was
-      never at stake. And the disappearing-technology law's one hard line
-      (clause 5) is that no engine or vendor name sits on a path someone must
-      walk to reach their picture.
+      ⚠ THIS ARM READ *"invents no charge"* AND ASSERTED THE OPPOSITE UNTIL
+      #2812 (Yuna's wording pass, from his Desk). Its reasoning was that a
+      concept read is HOUSE MONEY on every call (`routes/castingV2.ts`, above
+      its rate limit), so saying so would be about money that was never at
+      stake. What answers it is the customer's position rather than ours: this
+      door sits inside a studio where the next press costs credits, and they
+      have just been refused — so the question is theirs either way, and the
+      four picture roads' own version of this sentence
+      (`readerDown.ts`'s `PICTURE_READER_DOWN_MESSAGE`) already answers it.
+
+      The second law in this arm is unchanged: the disappearing-technology
+      law's one hard line (clause 5), no engine or vendor name on a path
+      somebody must walk to reach their picture.
     */
-    expect(CONCEPT_DESCRIBE_COPY.reader_outage).not.toMatch(/charge|credit|refund|billed/i);
+    for (const reason of ["no_transport", "reader_outage"] as const) {
+      expect(CONCEPT_DESCRIBE_COPY[reason], reason).toContain("Nothing was charged.");
+    }
+    /* CONTROL — and only the two outage reasons. A read that came back wrong
+       is not an outage, and inviting a customer to think about money there
+       WOULD be inventing a charge. */
+    for (const [reason, sentence] of Object.entries(CONCEPT_DESCRIBE_COPY)) {
+      if (reason === "no_transport" || reason === "reader_outage") continue;
+      expect(sentence, reason).not.toMatch(/charge|credit|refund|billed/i);
+    }
     for (const sentence of Object.values(CONCEPT_DESCRIBE_COPY)) {
       expect(sentence).not.toMatch(/openrouter|gemini|nano banana|sunburst|gpt|fal-ai|anthropic|openai/i);
     }

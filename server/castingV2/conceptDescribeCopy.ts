@@ -81,10 +81,26 @@
  * Named rather than written twice: two literals saying one fact is the drift
  * working law 4 is about, and these two must never come to disagree about whose
  * problem it is.
+ *
+ * ⚠ **AND IT SAYS THE MONEY IS SAFE SINCE #2812 (Yuna's wording pass, from his
+ * Desk, 2026-10-28) — WHICH REVERSES A DELIBERATE DECISION, SO THE DECISION IS
+ * STRUCK HERE RATHER THAN LEFT STANDING THREE PARAGRAPHS DOWN.** That clause
+ * read ~~*"IT SAYS NOTHING ABOUT MONEY, DELIBERATELY ??? a concept read is HOUSE
+ * MONEY on every call, so there is no charge to reassure anyone about and
+ * saying so would invent one"*~~, and its argument is a real one: naming money
+ * where none was taken can plant the idea. **What answers it is the customer's
+ * own position rather than ours.** This door sits inside the casting studio,
+ * where the next press does cost credits, and they have just handed over a
+ * picture and been refused — so "was I charged for that?" is their question
+ * whether or not we raise it. And the sentence they meet one door over already
+ * answers it: `readerDown.ts`'s `PICTURE_READER_DOWN_MESSAGE`, the four picture
+ * roads' version of this exact fact, carries *"Nothing was charged."* So the
+ * two literals this module warns about disagreeing were disagreeing — by one
+ * clause, about money, on the same outage.
  */
 const READER_DOWN_MESSAGE =
   "The studio can't read pictures just now — that's something at our end, not your picture. "
-  + "Try again later.";
+  + "Nothing was charged. Try again later.";
 
 export const CONCEPT_DESCRIBE_COPY = {
   /*
@@ -103,7 +119,7 @@ export const CONCEPT_DESCRIBE_COPY = {
      (#185, his ruling: a type, not a police report). So the sentence
      does not send her looking for a better photograph. */
   not_a_casting_note:
-    "That came back as a list of details rather than a casting note. Try again, or describe them in your own words.",
+    "That came back as a list of details rather than a description. Try again, or describe them in your own words.",
   /*
      THE SAME SHAPE, MINUS THE FALSE NOUN (#1067).
 
@@ -120,14 +136,16 @@ export const CONCEPT_DESCRIBE_COPY = {
      offered is identical. What changes is the one noun that was not true.
 
      ⚠ **IT DOES NOT SAY HOW LONG, AND THAT IS THE POINT** (the
-     disappearing-technology law, clause 6). She did not write the read and
-     cannot act on its character count; a number here would be machinery
-     asking her to interpret it. "Longer than a casting note" is what
-     happened, in her vocabulary, and "try again, or describe them in your
-     own words" is what she can do about it.
+     disappearing-technology law, clause 6). The customer did not write the
+     read and cannot act on its character count; a number here would be
+     machinery asking them to interpret it. "Longer than a description" is
+     what happened, in their own vocabulary, and "try again, or describe them
+     in your own words" is what they can do about it. ⚠ That noun was "a
+     casting note" until #2812 moved the customer's word from the studio's
+     vocabulary to theirs.
   */
   ran_long:
-    "That came back longer than a casting note. Try again, or describe them in your own words.",
+    "That came back longer than a description. Try again, or describe them in your own words.",
   /* GENUINELY TRANSIENT, AND THE ONLY ONE OF THE THREE THAT STILL SAYS
      "in a moment". A read that came back as noise usually reads fine on the
      next try, so the advice is true. The two outage reasons below were sharing
@@ -159,11 +177,14 @@ export const CONCEPT_DESCRIBE_COPY = {
      sweep and filed rather than folded in: it needs the account class carried
      through `InterpreterUnavailableCause`, which is a money-path road.
 
-     ⚠ **IT SAYS NOTHING ABOUT MONEY, DELIBERATELY.** The roll road's sentence
-     adds *"you have not been charged"* because a roll costs credits; a concept
+     ⚠ **IT SAYS THE MONEY IS SAFE, AND THIS CLAUSE SAID THE OPPOSITE UNTIL
+     #2812.** It read ~~*"IT SAYS NOTHING ABOUT MONEY, DELIBERATELY ??? a concept
      read is HOUSE MONEY on every call (`routes/castingV2.ts`, stated above its
      rate limit), so there is no charge to reassure anyone about and saying so
-     would invent one.
+     would invent one"*~~. Yuna's wording pass reversed it, and the reasoning
+     is on `READER_DOWN_MESSAGE` above: the question is the customer's either
+     way on a door inside a studio where the next press costs credits, and the
+     picture roads' own sentence one door over already answers it.
 
      ⚠ **AND NO ENGINE NAME, which is the disappearing-technology law's one hard
      line** (clause 5: no engine name on a path someone must walk to reach their
