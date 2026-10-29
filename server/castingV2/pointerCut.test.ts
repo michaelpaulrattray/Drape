@@ -22,6 +22,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   DISCOVERED_SLOT_PREFIX,
+  catalogueCutsOf,
+  catalogueRowOf,
   coveredByCatalogue,
   cutDiscovered,
   discoveredSlotOf,
@@ -33,6 +35,7 @@ import {
   productWordFor,
   settleByPlace,
   wordsOnlyFeatures,
+  type CatalogueCut,
   type DiscoveredRegion,
 } from "./pointerCut";
 import { catalogueSlots } from "./referenceSlotCatalogue";
@@ -1051,6 +1054,10 @@ describe("the place rules — one row per place on the picture, never per spelli
 describe("cutDiscovered — a worn thing the detector cannot place in the reading's word (#2781)", () => {
   /* The ring under the nose on his crop, in the crop's own pixels. */
   const ring = { x: 347, y: 397, width: 36, height: 21 };
+  /* The nose the scan cut on the same frame, which the ring's top lies in —
+     the product's word must land where that kind is worn (#2789). */
+  const noseBox = { x: 330, y: 300, width: 70, height: 100 };
+  const nose: CatalogueCut = { slot: "nose" as never, group: "face", question: "nose", box: noseBox, mask: maskAt(noseBox) };
 
   it("asks once more in the accessory table's word, and the row keeps the reading's noun", async () => {
     const reader = readerWith({ detects: { "nose stud": [ring] } });
@@ -1058,6 +1065,7 @@ describe("cutDiscovered — a worn thing the detector cannot place in the readin
       frame: FRAME,
       features: [feature("septum ring", 1, { kind: "accessory", on: "nose" })],
       reader,
+      catalogue: async () => [nose],
     });
     expect(reader.asked.pointer).toEqual(["septum ring", "nose stud"]);
     expect(out.regions.map((one) => ({ noun: one.noun, kind: one.kind, on: one.on }))).toEqual([
@@ -1117,5 +1125,390 @@ describe("cutDiscovered — a worn thing the detector cannot place in the readin
     });
     expect(reader.asked.pointer).toEqual(["nose stud"]);
     expect(out.regions.map((one) => one.noun)).toEqual(["nose stud"]);
+  });
+});
+
+/**
+ * HIS EYE, ROUND 4 (#2789), verbatim: *"star tatoo was coming up under also on
+ * this character and under nose? under ears is also ear piercing which is also
+ * under accesories?"* One thing, drawn as two rows, twice.
+ *
+ * Every arm that says "one row" has a sibling that says "still two", for the
+ * reason the place rules above do: a rule that merges too much is the same
+ * failure pointed the other way, and the two-instance rule (#2565 §6) is the
+ * one it must not break.
+ */
+describe("one thing, one row — a found cut against the catalogue's own cuts (#2789)", () => {
+  /** A cut lit on every pixel of the given rectangles. */
+  const lit = (rects: PointerBox[]): { box: PointerBox; mask: Mask } => {
+    const data = Buffer.alloc(FRAME.width * FRAME.height, 0);
+    for (const rect of rects) {
+      for (let y = rect.y; y < rect.y + rect.height; y += 1) {
+        for (let x = rect.x; x < rect.x + rect.width; x += 1) data[y * FRAME.width + x] = 255;
+      }
+    }
+    const left = Math.min(...rects.map((r) => r.x));
+    const top = Math.min(...rects.map((r) => r.y));
+    const box = {
+      x: left,
+      y: top,
+      width: Math.max(...rects.map((r) => r.x + r.width)) - left,
+      height: Math.max(...rects.map((r) => r.y + r.height)) - top,
+    };
+    return { box, mask: { data, width: FRAME.width, height: FRAME.height } };
+  };
+  /** The outline of a rectangle, one pixel thick — a ring, as the segmenter cuts one. */
+  const outline = (rect: PointerBox): PointerBox[] => [
+    { x: rect.x, y: rect.y, width: rect.width, height: 1 },
+    { x: rect.x, y: rect.y + rect.height - 1, width: rect.width, height: 1 },
+    { x: rect.x, y: rect.y, width: 1, height: rect.height },
+    { x: rect.x + rect.width - 1, y: rect.y, width: 1, height: rect.height },
+  ];
+  const found = (
+    noun: string,
+    kind: DiscoveredRegion["kind"],
+    rects: PointerBox[],
+    extra: { on?: string; instance?: number } = {},
+  ): DiscoveredRegion => {
+    const { box, mask } = lit(rects);
+    return {
+      slot: discoveredSlotOf(noun, extra.instance ?? 1),
+      noun,
+      instance: extra.instance ?? 1,
+      kind,
+      on: extra.on ?? "",
+      box: { ...box, frame: { width: FRAME.width, height: FRAME.height } },
+      mask,
+    };
+  };
+  const catalogued = (slot: string, group: CatalogueCut["group"], question: string, rects: PointerBox[]): CatalogueCut => (
+    { slot: slot as never, group, question, ...lit(rects) }
+  );
+
+  /* ---- his hoop: the found ear piercing IS the catalogue's earring ---- */
+
+  /* The measured shape on his crop: the catalogue's earring is the hoop (a
+     ring), the found cut is the hoop AND its inside — every catalogue pixel on
+     the found cut, the found cut half hoop. */
+  const hoop = { x: 200, y: 300, width: 22, height: 38 };
+  const earring = catalogued("earring@right", "accessories", "earring", outline(hoop));
+
+  it("his hoop — a found cut that holds the catalogue earring's whole cut is that Earrings row", () => {
+    const piercing = found("ear piercing", "accessory", [hoop], { on: "ear" });
+    expect(catalogueRowOf(piercing, [earring])?.slot).toBe("earring@right");
+  });
+
+  it("STILL TWO — a second real piercing on the same ear shares no pixels and keeps its row (#2565 §6)", () => {
+    const helix = found("ear piercing", "accessory", [{ x: 205, y: 250, width: 6, height: 6 }], { on: "ear" });
+    expect(catalogueRowOf(helix, [earring])).toBeNull();
+  });
+
+  it("a stud inside a side's union of two pieces is that side's earring, drawn once", () => {
+    const side = catalogued("earring@left", "accessories", "earring", [
+      { x: 500, y: 300, width: 8, height: 8 },
+      { x: 500, y: 330, width: 10, height: 30 },
+    ]);
+    const stud = found("ear stud", "accessory", [{ x: 500, y: 300, width: 8, height: 8 }], { on: "ear" });
+    expect(catalogueRowOf(stud, [side])?.slot).toBe("earring@left");
+  });
+
+  /* ---- #2757's own specimen: a mis-cut that IS a body row ---- */
+
+  it("#2757 — a found `lip piercing` cut to the whole lips is the Lips row", () => {
+    const lipsRect = { x: 300, y: 400, width: 80, height: 30 };
+    const lips = catalogued("lips", "face", "lips", [lipsRect]);
+    const miscut = found("lip piercing", "accessory", [lipsRect], { on: "lips" });
+    expect(catalogueRowOf(miscut, [lips])?.slot).toBe("lips");
+  });
+
+  it("STILL TWO — a real lip ring is a small part of the lips, and is never the Lips row", () => {
+    /* Every one of its pixels lies on the lips — worn on worn would join them,
+       and that rule is for worn rows only. */
+    const lips = catalogued("lips", "face", "lips", [{ x: 300, y: 400, width: 80, height: 30 }]);
+    const ring = found("lip ring", "accessory", [{ x: 336, y: 420, width: 6, height: 10 }], { on: "lips" });
+    expect(catalogueRowOf(ring, [lips])).toBeNull();
+  });
+
+  it("STILL TWO — a garment is never a catalogue row, whatever its pixels touch", () => {
+    const hairRect = { x: 100, y: 50, width: 300, height: 200 };
+    const hair = catalogued("hair", "hair", "hair", [hairRect]);
+    expect(catalogueRowOf(found("hood", "clothing", [hairRect]), [hair])).toBeNull();
+    /* CONTROL: the same pixels under any other kind are the Hair row. */
+    expect(catalogueRowOf(found("hood", "anatomy", [hairRect]), [hair])?.slot).toBe("hair");
+  });
+
+  it("at exactly half of the larger cut a body row is not yet the same place — MORE than half is the rule", () => {
+    const lips = catalogued("lips", "face", "lips", [{ x: 300, y: 400, width: 20, height: 20 }]);
+    expect(catalogueRowOf(found("mark", "marking", [{ x: 310, y: 400, width: 20, height: 20 }]), [lips])).toBeNull();
+    expect(catalogueRowOf(found("mark", "marking", [{ x: 309, y: 400, width: 20, height: 20 }]), [lips])?.slot).toBe("lips");
+  });
+
+  it("names the catalogue row sharing the most pixels, whatever order the scan listed them in", () => {
+    const left = catalogued("earring@left", "accessories", "earring", [{ x: 100, y: 100, width: 10, height: 10 }]);
+    const right = catalogued("earring@right", "accessories", "earring", [{ x: 104, y: 100, width: 10, height: 10 }]);
+    const piece = found("hoop", "accessory", [{ x: 105, y: 100, width: 6, height: 10 }]);
+    expect(catalogueRowOf(piece, [left, right])?.slot).toBe("earring@right");
+    expect(catalogueRowOf(piece, [right, left])?.slot).toBe("earring@right");
+  });
+
+  /* ---- which catalogue rows count, read off the scan ---- */
+
+  it("compares only rows the panel DRAWS — Build and Skin draw none on this road, so a found thing on them keeps its row", () => {
+    const at = { x: 100, y: 100, width: 50, height: 50, frame: { width: FRAME.width, height: FRAME.height } };
+    const mask = lit([at]).mask;
+    const cuts = catalogueCutsOf({
+      boxes: new Map([["build", at], ["skin", at], ["nose", at]] as [never, typeof at][]),
+      masks: new Map([["build", mask], ["skin", mask], ["nose", mask]] as [never, Mask][]),
+    });
+    expect(cuts.map((one) => [one.slot, one.question, one.group])).toEqual([["nose", "nose", "face"]]);
+  });
+
+  it("a slot that answered nothing is simply absent", () => {
+    const at = { x: 100, y: 100, width: 50, height: 50 };
+    expect(catalogueCutsOf({ boxes: new Map([["nose", at]] as [never, PointerBox][]), masks: new Map() })).toEqual([]);
+  });
+
+  /* ---- through the road itself ---- */
+
+  it("through cutDiscovered: his ear piercing is never drawn, and is not recorded as a name nothing could cut", async () => {
+    const reader = readerWith({ detects: { "ear piercing": [hoop] } });
+    const filed: string[] = [];
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("ear piercing", 1, { kind: "accessory", on: "ear" })],
+      reader,
+      catalogue: async () => [earring],
+      onFiled: (one) => filed.push(one.noun),
+    });
+    expect(out.regions).toEqual([]);
+    /* It IS drawn — as the Earrings row — so its words do not travel as though
+       nothing could draw it. */
+    expect(out.named).toEqual([]);
+    /* And it never appears on the panel while the reading runs, so no row
+       arrives and then vanishes. */
+    expect(filed).toEqual([]);
+  });
+
+  it("CONTROL — the same road with no catalogue to compare draws it", async () => {
+    const reader = readerWith({ detects: { "ear piercing": [hoop] } });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("ear piercing", 1, { kind: "accessory", on: "ear" })],
+      reader,
+    });
+    expect(out.regions.map((one) => one.noun)).toEqual(["ear piercing"]);
+  });
+
+  /* ---- the star: a box from the product's word must be where that kind is worn ---- */
+
+  const noseRect = { x: 330, y: 300, width: 70, height: 100 };
+  const nose = catalogued("nose", "face", "nose", [noseRect]);
+  /* The ring hangs from the septum, so its top lies in the nose's rectangle. */
+  const ringRect = { x: 350, y: 395, width: 30, height: 20 };
+  /* The star, on the cheek beside the nose — the detector's `stud` on his crop. */
+  const starRect = { x: 250, y: 330, width: 15, height: 14 };
+
+  it("the star — the product's word placed on the cheek is refused, and the name keeps its words", async () => {
+    const reader = readerWith({ detects: { "nose stud": [starRect], "star tattoo": [starRect] } });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [
+        feature("septum ring", 1, { kind: "accessory", on: "nose", about: "a thin silver ring" }),
+        feature("star tattoo", 1, { kind: "marking", on: "cheek" }),
+      ],
+      reader,
+      catalogue: async () => [nose],
+    });
+    expect(reader.asked.pointer).toEqual(["septum ring", "star tattoo", "nose stud"]);
+    /* The star is drawn ONCE, as itself. */
+    expect(out.regions.map((one) => one.noun)).toEqual(["star tattoo"]);
+    expect(out.named).toEqual([
+      { noun: "septum ring", on: "nose", about: "a thin silver ring", kind: "accessory", why: "uncut" },
+    ]);
+  });
+
+  it("CONTROL — the product's word placed on the ring, which touches the nose, is drawn", async () => {
+    const reader = readerWith({ detects: { "nose stud": [ringRect] } });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("septum ring", 1, { kind: "accessory", on: "nose" })],
+      reader,
+      catalogue: async () => [nose],
+    });
+    expect(out.regions.map((one) => one.noun)).toEqual(["septum ring"]);
+  });
+
+  it("no catalogue, or a scan that failed: the product's word cannot be shown to agree, so it is refused", async () => {
+    for (const catalogue of [undefined, async () => null, async () => { throw new Error("scan broke"); }]) {
+      const reader = readerWith({ detects: { "nose stud": [ringRect] } });
+      const out = await cutDiscovered({
+        frame: FRAME,
+        features: [feature("septum ring", 1, { kind: "accessory", on: "nose" })],
+        reader,
+        ...(catalogue === undefined ? {} : { catalogue }),
+      });
+      expect(out.regions).toEqual([]);
+      expect(out.named.map((one) => `${one.noun}:${one.why}`)).toEqual(["septum ring:uncut"]);
+    }
+  });
+
+  it("a nose the scan did not cut cannot be agreed with either", async () => {
+    const reader = readerWith({ detects: { "nose stud": [ringRect] } });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("septum ring", 1, { kind: "accessory", on: "nose" })],
+      reader,
+      catalogue: async () => [catalogued("lips", "face", "lips", [{ x: 340, y: 430, width: 50, height: 20 }])],
+    });
+    expect(out.regions).toEqual([]);
+  });
+
+  /*
+    ⚠ THE READING'S OWN WORD IS NOT SECOND-GUESSED BY THE TABLE, and this arm
+    is the reason: the table's match is a substring one, so `lip stud` is an
+    EARRING to it (`stud`). Checked against the ear, a real lip stud would lose
+    its row. The site check is for the product's stand-in word alone.
+  */
+  it("CONTROL — a `lip stud` placed in its own word is never sent to the ear", async () => {
+    const reader = readerWith({ detects: { "lip stud": [{ x: 340, y: 430, width: 8, height: 8 }] } });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("lip stud", 1, { kind: "accessory", on: "lips" })],
+      reader,
+      catalogue: async () => [nose],
+    });
+    expect(out.regions.map((one) => one.noun)).toEqual(["lip stud"]);
+  });
+});
+
+describe("one ring, two names — the rectangle says what a thin cut's pixels cannot (#2789)", () => {
+  const cut = (
+    noun: string,
+    kind: DiscoveredRegion["kind"],
+    rects: PointerBox[],
+    extra: { on?: string; instance?: number } = {},
+  ): DiscoveredRegion => {
+    const data = Buffer.alloc(FRAME.width * FRAME.height, 0);
+    for (const rect of rects) {
+      for (let y = rect.y; y < rect.y + rect.height; y += 1) {
+        for (let x = rect.x; x < rect.x + rect.width; x += 1) data[y * FRAME.width + x] = 255;
+      }
+    }
+    const left = Math.min(...rects.map((r) => r.x));
+    const top = Math.min(...rects.map((r) => r.y));
+    return {
+      slot: discoveredSlotOf(noun, extra.instance ?? 1),
+      noun,
+      instance: extra.instance ?? 1,
+      kind,
+      on: extra.on ?? "",
+      box: {
+        x: left,
+        y: top,
+        width: Math.max(...rects.map((r) => r.x + r.width)) - left,
+        height: Math.max(...rects.map((r) => r.y + r.height)) - top,
+        frame: { width: FRAME.width, height: FRAME.height },
+      },
+      mask: { data, width: FRAME.width, height: FRAME.height },
+    };
+  };
+  /* Two slivers of ONE ring, the measured shape on his crop: the ring's body
+     cut once, its edge cut once — rectangles 17x12 and 20x11, almost no pixel
+     in common. */
+  const body = [{ x: 101, y: 100, width: 15, height: 10 }];
+  const edge = [
+    { x: 100, y: 110, width: 20, height: 1 },
+    { x: 100, y: 101, width: 1, height: 10 },
+    { x: 119, y: 101, width: 1, height: 10 },
+  ];
+  const nouns = (regions: readonly DiscoveredRegion[]) => regions.map((one) => one.noun);
+
+  it("his nose ring and septum ring — two names on one ring under one host are ONE row", () => {
+    const out = settleByPlace([
+      cut("nose ring", "accessory", body, { on: "nose" }),
+      cut("septum ring", "accessory", edge, { on: "nose" }),
+    ]);
+    expect(out.regions).toHaveLength(1);
+    expect(out.samePlace).toHaveLength(1);
+  });
+
+  it("STILL TWO — two of ONE noun the reading counted keep their rows, however their rectangles fall (two straps in an X)", () => {
+    const out = settleByPlace([
+      cut("strap", "accessory", [{ x: 100, y: 100, width: 40, height: 4 }, { x: 100, y: 100, width: 4, height: 40 }], { on: "chest", instance: 1 }),
+      cut("strap", "accessory", [{ x: 100, y: 136, width: 40, height: 4 }, { x: 136, y: 100, width: 4, height: 40 }], { on: "chest", instance: 2 }),
+    ]);
+    expect(out.regions.map((one) => one.instance)).toEqual([1, 2]);
+  });
+
+  it("STILL TWO — two worn things on DIFFERENT hosts are two, whatever their rectangles", () => {
+    const out = settleByPlace([
+      cut("nose ring", "accessory", body, { on: "nose" }),
+      cut("lip ring", "accessory", edge, { on: "lips" }),
+    ]);
+    expect(nouns(out.regions)).toEqual(["nose ring", "lip ring"]);
+  });
+
+  it("STILL TWO — garments and marks are not read by the rectangle: a jacket over a shirt", () => {
+    const jacket = [{ x: 100, y: 100, width: 20, height: 100 }, { x: 180, y: 100, width: 20, height: 100 }];
+    const shirt = [{ x: 120, y: 100, width: 60, height: 100 }];
+    expect(nouns(settleByPlace([cut("jacket", "clothing", jacket), cut("shirt", "clothing", shirt)]).regions))
+      .toEqual(["jacket", "shirt"]);
+    expect(nouns(settleByPlace([
+      cut("scar", "marking", body, { on: "cheek" }),
+      cut("mark", "marking", edge, { on: "cheek" }),
+    ]).regions)).toEqual(["scar", "mark"]);
+  });
+
+  it("STILL TWO — a worn thing with no host the reading named is never joined by the rectangle", () => {
+    const out = settleByPlace([cut("nose ring", "accessory", body), cut("septum ring", "accessory", edge)]);
+    expect(out.regions).toHaveLength(2);
+  });
+
+  it("at exactly half of the larger rectangle it is not yet one ring — MORE than half is the rule", () => {
+    /* Two 20x10 outlines: offset by 10 they share exactly half; by 9, more. */
+    const ring = (x: number) => [
+      { x, y: 100, width: 20, height: 1 },
+      { x, y: 109, width: 20, height: 1 },
+    ];
+    const half = settleByPlace([
+      cut("nose ring", "accessory", ring(100), { on: "nose" }),
+      cut("septum ring", "accessory", ring(110), { on: "nose" }),
+    ]);
+    expect(half.regions).toHaveLength(2);
+    /* The pixel rule alone would join neither offset; the arm is the rectangle's. */
+    const over = settleByPlace([
+      cut("nose ring", "accessory", [{ x: 100, y: 100, width: 20, height: 1 }, { x: 100, y: 109, width: 2, height: 1 }], { on: "nose" }),
+      cut("septum ring", "accessory", [{ x: 109, y: 109, width: 20, height: 1 }, { x: 127, y: 100, width: 2, height: 1 }], { on: "nose" }),
+    ]);
+    expect(over.regions).toHaveLength(1);
+  });
+
+  it("through cutDiscovered: the second name for the ring is never drawn while the reading runs", async () => {
+    const reader = readerWith({
+      detects: { "nose ring": [{ x: 101, y: 100, width: 15, height: 10 }], "septum ring": [{ x: 100, y: 101, width: 20, height: 10 }] },
+      cuts: (_box, name) => {
+        const data = Buffer.alloc(FRAME.width * FRAME.height, 0);
+        for (const rect of name === "nose ring" ? body : edge) {
+          for (let y = rect.y; y < rect.y + rect.height; y += 1) {
+            for (let x = rect.x; x < rect.x + rect.width; x += 1) data[y * FRAME.width + x] = 255;
+          }
+        }
+        return { data, width: FRAME.width, height: FRAME.height };
+      },
+    });
+    const filed: string[] = [];
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [
+        feature("nose ring", 1, { kind: "accessory", on: "nose" }),
+        feature("septum ring", 1, { kind: "accessory", on: "nose" }),
+      ],
+      reader,
+      catalogue: async () => [],
+      onFiled: (one) => filed.push(one.noun),
+    });
+    expect(out.regions).toHaveLength(1);
+    expect(filed).toHaveLength(1);
+    expect(out.named).toEqual([]);
   });
 });

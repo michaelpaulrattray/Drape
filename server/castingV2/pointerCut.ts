@@ -97,9 +97,9 @@
  * is the property slice 1 was held on twice and it is the one to protect.
  */
 import { boundsOf } from "./segmentCuts";
-import { accessoryEntry } from "./accessoryKinds";
+import { LANDMARK_OF_ACCESSORY, accessoryEntry } from "./accessoryKinds";
 import { scanPlan } from "./faceScan";
-import { catalogueSlots } from "./referenceSlotCatalogue";
+import { catalogueSlots, type SlotGroup } from "./referenceSlotCatalogue";
 import { createModuleLogger } from "../logging/logger";
 import type { DiscoveredFeature, FeatureKind } from "./faceDiscovery";
 import type { Mask } from "./maskedComposite";
@@ -160,7 +160,8 @@ export type DiscoveredRegion = {
    * re-derived (#2566 slice 2, the grouping design of 2026-10-28).
    *
    * The panel groups by these two and by nothing else: `clothing` is what may
-   * enter the one Outfit row, and `on` is what folds a lip ring under Lips.
+   * enter the one Outfit row, `accessory` is what lists under Accessories (his
+   * ruling of 2026-10-29, #2789), and `on` is what chains a buckle to its strap.
    * They ride on the region rather than being looked up again downstream
    * because the only other road to them is a word table, and a word table is
    * the failure this pass exists to remove — his own ⚠ is that the body
@@ -610,7 +611,10 @@ function claimedPixels(region: DiscoveredRegion): number {
  * so a size mismatch is a fault upstream, and the answer that cannot remove a
  * row is "not the same place".
  */
-function sharedPixels(a: DiscoveredRegion, b: DiscoveredRegion): number {
+function sharedPixels(
+  a: { box: PointerBox; mask: Mask },
+  b: { box: PointerBox; mask: Mask },
+): number {
   if (a.mask.width !== b.mask.width || a.mask.height !== b.mask.height) return 0;
   const left = Math.max(a.box.x, b.box.x);
   const top = Math.max(a.box.y, b.box.y);
@@ -644,7 +648,60 @@ type Placed = { region: DiscoveredRegion; at: number; pixels: number };
 
 function samePlace(a: Placed, b: Placed): boolean {
   if (!joinable(a.region.kind, b.region.kind)) return false;
-  return sharedPixels(a.region, b.region) * 2 > Math.max(a.pixels, b.pixels);
+  if (sharedPixels(a.region, b.region) * 2 > Math.max(a.pixels, b.pixels)) return true;
+  return oneWornThingTwice(a.region, b.region);
+}
+
+/**
+ * Do two rectangles mostly coincide: more than half of the LARGER rectangle is
+ * shared. The pixel rule's own majority, read on the rectangle — the same
+ * "mostly each other" both ways round, and no tolerance to tune.
+ */
+function sameRectangle(a: PointerBox, b: PointerBox): boolean {
+  const across = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+  const down = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y);
+  if (across <= 0 || down <= 0) return false;
+  return across * down * 2 > Math.max(a.width * a.height, b.width * b.height);
+}
+
+/*
+  ---- ONE RING, TWO NAMES, AND WHY THE PIXEL RULE COULD NOT SEE IT (#2789,
+  his eye round 4) ----
+
+  His words, verbatim: *"star tatoo was coming up under also on this character
+  and under nose?"* The reading named one septum ring twice, and the panel drew
+  two rows for it. Measured on his screenshot crop (`output/2789/`, never
+  committed): the reading said `nose ring` and `septum ring`, both `accessory`,
+  both `on: nose`; the two cuts landed on the same ring with rectangles of
+  17x12 and 20x11 that share 187 of their pixels — and their MASKS share 7
+  pixels, of 98 and 21.
+
+  ⚠ **That is the class, and it is not a fault in either cut.** The majority
+  rule above was measured on a cheek scar, a solid patch, where two cuts of one
+  thing are pixel-identical (0.998–1.000). A ring, a hoop or a bar is a few
+  pixels wide, so two outlines of the same ring are two different slivers of it:
+  the segmenter cut the ring's body once and its edges once, and they barely
+  touch. So for a WORN thing the rectangle says what the pixels cannot.
+
+  It is guarded three ways, each because something real sits on the far side:
+
+    BOTH WORN    two accessories only. Two garments' rectangles coincide all the
+                 time — a jacket over a shirt — and they are two things; so do a
+                 tattoo and the scar inside it.
+    TWO NOUNS    never two instances of one noun. The reading COUNTED those, and
+                 two straps crossing in an X have nearly one rectangle and are
+                 still two straps (#2565 §6). Two different names the reading
+                 gave one place is the defect; two of one name is the rule.
+    ONE HOST     both sit on the same thing by the reading's own `on`, which is
+                 the relay's own sentence of the class: *two names the reading
+                 gives one object, under one parent, are one row*.
+*/
+function oneWornThingTwice(a: DiscoveredRegion, b: DiscoveredRegion): boolean {
+  if (a.kind !== "accessory" || b.kind !== "accessory") return false;
+  if (normalisedName(a.noun) === normalisedName(b.noun)) return false;
+  const host = normalisedName(a.on);
+  if (host === "" || host !== normalisedName(b.on)) return false;
+  return sameRectangle(a.box, b.box);
 }
 
 /**
@@ -726,6 +783,167 @@ export function settleByPlace(regions: readonly DiscoveredRegion[]): {
   };
 }
 
+/*
+  ---- A FOUND THING ON A CATALOGUE ROW'S OWN CUT IS THAT ROW (#2789, closing
+  #2757's class) ----
+
+  His words, verbatim: *"under ears is also ear piercing which is also under
+  accesories?"* One hoop, two rows: the catalogue's Earrings, and a found `ear
+  piercing`. `coveredByCatalogue` decides by SPELLING whether a name is the
+  catalogue's, so `ear piercing` — not a catalogue word — was cut again, and
+  nothing on the road ever compared that cut with the catalogue's.
+
+  So it is compared HERE, where both cuts are in hand, and decided by place.
+  Measured on his screenshot crop: the found cut is the hoop and its inside
+  (692 px), the catalogue's is the hoop (344 px) — **every one of the
+  catalogue's pixels lies on the found cut**, and the found cut is 50% the
+  hoop. Two rules, each with the case on its far side named:
+
+    THE SAME PLACE   more than half of the LARGER cut shared — the rule above,
+                     unchanged. A found `lip piercing` cut to the whole lips
+                     (#2757's own specimen) is the Lips row; a real lip ring is a
+                     small part of the lips and stays its own thing.
+    WORN ON WORN     a found ACCESSORY and a catalogue ACCESSORY row where one
+                     cut lies mostly on the other (more than half of the SMALLER
+                     shared). Jewellery is not worn on jewellery the catalogue
+                     already draws: a hoop's inside, a stud inside a side's
+                     union of pieces — each is the earring, drawn once.
+
+  ⚠ **The two-instance rule survives it, and the measurement is why** (#2565
+  §6): a second real piercing on the same ear shares no pixels with the first,
+  so it is a second thing and keeps its row. Only a cut that lies on the
+  catalogue's own pixels is the catalogue's.
+
+  ⚠ **A garment is never a catalogue row**, whatever its pixels touch: a hood
+  over the hair is not the Hair row, and the catalogue draws no clothing.
+
+  ⚠ **The catalogue row always survives**, because it is the product's own
+  question answered for exactly that place; the found row with the same place
+  is the same thing under a second name. Only rows the panel DRAWS count: Build
+  and Skin draw no row on the discovery road (#2752), and folding a found row
+  into a row that is not there would take it off the panel entirely.
+*/
+
+/** One catalogue row the scan cut, as the pointer road compares against it. */
+export type CatalogueCut = {
+  slot: FeatureSlot;
+  group: SlotGroup;
+  /** The question the scan asked for it — what a kind's `site` names. */
+  question: string;
+  box: PointerBox;
+  mask: Mask;
+};
+
+/**
+ * THE CATALOGUE ROWS A FOUND THING CAN BE, read off one scan.
+ *
+ * From `scanPlan()` — the one place that decides what is asked — and the
+ * catalogue's own panel placement, never a list here. A slot that answered
+ * nothing has no box and no mask, and is simply absent.
+ */
+export function catalogueCutsOf(scan: {
+  boxes: ReadonlyMap<FeatureSlot, PointerBox>;
+  masks: ReadonlyMap<FeatureSlot, Mask>;
+}): CatalogueCut[] {
+  const cuts: CatalogueCut[] = [];
+  for (const entry of scanPlan()) {
+    for (const definition of entry.slots) {
+      if (definition.panel.row !== "own" || definition.noRowOnDiscovery !== undefined) continue;
+      const box = scan.boxes.get(definition.slot);
+      const mask = scan.masks.get(definition.slot);
+      if (box === undefined || mask === undefined) continue;
+      cuts.push({
+        slot: definition.slot,
+        group: definition.group,
+        question: entry.question,
+        box: { x: box.x, y: box.y, width: box.width, height: box.height },
+        mask,
+      });
+    }
+  }
+  return cuts;
+}
+
+/** Pixels a mask claims inside a rectangle — every claimed pixel lies in its own box. */
+function pixelsIn(mask: Mask, box: PointerBox): number {
+  let count = 0;
+  for (let y = box.y; y < box.y + box.height; y += 1) {
+    const row = y * mask.width;
+    for (let x = box.x; x < box.x + box.width; x += 1) {
+      if (mask.data[row + x]! > 0) count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * THE CATALOGUE ROW THIS FOUND THING IS, or null — the two rules above.
+ *
+ * Where it is several (a cut across both of a pair's sides), the one sharing
+ * the most pixels, then the catalogue's own order: deterministic whatever order
+ * the provider answered in.
+ */
+export function catalogueRowOf(
+  region: DiscoveredRegion,
+  cuts: readonly CatalogueCut[],
+): CatalogueCut | null {
+  if (region.kind === "clothing") return null;
+  const mine = pixelsIn(region.mask, region.box);
+  if (mine === 0) return null;
+  let best: { cut: CatalogueCut; shared: number } | null = null;
+  for (const cut of cuts) {
+    const theirs = pixelsIn(cut.mask, cut.box);
+    if (theirs === 0) continue;
+    const shared = sharedPixels(region, cut);
+    if (shared === 0) continue;
+    const samePlace = shared * 2 > Math.max(mine, theirs);
+    const wornOnWorn = region.kind === "accessory"
+      && cut.group === "accessories"
+      && shared * 2 > Math.min(mine, theirs);
+    if (!samePlace && !wornOnWorn) continue;
+    if (best === null || shared > best.shared) best = { cut, shared };
+  }
+  return best?.cut ?? null;
+}
+
+/*
+  ---- A BOX FROM THE PRODUCT'S WORD MUST BE WHERE THAT KIND IS WORN (#2789) ----
+
+  His panel drew *Septum ring* with the STAR TATTOO as its picture. The road,
+  read on his screenshot crop: the reading said `septum ring`, the detector
+  found nothing for it (0 of 6 sizes), and #2781's second ask in the accessory
+  table's word — `nose stud` — is what placed it. That word is WIDER than the
+  reading's, and the detector proves it on the same crop: asked `stud` it boxed
+  the star (x228–241, the star is x227–241), and at 768 px wide `nose stud`
+  boxed the LIP STUD below the lip. Nothing checked where the box landed, and a
+  ring is not a star-shaped mark.
+
+  The reading said where it is (`on: nose`), and the accessory table says where
+  that KIND is worn (`site`): a nose stud is through the nose, so its cut must
+  touch the nose the scan already cut. A yes/no about two rectangles, the
+  module's own idiom (a cut outside its own rectangle is refused the same way),
+  and no request: the nose is a question the scan has already asked.
+
+  ⚠ **It applies to the product's word only, and that is the class rather than
+  a gap.** The reading's own word is what the reading said the thing is; the
+  table's word is a stand-in, and the stand-in is what needs checking. Run on
+  every found accessory instead, the table's substring match would send a `lip
+  stud` (`stud` is an earring word) to the EAR and refuse a real piercing.
+
+  ⚠ **No nose, no row**: a site the scan did not cut cannot be agreed with, so
+  the second ask's row is refused and the name is kept as words (`uncut`) —
+  exactly what it was before #2781's second ask existed.
+*/
+function onItsSite(
+  region: DiscoveredRegion,
+  productWord: string,
+  cuts: readonly CatalogueCut[] | null,
+): boolean {
+  const site = LANDMARK_OF_ACCESSORY.find((entry) => entry.region === productWord)?.site.question;
+  if (site === undefined || cuts === null) return false;
+  return cuts.some((cut) => cut.question === site && overlaps(region.box, cut.box));
+}
+
 /**
  * Cut every off-list thing the reading named.
  *
@@ -750,6 +968,20 @@ export async function cutDiscovered(input: {
   features: readonly DiscoveredFeature[];
   reader: RegionReader;
   onFiled?: (region: DiscoveredRegion) => void;
+  /**
+   * THE CATALOGUE ROWS THE SCAN CUT ON THIS SAME FRAME, when they are in hand
+   * (#2789) — {@link catalogueCutsOf} over the scan's own boxes and masks.
+   *
+   * A function and not a value because the scan runs BESIDE this road and
+   * usually lands first: it is asked only once a name has a cut to compare, so
+   * a reading with nothing found never waits for it. It decides two things —
+   * a found cut on a catalogue row's own cut is that row (and is not drawn
+   * again), and a box from the product's word must touch where that kind is
+   * worn. ⚠ **Absent, or a scan that failed (`null`), and neither can be
+   * shown**: nothing is folded, and every row the product's word placed is
+   * refused rather than drawn unchecked.
+   */
+  catalogue?: () => Promise<readonly CatalogueCut[] | null>;
 }): Promise<{
   regions: DiscoveredRegion[];
   asked: number;
@@ -772,7 +1004,19 @@ export async function cutDiscovered(input: {
   const failed: string[] = [];
   /* Every found noun the detector placed only in the product's own word. */
   const askedAs: { noun: string; as: string }[] = [];
+  /* ...and every one of those whose box was not where that kind is worn (#2789). */
+  const refusedAs: { noun: string; as: string }[] = [];
+  /* Every found cut that was a catalogue row's own cut, by noun and slot (#2789). */
+  const intoCatalogue: { noun: string; into: string }[] = [];
   let asked = 0;
+
+  /* Asked once, the first time a cut needs it — see the input's own note. A
+     scan that throws is a scan nothing can be compared with, which is `null`. */
+  let catalogueRead: Promise<readonly CatalogueCut[] | null> | null = null;
+  const catalogueCuts = (): Promise<readonly CatalogueCut[] | null> => {
+    catalogueRead ??= (input.catalogue?.() ?? Promise.resolve(null)).catch(() => null);
+    return catalogueRead;
+  };
 
   /* Known without asking anybody: no outline to cut, or makeup. Gathered before
      the capability check below so a reader that cannot point still carries the
@@ -816,6 +1060,8 @@ export async function cutDiscovered(input: {
   const perName = await Promise.all(population.map(async (feature) => {
     const mine: DiscoveredRegion[] = [];
     let boxes: readonly PointerBox[];
+    /* The product's word, when it is what placed this name's boxes. */
+    let product: string | null = null;
     try {
       boxes = await pointer.call(input.reader, {
         image: input.frame.bytes,
@@ -824,8 +1070,9 @@ export async function cutDiscovered(input: {
       });
       /* Declined in the reading's word — once more in the product's, for a
          worn thing the accessory table knows (see `productWordFor`). */
-      const product = boxes.length === 0 ? productWordFor(feature) : null;
-      if (product !== null) {
+      const wider = boxes.length === 0 ? productWordFor(feature) : null;
+      if (wider !== null) {
+        product = wider;
         boxes = await pointer.call(input.reader, {
           image: input.frame.bytes,
           name: product,
@@ -840,14 +1087,14 @@ export async function cutDiscovered(input: {
         { name: feature.name, why: error instanceof Error ? error.message : String(error) },
         "the detector could not be asked about this one — no row for it",
       );
-      return { name: feature.name, regions: mine, declined: false, broke: true };
+      return { name: feature.name, regions: mine, declined: false, broke: true, held: false };
     }
     if (boxes.length === 0) {
       /* The reading named it and the detector cannot find it. No row, by his
          ruling, and it is recorded rather than silently dropped: the words
          still reach the current description (#2565 §2) and the next edit to
          that area asks again. */
-      return { name: feature.name, regions: mine, declined: true, broke: false };
+      return { name: feature.name, regions: mine, declined: true, broke: false, held: false };
     }
 
     /* THE CAP — the module header carries the measurement it comes from. */
@@ -897,13 +1144,37 @@ export async function cutDiscovered(input: {
         return { index, region: null, broke: true };
       }
     }));
+    const landed: DiscoveredRegion[] = [];
     for (const one of cut.sort((a, b) => a.index - b.index)) {
       if (one.broke) broke = true;
-      if (one.region === null) continue;
-      mine.push(one.region);
-      draw(one.region);
+      if (one.region !== null) landed.push(one.region);
     }
-    return { name: feature.name, regions: mine, declined: false, broke };
+    /* Drawn by the catalogue already: not drawn again, and not "uncut" either. */
+    let held = false;
+    if (landed.length > 0) {
+      const cuts = await catalogueCuts();
+      for (const region of landed) {
+        /* A box from the product's word must be where that kind is worn. */
+        if (product !== null && !onItsSite(region, product, cuts)) {
+          log.warn(
+            { name: feature.name, as: product, answered: region.box },
+            "the product's word placed this somewhere that kind is not worn — no row",
+          );
+          refusedAs.push({ noun: feature.name, as: product });
+          continue;
+        }
+        /* A cut on a catalogue row's own cut is that row (#2757's class). */
+        const row = cuts === null ? null : catalogueRowOf(region, cuts);
+        if (row !== null) {
+          intoCatalogue.push({ noun: feature.name, into: row.slot });
+          held = true;
+          continue;
+        }
+        mine.push(region);
+        draw(region);
+      }
+    }
+    return { name: feature.name, regions: mine, declined: false, broke, held };
   }));
 
   /* Gathered in the READING's own order, never in the order the provider
@@ -926,7 +1197,9 @@ export async function cutDiscovered(input: {
       this module's header is written about (the three-eyed cast's discarded
       cut), which is the direction that hides work.
     */
-    if (one.regions.length > 0) continue;
+    /* A name whose cut was a catalogue row's own cut IS drawn — as that row —
+       so it is not a name nothing could draw (#2789). */
+    if (one.regions.length > 0 || one.held) continue;
     const feature = population[at]!;
     named.push({
       noun: feature.name,
@@ -1015,6 +1288,10 @@ export async function cutDiscovered(input: {
       /* Placed only when asked in the accessory table's word (#2781) — both
          words are nouns, the reading's and the product's. */
       askedAs,
+      /* ...and those whose box was not where that kind is worn (#2789). */
+      refusedAs,
+      /* Found cuts that were a catalogue row's own cut, by noun and slot (#2789). */
+      intoCatalogue,
       /* What the place rules decided, so a merged or moved row can be traced to
          the pixels that decided it rather than looking like a lost one. */
       samePlace: settled.samePlace,
