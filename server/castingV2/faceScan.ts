@@ -61,6 +61,7 @@
  * for, so it degrades to today's panel rather than to an error.
  */
 import { armedBornWornClasses, detectionFloorFor } from "./bornWornDetector";
+import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import {
   assertEveryDescribedFeatureHasAnAsk,
   DESCRIBED_ASKS,
@@ -78,6 +79,7 @@ import {
   isAskable,
   isDerivedRegion,
   DERIVED_REGION_ASKS,
+  slotsForFeature,
   type SlotDefinition,
 } from "./referenceSlotCatalogue";
 import { subjectsOfFacet, type Facet } from "./refineFacets";
@@ -145,6 +147,25 @@ export type FaceScan = {
 /** The armed accessory questions, by the catalogue's own account of arming. */
 function armedQuestions(): ReadonlySet<string> {
   return new Set(armedBornWornClasses().map((entry) => entry.region));
+}
+
+/**
+ * IS THIS QUESTION A THING WORN ON THE EARS (#2781)?
+ *
+ * Read off the two tables that already say it, never a word typed here: the
+ * accessory table names each worn kind's SITE (`site.question`), and the
+ * catalogue names what an ear is asked as. An earring's site is the ear, so the
+ * reader is told to keep only the pieces of its answer that are where an ear is
+ * — the septum ring the segmenter also answered `earring` on is not.
+ *
+ * Anatomy pairs are never asked this: an eye is nearer the middle of the face
+ * than its side, so the rule an ear passes would take an eye away.
+ */
+const EAR_QUESTION = slotsForFeature("ear")?.[0]?.question ?? null;
+
+export function wornOnTheEars(question: string): boolean {
+  if (EAR_QUESTION === null) return false;
+  return LANDMARK_OF_ACCESSORY.some((entry) => entry.region === question && entry.site.question === EAR_QUESTION);
 }
 
 /**
@@ -505,6 +526,10 @@ export async function scanFace(input: {
       questions the floors get re-derived rather than reinterpreted.
     */
     const floor = detectionFloorFor(region.question, bilateral ? "side" : "frame").floor;
+    /* An ear-worn pair keeps only what is where an ear is (#2781) — both the
+       first reading and the half-answered heal's second, so the heal judges
+       the same answer the panel will draw. */
+    const onTheEars = bilateral && wornOnTheEars(region.question);
     /** One reading of this region: what it filed, without deciding anything. */
     const read = async (): Promise<"filed" | "empty" | "failed" | "capability"> => {
     const landed: Array<{ slot: FeatureSlot; box: ScanBox; mask: Mask }> = [];
@@ -515,6 +540,7 @@ export async function scanFace(input: {
           name: region.question,
           absentIsAnswer: true,
           ...(input.frame.url ? { imageUrl: input.frame.url } : {}),
+          ...(onTheEars ? { onTheEars: true as const } : {}),
         });
         /*
           `null` is the reader saying this name has no sides for it — a
@@ -575,6 +601,7 @@ export async function scanFace(input: {
             name: region.question,
             absentIsAnswer: true,
             ...(input.frame.url ? { imageUrl: input.frame.url } : {}),
+            ...(onTheEars ? { onTheEars: true as const } : {}),
           });
           const healed = again !== null && !zeroOf(blindSide === "left" ? again.left : again.right);
           log.info(

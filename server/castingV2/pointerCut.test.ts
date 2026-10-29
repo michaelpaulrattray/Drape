@@ -30,6 +30,7 @@ import {
   offListFeatures,
   placeNames,
   pointerFeatures,
+  productWordFor,
   settleByPlace,
   wordsOnlyFeatures,
   type DiscoveredRegion,
@@ -118,8 +119,17 @@ describe("coveredByCatalogue — which road cuts a name, derived from the catalo
     }
   });
 
-  it("covers every noun the catalogue draws a row with", () => {
+  /*
+    ⚠ EVERY ROW-NOUN EXCEPT AN ACCESSORY THE SCAN DOES NOT ASK (#2781). That
+    exception is the repair: `nose stud` has a catalogue slot and no question
+    anybody sends, so "covered" sent a found nose stud down a road that never
+    bought it. The population stays the whole catalogue; the exclusion is read
+    off `scanPlan`, the one place that decides what is asked.
+  */
+  it("covers every noun the catalogue draws a row with, bar an accessory the scan never asks", () => {
+    const asked = new Set(scanPlan().flatMap((entry) => entry.slots.map((slot) => slot.slot)));
     for (const definition of catalogueSlots()) {
+      if (definition.group === "accessories" && !asked.has(definition.slot)) continue;
       expect(coveredByCatalogue(definition.noun), definition.noun).toBe(true);
       if (definition.pairNoun !== undefined) {
         expect(coveredByCatalogue(definition.pairNoun), definition.pairNoun).toBe(true);
@@ -152,7 +162,54 @@ describe("coveredByCatalogue — which road cuts a name, derived from the catalo
     expect(coveredByCatalogue("eyes")).toBe(true);
     /* And a hyphen is not a different word. */
     expect(coveredByCatalogue("facial-hair")).toBe(true);
-    expect(coveredByCatalogue("nose-stud")).toBe(true);
+  });
+
+  /*
+    THE SEPTUM RING'S FIRST ROAD (#2781). A reading that names a nose stud is
+    talking about a thing the scan has no question out for — the court for
+    nose studs was deferred (fable-647) — so it must reach the pointer road,
+    or it reaches nothing. The armed accessories are the positive control: the
+    scan does ask those, and a found duplicate of them would be bought twice.
+  */
+  it("does NOT cover an accessory the scan never asks, and still covers the ones it does", () => {
+    const asked = new Set(scanPlan().map((entry) => entry.question));
+    expect(asked.has("nose stud"), "the premise: nobody sends `nose stud`").toBe(false);
+    expect(coveredByCatalogue("nose stud")).toBe(false);
+    expect(coveredByCatalogue("nose-studs")).toBe(false);
+    expect(asked.has("earring") && asked.has("glasses"), "the premise: these two are asked").toBe(true);
+    expect(coveredByCatalogue("earring")).toBe(true);
+    expect(coveredByCatalogue("earrings")).toBe(true);
+    expect(coveredByCatalogue("glasses")).toBe(true);
+  });
+});
+
+describe("productWordFor — the accessory table's word, when the detector cannot place the reading's (#2781)", () => {
+  /*
+    Measured on his screenshot crop: the detector boxed NOTHING for
+    `septum ring`, `septum piercing` or `septum` on any read, and boxed the
+    ring for `nose stud`, `nose ring` and `nose piercing`. `septum` is the
+    nose piercing's own word in the accessory table, so the table knows what
+    the detector does not.
+  */
+  it("answers the nose piercing's word for a found septum ring", () => {
+    expect(productWordFor({ name: "septum ring", kind: "accessory" })).toBe("nose stud");
+    expect(productWordFor({ name: "septum piercing", kind: "accessory" })).toBe("nose stud");
+    expect(productWordFor({ name: "nostril stud", kind: "accessory" })).toBe("nose stud");
+  });
+
+  it("refuses a kind the scan already asks, so a found duplicate is never bought", () => {
+    /* `stud` is an earring word: re-asked as `earring` this would cut the very
+       earring the catalogue row already draws. */
+    expect(productWordFor({ name: "ear stud", kind: "accessory" })).toBeNull();
+    expect(productWordFor({ name: "sunglasses", kind: "accessory" })).toBeNull();
+  });
+
+  it("refuses anything that is not worn, and a name already in the table's word", () => {
+    /* `nostril` is a nose-piercing word; the NOSTRIL is not a stud. */
+    expect(productWordFor({ name: "nostril", kind: "anatomy" })).toBeNull();
+    expect(productWordFor({ name: "septum ring", kind: "marking" })).toBeNull();
+    expect(productWordFor({ name: "nose stud", kind: "accessory" })).toBeNull();
+    expect(productWordFor({ name: "choker", kind: "accessory" })).toBeNull();
   });
 });
 
@@ -177,9 +234,10 @@ describe("normalisedName — the fold, and what it deliberately does not do", ()
   */
   it("folds both sides of the comparison with one function", () => {
     expect(normalisedName("lips")).toBe(normalisedName("lips"));
-    for (const definition of catalogueSlots()) {
-      if (definition.question === null) continue;
-      expect(coveredByCatalogue(definition.question), definition.question).toBe(true);
+    /* Every question the scan SENDS — an unasked accessory's question is not
+       covered, by #2781's repair, and has its own arm above. */
+    for (const planned of scanPlan()) {
+      expect(coveredByCatalogue(planned.question), planned.question).toBe(true);
     }
   });
 });
@@ -987,5 +1045,77 @@ describe("the place rules — one row per place on the picture, never per spelli
       reader,
     });
     expect(out.regions.map((one) => [one.noun, one.kind])).toEqual([["jacket", "clothing"]]);
+  });
+});
+
+describe("cutDiscovered — a worn thing the detector cannot place in the reading's word (#2781)", () => {
+  /* The ring under the nose on his crop, in the crop's own pixels. */
+  const ring = { x: 347, y: 397, width: 36, height: 21 };
+
+  it("asks once more in the accessory table's word, and the row keeps the reading's noun", async () => {
+    const reader = readerWith({ detects: { "nose stud": [ring] } });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("septum ring", 1, { kind: "accessory", on: "nose" })],
+      reader,
+    });
+    expect(reader.asked.pointer).toEqual(["septum ring", "nose stud"]);
+    expect(out.regions.map((one) => ({ noun: one.noun, kind: one.kind, on: one.on }))).toEqual([
+      { noun: "septum ring", kind: "accessory", on: "nose" },
+    ]);
+    expect(out.declined).toEqual([]);
+    expect(out.named.filter((one) => one.why === "uncut")).toEqual([]);
+  });
+
+  it("CONTROL — the reading's word placed first is never re-asked", async () => {
+    const reader = readerWith({ detects: { "septum ring": [ring], "nose stud": [ring] } });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("septum ring", 1, { kind: "accessory", on: "nose" })],
+      reader,
+    });
+    expect(reader.asked.pointer).toEqual(["septum ring"]);
+    expect(out.regions).toHaveLength(1);
+  });
+
+  it("CONTROL — a found earring is never re-asked as the catalogue's own earring", async () => {
+    const reader = readerWith({ detects: { earring: [ring] } });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("ear stud", 1, { kind: "accessory", on: "ear" })],
+      reader,
+    });
+    expect(reader.asked.pointer).toEqual(["ear stud"]);
+    expect(out.regions).toEqual([]);
+    expect(out.named.map((one) => `${one.noun}:${one.why}`)).toEqual(["ear stud:uncut"]);
+  });
+
+  it("a second miss in the table's word is still a name with no row, kept with its words", async () => {
+    const reader = readerWith({ detects: {} });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("septum ring", 1, { kind: "accessory", on: "nose", about: "a thin silver ring" })],
+      reader,
+    });
+    expect(reader.asked.pointer).toEqual(["septum ring", "nose stud"]);
+    expect(out.declined).toEqual(["septum ring"]);
+    expect(out.named).toEqual([
+      { noun: "septum ring", on: "nose", about: "a thin silver ring", kind: "accessory", why: "uncut" },
+    ]);
+  });
+
+  /*
+    THE FIRST ROAD, DRIVEN: a reading that says `nose stud` used to be
+    "covered" and was never asked about at all.
+  */
+  it("a found nose stud reaches the detector now", async () => {
+    const reader = readerWith({ detects: { "nose stud": [ring] } });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("nose stud", 1, { kind: "accessory", on: "nose" })],
+      reader,
+    });
+    expect(reader.asked.pointer).toEqual(["nose stud"]);
+    expect(out.regions.map((one) => one.noun)).toEqual(["nose stud"]);
   });
 });
