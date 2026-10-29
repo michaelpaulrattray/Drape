@@ -46,7 +46,7 @@
  * definition of "he is blocking this". It stays derived; putting it in a label
  * would let the queue claim he owes an answer he has already given.
  */
-import { blockOpeningLines, decoratedLines, stripBlockLead } from "./crewMarkdownLead";
+import { blockOpeningLines, bodyLines, decoratedLines, stripBlockLead } from "./crewMarkdownLead";
 import { cardNumbersIn } from "./crewQueuePossiblyDone";
 import { CREW_WORK_CATEGORIES, type CrewWorkCategoryKey } from "./crewWorkSwitches";
 
@@ -756,7 +756,7 @@ function leadingClauseOf(reason: string): string {
 /** Is the line his page shows written inside a `>` blockquote? */
 function holdLineIsQuoted(body: string, reason: string): boolean {
   const bare = reason.endsWith("…") ? reason.slice(0, -1) : reason;
-  for (const line of body.split(/\r?\n/)) {
+  for (const line of bodyLines(body)) {
     const text = stripBlockLead(line).trim();
     if (!text.startsWith(CREW_HOLD_MARKER)) continue;
     /* The FIRST one is the line `holdReasonFromBody` returned, so the answer is

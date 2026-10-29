@@ -151,6 +151,16 @@ export const RITE_DISK_READS: ReadonlyArray<{ readonly path: string; readonly wh
     why: "imported by the briefing schema judging this push, at module load",
   },
   {
+    /* The NINTH, and the derived arm caught it the hour it arrived (#2777):
+       the stale-hold band reads which cards a hold line cites, and the one
+       reader of `#N` in prose lives here — so a band written to avoid a second
+       number reader pulled a new file into the rite's graph one hop out.
+       Nothing about this file is new to the rite; what is new is that the hold
+       reader now reaches it. */
+    path: "shared/crewQueuePossiblyDone.ts",
+    why: "reached by the hold reader through cardNumbersIn, at module load",
+  },
+  {
     /* The SEVENTH, and the derived arm caught it the hour it arrived (#1548):
        the `research` group's label is declared once in the exclusion vocabulary
        and imported by the group vocabulary, which pulled a new file into the
