@@ -64,6 +64,24 @@ const DETECT = "fal-ai/moondream3-preview/detect";
  * NOTHING rather than junk up to this number, on 3 of 3 absent specimens —
  * which is the control the whole scan rests on, because `absentIsAnswer` reads
  * "no masks" as "it is not there".
+ *
+ * ⚠ **AND IT HAS NEVER BEEN MEASURED TO BIND — #2811, 2026-10-30, and that is
+ * a reading rather than a reassurance.** The worry the card raised is real as
+ * a sentence about the code: a creature with six eyes, or three horns a side,
+ * would keep at most four of them. Driven on four cells at two sizes — a
+ * three-eyed alien's `eyes` and `ear`, and both creatures' `all the teeth`,
+ * which is the many-instance question this product has — the same request was
+ * sent with `max_masks` at **4, 8 and 16**, and the answer was IDENTICAL every
+ * time: 3, 2, 2 and 4 masks, same pixel counts to the digit. **The instance
+ * count is set by the picture, not by this number**, and in the one cell that
+ * reached four (`all the teeth` on the horned creature, both sizes) raising
+ * the ceiling four-fold bought no fifth instance.
+ *
+ * So it is NOT raised: a ceiling nothing has been measured to touch is not
+ * evidence for a different ceiling either. **What is genuinely unmeasured is
+ * stated rather than implied** — no cast with more than four of one feature
+ * exists in the fixture set, so what the model would offer for six eyes is not
+ * known, and the day one is cast this is the first thing to re-drive.
  */
 const PAIR_MAX_MASKS = 4;
 

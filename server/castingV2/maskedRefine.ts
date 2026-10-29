@@ -337,6 +337,23 @@ export type RegionReader = {
    *
    * The keys are ANATOMICAL: `left` is her left, which in a frame she faces the
    * camera in is the image's right half.
+   *
+   * ⚠ **ONE SIDE IS ONE ANSWER ON THE CROP ROAD, AND A SIDE CAN WEAR TWO
+   * THINGS — MEASURED, #2811, 2026-10-30.** The crop road asks each half for a
+   * single instance, so where a side wears two of something the mask holds one
+   * of them. Driven on a cast with several earrings in one ear, through the
+   * product's own midline: asked the way this road asks, the image-left half
+   * answered **one** earring (1,500px at 1024, 513px at 598); asked for several
+   * on the same half it answered **two and three** — the same first mask plus a
+   * 334px piece at 1024, plus 109px and 85px pieces at 598 — and the other half
+   * gained a 144px piece sitting higher up the ear. A second cast with one hoop
+   * a side answered one both ways, which is the control.
+   *
+   * **Nothing is changed here on that reading**, and the reason is the consumer
+   * rather than the number: a refine PAINTS on the mask it gets back, so a
+   * second instance arriving on an `eyes` or `eyebrows` half is a delivered
+   * picture the customer paid for. Widening it is its own card with its own
+   * measurement on the anatomy pairs (**#2818**).
    */
   regionSides?(input: {
     image: Buffer;
