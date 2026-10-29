@@ -1881,3 +1881,90 @@ describe("the same check on the class's siblings (#2796, law 7)", () => {
     expect(verdict.at === "elsewhere" ? verdict.nearest.slot : verdict.at).toBe("eye@left");
   });
 });
+
+describe("his first creature — one pair of tusks, and a body part in pieces (#2801)", () => {
+  /** A mask lit on every pixel of the given rectangles. */
+  const litMask = (rects: PointerBox[]): Mask => {
+    const data = Buffer.alloc(FRAME.width * FRAME.height, 0);
+    for (const rect of rects) {
+      for (let y = rect.y; y < rect.y + rect.height; y += 1) {
+        for (let x = rect.x; x < rect.x + rect.width; x += 1) data[y * FRAME.width + x] = 255;
+      }
+    }
+    return { data, width: FRAME.width, height: FRAME.height };
+  };
+  /* The measured shape on his picture: the catalogue's `all the teeth` cut is
+     ONE tusk, the image's left one; the reading's `tusks`, count 2, boxes both. */
+  const leftTusk = { x: 200, y: 300, width: 24, height: 44 };
+  const rightTusk = { x: 300, y: 300, width: 24, height: 44 };
+  const teeth: CatalogueCut = { slot: "teeth" as never, group: "face", question: "all the teeth", box: leftTusk, mask: litMask([leftTusk]) };
+  const tusks = feature("tusks", 2, { kind: "anatomy", on: "mouth" });
+
+  it("the tusk the Teeth row already drew stays Teeth's, and the other now sits ON the Teeth row", async () => {
+    const reader = readerWith({ detects: { tusks: [leftTusk, rightTusk] } });
+    const cut = await cutDiscovered({ frame: FRAME, features: [tusks], reader, catalogue: async () => [teeth] });
+    expect(cut.regions.map((region) => [region.noun, region.box.x, region.on])).toEqual([["tusks", 300, "teeth"]]);
+    /* Drawn, as part of Teeth: not a name nothing could draw. */
+    expect(cut.named.map((one) => one.noun)).not.toContain("tusks");
+  });
+
+  it("CONTROL — a counted body part the catalogue drew none of keeps the reading's own `on`", async () => {
+    const reader = readerWith({ detects: { tusks: [leftTusk, rightTusk] } });
+    const cut = await cutDiscovered({ frame: FRAME, features: [tusks], reader, catalogue: async () => [] });
+    expect(cut.regions.map((region) => [region.box.x, region.on])).toEqual([[200, "mouth"], [300, "mouth"]]);
+  });
+
+  it("CONTROL — a worn thing keeps its two-instance rule: a second piercing is not moved onto the catalogue's earring", async () => {
+    const hoop = { x: 200, y: 300, width: 22, height: 38 };
+    const second = { x: 260, y: 300, width: 10, height: 10 };
+    const earring: CatalogueCut = { slot: "earring@right" as never, group: "accessories", question: "earring", box: hoop, mask: litMask([hoop]) };
+    const reader = readerWith({ detects: { "ear piercing": [hoop, second] } });
+    const cut = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("ear piercing", 2, { kind: "accessory", on: "ear" })],
+      reader,
+      catalogue: async () => [earring],
+    });
+    expect(cut.regions.map((region) => [region.box.x, region.on])).toEqual([[260, "ear"]]);
+  });
+
+  /* The brow ridge's cut on his picture: the insides of both ears, apart. Big
+     enough to clear the fill floor (a third of the box), so the arm below is
+     about the pieces and nothing else. */
+  const browBox = { x: 100, y: 100, width: 300, height: 60 };
+  const earPieces = litMask([{ x: 100, y: 105, width: 60, height: 50 }, { x: 330, y: 105, width: 60, height: 50 }]);
+
+  it("a body part whose cut is in pieces gets no row, and keeps its words", async () => {
+    const reader = readerWith({ detects: { "brow ridge": [browBox] }, cuts: () => earPieces });
+    const cut = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("brow ridge", 1, { kind: "anatomy", on: "face" })],
+      reader,
+      catalogue: async () => [],
+    });
+    expect(cut.regions).toEqual([]);
+    expect(cut.named.map((one) => [one.noun, one.why])).toEqual([["brow ridge", "uncut"]]);
+  });
+
+  it("CONTROL — the same pieces as a GARMENT are still drawn: torn cloth is still cloth", async () => {
+    const reader = readerWith({ detects: { scarf: [browBox] }, cuts: () => earPieces });
+    const cut = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("scarf", 1, { kind: "clothing" })],
+      reader,
+      catalogue: async () => [],
+    });
+    expect(cut.regions.map((region) => region.noun)).toEqual(["scarf"]);
+  });
+
+  it("CONTROL — a body part cut in one piece is drawn", async () => {
+    const reader = readerWith({ detects: { "brow ridge": [browBox] }, cuts: () => litMask([{ x: 100, y: 110, width: 300, height: 40 }]) });
+    const cut = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("brow ridge", 1, { kind: "anatomy", on: "face" })],
+      reader,
+      catalogue: async () => [],
+    });
+    expect(cut.regions.map((region) => region.noun)).toEqual(["brow ridge"]);
+  });
+});

@@ -1390,11 +1390,13 @@ describe("a found row — what the reading saw and the catalogue cannot name", (
     },
   });
 
-  it("draws the thing under the reading's own noun, in the open section", () => {
+  it("draws the thing under the reading's own noun — a body part, so under Face (#2801)", () => {
     const panelOut = found([{ slot: "discovered:jaw-hardware#1", noun: "jaw hardware", instance: 1, x: 300, y: 500 }]);
-    const section = panelOut.groups.find((group) => group.group === "open")!;
+    const section = panelOut.groups.find((group) => group.group === "face")!;
 
-    expect(section.heading).toBe("Also on this character");
+    /* A hostless `anatomy` by default: a body part, which lists under Face
+       since #2801 (his eye on the first creature) rather than beside the marks. */
+    expect(section.heading).toBe("Face");
     expect(section.rows).toHaveLength(1);
     const row = section.rows[0]!;
     expect(row.name).toBe("Jaw hardware");
@@ -1758,7 +1760,7 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       expect(outfit.instances.map((one) => one.name), kind).toEqual(["Jacket"]);
       /* Never the Outfit, and never a fold: read as anatomy it is this
          character, read as worn it is an accessory (his ruling, #2789). */
-      expect(rowNames(panel, kind === "accessory" ? "accessories" : "open"), kind).toEqual(["Collar"]);
+      expect(rowNames(panel, kind === "accessory" ? "accessories" : "face"), kind).toEqual(["Collar"]);
     }
   });
 
@@ -1978,7 +1980,8 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
         { noun: "chain", kind: "accessory", on: "choker" },
       ],
     });
-    const open = sectionOf(panel, "open")!;
+    /* A body part lists under Face since #2801. */
+    const open = sectionOf(panel, "face")!;
     expect(open.rows.map((row) => row.name)).toEqual(["Third eye"]);
     expect(open.rows[0]!.instances.map((one) => one.name)).toEqual(["Iris"]);
     /* A worn thing on a worn thing stays its child, in Accessories. */
@@ -1994,7 +1997,7 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
         { noun: "stud", kind: "accessory", on: "third eye" },
       ],
     });
-    const open = sectionOf(panel, "open")!;
+    const open = sectionOf(panel, "face")!;
     expect(open.rows.map((row) => row.name)).toEqual(["Third eye"]);
     expect(open.rows[0]!.instances).toEqual([]);
     expect(rowNames(panel, "accessories")).toEqual(["Stud"]);
@@ -2054,14 +2057,14 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     expect(rowNames(panel, "open")).toEqual(["Scales"]);
   });
 
-  it("invents no parent out of a host nothing drew", () => {
-    /* `charm on=strap` where the strap itself could not be cut. ⚠ The
-       `namedNotCut` channel KNOWS that strap sat on the robe, and the chain
-       deliberately does not walk through it: a chain through a thing with no
-       picture would fold a visible row under an invisible one, and the design
-       says a thing that cannot be cut gets no row at all. So the charm keeps
-       its own row rather than joining an outfit it was never shown to be part
-       of. */
+  it("invents no parent out of a host nothing drew — but hardware on an uncut garment is still the Outfit (#2801)", () => {
+    /* `charm on=strap` where the strap itself could not be cut. The chain
+       never FOLDS under it: a child of a thing with no picture would hang a
+       visible row under an invisible one. ⚠ **Until #2801 the charm kept its
+       own row here**, and that is the road that listed his creature's buckle
+       and ring as accessories: the strap they sit on is on the robe by the
+       reading's own word, so they are part of the outfit (his words: *"buckle
+       and ring and just the strap across his chest apart of the outfit"*). */
     const panel = panelOf({
       found: [
         { noun: "robe", kind: "clothing" },
@@ -2070,11 +2073,10 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       said: [{ noun: "strap", on: "robe", about: "frayed webbing", kind: "accessory", why: "uncut" }],
     });
     const row = sectionOf(panel, "outfit")!.rows[0]!;
-    expect(row.instances.map((one) => one.name)).toEqual(["Robe"]);
-    /* ⚠ The charm's host is not a ROW, so it keeps its own — the walk cannot
-       invent a parent out of a name nothing drew. A worn thing's own row lists
-       under Accessories (his ruling, #2789). */
-    expect(rowNames(panel, "accessories")).toEqual(["Charm"]);
+    /* A piece of the one Outfit row, with its own picture — never a child of
+       the strap nobody could draw. */
+    expect(row.instances.map((one) => one.name)).toEqual(["Robe", "Charm"]);
+    expect(sectionOf(panel, "accessories")).toBeNull();
   });
 
   /* ---- rules 2 and 4: the words with no picture ---- */
@@ -2211,7 +2213,9 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       "Scarf", "Pendant", "Strap", "Charm", "Robe",
     ]);
     expect(rowNames(panel, "accessories")).toEqual(["Neck hardware", "Shoulder armor"]);
-    expect(rowNames(panel, "open")).toEqual(["Third eye", "Jaw hardware"]);
+    /* Body parts list under Face since #2801. */
+    expect(rowNames(panel, "face").slice(-2)).toEqual(["Third eye", "Jaw hardware"]);
+    expect(sectionOf(panel, "open")).toBeNull();
   });
 
   /*
@@ -2219,8 +2223,8 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     kept-row case rather than a hypothetical**: a reading written between slice
     2's two landings has `discovered` and neither fact, and `keptFaceScan`
     restores it as a hostless `anatomy`. Every found thing is then a top-level
-    sibling in *Also on this character*, which is byte for byte where it was
-    drawn before the grouping.
+    sibling — under Face since #2801, where a body part lists (until then *Also
+    on this character*, byte for byte where it was drawn before the grouping).
   */
   it("CONTROL — a reading with no grouping facts draws exactly the old panel", () => {
     const panel = panelOf({
@@ -2231,8 +2235,8 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       ],
     });
     expect(sectionOf(panel, "outfit")).toBeNull();
-    expect(rowNames(panel, "open")).toEqual(["Jacket", "Sash", "Neck tattoo"]);
-    for (const row of sectionOf(panel, "open")!.rows) {
+    expect(rowNames(panel, "face")).toEqual(["Jacket", "Sash", "Neck tattoo"]);
+    for (const row of sectionOf(panel, "face")!.rows) {
       expect(row.instances).toEqual([]);
       expect(row.regions).toHaveLength(1);
     }
@@ -2413,7 +2417,7 @@ describe("body hardware never reaches the Outfit through what it sits on", () =>
       { noun: "jaw hardware", kind: "anatomy", on: "collar" },
     ]);
     expect(section(built, "outfit")!.rows[0]!.instances.map((one) => one.name)).toEqual(["Collar"]);
-    expect(section(built, "open")!.rows.map((row) => row.name)).toEqual(["Jaw hardware"]);
+    expect(section(built, "face")!.rows.map((row) => row.name)).toEqual(["Jaw hardware"]);
   });
 
   it("⚠ and two hops away too — hardware on a strap on a jacket", () => {
@@ -2423,7 +2427,7 @@ describe("body hardware never reaches the Outfit through what it sits on", () =>
       { noun: "neck implant", kind: "anatomy", on: "strap" },
     ]);
     expect(section(built, "outfit")!.rows[0]!.instances.map((one) => one.name)).toEqual(["Jacket", "Strap"]);
-    expect(section(built, "open")!.rows.map((row) => row.name)).toEqual(["Neck implant"]);
+    expect(section(built, "face")!.rows.map((row) => row.name)).toEqual(["Neck implant"]);
   });
 
   it("and what sits on the hardware does not follow the collar into the outfit either", () => {
@@ -2436,8 +2440,97 @@ describe("body hardware never reaches the Outfit through what it sits on", () =>
     expect(section(built, "outfit")!.rows[0]!.instances.map((one) => one.name)).toEqual(["Collar"]);
     /* Body on the hardware stays with the hardware; a worn stud on it is an
        accessory, never folded under a body part (his ruling, #2789). */
-    const hardware = section(built, "open")!.rows.find((row) => row.name === "Jaw hardware")!;
+    const hardware = section(built, "face")!.rows.find((row) => row.name === "Jaw hardware")!;
     expect(hardware.instances.map((one) => one.name)).toEqual(["Ridge"]);
     expect(section(built, "accessories")!.rows.map((row) => row.name)).toEqual(["Stud"]);
+  });
+});
+
+describe("his first creature — tusks, a strap's hardware, and where a body part lists (#2801)", () => {
+  const frame = { width: 1024, height: 1536 };
+  const panelWith = (input: {
+    catalogued?: string[];
+    found: { noun: string; kind: "anatomy" | "clothing" | "accessory" | "marking"; on: string }[];
+    said?: { noun: string; on: string; about: string; kind: "anatomy" | "clothing" | "accessory" | "marking"; why: "scattered" | "uncut" }[];
+  }): FacePanel => facePanel({
+    rows: [],
+    pronouns: { subject: "they", object: "them", possessive: "their", plural: true },
+    contentUrl: (key: string) => key,
+    maskUrl: (key: string) => key,
+    discovering: true,
+    scan: {
+      frameUrl: "https://bucket.example/casting/master.jpg",
+      slots: new Map((input.catalogued ?? []).map((slot, at) => [slot as never, {
+        box: { x: 100 + at * 90, y: 500, width: 60, height: 40, frame },
+        maskUrl: `data:image/png;base64,${slot}`,
+      }])) as never,
+      words: new Map(),
+      absent: new Set(),
+      discovered: input.found.map((one, at) => ({
+        slot: `discovered:${one.noun.replace(/ /g, "-")}#1` as never,
+        noun: one.noun,
+        instance: 1,
+        kind: one.kind,
+        on: one.on,
+        box: { x: 600 + at * 50, y: 900, width: 40, height: 40, frame },
+        maskUrl: `data:image/png;base64,${one.noun}`,
+      })),
+      namedNotCut: input.said ?? [],
+    } as never,
+  } as never);
+  const names = (built: FacePanel, group: string) =>
+    built.groups.find((one) => one.group === group)?.rows.map((row) => row.name) ?? [];
+
+  it("the second tusk, sitting on the Teeth row, is inside that one row — never its own row", () => {
+    const built = panelWith({ catalogued: ["teeth"], found: [{ noun: "tusks", kind: "anatomy", on: "teeth" }] });
+    const teeth = built.groups.find((one) => one.group === "face")!.rows.find((row) => row.name === "Teeth")!;
+    expect(teeth.instances.map((one) => one.name)).toEqual(["Tusks"]);
+    /* Hovering the one row outlines both tusks. */
+    expect(teeth.regions).toHaveLength(2);
+    expect(names(built, "face").filter((name) => name === "Tusks")).toEqual([]);
+    expect(names(built, "open")).toEqual([]);
+  });
+
+  it("a found body part with its own row lists under Face; a mark stays in Also on this character", () => {
+    const built = panelWith({
+      found: [
+        { noun: "tusks", kind: "anatomy", on: "mouth" },
+        { noun: "scar", kind: "marking", on: "chest" },
+      ],
+    });
+    expect(names(built, "face")).toEqual(["Tusks"]);
+    expect(names(built, "open")).toEqual(["Scar"]);
+  });
+
+  it("a buckle and a ring on a strap nothing could cut are part of the Outfit, not accessories", () => {
+    const built = panelWith({
+      found: [
+        { noun: "scarf", kind: "clothing", on: "" },
+        { noun: "buckle", kind: "accessory", on: "harness" },
+        { noun: "ring", kind: "accessory", on: "harness" },
+      ],
+      said: [{ noun: "harness", on: "chest", about: "a leather strap", kind: "clothing", why: "uncut" }],
+    });
+    expect(built.groups.find((one) => one.group === "outfit")!.rows[0]!.instances.map((one) => one.name))
+      .toEqual(["Scarf", "Buckle", "Ring"]);
+    expect(names(built, "accessories")).toEqual([]);
+  });
+
+  it("CONTROL — a worn thing on an uncut host that is NOT a garment stays an accessory", () => {
+    const built = panelWith({
+      found: [{ noun: "charm", kind: "accessory", on: "cord" }],
+      said: [{ noun: "cord", on: "neck", about: "a thin cord", kind: "accessory", why: "uncut" }],
+    });
+    expect(names(built, "accessories")).toEqual(["Charm"]);
+    expect(built.groups.find((one) => one.group === "outfit")).toBeUndefined();
+  });
+
+  it("CONTROL — a body part on an uncut garment never enters the Outfit (his round-1 ⚠)", () => {
+    const built = panelWith({
+      found: [{ noun: "neck implant", kind: "anatomy", on: "harness" }],
+      said: [{ noun: "harness", on: "", about: "a strap", kind: "clothing", why: "uncut" }],
+    });
+    expect(names(built, "face")).toEqual(["Neck implant"]);
+    expect(built.groups.find((one) => one.group === "outfit")).toBeUndefined();
   });
 });

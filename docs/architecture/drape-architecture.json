@@ -42751,10 +42751,10 @@
       "message": "Names 6 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/cutQuality.ts:155",
+      "id": "finding:redeclared-shape:server/castingV2/cutQuality.ts:216",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/cutQuality.ts:155",
+      "subject": "server/castingV2/cutQuality.ts:216",
       "message": "Names 4 of SegmentBox's 4 fields (server/castingV2/segmentCuts.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
@@ -42765,24 +42765,31 @@
       "message": "Names 2 of TiltReading's 4 fields (server/castingV2/canthalTilt.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1828",
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1787",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:1828",
+      "subject": "server/castingV2/facePanel.ts:1787",
       "message": "Names 3 of NamedNotCut's 5 fields (server/castingV2/pointerCut.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1836",
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1838",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:1836",
+      "subject": "server/castingV2/facePanel.ts:1838",
       "message": "Names 3 of NamedNotCut's 5 fields (server/castingV2/pointerCut.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1906",
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1846",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:1906",
+      "subject": "server/castingV2/facePanel.ts:1846",
+      "message": "Names 3 of NamedNotCut's 5 fields (server/castingV2/pointerCut.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1939",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/facePanel.ts:1939",
       "message": "Names 3 of NamedNotCut's 5 fields (server/castingV2/pointerCut.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

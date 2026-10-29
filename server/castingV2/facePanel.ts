@@ -1781,6 +1781,16 @@ export function facePanel(input: {
     return foundRows.find((one) => normalisedName(one.noun) === key) ?? null;
   };
 
+  /** The thing the reading named and nothing cut that one host noun names, or
+   *  null — read for the Outfit destination only (see `homeOfAnyKind`). Makeup
+   *  is never a host: it is a refine subject, not a thing on the cast. */
+  const uncutHosting = (word: string): { noun: string; kind: FeatureKind; on: string } | null => {
+    const key = normalisedName(word);
+    return (input.scan?.namedNotCut ?? []).find(
+      (one) => one.why !== "makeup" && normalisedName(one.noun) === key,
+    ) ?? null;
+  };
+
   type FoundHome =
     | { home: "outfit" }
     | { home: "child"; parent: PanelRow }
@@ -1858,13 +1868,36 @@ export function facePanel(input: {
     }
     const parent = rowHosting(host);
     if (parent !== null) return { home: "child", parent };
+    /*
+      HARDWARE ON A GARMENT THAT HAS NO PICTURE IS STILL PART OF THE OUTFIT
+      (#2801, his eye on the first creature).
+
+      His words, verbatim: *"buckle and ring and just the strap across his chest
+      apart of the outfit called eccesories"*. Read on his picture: the reading
+      calls the strap `harness`, a garment, and the buckle and ring worn things
+      on it. The strap is a diagonal in a huge box, so its fill sits ON the fill
+      floor (0.204–0.205 on three readings); on the reading where it had no cut,
+      the buckle and ring had nothing drawn to sit on and were listed as
+      accessories.
+
+      So an UNCUT host is consulted for the one destination that needs no row
+      to exist: if the reading says it is a garment (or sits on one), what sits
+      on it is part of the Outfit, and keeps its own picture there as a piece.
+      ⚠ **Only the Outfit, never a fold under the uncut thing**: a child of a
+      thing with no picture would hang a visible row under an invisible one,
+      and the design says a thing that cannot be cut gets no row. Anything else
+      on an uncut host keeps its own row, exactly as before.
+    */
+    const uncut = uncutHosting(host);
+    if (uncut !== null) {
+      const deeper = new Set(Array.from(seen));
+      deeper.add(key);
+      deeper.add(normalisedName(found.noun));
+      if (homeOf(uncut, deeper).home === "outfit") return { home: "outfit" };
+    }
     /* A name nothing drew and nothing found — `forehead`, `jaw`, `neck`,
-       `shoulder` on the real fixtures, and an UNCUT host like a strap nothing
-       could draw. It keeps its own row, which is exactly where the third eye
-       and the jaw hardware belong. ⚠ The `namedNotCut` channel knows what an
-       uncut host sat on and is deliberately NOT walked here: a chain through a
-       thing with no picture would fold a visible row under an invisible one,
-       and the design says a thing that cannot be cut gets no row at all. */
+       `shoulder` on the real fixtures. It keeps its own row, which is exactly
+       where the third eye and the jaw hardware belong. */
     return { home: "own" };
   };
 
@@ -1911,9 +1944,23 @@ export function facePanel(input: {
     return home;
   };
 
-  /** The section a found thing's OWN row lists in: a worn thing is an
-   *  accessory, by his ruling above; anything else is also on this character. */
-  const ownSectionOf = (kind: FeatureKind): PanelSection => (kind === "accessory" ? "accessories" : "open");
+  /**
+   * The section a found thing's OWN row lists in: a worn thing is an
+   * accessory, by his ruling above; a BODY PART lists under Face; a mark on the
+   * skin is also on this character.
+   *
+   * ⚠ **Body parts moved out of *Also on this character* on 2026-10-29 (#2801)**,
+   * on his eye on the first creature: a found *Tusks* row sat beside the
+   * tattoos. His ruling above puts marks in that section; a tusk, a snout or a
+   * third eye is the body. ⚠ **A body part that is not on the face (a tail, a
+   * wing) also lists under Face**, because nothing on the reading says which is
+   * which without a word list; that limit is declared on the card.
+   */
+  const ownSectionOf = (kind: FeatureKind): PanelSection => {
+    if (kind === "accessory") return "accessories";
+    if (kind === "anatomy") return "face";
+    return "open";
+  };
 
   /** One found thing as a child of whatever it sits on. */
   const foundChild = (found: (typeof foundRows)[number]): PanelInstance => {

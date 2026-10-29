@@ -123,7 +123,7 @@
  * is the property slice 1 was held on twice and it is the one to protect.
  */
 import { boundsOf } from "./segmentCuts";
-import { judgeCut } from "./cutQuality";
+import { BODY_PART_ONE_PIECE_FLOOR, judgeCut, largestPieceShare } from "./cutQuality";
 import { LANDMARK_OF_ACCESSORY, accessoryEntry } from "./accessoryKinds";
 import { scanPlan } from "./faceScan";
 import { catalogueSlots, type SlotGroup } from "./referenceSlotCatalogue";
@@ -1370,6 +1370,23 @@ export async function cutDiscovered(input: {
           );
           return { index, region: null, broke: false };
         }
+        /*
+          A BODY PART IS ONE THING, AND A CUT IN PIECES IS NOT A PICTURE OF IT
+          (#2801). His *"no idea what brow ridge is on this creature"*: the cut
+          was the insides of both ears in eleven pieces, and it became a row
+          nobody could recognise. Body parts only — `cutQuality.ts` carries the
+          measurement and why a garment is not judged this way.
+        */
+        if (feature.kind === "anatomy") {
+          const share = largestPieceShare(mask);
+          if (share < BODY_PART_ONE_PIECE_FLOOR) {
+            log.warn(
+              { name: feature.name, askedAbout: box, answered: bounds, fill: verdict.fill, largestPiece: share },
+              "the cut of a body part is in pieces — no row",
+            );
+            return { index, region: null, broke: false };
+          }
+        }
         log.debug(
           { name: feature.name, fill: verdict.fill, claimed: verdict.claimed },
           "the cut cleared the quality bar",
@@ -1554,6 +1571,40 @@ export async function cutDiscovered(input: {
     }
   }
 
+  /*
+    ---- ONE COUNTED BODY PART IS ONE ROW, EVEN WHEN THE CATALOGUE DREW PART OF
+    IT (#2801, his eye on the first creature) ----
+
+    His words, verbatim: *"his tusks and teeth are getting confused"*. Read on
+    his picture: the catalogue's `all the teeth` cut ONE tusk, and that is the
+    Teeth row's picture. The reading named `tusks`, count 2, and the detector
+    boxed both. The fold above (#2757's rule) is decided one cut at a time, so
+    the tusk on the Teeth row's own pixels was folded into Teeth and the other
+    became a second row, *Tusks*. One thing, split across two rows.
+
+    So when a body part's name has a cut that IS a catalogue row's own cut, the
+    name's other cuts are more of that same thing: they sit ON that row, and
+    the panel draws them inside it (its children, under the same tap). The
+    picture decides where it sits, as `settleByPlace`'s garment rule already
+    does. Both tusks end up in the one Teeth row, and neither is drawn twice.
+
+    ⚠ **Body parts only, and that is the two-instance rule rather than a gap
+    (#2565 §6).** A second piercing on an ear shares no pixels with the
+    catalogue's earring and is a second thing with its own row (#2789). A body
+    part the reading counted is ONE feature with several pieces.
+  */
+  const slotNoun = new Map(catalogueSlots().map((definition) => [definition.slot, definition.noun]));
+  const joined: { noun: string; into: string }[] = [];
+  for (let at = 0; at < perName.length; at += 1) {
+    const one = perName[at]!;
+    if (population[at]!.kind !== "anatomy" || one.heldInto.length === 0 || one.regions.length === 0) continue;
+    const into = one.heldInto[0]!;
+    const noun = slotNoun.get(into);
+    if (noun === undefined) continue;
+    one.regions = one.regions.map((region) => ({ ...region, on: noun }));
+    joined.push({ noun: population[at]!.name, into });
+  }
+
   /* Gathered in the READING's own order, never in the order the provider
      happened to answer in: a panel that re-orders itself between two readings
      of one frame is the instability slice 1 was held on. */
@@ -1674,6 +1725,9 @@ export async function cutDiscovered(input: {
       strayed,
       handedOver,
       askedOnHost,
+      /* Body parts partly drawn by a catalogue row, whose other cuts now sit on
+         that row (#2801). */
+      joined,
       /* What the place rules decided, so a merged or moved row can be traced to
          the pixels that decided it rather than looking like a lost one. */
       samePlace: settled.samePlace,
