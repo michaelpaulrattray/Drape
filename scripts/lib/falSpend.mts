@@ -97,9 +97,9 @@ export const FAL_LOW_BALANCE_USD = 20;
  *   fewest 18  one per whole-frame question (7), two per pair — one per side —
  *              (5 pairs, 10), and the face asked ONCE: the midline the pairs are
  *              split on and the head the build row is cut under are one answer
- *   most   33  an anatomy question asked twice (lips, nose, hair, skin: +4);
- *              an anatomy pair asked again AND healed inside that second look
- *              (eyes, brows, ears: 5 each, +9); a worn pair healed once
+ *   most   30  an anatomy question asked twice (lips, nose, hair, skin: +4);
+ *              an anatomy pair asked again, each half for its own picture
+ *              (eyes, brows, ears: 4 each, +6); a worn pair healed once
  *              (horns, earrings: 3 each, +2); worn whole-frame questions are
  *              never asked twice (glasses, facial hair); and TEETH are never
  *              asked twice either (#2525)
@@ -152,11 +152,35 @@ export const FAL_LOW_BALANCE_USD = 20;
  * (`server/faceScanSpend.test.ts`), and **the measured band below still does
  * not move by arithmetic** — it is a bought reading, and it is now three reads
  * behind the code on the crop road rather than two.
+ *
+ * ⚠ **AND `most` CAME DOWN BY THREE AGAIN ON 2026-10-30 (#2817), FOR THE SAME
+ * REASON ONE CARD LATER AND ON THE OTHER HALF OF THE PAIR PROBLEM.** It read
+ * 33. #2802 gave the blind side of a HALF-answered pair its own half-picture;
+ * a pair empty on BOTH sides takes the empty-anatomy re-ask instead, and that
+ * re-ask now asks each half for its own picture rather than asking the whole
+ * region again. **On the crop road that is a flat two reads where the ceiling
+ * used to buy three** — the whole region again (two halves) and then the heal
+ * inside that second look (one more) — so an anatomy pair costs 4 instead of 5,
+ * three pairs, −3. There is no third look by construction: on this road the
+ * heal would ask the identical half a third time.
+ *
+ * ⚠ **THE PAIR ROAD'S CEILING DOES NOT MOVE (25), AND THAT IS THE FIGURE
+ * PRODUCTION IS ON** — its re-ask was one request and its heal one more, so
+ * three either way; what changed there is which question the second look asks.
+ * **What DOES move on production is the average rather than the ceiling**: the
+ * ceiling assumes the heal fires, and the heal only fires when the re-ask comes
+ * back half-answered, which #2817 measured it never does (0 of 6 draws at each
+ * of two sizes on the frame the card was filed about). So a pair empty on both
+ * sides now spends two reads where it spent one — measured at 5 of 21
+ * re-askable pair cells over seven frames, about **+0.7 of a read on a real
+ * scan**. ⚠ **A ceiling that falls while the average rises is exactly the shape
+ * a single number hides**, which is why both are written here.
+ * ⚠ **`fewest` does not move on either road**, for the reason above it.
  */
 export const FACE_SCAN_FAL_CALLS = {
   sam3: {
     fewest: 18,
-    most: 33,
+    most: 30,
     /**
      * WHAT THE SAME DRIVE COUNTS WITH `ENABLE_CASTING_PAIR_ONE_READ` ON — a road that
      * is BUILT AND OFF, so these are not what production does (#2191).
@@ -164,7 +188,12 @@ export const FACE_SCAN_FAL_CALLS = {
      * A bilateral region costs two reads above, one per half-frame. On this
      * road one whole-frame read answers both sides and `splitAtMidline` cuts
      * them apart, so the five pairs cost five reads instead of ten:
-     * **13 instead of 18 at the floor, and 25 instead of 33 at the ceiling.**
+     * **13 instead of 18 at the floor, and 25 instead of 30 at the ceiling.**
+     * ⚠ The ceiling gap narrowed from 8 to 5 on 2026-10-30 (#2817) and NOT
+     * because this road got dearer: the crop road's own ceiling came down to
+     * meet it. See the `most` block above for which second looks each road now
+     * buys — a ceiling that falls while an average rises is the shape a single
+     * number hides.
      *
      * Both are DERIVED by the same drive and the same three policies as the two
      * figures above (`server/faceScanSpend.test.ts`, which is why they live in
