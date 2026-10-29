@@ -70,7 +70,13 @@ import type { FeatureSlot } from "./recipeAssembler";
 import { captureCastingFaceDiscoveryEnabled, captureCastingScanTableEnabled } from "./castingV2Scope";
 import { discoverFeatures, discoveryCropsOf, type FaceDiscovery, type FeatureKind } from "./faceDiscovery";
 import { keepScan, serveKeptScan, type KeptScanShape } from "./keptFaceScan";
-import { cutDiscovered, type DiscoveredRegion, type NamedNotCut } from "./pointerCut";
+import {
+  catalogueCutsOf,
+  cutDiscovered,
+  type CatalogueCut,
+  type DiscoveredRegion,
+  type NamedNotCut,
+} from "./pointerCut";
 import { cropMask } from "./segmentCuts";
 import sharp from "sharp";
 
@@ -169,8 +175,9 @@ export type DiscoveredPanelRow = {
    * grouping grammar (#2566 slice 2).
    *
    * They travel here because the panel is where the grouping happens and the
-   * panel has no reader: `clothing` is what may enter the one Outfit row, and
-   * `on` is what folds a lip ring under Lips. Neither is ever re-derived from
+   * panel has no reader: `clothing` is what may enter the one Outfit row,
+   * `accessory` lists under Accessories (his ruling of 2026-10-29, #2789), and
+   * `on` is what chains a buckle to its strap. Neither is ever re-derived from
    * the noun, which is the rule his ⚠ about the *Collar* implants is about.
    */
   kind: FeatureKind;
@@ -819,6 +826,24 @@ export async function scannedFace(input: {
       ? defaultDiscoverer(input.userId)
       : input.dependencies.discover;
     /*
+      THE CATALOGUE'S CUTS, HANDED TO THE POINTER ROAD WHEN THEY LAND (#2789).
+
+      His eye found one hoop drawn twice — the catalogue's Earrings and a found
+      *Ear piercing* — and a star drawn as a septum ring. Both are answered by
+      comparing a found cut with the scan's own cuts on the same frame, which
+      only exist once `scanFace` below resolves; so the pointer road is handed a
+      promise of them, settled exactly once with the scan or with `null` if the
+      scan throws. The scan does not wait on the discovery, so nothing here can
+      wait on itself; the pointer road usually lands after the scan anyway (the
+      discovery read is the long pole), and a found row that lands first simply
+      waits for the catalogue before it is drawn — rows appear whole or not at
+      all.
+    */
+    let settleCatalogue: (cuts: readonly CatalogueCut[] | null) => void = () => {};
+    const catalogueLanded = new Promise<readonly CatalogueCut[] | null>((resolve) => {
+      settleCatalogue = resolve;
+    });
+    /*
       BOTH HALVES OF THE READING'S ANSWER, in ONE promise (#2566 slice 2).
 
       The pointer road produces rows with pictures AND words with none, and the
@@ -845,6 +870,7 @@ export async function scannedFace(input: {
             },
             features: discovery.features,
             reader,
+            catalogue: () => catalogueLanded,
             /* Each found row onto the partial as it lands, for the catalogue
                rows' own reason: a reading that takes forty seconds must look
                like a reading that is working. `fileToPartial` is shared with
@@ -860,52 +886,61 @@ export async function scannedFace(input: {
           return { regions: cut.regions, namedNotCut: cut.named };
         })
         .catch(() => ({ regions: [], namedNotCut: [] }));
-    const scan = await scanFace({
-      frame: { bytes: frame.bytes, width: metadata.width, height: metadata.height, url },
-      reader,
-      contentType: frame.contentType,
-      describe: input.dependencies?.describe === undefined
-        ? defaultDescriber()
-        : input.dependencies.describe,
-      /*
-        EACH FEATURE, AS IT LANDS. The stencil for it is cut here rather than at
-        the end, which is the same work in a different order — `displayOf` will
-        cut the same shapes from the same masks when the scan resolves, and the
-        settled answer is still the authority. This one is what she can look at
-        in the meantime.
-      */
-      onFiled: (filed) => {
-        void (async () => {
-          for (const one of filed) {
-            const stencil = await stencilOf(one.mask, one.box);
-            const slots = new Map(entry.partial?.slots ?? []);
-            slots.set(one.slot, {
-              box: one.box,
-              maskUrl: `data:image/png;base64,${stencil.toString("base64")}`,
-            });
-            entry.partial = {
-              frameUrl: url,
-              slots,
-              words: entry.partial?.words ?? new Map(),
-              asked: scanPlan().length,
-              found: slots.size,
-              empty: [],
-              failed: [],
-              stencilBytes: (entry.partial?.stencilBytes ?? 0) + stencil.length,
-              sides: sidesOf(slots),
-              /* Read off the entry rather than reset, so a found row that
-                 landed first is not wiped by the next catalogue row —
-                 `fileToPartial` above preserves `slots` the same way. */
-              discovered: entry.partial?.discovered ?? [],
-              namedNotCut: entry.partial?.namedNotCut ?? [],
-            };
-          }
-        })().catch(() => {
-          /* A partial is a courtesy on top of a courtesy: if a stencil will not
-             cut here, the settled scan cuts it again a moment later. */
-        });
-      },
-    });
+    let scan: Awaited<ReturnType<typeof scanFace>>;
+    try {
+      scan = await scanFace({
+        frame: { bytes: frame.bytes, width: metadata.width, height: metadata.height, url },
+        reader,
+        contentType: frame.contentType,
+        describe: input.dependencies?.describe === undefined
+          ? defaultDescriber()
+          : input.dependencies.describe,
+        /*
+          EACH FEATURE, AS IT LANDS. The stencil for it is cut here rather than at
+          the end, which is the same work in a different order — `displayOf` will
+          cut the same shapes from the same masks when the scan resolves, and the
+          settled answer is still the authority. This one is what she can look at
+          in the meantime.
+        */
+        onFiled: (filed) => {
+          void (async () => {
+            for (const one of filed) {
+              const stencil = await stencilOf(one.mask, one.box);
+              const slots = new Map(entry.partial?.slots ?? []);
+              slots.set(one.slot, {
+                box: one.box,
+                maskUrl: `data:image/png;base64,${stencil.toString("base64")}`,
+              });
+              entry.partial = {
+                frameUrl: url,
+                slots,
+                words: entry.partial?.words ?? new Map(),
+                asked: scanPlan().length,
+                found: slots.size,
+                empty: [],
+                failed: [],
+                stencilBytes: (entry.partial?.stencilBytes ?? 0) + stencil.length,
+                sides: sidesOf(slots),
+                /* Read off the entry rather than reset, so a found row that
+                   landed first is not wiped by the next catalogue row —
+                   `fileToPartial` above preserves `slots` the same way. */
+                discovered: entry.partial?.discovered ?? [],
+                namedNotCut: entry.partial?.namedNotCut ?? [],
+              };
+            }
+          })().catch(() => {
+            /* A partial is a courtesy on top of a courtesy: if a stencil will not
+               cut here, the settled scan cuts it again a moment later. */
+          });
+        },
+      });
+      settleCatalogue(catalogueCutsOf(scan));
+    } catch (error) {
+      /* Nothing to compare a found cut with: the pointer road folds nothing and
+         draws no row the product's word placed. The read rejects either way. */
+      settleCatalogue(null);
+      throw error;
+    }
     /*
       ⚠ **THIS IS AWAITED NOW, AND THE PREVIOUS COMMENT'S REASONING IS WHY IT
       HAS TO BE** (#2566 slice 2). It read *"not awaited: the panel never waits

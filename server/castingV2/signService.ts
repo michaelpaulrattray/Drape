@@ -73,6 +73,8 @@ import { createModuleLogger } from "../logging/logger";
 import { storageCopyExact, storageReadBytes } from "../storage";
 import { mintViewThumbnail } from "./viewThumbnailMint";
 import { listLineageReferences } from "../db/castingV2ReferenceLibrary";
+import { listCandidateVariants } from "../db/castingV2Variants";
+import { takenBackForSelectedVariant } from "./refineService";
 import type { BodyAnchorRegion } from "../../shared/bodyAnchorRegions";
 import { displayPrice, formatCredits } from "../../shared/creditDisplay";
 import { readOpenKindProperties } from "../db/castingV2OpenKindProperties";
@@ -180,6 +182,14 @@ export type SignServiceDependencies = PackageOrchestratorDependencies & {
    * behaviour here and not two.
    */
   personaReader?: () => CastPersonaReader | null;
+  /**
+   * EVERY READY VERSION OF THE SIGNED CANDIDATE — the ancestry #2669 reads.
+   *
+   * Injected for the same reason `listLibrary` is: the real statement is
+   * owner-scoped in its own WHERE, and an arm needs to be able to hand this
+   * road a lineage — or a throwing one — without a database.
+   */
+  listVariants?: typeof listCandidateVariants;
   /** The write of those two lines. Injected so an arm can see it happen. */
   writePersona?: typeof writeCastPersonaDraft;
   /**
@@ -1055,6 +1065,8 @@ function derivePersonaDraft(
     anchor: ReferenceImage;
     brief: string | null;
     editSentences: readonly string[];
+    /** What a kept sentence above no longer asks for (#2669); usually empty. */
+    takenBack: readonly string[];
     pronouns: CastPronouns;
     operationId: string;
   },
@@ -1072,6 +1084,7 @@ function derivePersonaDraft(
       anchor: input.anchor,
       brief: input.brief,
       editSentences: input.editSentences,
+      takenBack: input.takenBack,
       pronouns: input.pronouns,
     })
     .catch((error) => {
@@ -1238,10 +1251,46 @@ async function completeSignPackage(
       outcome as a failed read - no lines, no badge, no empty card that looks
       like a feature that broke.
     */
+    /*
+      AND WHAT AN EARLIER PRUNE TOOK OUT OF A SENTENCE THAT STAYED (#2669).
+
+      A pruned step keeps its sentence (D-171), so `editSentences` above can
+      name a feature this face no longer has — and the reader, asked for "the
+      ONE thing that breaks the rest", reaches for exactly that. Measured 3 of
+      3 on the drafted line before this landed, 0 of 3 once the words are
+      handed over; the reading is on #2669.
+
+      ⚠ IT CANNOT FAIL THE SIGN, and it sits in front of nothing the customer
+      waits on: this whole function runs detached, and a lineage that cannot be
+      read leaves the reader behaving exactly as it did before this card rather
+      than the Sign behaving differently.
+    */
+    let personaTakenBack: string[] = [];
+    try {
+      const variants = await (dependencies.listVariants ?? listCandidateVariants)(
+        input.userId,
+        input.candidatePublicId,
+      );
+      personaTakenBack = takenBackForSelectedVariant(variants, input.selectedVariantId);
+    /*
+      ⚠ THE BINDING IS NAMED, AND THAT IS NOT A STYLE CHOICE. This function's
+      OUTER `catch (error)` is the anchor `liveTerminalEvents.test.ts` uses to
+      prove the delivered receipt is recorded before it and its backstop after
+      it — so an inner catch wearing the same binding becomes the first match
+      and reads as though the ordering had been broken. It went red exactly
+      that way when this block was written.
+    */
+    } catch (lineageError) {
+      log.warn(
+        { operationId: input.operationId, err: lineageError },
+        "[signService] the version ancestry could not be read — the two lines are drafted without it",
+      );
+    }
     const personaRead = derivePersonaDraft(dependencies, {
       anchor: anchorBytes,
       brief: input.description,
       editSentences: input.editSentences,
+      takenBack: personaTakenBack,
       pronouns: input.pronouns,
       operationId: input.operationId,
     });
