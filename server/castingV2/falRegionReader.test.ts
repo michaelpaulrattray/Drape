@@ -1300,6 +1300,10 @@ describe("a region that is several separate things", () => {
     const bodies = stubSam3();
     const reader = createFalRegionReader({ apiKey: "test-key" });
     expect(teethRegion()).toBe("all the teeth");
+    /* Over the WHOLE catalogue: the teeth alone carry it, and a slot that did
+       not author it does not carry the key under any spelling. */
+    expect(catalogueSlots().filter((one) => one.several !== undefined).map((one) => one.slot)).toEqual(["teeth"]);
+    expect(catalogueSlots().filter((one) => "several" in one).map((one) => one.slot)).toEqual(["teeth"]);
     const mask = await reader.region({ image: await frame(), name: teethRegion(), absentIsAnswer: true });
     expect(bodies).toHaveLength(1);
     expect(bodies[0]).toMatchObject({ prompt: "all the teeth", return_multiple_masks: true, max_masks: 4 });
