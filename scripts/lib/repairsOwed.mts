@@ -35,6 +35,11 @@
  * before #1974. A finding on an earlier head is a repair already pushed and is
  * not owed at all; `tallyRounds` keeps those apart as `staleFindings`.
  */
+import {
+  liveCardClaimFromFacts,
+  pullRequestBuildsCard,
+  type CrewCardCommentFact,
+} from "../../shared/crewCardBuildState.ts";
 import { reviewPresence, tallyRounds, type HandVerdictReading } from "./reviewRounds.mjs";
 
 /**
@@ -200,4 +205,154 @@ export function repairsOwedWord(reading: RepairsOwedReading, nowMs: number): str
   const age = hours === null ? "age unreadable" : `oldest ${hours.toFixed(1)}h`;
   return ` | repairs ${reading.repairs.length} (${age}, PR #${oldest.pullRequest})`
     + (reading.partial ? " — page full, may be short" : "");
+}
+
+/*
+  ── WHOSE HANDS ARE ALREADY ON THIS? (#2769) ──────────────────────────────────
+
+  ⚠ **NOTHING ON THIS ROAD ASKED, AT ANY POINT, UNTIL THIS BLOCK.** Read at the
+  bytes the day the card was filed: this module held **zero** occurrences of
+  `claim`. The claim rule itself is good and asks well —
+  `crew-shift-start.mts` re-asks at every moment a card is DECLARED on a
+  row, the row read refusing on an open run and the comment read on another
+  seat's live `CLAIMED —` line — but **a repair is handed out as a PULL
+  REQUEST, not as a card.** A seat told to check out somebody else's branch and
+  push never declares a card, so not one of those readers is ever reached.
+
+  Measured instance: a claim was published, was SIX MINUTES OLD, sat on the card
+  the repair was for, and nothing read it. Cost, one full Opus session producing
+  one comment.
+
+  # IT INFORMS AND NEVER HOLDS, and that is the card's own asymmetry
+
+  A held pull request with a repair owed is the highest-priority work on the
+  board (his word, #1977), and a stale claim must never be able to stall one. So
+  nothing here withholds a repair, reorders one, or refuses: it attaches a FACT
+  to the hand-out and the seat reads it. A reading that held would turn the cure
+  into the disease — the shape `renderNoteForeignClaimWarning` already argues
+  against on the heartbeat road.
+
+  # THE CARD IS DERIVED FROM THE TITLE, BY THE READER THAT ALREADY OWNS THAT
+
+  `RepairOwed` carries no card and the runner's `REPAIR FIRST` line names
+  none, so the first missing fact is WHICH CARD. It is read with
+  {@link pullRequestBuildsCard} — `shared/crewCardBuildState.ts`, the same
+  reader his page and five queue readers use — over the open board the cut
+  already holds.
+
+  ⚠ **TITLE LIMB ONLY, which is `shared/crewShippedNotClosed.ts`'s own narrowing
+  and not a new one.** That reader passes the title alone on purpose, and here
+  the branch limb would be actively wrong: it matches any digit RUN in a branch
+  name, and a seat branch is `team/seat-1-20261029-…` — so it would resolve
+  card **#1** for every seat branch in the repository.
+
+  ⚠ **MEASURED ON THE EXACT POPULATION THIS ROAD WALKS, not on a proxy.** Over
+  `server/__fixtures__/repairsOwed.live.json` — the real `gh pr list` answer
+  of the day #1977 was written, nine of its twelve open pull requests held on a
+  finding — **9 of 9 held pull requests resolve exactly ONE card from the
+  title**, and the fixture's two dependabot rows resolve NONE. Over the 120
+  newest merged pull requests the convention holds at **114 of 120** (4 name no
+  card, 2 name two, and both of those genuinely built two cards). A pull request
+  naming no card is SILENT and behaves exactly as this road did before — which
+  is the only direction a derivation like this may fail in.
+
+  # AND THE CHANNEL IS THE `SEATS` LINE, measured rather than assumed
+
+  `.agents/foreman/foreman-runner.ps1` pipes the cut's stdout through
+  `Where-Object { $_ -match "^SEATS " }` and keeps the last match — so
+  **every other line the cut prints reaches nobody on the automated road**, the
+  `REPAIR OWED | …` lines among them. {@link repairClaimWord} is therefore
+  written for that line, and the per-repair line and the plan item carry the same
+  fact for the person and the machine respectively.
+
+  ⚠ **THE LAST HOP IS DECLARED, exactly as #1977 declared it rather than
+  pretending otherwise** (the fidelity law's stated shortcut). The runner builds
+  its own `REPAIR FIRST` sentence from the item's fields and is UNTRACKED, so
+  no pull request can teach it a new one; the relay owns that line. What this
+  commit does is make the fact impossible to miss in the three places a tracked
+  change can reach: the plan item, the cut's own output, and the one line the
+  runner logs.
+*/
+
+/** The live claim on the card a held pull request is for — `null` when there is none. */
+export type RepairCardClaim = {
+  readonly pullRequest: number;
+  /**
+   * The cards this pull request's TITLE names that are open on the board right
+   * now — normally exactly one, empty for a dependabot bump, two for a pull
+   * request that genuinely built two cards.
+   */
+  readonly cards: readonly number[];
+  /**
+   * The newest live claim across those cards, or `null`.
+   *
+   * ⚠ **`mine` IS NOT A STATE THIS ROAD CAN HAVE, and it is said rather than
+   * left to be noticed.** The cut does not know which seat will be handed which
+   * repair — the runner deals them round-robin after the plan is written — so
+   * every claim here is reported and none is filtered out as the reader's own.
+   * The seat reads the name and decides, which is also what makes a claim of its
+   * own harmless to report.
+   */
+  readonly claim: { readonly card: number; readonly seat: string | null; readonly at: string } | null;
+};
+
+/**
+ * THE READING, pure over facts already read — one row per repair, in the
+ * repairs' own order.
+ *
+ * Both inputs are things the cut already holds: the open board
+ * (`readOpenCards`) and the card comment facts (`readCardComments` →
+ * `buildBoard`). So this costs **no `gh` call at all**, which is why there
+ * is no cap on it and no budget argument to make: the claim-probe cap the
+ * heartbeat road needs (`HEARTBEAT_FOREIGN_CLAIM_PROBE_MAX`) exists because
+ * that road pays one read per candidate, and this one pays none.
+ */
+export function repairCardClaims(input: {
+  readonly repairs: readonly RepairOwed[];
+  readonly openCards: readonly number[];
+  readonly facts: readonly CrewCardCommentFact[];
+  readonly nowMs: number;
+}): readonly RepairCardClaim[] {
+  return input.repairs.map((repair) => {
+    const cards = input.openCards.filter((card) =>
+      pullRequestBuildsCard({ number: repair.pullRequest, title: repair.title }, card).length > 0);
+    let claim: RepairCardClaim["claim"] = null;
+    for (const card of cards) {
+      const live = liveCardClaimFromFacts({ card, facts: input.facts, nowMs: input.nowMs });
+      if (live === null) continue;
+      /* The newest claim across the cards it names. In practice there is one
+         card; a two-card pull request reports on whichever is livest. */
+      if (claim === null || live.at.localeCompare(claim.at) > 0) {
+        claim = { card, seat: live.seat, at: live.at };
+      }
+    }
+    return { pullRequest: repair.pullRequest, cards, claim };
+  });
+}
+
+/**
+ * THE WORDS FOR THE `SEATS` LINE — `""` when the board has nothing to say,
+ * which is the ordinary case and must cost the line nothing.
+ *
+ * ⚠ **IT NAMES THE SEAT AND THE AGE, never a bare count**, for
+ * {@link renderNoteForeignClaimWarning}'s own measured reason: a claim three
+ * minutes old is somebody at a keyboard, and one eleven hours old is a finished
+ * shift that never released. Those two want opposite actions from the seat
+ * reading the line, so a word that could not tell them apart would be an alarm
+ * rather than a fact.
+ */
+export function repairClaimWord(claims: readonly RepairCardClaim[], nowMs: number): string {
+  const held = claims.filter(
+    (row): row is RepairCardClaim & { claim: NonNullable<RepairCardClaim["claim"]> } => row.claim !== null,
+  );
+  if (held.length === 0) return "";
+  const words = held.map((row) => {
+    const hours = (nowMs - Date.parse(row.claim.at)) / 3_600_000;
+    const age = Number.isFinite(hours)
+      ? hours < 1 ? Math.max(0, Math.round(hours * 60)) + "m" : hours.toFixed(1) + "h"
+      : "age unreadable";
+    const seat = row.claim.seat ?? "a seat that did not name itself";
+    return "PR #" + row.pullRequest + " -> card #" + row.claim.card + " claimed by " + seat + " " + age + " ago";
+  });
+  return " | repair claims: " + words.join("; ");
 }

@@ -88,9 +88,12 @@ import { resolve } from "node:path";
 import { readOpenPullRequests } from "./lib/cardClaimWarning.mts";
 import {
   oldestRepairAgeHours,
+  repairCardClaims,
+  repairClaimWord,
   repairsOwedFrom,
   repairsOwedWord,
   REPAIRS_OWED_LIST_ARGS,
+  type RepairCardClaim,
   type RepairPullRequestRow,
   type RepairsOwedReading,
 } from "./lib/repairsOwed.mts";
@@ -624,6 +627,37 @@ const repairsReading: RepairsOwedReading = "unreadable" in repairs
   : repairs;
 const repairsUnreadable: string | null = "unreadable" in repairs ? repairs.unreadable : null;
 
+/*
+  ⚠ **WHOSE HANDS ARE ALREADY ON THE CARD BEHIND EACH HELD PULL REQUEST (#2769).**
+  The repairs road has never asked: a repair is handed out as a PULL REQUEST, so
+  the seat never declares a card and not one of the three claim readers is ever
+  reached. `scripts/lib/repairsOwed.mts` carries the measurement and the reason
+  it INFORMS and never holds.
+
+  ⚠ **IT COSTS NO READ.** Both inputs are already in this process: the open
+  board from `readOpenCards()` and the comment facts from `readCardComments`,
+  the same two the board above is built from. So there is no budget to argue
+  about and no cap to defend — which is exactly why this is the shape that got
+  built rather than a per-repair `gh` probe.
+
+  ⚠ **AND IT CARRIES NO "COULD NOT READ THE CLAIMS" STATE, WHICH IS THE ONE
+  THING WORTH SAYING HERE — the first shape of this block had one and it was
+  DEAD CODE.** Every reader in this family keeps *unread* apart from *clean*,
+  so an `unreadable` field looked obviously right. Driven instead of reasoned:
+  an unreadable comment list makes `board.partial` true and the pass REFUSES
+  about forty lines above this one ("the board was not fully read, so a card
+  somebody is on could read as free"), so `commentFacts === null` can never
+  reach this statement. The refusal IS the control, and a second one here would
+  be a branch nothing can enter wearing the look of a guard (invariant 7's
+  cousin). The `?? []` below is the type's null, not a road.
+*/
+const repairClaims: readonly RepairCardClaim[] = repairCardClaims({
+  repairs: repairsReading.repairs,
+  openCards: cards.map((card) => card.number),
+  facts: commentFacts ?? [],
+  nowMs,
+});
+
 const world = await readWorld();
 const switches = world.switches;
 
@@ -1011,8 +1045,19 @@ const out = {
       const hours = oldestRepairAgeHours(repairsReading, nowMs);
       return hours === null ? null : Number(hours.toFixed(2));
     })(),
-    /* Oldest first — `repairsOwedFrom` owns the order and the reason. */
-    items: repairsReading.repairs,
+    /* Oldest first — `repairsOwedFrom` owns the order and the reason.
+
+       ⚠ **EACH ITEM NOW CARRIES THE CARD IT IS FOR AND THAT CARD'S LIVE CLAIM
+       (#2769)**, which is the machine-readable half: the runner builds its own
+       `REPAIR FIRST` sentence out of these fields and is UNTRACKED, so the one
+       line that prints `claim` is the relay's to land and is declared rather
+       than implied. `cards` is empty for a pull request whose title names no
+       open card — a dependabot bump — and the fact is then silent everywhere,
+       which is how this road behaved before it existed. */
+    items: repairsReading.repairs.map((repair) => {
+      const read = repairClaims.find((row) => row.pullRequest === repair.pullRequest);
+      return { ...repair, cards: read?.cards ?? [], claim: read?.claim ?? null };
+    }),
     /* The page came back full, so a repair may be unseen (#1977). */
     partial: repairsReading.partial,
     /* Open pull requests with no commits: they cannot be dated, so they are
@@ -1091,10 +1136,17 @@ if (!ARGS.flag("quiet")) {
   const repairWord = repairsUnreadable === null
     ? repairsOwedWord(repairsReading, nowMs)
     : ` | repairs unread (${repairsUnreadable.slice(0, 90)}) — cards offered as before`;
+  /* ⚠ **AND WHOSE HANDS ARE ON THEIR CARDS, ON THE SAME LINE AND FOR A MEASURED
+     REASON (#2769).** The runner pipes this stdout through
+     `Where-Object { $_ -match "^SEATS " }` and keeps the last match, so the
+     `REPAIR OWED` lines below reach a person at a terminal and nobody else. A
+     claim nobody reads is the whole of the card: it is `""` when the board has
+     nothing to say, which is the ordinary case. */
+  const repairClaimSentence = repairClaimWord(repairClaims, nowMs);
   console.log(
     plan.seatCount === 0
-      ? `SEATS 0 | nothing on offer${repairWord}${rungWord}${managerWord}${jevWord}`
-      : `SEATS ${plan.seatCount} | cards ${plan.cardCount} | areas ${areas || "none named"}${repairWord}${rungWord}${managerWord}${jevWord}`,
+      ? `SEATS 0 | nothing on offer${repairWord}${repairClaimSentence}${rungWord}${managerWord}${jevWord}`
+      : `SEATS ${plan.seatCount} | cards ${plan.cardCount} | areas ${areas || "none named"}${repairWord}${repairClaimSentence}${rungWord}${managerWord}${jevWord}`,
   );
   /* ⚠ **AND THE REPAIRS THEMSELVES, ONE LINE EACH, OLDEST FIRST.** A count on
      the verdict line tells the runner there is work; these tell a person WHICH
@@ -1103,9 +1155,19 @@ if (!ARGS.flag("quiet")) {
      exactly the pass whose repairs would otherwise go unmentioned. */
   for (const repair of repairsReading.repairs) {
     const hours = (nowMs - Date.parse(repair.heldSince)) / 3_600_000;
+    /* The card this pull request is for, and whose hands are on it (#2769) — the
+       same fact the SEATS line carries, said at length because this line is read
+       by a person deciding whether to check the branch out. */
+    const read = repairClaims.find((row) => row.pullRequest === repair.pullRequest);
+    const cardWord = read === undefined || read.cards.length === 0
+      ? " | no open card named in its title"
+      : ` | card ${read.cards.map((card) => `#${card}`).join(", ")}`;
+    const claimWord = read?.claim == null
+      ? ""
+      : ` | ⚠ #${read.claim.card} CLAIMED by ${read.claim.seat ?? "a seat that did not name itself"} at ${read.claim.at}`;
     console.log(
       `REPAIR OWED | PR #${repair.pullRequest} | held ${Number.isFinite(hours) ? hours.toFixed(1) : "?"}h`
-      + ` | ${repair.headRefName || "no branch read"} | ${repair.title}`,
+      + ` | ${repair.headRefName || "no branch read"}${cardWord}${claimWord} | ${repair.title}`,
     );
   }
   if (repairsReading.undatable.length > 0) {
