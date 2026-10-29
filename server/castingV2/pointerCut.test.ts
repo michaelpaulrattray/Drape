@@ -408,6 +408,46 @@ describe("cutDiscovered — the two calls, and what is asked on each", () => {
     expect(out.regions).toEqual([]);
   });
 
+  /*
+    ⚠ THE THIRD REFUSAL — #2565 §4's quality bar, and this arm exists because
+    invariant 7 asks for a test that the control BLOCKS rather than one that it
+    is present. The two arms under it are the pair that keeps the bar honest:
+    a legitimately small thing is kept, and the bar's own number is what
+    decides, so a floor moved by somebody reddens all three.
+
+    The specimen is the shape the court measured: asked about a whole garment,
+    the segmenter returns a coherent fragment of it — "only the straps" — with
+    a plausible-looking mask. 60x600 inside a 600x600 rectangle is 10% fill,
+    which is the real known-bad's 8.2% to within a point.
+  */
+  it("drops a cut that fills almost none of the rectangle it was asked about", async () => {
+    const reader = readerWith({
+      detects: { jacket: [{ x: 60, y: 0, width: 600, height: 576 }] },
+      cuts: () => maskAt({ x: 300, y: 0, width: 60, height: 576 }),
+    });
+    const out = await cutDiscovered({ frame: FRAME, features: [feature("jacket")], reader });
+    expect(out.regions).toEqual([]);
+    /* Not silently lost: the name is still on the record as asked-and-uncut,
+       which is what keeps the call census honest about a call that was bought
+       and produced no row. */
+    expect(out.named.map((one) => one.noun)).toEqual(["jacket"]);
+  });
+
+  it("keeps a SMALL thing that fills its own small rectangle — the falsification arm", async () => {
+    /* The bar must not refuse a septum ring for being small. A real SAM cut of
+       a thin wire hoop fills 50.1% of its box (measured on the court's own
+       masks), and a compact nose stud 67.1–76.1%; both are far above the floor.
+       This arm is the one that would say so if a fill bar were the wrong
+       instrument for small worn things. */
+    const reader = readerWith({
+      detects: { "septum ring": [{ x: 100, y: 100, width: 20, height: 12 }] },
+      cuts: () => maskAt({ x: 102, y: 102, width: 14, height: 8 }),
+    });
+    const out = await cutDiscovered({ frame: FRAME, features: [feature("septum ring")], reader });
+    expect(out.regions).toHaveLength(1);
+    expect(out.named).toEqual([]);
+  });
+
   it("keeps a cut that merely overflows the rectangle", async () => {
     /* A real cut is rarely the detector's rectangle to the pixel, and growing
        past it is the segmenter doing its job — the jaw cell's whole-and-chin
@@ -1483,12 +1523,45 @@ describe("one ring, two names — the rectangle says what a thin cut's pixels ca
     expect(over.regions).toHaveLength(1);
   });
 
+  /*
+    ⚠ THE RING'S EDGE IS DRAWN TWO PIXELS THICK FOR THE END-TO-END ARM, AND THE
+    REASON IS MEASURED (2026-10-29, #2565 slice 2).
+
+    `edge` above is a ONE-pixel wireframe — 38 pixels inside a 20x10 rectangle,
+    which is **19% fill**. That is fine for the `settleByPlace` arms, which read
+    RECTANGLES and never pixels, and it was never meant to be a realistic mask:
+    this block's own comment records that the measured things on his crop were
+    the *rectangles* (17x12 and 20x11), and the pixel pattern is a stand-in.
+
+    The end-to-end arm goes through `cutDiscovered`, which since this slice
+    judges a cut against #2565 §4's quality bar — and a 19% fill sits under the
+    20% floor, so the wireframe was refused and the second name fell through to
+    `named` instead of joining the first's place. **The fixture's pixels were
+    the unrealistic half, not the bar**: driven over the court's real masks
+    (`scripts/_2565-cut-quality-cell-disposable.mts`), a REAL SAM cut of a thin
+    wire hoop earring — the same shape class as a septum ring, a mostly-empty
+    bounding box — fills **50.1%**, two and a half times the floor, while the
+    known-bad strap sliver reads 8.2% and is refused. A segmenter does not
+    return one-pixel wireframes.
+
+    So this arm alone gets a ring whose wire is two pixels rather than one (72
+    pixels, 36% fill). **`body` and `edge` are untouched**, so every
+    `settleByPlace` arm in this block keeps the exact fixture his eye's round-4
+    behaviour was verified on, and what this arm tests is unchanged: two nouns,
+    one host, one row.
+  */
+  const edgeAsSegmented = [
+    { x: 100, y: 109, width: 20, height: 2 },
+    { x: 100, y: 101, width: 2, height: 10 },
+    { x: 118, y: 101, width: 2, height: 10 },
+  ];
+
   it("through cutDiscovered: the second name for the ring is never drawn while the reading runs", async () => {
     const reader = readerWith({
       detects: { "nose ring": [{ x: 101, y: 100, width: 15, height: 10 }], "septum ring": [{ x: 100, y: 101, width: 20, height: 10 }] },
       cuts: (_box, name) => {
         const data = Buffer.alloc(FRAME.width * FRAME.height, 0);
-        for (const rect of name === "nose ring" ? body : edge) {
+        for (const rect of name === "nose ring" ? body : edgeAsSegmented) {
           for (let y = rect.y; y < rect.y + rect.height; y += 1) {
             for (let x = rect.x; x < rect.x + rect.width; x += 1) data[y * FRAME.width + x] = 255;
           }
