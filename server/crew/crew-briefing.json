@@ -1,7 +1,7 @@
 {
-  "edition": 772,
-  "updatedAt": "2026-10-29T11:34:11.000Z",
-  "shift": "ATTACH A PHOTO OF A JACKET AND SAY \"WEAR THIS JACKET\" — THE STUDIO CAN NOW FIND THAT JACKET AND CUT IT\nOUT CLEANLY. What it cannot do yet is hand the cut-out to the picture-maker, and that last step is\nblocked by a decision rather than by an afternoon's work. Nothing on your account changed tonight.\n\nYou told me to build this on the 29th. Here is exactly where it got to, in plain terms.\n\nWHAT WORKS NOW. The studio reads your own words to learn which thing you mean — it does not ask you to\npick from a menu, and it does not pay for a second reading to work it out, because that reading was\nalready happening. It finds that thing in your photograph, cuts it out, and takes any face in the\npicture out of the actual pixels, not just hides it. If the cut comes back broken it is thrown away and\nyour edit goes ahead from your words instead — that is last night's bar doing its job on a second road.\n\nWHAT IS BLOCKED, AND WHY IT IS NOT A SMALL THING. To hand a cut-out to the picture-maker, the studio\nhas to say which part of the character it belongs to. Clothing has no such part, on purpose: a decision\nfrom months ago says an outfit is something a character is WEARING rather than something they ARE, so a\nnew character made from them never inherits the costume. That decision is a good one and I am not going\nto quietly undo it to make tonight's work land. So the question — how a cut-out travels when the thing\nit shows is not a part of the body — goes to a design seat before any more of this is built.\n\nI also put a lock on the new setting so nobody can switch it on before that is answered. Without the\nlock, turning it on would pay to cut a jacket out of your photograph on every outfit edit and then\nthrow the cut away. The lock says so in its own words, and three separate checks all fail loudly if the\nshift that finishes this forgets to remove it.\n\nTWO THINGS THE PLAN SAID THAT THE CODE DISAGREED WITH, both checked rather than assumed. The plan said\nto file each cut-out in a particular table; that table can only hold two kinds of thing, neither of\nthem clothing, and nothing in the product has ever written to it — so the cut goes on the road the hair\nfeature already uses and already cleans up after. And one sentence the studio says to customers was\nabout to become untrue: \"I can't take the jacket from a picture yet\" is right today and wrong for\nanyone on the new road, so a refused cut now says \"your picture wasn't used this time\" instead.\n\nONE HONEST GAP WORTH KNOWING. Say \"give them the jacket and the boots from this\" and the studio takes\nthe jacket and says nothing about the boots. The plan promised it would ask you which you meant; that\nquestion is not built. I have written the gap down as a test so it cannot be forgotten.\n\nAlso tidied: a note on another job was waiting on something that finished this morning, so it was\ntelling every shift that read it to wait for nothing. Read at the code, the thing that finished fixed a\ndifferent road than that job needs, so the note now points at the real remaining question.\n\nSpent: nothing. No pictures made, no readings bought, none of your credits touched.\n\nWhere it sits right now: the work is on a pull request waiting for a review, because it touches the\npaid-edit road. Nothing of it is live.",
+  "edition": 773,
+  "updatedAt": "2026-10-29T13:48:54.000Z",
+  "shift": "THREE OF YOUR FACE-READER ROUNDS ARE FIXED AND LIVE, AND ALL THREE ARE NOW WAITING ON YOUR EYE — which\nthey were already doing silently, because none of them was asking you.\n\nWHAT IS FIXED. Round 7, the first creature: one pair of tusks is one row instead of two, the \"Brow\nridge\" row you could not make sense of is gone, and a strap's buckle and ring are part of the outfit\nrather than loose accessories. That merged tonight. Rounds 5 and 6 — the lip piercing and septum ring\ngetting their own rows, and the other earring getting a picture — went live earlier today.\n\nWHAT WAS WRONG WITH HOW THEY REACHED YOU. A card only appears in your \"needs you\" list if it carries a\nlabel saying it is held. Rounds 3 and 4 had one. Rounds 5, 6 and 7 did not — so all three sat looking\nlike ordinary queued work while the only thing left on each of them was you looking at it. All three\nnow carry it, each with a one-line question at the top, and I re-read them through the real page\nreader afterwards to check they actually draw.\n\nTHERE ARE FRAMES FOR THE CREATURE ONE, below. Before and after, both themes, nothing generated for\nthem — so the tusks question is a glance rather than a trip into the app. The other two still want a\nreal panel in front of you.\n\nONE THING I CHECKED AND DID NOT BUILD. A card says the studio silently loses a row when a reading's\nnetwork call drops, and asks for a retry. Before building it I counted how often that actually happens\non production: zero times in 38 readings over three weeks, on both roads. The card also points at an\nexisting retry elsewhere as the precedent to copy — that retry does not do what the card says it does.\nI wrote both findings onto the card with the measurements, recommended against the repair as written,\nand named the cheaper one that is actually missing. Nothing was spent finding this out.\n\nSpent: nothing. No pictures made, no readings bought, none of your credits touched.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-28T19:42:21.524Z",
+      "readAt": "2026-10-29T12:42:07.682Z",
       "items": [
         {
           "issueNumber": 30,
@@ -181,12 +181,6 @@
         {
           "issueNumber": 65,
           "title": "N3: the honest sentence at a words-only tattoo sale (his ruling) — the one deliverable left here",
-          "kind": "rung",
-          "rung": "N3"
-        },
-        {
-          "issueNumber": 1125,
-          "title": "The lock check and the unowned-axis sweep have no author-road equivalent — the verification does not travel with the road",
           "kind": "rung",
           "rung": "N3"
         },
@@ -4258,7 +4252,7 @@
         }
       ],
       "recommendation": "Fold it in. When a spotted thing covers a whole part we already name, that is the studio mis-cutting: it meant the piercing and cut the lips, so the named part is the one worth keeping.",
-      "state": "open",
+      "state": "done",
       "filedAt": "2026-10-28T16:08:36Z",
       "issueNumber": 2757
     }
@@ -7705,6 +7699,36 @@
           "key": "crew-eye/bbdfe4cd-a244-4200-8bf0-54119fd66329.png",
           "arm": "dark",
           "caption": "DARK THEME. The same three moments. The dots and name tags sit on the photograph itself so they read identically in both themes; the panel, chips and button follow the theme."
+        }
+      ]
+    },
+    {
+      "id": "face-reader-creature-tusks-2801",
+      "title": "The first creature: one pair of tusks is now one row, not two",
+      "question": "WHAT YOU ARE LOOKING AT. The same creature, the same panel, the same Teeth row tapped — before your round-7 fixes and after them. Nothing was generated for this: both sides were settled from readings already on record, so no picture was made and nothing was spent.\n\nWHAT YOU ASKED FOR. You said the tusks were split across a Teeth row and a separate Tusks row, that \"Brow ridge\" was a row you could not make sense of, and that a strap's buckle and ring were listed as accessories when they are part of the outfit.\n\nWHAT TO LOOK AT, IN ORDER.\n\n1. The picture itself. Before, tapping Teeth outlines ONE tusk. After, it outlines BOTH, labelled Teeth and Tusks.\n\n2. The right-hand panel. Before, there is a separate \"Tusks\" row sitting under \"Also on this character\". After, Teeth opens and Tusks sits inside it as its child, and the \"Also on this character\" section is gone.\n\n3. Both themes are here because the panel is yours to judge in either.\n\nWHAT THESE FRAMES CANNOT SHOW YOU, said plainly rather than left for you to find. The Brow ridge fix is real but invisible here: on the readings available, that cut already failed an earlier quality bar in BOTH arms, so the row is absent on both sides for a reason that is not the new rule. And on the reading where the buckle and ring move into the Outfit, those two were words-only, so no Buckle row exists in either picture. Both of those are proven by tests rather than by these frames — which is why the card still asks for your eye on a real creature panel in the app, not just on these two.",
+      "state": "open",
+      "filedAt": "2026-10-29",
+      "issueNumber": 2801,
+      "frames": [
+        {
+          "key": "crew-eye/9fcec291-1ce8-4b86-af6d-8a4363cbbf1a.png",
+          "arm": "Before — light",
+          "caption": "Teeth tapped. One tusk outlined. A separate \"Tusks\" row sits under \"Also on this character\" at the bottom of the panel. This is the panel you photographed."
+        },
+        {
+          "key": "crew-eye/8565ad73-dcad-4b06-a790-2d35a99b2829.png",
+          "arm": "After — light",
+          "caption": "Both tusks outlined, labelled Teeth and Tusks. The Teeth row now opens, with Tusks inside it. There is no \"Also on this character\" section and no second Tusks row."
+        },
+        {
+          "key": "crew-eye/190ca579-d5b9-4fb4-a3cd-8e2a32ec1350.png",
+          "arm": "Before — dark",
+          "caption": "The same before state in dark, so the comparison is honest in the theme you may be reading it in."
+        },
+        {
+          "key": "crew-eye/586518aa-4f5c-4f20-b1cc-f55cc93744cd.png",
+          "arm": "After — dark",
+          "caption": "The same after state in dark. The Teeth row opens to Tusks here exactly as it does in light."
         }
       ]
     }
@@ -11589,16 +11613,12 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-28T19:42:21.524Z",
+    "readAt": "2026-10-29T12:42:07.682Z",
     "items": [
       {
         "issueNumber": 14,
         "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — your eye on the mock (eye item `reference-selector-mock-14` on your Desk, both themes). The build design is written: `docs/specs/REFERENCE_SELECTOR_BUILD…"
-        }
+        "urgent": false
       },
       {
         "issueNumber": 1598,
@@ -11662,24 +11682,15 @@
       {
         "issueNumber": 2565,
         "title": "N3: Refine keeps what the customer chose — every edit from the original, one current description, and a saved picture of each chosen thing (his word 2026-10-16)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "its own slices 2–5 — only slice 1 has merged (#2571). Claimed and being built. Not his word."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 2566,
         "title": "N3: the face reader — read what is on the cast, cut only what is there, carry it across edits (his approve 2026-10-16, design on #2532)",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2576,
-        "title": "Follow: the words in the box carry the direction the edits took — visible before you press it (his word 2026-10-16)",
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "the relay's eye on the frames — nothing else, and not his word."
+          "because": "YOU — your eye on the panel frames in your eye gallery: are the rows and cut-outs right? Light first, then dark."
         }
       },
       {
@@ -11708,15 +11719,39 @@
       {
         "issueNumber": 2736,
         "title": "N3: take anything from a reference picture — attach a photo, say what to take (\"wear this jacket\"), read from the picture, never a list (his word 2026-10-28)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "YOU — your eye on tonight's court frames: build the photo-take road or stop? RECOMMENDATION: BUILD. Three strips are on your page."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 2752,
         "title": "N3 face reader, his eye round 2: no Build or Skin row, the collar into the Outfit, one row per mark, and the neck tattoo lost",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "card #2566 to pass your eye — its frames show this card's four corrections, so one look answers both."
+        }
+      },
+      {
+        "issueNumber": 2781,
+        "title": "N3 face reader, his eye round 3: the earring boxes span ear-to-nose, and the septum ring and lip piercing have no row",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — your eye on a fresh face panel. Your placement word is already in."
+        }
+      },
+      {
+        "issueNumber": 2796,
+        "title": "N3 face reader, his eye round 5: the lip-piercing row is the septum ring, and the real lip piercing has no row",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2800,
+        "title": "N3 face reader, his eye round 6: an earring on a visible ear has no picture, and two pair rows are drawn empty",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2801,
+        "title": "N3 face reader, his eye round 7 (first creature): tusks split across Teeth and Tusks, an unreadable Brow ridge row, and a strap's buckle and ring listed as accessories",
         "urgent": false
       }
     ]
