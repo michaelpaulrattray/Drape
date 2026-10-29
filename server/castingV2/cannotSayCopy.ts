@@ -777,6 +777,38 @@ export function attachedPictureUnusedNote(
 }
 
 /**
+ * WHAT WAS TAKEN OUT OF THEIR PICTURE — the take's receipt (#2736 slice 2, the
+ * step-0 design's §6, *"Piece taken"*).
+ *
+ * The only note in this family that reports something that WORKED, and it
+ * belongs here rather than beside a success banner for one reason: it rides the
+ * same list every other half-served ask is confessed in, so a render that took
+ * the jacket and could not reach half of the rest of the sentence says both
+ * things in one place and in one voice.
+ *
+ * ⚠ **IT QUOTES THEIR OWN WORD AND NEVER A CATALOGUE'S.** The noun comes off
+ * the cut itself (`TakenThing.noun`), which came off
+ * `theirNounForTheOneThingFiled` — a word they typed. `wall_stage`'s `asked`
+ * discipline, and the reason is the same: a product that answers *"took the
+ * outer garment"* when somebody typed *"jacket"* has told them about its own
+ * vocabulary.
+ *
+ * No engine, no pipeline word, no number, nothing about money — the owed-note
+ * family's standing rule, which this sentence is bound by even though it is
+ * good news.
+ *
+ * ⚠ **AND IT MAY BE INVISIBLE TODAY, WHICH IS NAMED RATHER THAN HOPED PAST.**
+ * Refine notes reaching a customer on production is #2713, and until that lands
+ * this sentence is composed and may never be read — the same limit the
+ * unused-picture note above carries, recorded in the design's own §6.
+ */
+export function thingTakenFromPictureNote(noun: string): string {
+  const said = noun.trim().toLowerCase();
+  const what = said.length > 0 ? `the ${said}` : "it";
+  return `Took ${what} from your picture.`;
+}
+
+/**
  * THE CLAUSE THAT STAYED BEHIND — what a take says when half the sentence named
  * the shoot and the reading dropped it in silence (#2695).
  *

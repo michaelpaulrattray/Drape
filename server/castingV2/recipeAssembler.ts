@@ -485,6 +485,45 @@ type SourceKind =
   | {
     pictures: "inkAsDelivered";
     change: InkTransform;
+  }
+  /**
+   * A NAMED THING, CUT OUT OF A PICTURE THE CUSTOMER ATTACHED (#2736 slice 2,
+   * on his word of 2026-10-29: *"BUILD IT"*).
+   *
+   * The open reference road's carrier: a jacket, a pair of horns, a prop the
+   * cast should hold — whatever the customer's own sentence named — alone on
+   * transparency, with the photograph it came from left behind.
+   *
+   * # THE NAME IS THE CONTAINMENT, and this member is named under that rule
+   *
+   * `thingOnTransparency` is literally what {@link cutThingFromPicture}
+   * produces: the thing in its own pixels, everything else alpha-zero, every
+   * detected face subtracted before the bytes were written. Named for the
+   * OBJECT and not for the feature, exactly as `inkDesignOnTransparency` is, so
+   * that the fence is legible in the type itself — **a member called
+   * `thingFromPhoto` would read as the violation it would be.** The uploaded
+   * photograph is not a member of this union and cannot become one by accident.
+   *
+   * # ⚠ IT IS NOT A FIFTH `REFERENCE_INTENTS` ROW, AND THAT IS HIS WORD
+   *
+   * 2026-10-28, verbatim: *"the selector should not be confined to a set list
+   * nothing should be confined to a set list thats the old way of doing things
+   * the new way is the image is analyzed and features are determined that
+   * way"*. So the thing's identity travels as its own `noun` — the CUSTOMER'S
+   * word for it, resolved from their sentence — and no catalogue is consulted
+   * to decide whether it may travel at all. `REFERENCE_INTENTS` gains no row
+   * and this road never reads it.
+   *
+   * The noun rides on the member rather than being taken from the ask's own
+   * noun, because the two can differ and only one of them is a promise about
+   * THESE BYTES: the ask's noun is what the slot is called, and this is what was
+   * actually cut. A sentence describing a jacket over a cut of something else is
+   * the one failure a carrier's own description exists to make impossible.
+   */
+  | {
+    pictures: "thingOnTransparency";
+    /** The customer's own word for what was cut. Never a catalogue's word. */
+    noun: string;
   };
 
 export type RecipeSource = SourceKind & {
@@ -1322,6 +1361,36 @@ function sourceSentence(
     */
     case "inkAsDelivered":
       return inkDeliveredTransformSentence(ordinal, noun, pronouns, source.change);
+    /*
+      THE THING, AND NOTHING ELSE THAT WAS IN ITS PICTURE (#2736 slice 2).
+
+      The ink arm's proven discipline, pointed at an open noun: the picture is
+      described as what it IS, and the part which is NOT the instruction is said
+      out loud. That second half is not manners — the scale arm measured that
+      describing the grey form and explicitly excluding it is part of what made
+      the hair instruction land, and the transparent background is the same fact
+      about a different picture.
+
+      ⚠ **"with nothing else from the picture it came from" is a TRUE sentence
+      here and it is load-bearing that it stays true.** It is the likeness
+      fence spoken to the engine, and what makes it honest is
+      {@link cutThingFromPicture}'s bytes: the mask decides every pixel and
+      every detected face is zeroed before the crop is written. A road that ever
+      sent the photograph itself would make this sentence a lie, which is why
+      the member is named for the object.
+
+      It says nothing about WHAT TO DO with the thing. That is the required
+      `scope` sentence's job ({@link RecipeSource.scope}), composed by the owner
+      that knows the ask — a jacket to wear, horns to have, a prop to hold are
+      three different instructions about one kind of picture.
+    */
+    case "thingOnTransparency":
+      return [
+        `Reference ${ordinal} is the ${source.noun} supplied for this edit:`,
+        "it is that item alone on a transparent background, with nothing else from the",
+        "picture it came from. The transparent area is NOT part of the instruction — it is",
+        "there only so the item's own shape, cut and edges are unambiguous.",
+      ].join(" ");
   }
 }
 

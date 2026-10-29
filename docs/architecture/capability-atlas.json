@@ -32,7 +32,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2774"
+          "server/castingV2/refineService.ts:2793"
         ]
       },
       {
@@ -42,7 +42,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1385"
+          "server/castingV2/refineService.ts:1404"
         ]
       },
       {
@@ -66,7 +66,7 @@
           "server/castingV2/voiceCache.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:5169",
+          "server/castingV2/refineService.ts:5188",
           "server/castingV2/rollEngine.ts:122",
           "server/castingV2/rollEngine.ts:134"
         ]
@@ -78,7 +78,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1367"
+          "server/castingV2/refineService.ts:1386"
         ]
       },
       {
@@ -200,7 +200,7 @@
           "server/castingV2/refineDelta.ts:891",
           "server/castingV2/refineDelta.ts:2233",
           "server/castingV2/refineDelta.ts:2233",
-          "server/castingV2/refineService.ts:2623"
+          "server/castingV2/refineService.ts:2642"
         ]
       },
       {
@@ -232,8 +232,8 @@
           "server/castingV2/refineDelta.ts:864",
           "server/castingV2/refineDelta.ts:2210",
           "server/castingV2/refineDelta.ts:2210",
-          "server/castingV2/refineService.ts:2622",
-          "server/castingV2/refineService.ts:2634"
+          "server/castingV2/refineService.ts:2641",
+          "server/castingV2/refineService.ts:2653"
         ]
       },
       {
@@ -257,7 +257,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3132"
+          "server/castingV2/refineService.ts:3151"
         ]
       },
       {
@@ -267,7 +267,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3906"
+          "server/castingV2/refineService.ts:3925"
         ]
       },
       {
@@ -312,7 +312,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1374"
+          "server/castingV2/refineService.ts:1393"
         ]
       },
       {
@@ -424,7 +424,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4646"
+          "server/castingV2/refineService.ts:4665"
         ]
       },
       {
@@ -447,7 +447,7 @@
           "server/castingV2/refusalTag.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3603"
+          "server/castingV2/refineService.ts:3622"
         ]
       },
       {
@@ -457,7 +457,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3584"
+          "server/castingV2/refineService.ts:3603"
         ]
       },
       {
@@ -467,7 +467,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3741"
+          "server/castingV2/refineService.ts:3760"
         ]
       },
       {
@@ -477,8 +477,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3361",
-          "server/castingV2/refineService.ts:3378"
+          "server/castingV2/refineService.ts:3380",
+          "server/castingV2/refineService.ts:3397"
         ]
       },
       {
@@ -488,7 +488,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:4616"
+          "server/castingV2/refineService.ts:4635"
         ]
       },
       {
@@ -498,7 +498,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:3175"
+          "server/castingV2/refineService.ts:3194"
         ]
       },
       {
@@ -579,7 +579,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:5142"
+          "server/castingV2/refineService.ts:5161"
         ]
       },
       {
@@ -589,8 +589,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1455",
-          "server/castingV2/refineService.ts:1493"
+          "server/castingV2/refineService.ts:1474",
+          "server/castingV2/refineService.ts:1512"
         ]
       },
       {
@@ -642,7 +642,7 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:2820"
+          "server/castingV2/refineService.ts:2839"
         ]
       },
       {
@@ -778,8 +778,8 @@
           "server/castingV2/refineService.test.ts"
         ],
         "sites": [
-          "server/castingV2/refineService.ts:1361",
-          "server/castingV2/refineService.ts:2746"
+          "server/castingV2/refineService.ts:1380",
+          "server/castingV2/refineService.ts:2765"
         ]
       },
       {
@@ -943,6 +943,7 @@
       "CASTING_INK_TRANSFORM_SCOPE",
       "CASTING_OUTFIT_EDIT_SCOPE",
       "CASTING_REFERENCE_ATTACH_SCOPE",
+      "CASTING_REFERENCE_TAKE_SCOPE",
       "CASTING_RETRY_SCOPE",
       "CASTING_ROLL_ENGINE_SCOPE",
       "CASTING_SCAN_TABLE_SCOPE",
@@ -3587,7 +3588,7 @@
       "severity": "warn",
       "kind": "drive-profile-drift",
       "subject": "fixture-as-founder",
-      "message": "this census was driven under a different product than the next drive would measure — the table records no date — it was taken before a drive wrote one; 10 flag(s) the next drive would OPEN for the first time (CASTING_BORN_INK_SCOPE, CASTING_BRIEF_FIDELITY_SCOPE, CASTING_CONCEPT_UPLOAD_SCOPE, CASTING_CREATION_RECORD_SCOPE, CASTING_CURRENT_DESCRIPTION_SCOPE, CASTING_FACE_DISCOVERY_SCOPE, CASTING_OUTFIT_EDIT_SCOPE, CASTING_RETRY_SCOPE, CASTING_ROLL_ENGINE_SCOPE, CASTING_VOICE_SCOPE); 9 the tree no longer declares (CASTING_INK_WORDS_SCOPE, CASTING_OPEN_LANE_SCOPE, CASTING_REFERENCE_LIBRARY_SCOPE, CASTING_REFINE_DISPATCH_SCOPE, CASTING_REPAINT_SCOPE, CASTING_SEGMENTS_DELIVERED_SCOPE, CASTING_SEGMENTS_SCOPE, CASTING_SIDE_PHRASING_SCOPE, CASTING_TWO_PATHS_SCOPE). A corpus row's expectation and a road's prose describing \"the flag-off reading\" may both be true of this table and false of the next one — read this before reading any belief-mismatch or route-changed finding a drive produces"
+      "message": "this census was driven under a different product than the next drive would measure — the table records no date — it was taken before a drive wrote one; 11 flag(s) the next drive would OPEN for the first time (CASTING_BORN_INK_SCOPE, CASTING_BRIEF_FIDELITY_SCOPE, CASTING_CONCEPT_UPLOAD_SCOPE, CASTING_CREATION_RECORD_SCOPE, CASTING_CURRENT_DESCRIPTION_SCOPE, CASTING_FACE_DISCOVERY_SCOPE, CASTING_OUTFIT_EDIT_SCOPE, CASTING_REFERENCE_TAKE_SCOPE, CASTING_RETRY_SCOPE, CASTING_ROLL_ENGINE_SCOPE, CASTING_VOICE_SCOPE); 9 the tree no longer declares (CASTING_INK_WORDS_SCOPE, CASTING_OPEN_LANE_SCOPE, CASTING_REFERENCE_LIBRARY_SCOPE, CASTING_REFINE_DISPATCH_SCOPE, CASTING_REPAINT_SCOPE, CASTING_SEGMENTS_DELIVERED_SCOPE, CASTING_SEGMENTS_SCOPE, CASTING_SIDE_PHRASING_SCOPE, CASTING_TWO_PATHS_SCOPE). A corpus row's expectation and a road's prose describing \"the flag-off reading\" may both be true of this table and false of the next one — read this before reading any belief-mismatch or route-changed finding a drive produces"
     },
     {
       "id": "not-driven:ref.hair.whole",

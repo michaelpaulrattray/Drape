@@ -267,6 +267,13 @@ ${row}`,
       "TWENTY-NINE": 29, THIRTY: 30, "THIRTY-ONE": 31, "THIRTY-TWO": 32,
       "THIRTY-THREE": 33, "THIRTY-FOUR": 34, "THIRTY-FIVE": 35, "THIRTY-SIX": 36,
       "THIRTY-SEVEN": 37, "THIRTY-EIGHT": 38, "THIRTY-NINE": 39, FORTY: 40,
+      /* The run continues past the current count on purpose, which is this
+         table's own convention — THIRTY-ONE through THIRTY-NINE were all here
+         before they were needed. A word missing is a RED with a clear message
+         (the arm says to add it), so the spares cost nothing and save a shift
+         discovering the gap mid-flag. */
+      "FORTY-ONE": 41, "FORTY-TWO": 42, "FORTY-THREE": 43, "FORTY-FOUR": 44,
+      "FORTY-FIVE": 45,
     };
     const stated = WORDS[sentence![1]!];
     expect(

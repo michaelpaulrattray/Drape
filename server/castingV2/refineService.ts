@@ -63,6 +63,7 @@ import {
 } from "./refineRecovery";
 import {
   captureCastingCurrentDescriptionEnabled, captureCastingOutfitEditEnabled,
+  captureCastingReferenceTakeEnabled,
 } from "./castingV2Scope";
 import { writeCurrentDescription } from "./currentDescription";
 import { interpreterEngine } from "./interpreter";
@@ -160,6 +161,11 @@ import {
 } from "./referenceWordsLane";
 import { cutHairCarrier, mintHairCarrier, SECOND_VIEW_UNUSED_NOTE } from "./hairReferenceCutter";
 import { hairTakeClaims, hairTakeEntry, hairTakeSentence, resolveHairTake } from "./hairReferenceTake";
+import {
+  cutThingFromPicture,
+  mintTakeCut,
+  takeScopeSentence,
+} from "./referenceTake";
 import {
   inkAskAddressOf,
   inkAskIntents,
@@ -279,6 +285,7 @@ import { refineRefundDescription } from "./refineRefundLedger";
 import { inkSlotOfPhrase, slotsOfPrunedStep } from "./prunedSlots";
 import {
   attachedPictureUnusedNote, cannotSaySentence, likenessSetAsideNote, owedSentences,
+  thingTakenFromPictureNote,
   sceneryLeftOutNote, type AttachedPictureUnused, type CannotSayReason,
 } from "./cannotSayCopy";
 /* The prior question — is this ask about ink she already has, and does she
@@ -839,6 +846,18 @@ export type RefineServiceDependencies = {
    * able to say so without setting a process-wide variable.
    */
   outfitEditEnabled?: (userId: number) => boolean;
+  /**
+   * `CASTING_REFERENCE_TAKE_SCOPE` — whether a named thing may be taken out of
+   * an attached picture (#2736 slice 2). Injectable for the same reason as its
+   * siblings: the arm proving the flag OFF leaves today road byte-identical, and
+   * the arm driving a take into a recipe, both have to be able to say so without
+   * setting a process-wide variable.
+   */
+  referenceTakeEnabled?: (userId: number) => boolean;
+  /** The take own cutter, injectable so an arm can drive it with no provider. */
+  cutThing?: typeof cutThingFromPicture;
+  /** The take mint, injectable so an arm never writes a manifest or an object. */
+  mintTake?: typeof mintTakeCut;
   /**
    * `CASTING_INK_TRANSFORM_SCOPE` — whether she may change a tattoo she
    * already has. Injectable for the same reason as its siblings: the arm that
@@ -5952,6 +5971,128 @@ async function refineCandidateCounted(
   }
 
   /*
+    TAKE A NAMED THING OUT OF THE PICTURE — #2736 slice 2, on his word of
+    2026-10-29 (*"BUILD IT"*), behind `CASTING_REFERENCE_TAKE_SCOPE`.
+
+    His own test is what this answers: he attached a picture of an outfit, typed
+    the edit, and the picture was set aside — *"the reference image didnt work
+    ( not sure if we have even built this pipeline yet correctly)"*. It had not
+    been built, and this is it.
+
+    It sits HERE, after the hair and ink roads and before the claim, and both
+    halves of that are deliberate:
+
+      after      the picture can only become ONE thing. The hair and ink roads
+                 are older, each has its own flag and its own court, and a
+                 picture either of them took is already accounted for — so this
+                 road asks only about a picture nothing else claimed. The
+                 condition is written out rather than left to siting, because
+                 siting is exactly how the hair road once came to be gated by
+                 the wrong flag (fable-1163 §2).
+      before     every refusal is FREE. A picture this road cannot use costs
+                 nothing and changes nothing: the edit rides on words exactly as
+                 it did before this road existed, and the picture is confessed
+                 as unused through the same note every other half-served ask is
+                 confessed in.
+
+    ⚠ **THE NOUN IS NOT RESOLVED HERE AND NOTHING NEW IS BOUGHT FOR IT.**
+    `theirNounForTheOneThingFiled` is the customer's own word for the one thing
+    this edit filed; it was already on this request, reading the delta the parse
+    already produced, and it is already what words the unused-picture note one
+    branch below. `null` means the sentence named more than one thing or none
+    the product has a word for — and an unreadable noun is not a guess, exactly
+    as an unreadable hair take is not: it falls through as an unused picture.
+
+    ⚠ **AND THE TAKE RIDES WHAT #2544 OPENED RATHER THAN WIDENING IT.** The only
+    subject slice 2 serves is `wardrobe`, and `outfitEditServed` is the SAME
+    reading of `CASTING_OUTFIT_EDIT_SCOPE` the interpreter was given — one
+    reading, not a second capture of one flag. With clothing unserved the ask
+    never files a wardrobe subject in the first place, so this gate is the belt
+    to that braces: it means a take can never be the thing that puts a garment
+    edit past the stage wall.
+  */
+  let takeSource: { key: string; sha: string; scope: string; noun: string } | null = null;
+  /*
+    ⚠ THE TAKE ROAD WAS OPEN, THE ASK WAS ONE IT SERVES, AND THE PICTURE STILL
+    DID NOT GIVE THE THING UP — and this variable exists because MY OWN CHANGE
+    would otherwise have made a shipped sentence lie.
+
+    `attachedPictureUnusedNote`'s `unservable` branch says *"I can't take the
+    jacket from a picture yet"*, and its docblock names the founder's own
+    2026-10-28 test as the case it was written for: *"No reference road takes
+    clothing, so the picture went unused."* That was true of the whole product
+    until this slice. For an account inside `CASTING_REFERENCE_TAKE_SCOPE` the
+    road DOES take clothing — so a take that was attempted and refused must not
+    be confessed with a sentence saying the capability does not exist. It is the
+    hair road's `untaken` wording, which is true of both: *"Your picture wasn't
+    used this time — the change went ahead from your words."*
+
+    Set only where a cut was genuinely ATTEMPTED. A sentence this road does not
+    serve at all (no readable noun, no wardrobe facet, clothing unserved) is
+    still `unservable`, and for those accounts the old sentence is still exactly
+    true.
+  */
+  let takeAskedButNotTaken = false;
+  const takeRoadOpen = reference !== null
+    && hairSource === null
+    && inkSource === null
+    && (dependencies.referenceTakeEnabled ?? captureCastingReferenceTakeEnabled)(input.userId);
+  if (reference && takeRoadOpen) {
+    const theirNoun = theirNounForTheOneThingFiled(editDelta, instruction);
+    /* The subjects this road serves today. One, and it is the one he tried. */
+    const wardrobeFiled = editDelta !== null && editDelta !== undefined
+      && Array.from(facetsWrittenBy(editDelta)).includes(facetOfSubject("wardrobe"));
+    if (theirNoun === null || !wardrobeFiled || !outfitEditServed) {
+      log.info(
+        {
+          userId: input.userId,
+          candidate: input.candidatePublicId,
+          theirNoun,
+          wardrobeFiled,
+          outfitEditServed,
+        },
+        "[refineService] the take road is open and this ask is not one it serves — nothing cut, nothing spent",
+      );
+    } else {
+      const attached = await (dependencies.readBytes ?? storageReadBytes)(reference.storageKey);
+      const taken = await (dependencies.cutThing ?? cutThingFromPicture)({
+        bytes: attached.bytes,
+        noun: theirNoun,
+        reader: dependencies.regions ?? defaultRegionReader(),
+        about: { userId: input.userId, candidatePublicId: input.candidatePublicId },
+      });
+      if (!taken.ok) {
+        /* Not a failure of theirs and not free-of-charge news either: the
+           picture is confessed below, in the same list every other half-served
+           ask travels in. The `why` is in the log for the refusal rate the card
+           asks for; it is deliberately NOT a new customer sentence in this
+           slice — §6's ask-backs are named on the card as owed. */
+        takeAskedButNotTaken = true;
+        log.info(
+          { userId: input.userId, candidate: input.candidatePublicId, noun: theirNoun, why: taken.why },
+          "[refineService] the picture could not give up that thing — the edit rides on words",
+        );
+      } else {
+        const minted = await (dependencies.mintTake ?? mintTakeCut)({
+          userId: input.userId, thing: taken.thing,
+        });
+        /* THE FACTS THIS TAKE TOOK FROM THEIR PICTURE — see
+           `pictureSourcedSubjects` above. So a Follow never inherits an
+           identity line naming a photograph nothing downstream holds. */
+        pictureSourcedSubjects.push("wardrobe");
+        takeSource = {
+          key: minted.key,
+          sha: minted.sha,
+          noun: taken.thing.noun,
+          /* The CAST's pronouns, read the same way every other sentence in this
+             render reads them — the scope is spoken in front of their own face. */
+          scope: takeScopeSentence(taken.thing.noun, pronounsForSex(currentIdentity?.sex)),
+        };
+      }
+    }
+  }
+
+  /*
     DID THE ATTACHED PICTURE GET USED, AND IF NOT, WHY (#2713).
 
     DERIVED from the only two things an attached picture can become on this
@@ -5973,9 +6114,21 @@ async function refineCandidateCounted(
   const pictureUnused: AttachedPictureUnused | null = reference !== null
     && hairSource === null
     && inkSource === null
+    /*
+      ⚠ AND THE THIRD THING A PICTURE CAN NOW BECOME (#2736 slice 2). This
+      predicate is DERIVED from the things a take can turn into, which is why
+      adding a road means adding a term here rather than setting a flag at each
+      exit — the hand-set form missed a road once and told the founder his
+      tattoo picture was ignored on the very render that drew it.
+    */
+    && takeSource === null
     ? (!pointedAtThePicture
       ? { asked: "nothing" }
-      : hairAskedButNotTaken
+      /* ⚠ EITHER ROAD THAT TRIED COUNTS AS `untaken` (#2736 slice 2) — see
+         `takeAskedButNotTaken`'s own note. `unservable` says the capability
+         does not exist, and for an account inside the take flag whose cut was
+         refused that sentence is false. */
+      : hairAskedButNotTaken || takeAskedButNotTaken
         ? { asked: "untaken" }
         : { asked: "unservable", theirNoun: theirNounForTheOneThingFiled(editDelta, instruction) })
     : null;
@@ -6432,6 +6585,12 @@ async function refineCandidateCounted(
          pointed at the picture for something no road takes is told that, not
          that it asked for nothing. */
       pictureUnused ? attachedPictureUnusedNote(pictureUnused) : null,
+      /* AND WHAT THE PICTURE DID GIVE UP (#2736 slice 2) — the one note in this
+         list that reports something that worked, said in their own word. It sits
+         beside the unused note on purpose: exactly one of the two can ever be
+         composed for a given render, because `pictureUnused` carries
+         `takeSource === null` as a term. */
+      takeSource ? thingTakenFromPictureNote(takeSource.noun) : null,
       /* And the second view of a two-panel reference, said plainly rather than
          dropped in silence (ruled fable-1093 §1). */
       secondViewNote,
@@ -7766,6 +7925,59 @@ async function refineCandidateCounted(
                 /* His 1048 amendment, reaching the engine — required by the
                    type, so this line cannot go missing quietly again. */
                 scope: hairSource.scope,
+              }],
+            };
+          })()
+          : {}),
+        /*
+          AND THE NAMED THING CUT OUT OF THE PICTURE (#2736 slice 2).
+
+          The ink and hair sources' shape, clause for clause, and the slot comes
+          off the ASK LIST for their identical reason: the assembler refuses a
+          source naming a slot no ask names, and that refusal throws into the
+          refund. Here the agreement is structural — the pre-claim road only
+          minted a take because the delta filed the WARDROBE facet, and that is
+          the same facet this lookup reads the slot from.
+
+          ⚠ **IT SITS LAST AND THAT IS SAFE BECAUSE IT IS EXCLUSIVE, NOT BECAUSE
+          IT IS LAST.** These are object spreads of one `sources` key, so a
+          second non-empty one would silently overwrite the first. `takeSource`
+          is non-null only where `hairSource` and `inkSource` are both null (the
+          take road's own condition, written out at the branch), so at most one
+          of the three spreads ever carries a key. A fourth road added here must
+          either prove the same exclusivity or build one array — and if it does
+          neither, the picture that loses is silent.
+
+          IT DROPS RATHER THAN REFUSING, like the hair carrier and unlike the
+          transform: a dropped take renders the outfit from the customer's own
+          words, which is exactly what today's road does and is no worse than
+          the state before this slice. A loud log, because two derivations
+          disagreeing is a defect of ours.
+        */
+        ...(takeSource
+          ? (() => {
+            const wardrobeSlot = slotsForFacet(facetOfSubject("wardrobe"))[0]?.slot ?? null;
+            const slot = asks.asks
+              .map((ask) => ask.slot)
+              .find((candidate) => candidate === wardrobeSlot);
+            if (slot === undefined) {
+              log.error(
+                { operationId, variant: variant.publicId, slots: asks.asks.map((ask) => ask.slot) },
+                "[refineService] a thing was taken for an ask whose recipe names no wardrobe slot — dropping it rather than sending a reference nothing says anything about",
+              );
+              return {};
+            }
+            return {
+              sources: [{
+                slot,
+                image: { key: takeSource.key, sha: takeSource.sha },
+                pictures: "thingOnTransparency" as const,
+                /* The customer's own word for what was cut — carried on the
+                   member so the sentence describes THESE bytes. */
+                noun: takeSource.noun,
+                /* Required by the type, so it cannot go missing quietly: what
+                   this picture may give them, composed by the take's owner. */
+                scope: takeSource.scope,
               }],
             };
           })()
