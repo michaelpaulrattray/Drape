@@ -25,6 +25,7 @@ import {
   DISCOVERED_SLOT_PREFIX,
   catalogueCutsOf,
   catalogueRowOf,
+  unDrawnCutsOf,
   coveredByCatalogue,
   cutDiscovered,
   discoveredSlotOf,
@@ -2013,5 +2014,85 @@ describe("the first creature — one pair of tusks, and a body part lying on oth
     const cut = await cutDiscovered({ frame: FRAME, features: [tusks], reader, catalogue: async () => [teeth, lips] });
     expect(cut.regions.map((region) => [region.noun, region.box.x, region.on])).toEqual([["tusks", 300, "teeth"]]);
     expect(cut.named.map((one) => one.noun)).not.toContain("tusks");
+  });
+});
+
+describe("a body part cut as the whole face is not a part of it (#2810, his eye round 8)", () => {
+  /*
+    The measured shape on the founder's creature (1024 wide): the reading's
+    `snout`, cut inside a box round the whole head, holds 0.987 of the scan's
+    own face-skin cut and the face skin is 0.798 of it — the same place by the
+    module's majority rule. The Nose cut is a small part of it, which is why
+    the fold into Nose could not see it.
+  */
+  const faceSkinBox = { x: 200, y: 100, width: 300, height: 360 };
+  const snoutBox = { x: 190, y: 60, width: 320, height: 400 };
+  const noseBox = { x: 320, y: 260, width: 60, height: 60 };
+  const faceSkin: CatalogueCut = { slot: "skin" as never, group: "body", question: "face skin", box: faceSkinBox, mask: maskAt(faceSkinBox) };
+  const nose: CatalogueCut = { slot: "nose" as never, group: "face", question: "nose", box: noseBox, mask: maskAt(noseBox) };
+  const snout = feature("snout", 1, { kind: "anatomy", on: "" });
+
+  it("the snout cut as the whole face gets no row, and keeps its words", async () => {
+    const reader = readerWith({ detects: { snout: [snoutBox] } });
+    const cut = await cutDiscovered({
+      frame: FRAME,
+      features: [snout],
+      reader,
+      catalogue: async () => [nose],
+      unDrawn: async () => [faceSkin],
+    });
+    expect(cut.regions).toEqual([]);
+    expect(cut.named.map((one) => [one.noun, one.why])).toEqual([["snout", "uncut"]]);
+  });
+
+  it("CONTROL — the same cut with no face-skin cut to judge it by is drawn, as before", async () => {
+    const reader = readerWith({ detects: { snout: [snoutBox] } });
+    const cut = await cutDiscovered({ frame: FRAME, features: [snout], reader, catalogue: async () => [nose] });
+    expect(cut.regions.map((region) => region.noun)).toEqual(["snout"]);
+  });
+
+  it("CONTROL — a real snout, a part of the face, is drawn beside the rule", async () => {
+    const muzzleBox = { x: 290, y: 240, width: 120, height: 140 };
+    const reader = readerWith({ detects: { snout: [muzzleBox] } });
+    const cut = await cutDiscovered({
+      frame: FRAME,
+      features: [snout],
+      reader,
+      catalogue: async () => [nose],
+      unDrawn: async () => [faceSkin],
+    });
+    expect(cut.regions.map((region) => region.noun)).toEqual(["snout"]);
+  });
+
+  it("CONTROL — a worn mask cut as the face is a thing the cast wears, and keeps its row: body parts only", async () => {
+    const reader = readerWith({ detects: { mask: [snoutBox] } });
+    const cut = await cutDiscovered({
+      frame: FRAME,
+      features: [feature("mask", 1, { kind: "accessory", on: "face" })],
+      reader,
+      catalogue: async () => [nose],
+      unDrawn: async () => [faceSkin],
+    });
+    expect(cut.regions.map((region) => region.noun)).toEqual(["mask"]);
+  });
+
+  it("the un-drawn places are the catalogue's own no-row slots, never the rows a found thing folds into", () => {
+    const boxes = new Map<never, PointerBox>();
+    const masks = new Map<never, Mask>();
+    for (const entry of scanPlan()) {
+      for (const definition of entry.slots) {
+        boxes.set(definition.slot as never, faceSkinBox);
+        masks.set(definition.slot as never, maskAt(faceSkinBox));
+      }
+    }
+    const unDrawn = unDrawnCutsOf({ boxes, masks }).map((one) => one.slot);
+    const rows = catalogueCutsOf({ boxes, masks }).map((one) => one.slot);
+    const expected = catalogueSlots()
+      .filter((one) => one.noRowOnDiscovery !== undefined
+        && scanPlan().some((entry) => entry.slots.some((asked) => asked.slot === one.slot)))
+      .map((one) => one.slot);
+    expect(unDrawn).toContain("skin");
+    expect([...unDrawn].sort()).toEqual([...expected].sort());
+    expect(rows.filter((slot) => unDrawn.includes(slot))).toEqual([]);
   });
 });

@@ -1205,6 +1205,43 @@ describe("what a discovery's names become", () => {
     expect(with_.discovered).toHaveLength(1);
   });
 
+  /*
+    #2810, his eye round 8: a `snout` cut as the whole head drew a Snout row
+    beside Nose. The scan's own face-skin cut is what says it is the face, so
+    this arm drives that cut through the real scan into the pointer road.
+  */
+  it("a body part cut as the whole face gets no row — the scan's own face-skin cut says so (#2810)", async () => {
+    const face = { x: 100, y: 200, width: 400, height: 500 };
+    const reader = pointingReader({ snout: [face], muzzle: [{ x: 250, y: 450, width: 100, height: 80 }] });
+    const asked = reader.region.bind(reader);
+    (reader as any).region = async (input: { name: string }) => (input.name === "face skin" ? maskOf(face) : asked(input as never));
+    const { deps } = await dependencies(reader);
+
+    const reading = await scannedFace({
+      ...FACE,
+      dependencies: { ...deps, discover: async () => discoveryOf([{ name: "snout", count: 1 }, { name: "muzzle", count: 1 }]) },
+    });
+
+    expect(reading.discovered.map((one) => one.noun)).toEqual(["muzzle"]);
+    expect(panelScanOf(reading).namedNotCut?.map((one) => [one.noun, one.why])).toEqual([["snout", "uncut"]]);
+  });
+
+  it("CONTROL — the same snout beside a face-skin cut somewhere else is drawn", async () => {
+    const face = { x: 100, y: 200, width: 400, height: 500 };
+    const reader = pointingReader({ snout: [face] });
+    const asked = reader.region.bind(reader);
+    (reader as any).region = async (input: { name: string }) =>
+      (input.name === "face skin" ? maskOf({ x: 600, y: 900, width: 200, height: 200 }) : asked(input as never));
+    const { deps } = await dependencies(reader);
+
+    const reading = await scannedFace({
+      ...FACE,
+      dependencies: { ...deps, discover: async () => discoveryOf([{ name: "snout", count: 1 }]) },
+    });
+
+    expect(reading.discovered.map((one) => one.noun)).toEqual(["snout"]);
+  });
+
   it("a reading whose pointer road fails is the reading it would have been anyway", async () => {
     const reader = pointingReader({});
     (reader as any).pointer = async () => { throw new MaskError("429 concurrent_requests_limit"); };

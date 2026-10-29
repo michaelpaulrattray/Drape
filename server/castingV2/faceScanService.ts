@@ -72,6 +72,7 @@ import { discoverFeatures, discoveryCropsOf, type FaceDiscovery, type FeatureKin
 import { keepScan, serveKeptScan, type KeptScanShape } from "./keptFaceScan";
 import {
   catalogueCutsOf,
+  unDrawnCutsOf,
   cutDiscovered,
   type CatalogueCut,
   type DiscoveredRegion,
@@ -839,8 +840,13 @@ export async function scannedFace(input: {
       waits for the catalogue before it is drawn — rows appear whole or not at
       all.
     */
-    let settleCatalogue: (cuts: readonly CatalogueCut[] | null) => void = () => {};
-    const catalogueLanded = new Promise<readonly CatalogueCut[] | null>((resolve) => {
+    let settleCatalogue: (
+      cuts: { rows: readonly CatalogueCut[]; unDrawn: readonly CatalogueCut[] } | null,
+    ) => void = () => {};
+    /* The rows a found cut may fold into, and the places the panel draws no row
+       for (#2810) — one scan, so one settle: the two can never disagree about
+       which reading they came from. */
+    const catalogueLanded = new Promise<{ rows: readonly CatalogueCut[]; unDrawn: readonly CatalogueCut[] } | null>((resolve) => {
       settleCatalogue = resolve;
     });
     /*
@@ -870,7 +876,8 @@ export async function scannedFace(input: {
             },
             features: discovery.features,
             reader,
-            catalogue: () => catalogueLanded,
+            catalogue: () => catalogueLanded.then((cuts) => cuts?.rows ?? null),
+            unDrawn: () => catalogueLanded.then((cuts) => cuts?.unDrawn ?? null),
             /* Each found row onto the partial as it lands, for the catalogue
                rows' own reason: a reading that takes forty seconds must look
                like a reading that is working. `fileToPartial` is shared with
@@ -934,7 +941,7 @@ export async function scannedFace(input: {
           });
         },
       });
-      settleCatalogue(catalogueCutsOf(scan));
+      settleCatalogue({ rows: catalogueCutsOf(scan), unDrawn: unDrawnCutsOf(scan) });
     } catch (error) {
       /* Nothing to compare a found cut with: the pointer road folds nothing and
          draws no row the product's word placed. The read rejects either way. */
