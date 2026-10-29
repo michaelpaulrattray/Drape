@@ -1236,3 +1236,95 @@ describe("the pointer road's calls are countable, and carry no customer's noun",
     expect(census.byAbout[askedAs("left eye")]?.calls).toBe(1);
   });
 });
+
+/**
+ * A REGION THAT IS SEVERAL THINGS IS ASKED FOR ALL OF THEM (#2810, his eye
+ * round 8: *"teeth highlighted his tooth/tusk thing"*).
+ *
+ * The measured shape, pinned: asked the one-instance way, SAM 3 answers its
+ * best instance only — on the founder's creature, ONE tusk — and asked for
+ * several on the same call it answers both tusks. The fake answers exactly
+ * that, so the arm can tell the two requests apart by what comes back, and
+ * the assertion is on the OUTGOING body (working law 5) as well as on the mask.
+ */
+describe("a region that is several separate things", () => {
+  const WIDTH = 40;
+  const HEIGHT = 20;
+  const LEFT_TUSK = (x: number, y: number) => x >= 5 && x < 10 && y >= 5 && y < 15;
+  const RIGHT_TUSK = (x: number, y: number) => x >= 30 && x < 35 && y >= 5 && y < 15;
+
+  async function frame(): Promise<Buffer> {
+    return sharp({ create: { width: WIDTH, height: HEIGHT, channels: 3, background: { r: 90, g: 90, b: 90 } } })
+      .png().toBuffer();
+  }
+  async function maskUri(paint: (x: number, y: number) => boolean): Promise<string> {
+    const data = Buffer.alloc(WIDTH * HEIGHT, 0);
+    for (let y = 0; y < HEIGHT; y += 1) for (let x = 0; x < WIDTH; x += 1) if (paint(x, y)) data[y * WIDTH + x] = 255;
+    const png = await sharp(data, { raw: { width: WIDTH, height: HEIGHT, channels: 1 } }).png().toBuffer();
+    return `data:image/png;base64,${png.toString("base64")}`;
+  }
+  function stubSam3(): Array<Record<string, unknown>> {
+    const bodies: Array<Record<string, unknown>> = [];
+    vi.stubGlobal("fetch", async (_url: unknown, init: any) => {
+      const body = JSON.parse(String(init?.body ?? "{}"));
+      bodies.push(body);
+      /* The engine's own behaviour on his creature: its best instance first,
+         and the second only when several were asked for. */
+      const masks = body.return_multiple_masks === true
+        ? [await maskUri(RIGHT_TUSK), await maskUri(LEFT_TUSK)]
+        : [await maskUri(RIGHT_TUSK)];
+      return new Response(JSON.stringify({ masks: masks.map((url) => ({ url })) }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    return bodies;
+  }
+  const lit = (mask: Mask, inside: (x: number, y: number) => boolean): number => {
+    let count = 0;
+    for (let y = 0; y < mask.height; y += 1) {
+      for (let x = 0; x < mask.width; x += 1) if (inside(x, y) && mask.data[y * mask.width + x]! > 0) count += 1;
+    }
+    return count;
+  };
+
+  /* The region the catalogue says is several, read off the catalogue rather
+     than typed here (working law 4). */
+  const teethRegion = (): string => {
+    const definition = catalogueSlots().find((one) => one.several !== undefined);
+    if (definition === undefined) throw new Error("no catalogue slot declares itself several things");
+    return (definition.question ?? definition.display) as string;
+  };
+
+  it("asks `all the teeth` for every instance and answers with BOTH tusks", async () => {
+    const bodies = stubSam3();
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+    expect(teethRegion()).toBe("all the teeth");
+    const mask = await reader.region({ image: await frame(), name: teethRegion(), absentIsAnswer: true });
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).toMatchObject({ prompt: "all the teeth", return_multiple_masks: true, max_masks: 4 });
+    expect(lit(mask, LEFT_TUSK)).toBe(50);
+    expect(lit(mask, RIGHT_TUSK)).toBe(50);
+  });
+
+  it("CONTROL — a one-thing region is asked the one-instance way, exactly as before", async () => {
+    const bodies = stubSam3();
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+    const mask = await reader.region({ image: await frame(), name: "nose", absentIsAnswer: true });
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]!.return_multiple_masks).toBeUndefined();
+    expect(bodies[0]!.max_masks).toBeUndefined();
+    expect(lit(mask, RIGHT_TUSK)).toBe(50);
+    expect(lit(mask, LEFT_TUSK)).toBe(0);
+  });
+
+  it("CONTROL — nothing there is still nothing there: several asked of an empty answer is absence", async () => {
+    vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ masks: [] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }));
+    const reader = createFalRegionReader({ apiKey: "test-key" });
+    const mask = await reader.region({ image: await frame(), name: teethRegion(), absentIsAnswer: true });
+    expect(lit(mask, () => true)).toBe(0);
+  });
+});

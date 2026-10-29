@@ -481,6 +481,21 @@ const BILATERAL = new Set(
     .map((definition) => definition.question as string),
 );
 
+/**
+ * THE REGIONS THAT ARE SEVERAL SEPARATE THINGS, asked for every instance and
+ * answered as their union (#2810) — read off the catalogue's own `several`,
+ * never a list here, the way {@link BILATERAL} reads `frame`.
+ *
+ * The region a scan asks for a slot is its question, or its display region when
+ * it has no question (`scanPlan`), so both are read.
+ */
+const SEVERAL = new Set(
+  catalogueSlots()
+    .filter((definition) => definition.several !== undefined)
+    .map((definition) => definition.question ?? definition.display)
+    .filter((region): region is string => typeof region === "string" && region.length > 0),
+);
+
 /** The noun ONE SIDE of a bilateral region is asked by. */
 function singularOf(name: string): string {
   return name === "eyes" ? "eye" : name.replace(/s$/, "");
@@ -1672,7 +1687,20 @@ export function createFalRegionReader(input: {
         const both = await bilateral(image, name, imageUrl, axisKey, callSignal);
         return both ?? absent();
       }
-      const mask = await askRegion(image, name, "first", imageUrl, callSignal);
+      /*
+        A REGION THAT IS SEVERAL THINGS IS ASKED FOR ALL OF THEM (#2810, his eye
+        round 8: *"teeth highlighted his tooth/tusk thing"*).
+
+        Asked the one-instance way, SAM 3 answers its single best instance, so
+        `all the teeth` on a creature with two tusks came back as ONE tusk on
+        every reading — the engine had the other one and the request never asked
+        for it (the law's clause 4: read what the engine already gives you).
+        The same call with `return_multiple_masks` answered both tusks and the
+        row between them, so the union is the row. No extra request is bought:
+        it is one call either way, under the pair road's own ceiling.
+      */
+      const several = SEVERAL.has(name);
+      const mask = await askRegion(image, name, several ? "all" : "first", imageUrl, callSignal, several);
       if (!mask) return absent();
       return mask;
     },
