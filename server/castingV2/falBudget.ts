@@ -140,8 +140,9 @@
  *    taken with a fake reader that answered everything first time. Real faces
  *    ask again: `FACE_SCAN_FAL_CALLS` in `scripts/lib/falSpend.mts` holds the
  *    measured 21–27 SAM 3 reads (#2183, eight production casts) inside a
- *    wire-derived 18–38 (19–40 until #2191 shared the face read and #2525
- *    stopped looking twice for teeth). On the same waves arithmetic the MEASURED
+ *    wire-derived 18–33 (19–40 until #2191 shared the face read, #2525
+ *    stopped looking twice for teeth, and #2802 made a half-answered pair's
+ *    second look read one half-picture instead of two). On the same waves arithmetic the MEASURED
  *    band is 4–5 waves at 6 and 5–6 at 5, so **the cut now costs most real
  *    scans one wave**, which is the case the sentence above said to re-cut at. It is NOT re-cut here: the
  *    slot this paid for is the unowned one above, and handing it back to region

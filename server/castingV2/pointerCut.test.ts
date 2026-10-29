@@ -38,6 +38,7 @@ import {
   settleByPlace,
   wordsOnlyFeatures,
   besideItsHost,
+  besideItsFoundHost,
   type CatalogueCut,
   type DiscoveredRegion,
 } from "./pointerCut";
@@ -1846,15 +1847,105 @@ describe("asked again on the place the reading named, when every cut was somewhe
     expect(asked.map((one) => one.name)).toEqual(["nose piercing"]);
   });
 
-  it("CONTROL — a name the detector declined outright is not asked again by this road", async () => {
+  /*
+    ⚠ **THIS ARM ASSERTED THE OPPOSITE UNTIL #2798 ROAD 2, AND IT IS THE ARM
+    THAT CHANGED SIDES.** It read *"a name the detector declined outright is not
+    asked again by this road"*, which was #2796's declared limit. #2798 measured
+    it on his own frame — `septum ring`, 0 boxes on the whole frame and one box
+    on a crop of the nose's cut — so the decline now takes the same road. What
+    is still true, and is the arm below, is that the crop must be a place the
+    scan cut.
+  */
+  it("a name the detector declined outright IS asked again on its host's crop", async () => {
     const { reader, asked } = hisDetector();
-    await cutDiscovered({
+    const out = await cutDiscovered({
       frame: await picture(),
       features: [feature("lip ring", 1, { kind: "accessory", on: "lips" })],
       reader,
       catalogue: async () => scan,
     });
-    expect(asked.map((one) => one.name)).toEqual(["lip ring"]);
+    /* Once on the whole frame, once on the lips grown by half — and no more. */
+    expect(asked).toEqual([
+      { name: "lip ring", crop: null },
+      { name: "lip ring", crop: { width: 180, height: 80 } },
+    ]);
+    /* This detector offers nothing for that word in either place, so the name
+       is still declined and still carries its words. */
+    expect(out.regions).toEqual([]);
+    expect(out.declined).toEqual(["lip ring"]);
+    expect(out.named.map((one) => one.noun)).toEqual(["lip ring"]);
+  });
+
+  it("CONTROL — a declined name whose place the scan did not cut is asked once and no more", async () => {
+    const { reader, asked } = hisDetector();
+    const out = await cutDiscovered({
+      frame: await picture(),
+      /* `neck` is no catalogue row, so there is no crop to ask on. */
+      features: [feature("lip ring", 1, { kind: "accessory", on: "neck" })],
+      reader,
+      catalogue: async () => scan,
+    });
+    expect(asked).toEqual([{ name: "lip ring", crop: null }]);
+    expect(out.declined).toEqual(["lip ring"]);
+  });
+
+  it("the stud the whole frame declined is found on the crop and drawn", async () => {
+    const asked: { name: string; crop: boolean }[] = [];
+    const reader: RegionReader = {
+      async region() { throw new Error("not this road"); },
+      async subject() { throw new Error("not this road"); },
+      async landmark() { throw new Error("not this road"); },
+      async pointer({ image, name }) {
+        const meta = await sharp(image).metadata().catch(() => null);
+        const whole = meta === null || (meta.width === FRAME.width && meta.height === FRAME.height);
+        asked.push({ name, crop: !whole });
+        /* His measured septum ring: nothing at all on the whole frame, and on
+           the crop of its place the ring AND the thing on the other place. */
+        if (whole) return [];
+        const offset = { x: lipsRect.x - 45, y: lipsRect.y - 20 };
+        return [
+          { ...ringRect, x: ringRect.x - offset.x, y: ringRect.y - offset.y },
+          { ...studRect, x: studRect.x - offset.x, y: studRect.y - offset.y },
+        ];
+      },
+      async regionInBox({ box }) {
+        cutBoxes.push(box);
+        return maskAt(box);
+      },
+    };
+    const cutBoxes: PointerBox[] = [];
+    const out = await cutDiscovered({
+      frame: await picture(),
+      features: [feature("labret", 1, { kind: "accessory", on: "lips" })],
+      reader,
+      catalogue: async () => scan,
+    });
+    expect(out.regions.map((one) => `${one.noun}@${one.box.x},${one.box.y}`))
+      .toEqual([`labret@${studRect.x},${studRect.y}`]);
+    expect(out.declined).toEqual([]);
+    /* ⚠ The ring's box is on the NOSE, so no segmenter call is bought for it —
+       the same filter #2796 put in front of the cap, proven on this road too. */
+    expect(cutBoxes).toEqual([studRect]);
+  });
+
+  it("CONTROL — a name whose detector call FAILED is not re-asked (a retry is a different decision)", async () => {
+    const asked: string[] = [];
+    const reader: RegionReader = {
+      async region() { throw new Error("not this road"); },
+      async subject() { throw new Error("not this road"); },
+      async landmark() { throw new Error("not this road"); },
+      async pointer({ name }) { asked.push(name); throw new Error("fetch failed"); },
+      async regionInBox({ box }) { return maskAt(box); },
+    };
+    const out = await cutDiscovered({
+      frame: await picture(),
+      features: [feature("labret", 1, { kind: "accessory", on: "lips" })],
+      reader,
+      catalogue: async () => scan,
+    });
+    expect(asked).toEqual(["labret"]);
+    expect(out.failed).toEqual(["labret"]);
+    expect(out.declined).toEqual([]);
   });
 });
 
@@ -1880,6 +1971,256 @@ describe("the same check on the class's siblings (#2796, law 7)", () => {
     const star = { x: 250, y: 205, width: 14, height: 14 };
     const verdict = besideItsHost({ box: star, on: "nose" }, FRAME, [brow, eye, nose]);
     expect(verdict.at === "elsewhere" ? verdict.nearest.slot : verdict.at).toBe("eye@left");
+  });
+});
+
+describe("a thing worn on another thing the reading FOUND is place-checked too (#2798 road 1)", () => {
+  /*
+    HIS OWN READING'S GEOMETRY, SMALLER. On his cast, the pendant's cut lies
+    INSIDE the chain's (0 px), the choker is 36 px away and the hair's cut is
+    0 px from the chain, the choker and the corset alike — which is why the
+    scan's cuts are not rivals here and why that has an arm of its own below.
+  */
+  const chainRect = { x: 300, y: 380, width: 160, height: 60 };
+  const chokerRect = { x: 300, y: 320, width: 160, height: 40 };
+  const onTheChain = { x: 360, y: 420, width: 20, height: 30 };
+  const onTheChoker = { x: 360, y: 330, width: 20, height: 20 };
+  const place = (noun: string, box: PointerBox) => ({ noun, box, mask: maskAt(box) });
+  const found = [place("chain necklace", chainRect), place("choker", chokerRect)];
+
+  it("a cut inside its host's own cut is on its host", () => {
+    expect(besideItsFoundHost({ box: onTheChain, on: "chain necklace", noun: "cross pendant" }, FRAME, found))
+      .toEqual({ at: "host" });
+  });
+
+  it("the card's own case — a cut on the choker is NOT the pendant the reading put on the chain", () => {
+    expect(besideItsFoundHost({ box: onTheChoker, on: "chain necklace", noun: "cross pendant" }, FRAME, found))
+      .toEqual({ at: "elsewhere", nearest: "choker" });
+  });
+
+  it("the host is matched on the noun the way a reading writes it — plural and case included", () => {
+    expect(besideItsFoundHost({ box: onTheChain, on: "Chain Necklaces", noun: "cross pendant" }, FRAME, found))
+      .toEqual({ at: "host" });
+  });
+
+  it("nothing the reading found by that name: not judged, exactly as before", () => {
+    expect(besideItsFoundHost({ box: onTheChoker, on: "leather cord", noun: "cross pendant" }, FRAME, found))
+      .toEqual({ at: "unchecked" });
+    expect(besideItsFoundHost({ box: onTheChoker, on: "", noun: "cross pendant" }, FRAME, found))
+      .toEqual({ at: "unchecked" });
+  });
+
+  it("a thing pointing at itself is not judged against itself", () => {
+    expect(besideItsFoundHost({ box: onTheChoker, on: "choker", noun: "choker" }, FRAME, found))
+      .toEqual({ at: "unchecked" });
+  });
+
+  /*
+    ⚠ **THE SUBJECT HERE STANDS OFF ITS HOST ON PURPOSE.** The first draft put
+    it INSIDE the chain's cut, where the host's gap is 0 and nothing can ever be
+    nearer — so the arm passed with the exclusion sabotaged away. It is the
+    blind-arm shape #2796's own S2 was caught by, one road along.
+  */
+  it("a second one of the same noun is never the rival that refuses the first", () => {
+    /* Below the chain, where the choker is 91 px away and cannot decide it. */
+    const justOff = { x: 360, y: 450, width: 20, height: 10 };
+    const sibling = place("cross pendant", { x: 380, y: 446, width: 10, height: 6 });
+    expect(besideItsFoundHost({ box: justOff, on: "chain necklace", noun: "cross pendant" }, FRAME, [...found, sibling]))
+      .toEqual({ at: "host" });
+    /* The measure that would have refused it, so the arm cannot go blind
+       again: the sibling is 1 px away and the chain's own cut is 11. */
+    expect(besideItsFoundHost({ box: justOff, on: "chain necklace", noun: "a different pendant" }, FRAME, [...found, sibling]))
+      .toEqual({ at: "elsewhere", nearest: "cross pendant" });
+  });
+
+  it("a tie goes to the host, as it does on the scan's own cuts", () => {
+    /* The two hosts' cuts touch, so the box is 0 px from both — his real
+       choker and chain are 0 px apart and this is that case. */
+    const touching = [
+      place("chain necklace", { x: 300, y: 360, width: 160, height: 60 }),
+      place("choker", { x: 300, y: 320, width: 160, height: 41 }),
+    ];
+    expect(besideItsFoundHost({ box: { x: 360, y: 355, width: 10, height: 10 }, on: "chain necklace", noun: "cross pendant" }, FRAME, touching))
+      .toEqual({ at: "host" });
+  });
+
+  /* ---- and the same thing driven through the real road ---- */
+
+  const worn = (name: string, on: string) => feature(name, 1, { kind: "accessory", on });
+  const chainAndPendant = [worn("chain necklace", "neck"), worn("cross pendant", "chain necklace")];
+
+  it("his panel — the pendant lands on its chain and both are drawn", async () => {
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: chainAndPendant,
+      reader: readerWith({ detects: { "chain necklace": [chainRect], "cross pendant": [onTheChain] } }),
+      catalogue: async () => [],
+    });
+    expect(out.regions.map((one) => one.noun)).toEqual(["chain necklace", "cross pendant"]);
+    expect(out.named).toEqual([]);
+  });
+
+  it("a pendant box that landed on the choker's ring is refused, and keeps its words", async () => {
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [...chainAndPendant, worn("choker", "neck")],
+      reader: readerWith({
+        detects: {
+          "chain necklace": [chainRect],
+          choker: [chokerRect],
+          "cross pendant": [onTheChoker],
+        },
+      }),
+      catalogue: async () => [],
+    });
+    expect(out.regions.map((one) => one.noun)).toEqual(["chain necklace", "choker"]);
+    expect(out.named.map((one) => `${one.noun}:${one.why}`)).toEqual(["cross pendant:uncut"]);
+  });
+
+  it("CONTROL — a host the detector could not find is no place, so the pendant is drawn unjudged", async () => {
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [...chainAndPendant, worn("choker", "neck")],
+      /* No chain cut at all; the pendant's box is on the choker. Under the old
+         code this was drawn, and it still is — there is nothing to be nearer to. */
+      reader: readerWith({ detects: { choker: [chokerRect], "cross pendant": [onTheChoker] } }),
+      catalogue: async () => [],
+    });
+    /* The reading's own order, which is what `regions` is gathered in — the
+       pendant is settled LAST and listed where the reading named it. */
+    expect(out.regions.map((one) => one.noun)).toEqual(["cross pendant", "choker"]);
+  });
+
+  /*
+    ⚠ **THE MEASURED ARM: THE SCAN'S OWN CUTS ARE NOT RIVALS HERE.**
+
+    Of 869 pendant-sized boxes standing 1–30 px off their correct host's cut on
+    his own reading, putting the catalogue cuts in the rival set refuses 553 of
+    them, and **283 are refused by a catalogue place with no found rival at all
+    — every one of them by the hair**, whose cut runs the length of that cast's
+    body. This arm is that number as a case: the hair's cut holds the pendant's
+    box, the chain's is 5 px off it, and the row survives.
+  */
+  it("the hair's own cut does not take a pendant away from the chain it hangs on", async () => {
+    const hair = {
+      slot: "hair" as never,
+      group: "hair" as never,
+      question: "hair",
+      box: { x: 280, y: 300, width: 200, height: 260 },
+      mask: maskAt({ x: 280, y: 300, width: 200, height: 260 }),
+    };
+    const justAbove = { x: 360, y: 356, width: 20, height: 19 };
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: chainAndPendant,
+      reader: readerWith({ detects: { "chain necklace": [chainRect], "cross pendant": [justAbove] } }),
+      catalogue: async () => [hair],
+    });
+    expect(out.regions.map((one) => one.noun)).toEqual(["chain necklace", "cross pendant"]);
+    /* And the measure the refusal would have turned on, stated: the hair holds
+       the box, and the host is strictly further away. */
+    expect(besideItsHost({ box: justAbove, on: "hair" }, FRAME, [hair])).toEqual({ at: "host" });
+  });
+
+  /*
+    ⚠ **THE BARRIER MUST RELEASE WHATEVER HAPPENS TO THE OTHER NAMES.** A held
+    back cut waits for every name to be asked, so a name that returns early —
+    a failed call, a decline, a cut nothing could draw — must still arrive. If
+    it does not, this arm does not fail with a wrong answer: it HANGS, which is
+    why each early exit gets its own arm rather than one arm for all three.
+  */
+  it("a held-back cut still settles when another name's call FAILED", async () => {
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [...chainAndPendant, worn("ear cuff", "ears")],
+      reader: readerWith({
+        detects: {
+          "chain necklace": [chainRect],
+          "cross pendant": [onTheChain],
+          "ear cuff": new Error("fetch failed"),
+        },
+      }),
+      catalogue: async () => [],
+    });
+    expect(out.regions.map((one) => one.noun)).toEqual(["chain necklace", "cross pendant"]);
+    expect(out.failed).toEqual(["ear cuff"]);
+  });
+
+  it("a held-back cut still settles when another name was DECLINED", async () => {
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [...chainAndPendant, worn("ear cuff", "ears")],
+      reader: readerWith({ detects: { "chain necklace": [chainRect], "cross pendant": [onTheChain] } }),
+      catalogue: async () => [],
+    });
+    expect(out.regions.map((one) => one.noun)).toEqual(["chain necklace", "cross pendant"]);
+    expect(out.declined).toEqual(["ear cuff"]);
+  });
+
+  it("a held-back cut still settles when every OTHER name's cut was unusable", async () => {
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [...chainAndPendant, worn("ear cuff", "ears")],
+      reader: readerWith({
+        detects: {
+          "chain necklace": [chainRect],
+          "cross pendant": [onTheChain],
+          "ear cuff": [{ x: 100, y: 100, width: 20, height: 20 }],
+        },
+        cuts: (box, name) => (name === "ear cuff" ? emptyMask() : maskAt(box)),
+      }),
+      catalogue: async () => [],
+    });
+    expect(out.regions.map((one) => one.noun)).toEqual(["chain necklace", "cross pendant"]);
+  });
+
+  it("a held-back cut that is a catalogue row's own cut still folds into that row", async () => {
+    const lips = {
+      slot: "lips" as never,
+      group: "face" as never,
+      question: "lips",
+      box: { x: 360, y: 420, width: 20, height: 30 },
+      mask: maskAt({ x: 360, y: 420, width: 20, height: 30 }),
+    };
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: chainAndPendant,
+      reader: readerWith({ detects: { "chain necklace": [chainRect], "cross pendant": [onTheChain] } }),
+      catalogue: async () => [lips],
+    });
+    /* The pendant's cut IS the lips' cut, so it is that row and is not drawn
+       again — and it is not "named and not cut" either. */
+    expect(out.regions.map((one) => one.noun)).toEqual(["chain necklace"]);
+    expect(out.named).toEqual([]);
+  });
+
+  /*
+    ⚠ **ONE HOP, DECLARED RATHER THAN QUIET.** `facePanel` follows a chain of
+    hosts to the top (`buckle on=strap`, `strap on=coat`); this check does not,
+    because the strap's own cut is settled in the same late pass as the
+    buckle's. The buckle is therefore `unchecked` — which is what it is today —
+    and this arm pins that rather than leaving it to be discovered.
+  */
+  it("a chain of two leaves the deeper one unjudged, which is what it was before", async () => {
+    const strapRect = { x: 300, y: 380, width: 160, height: 60 };
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [
+        feature("coat", 1, { kind: "clothing", on: "" }),
+        worn("strap", "coat"),
+        worn("buckle", "strap"),
+      ],
+      reader: readerWith({
+        detects: {
+          coat: [{ x: 200, y: 300, width: 300, height: 250 }],
+          strap: [strapRect],
+          /* Nowhere near the strap: 240 px away, and still drawn. */
+          buckle: [{ x: 210, y: 310, width: 20, height: 20 }],
+        },
+      }),
+      catalogue: async () => [],
+    });
+    expect(out.regions.map((one) => one.noun)).toEqual(["coat", "strap", "buckle"]);
   });
 });
 

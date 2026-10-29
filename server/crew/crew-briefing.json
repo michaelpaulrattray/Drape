@@ -1,7 +1,7 @@
 {
-  "edition": 774,
-  "updatedAt": "2026-10-29T14:52:24.000Z",
-  "shift": "A HOUSEKEEPING NIGHT — nothing you can see has changed, and that is the right outcome. No new\nfeature, no fix to anything you touch, nothing generated, nothing spent.\n\nWHY THIS AND NOT FEATURE WORK. Your own list had nothing free to start: every one of the seventeen\njobs you have ordered is either waiting on you, waiting on another job, or already being built. One\nof the crew was live on three face-reader jobs five minutes before I started, so I stayed out of\nthat code entirely — three of us in there at once has already cost a duplicated night twice this\nweek. The tidying seat's three-day clock had come up, so I took that.\n\nWHAT I TIDIED. Five hundred and twenty-seven leftover job names were sitting on the machine from\nfinished work. I removed a hundred and six of them — only the ones where the work had definitely\nbeen merged and the name definitely matched what was merged, leaving four hundred and twenty-one.\nEvery single one can be put back two ways, and the list of how was written down and copied\nsomewhere safe before anything was deleted. Nothing live was touched: the two jobs still in\nprogress were specifically checked and left alone.\n\nI ALSO CHECKED LAST WEEK'S CLEANUP ACTUALLY WORKED. A week ago the crew removed a large pile of\ndead code. Until tonight the only proof of that was the crew's own measurement, which is not\nproof. The independent nightly check now confirms it: the pile went from a hundred and thirty-one\ndown to seventy-five, and the small difference from what was predicted is one day of normal work\narriving. So that cleanup is real, and it did not break the thing that measures it.\n\nONE REAL PROBLEM FOUND, AND IT IS IN THE CREW'S OWN MACHINERY. A finished piece of work is stuck\nwhere nothing can move it. It passed every check, it needs no review, and it would merge on its\nown — but another job landed on top of the same file first, and the crew member who built it had\nalready finished for the night. Nobody can hand it back, because handing back is something only\nthe person who took it can do. It is not lost and nothing in it is wrong; it needs one person to\nput the two versions of that file together, and I deliberately did not do that myself because\ngetting it wrong would quietly throw away one of two repairs that are already live. It is written\nup with the measurements on job 2814.\n\nWHAT IS WAITING ON YOUR EYE. Round 8 of the face reader landed while I was writing this — the\nhorned creature where Teeth outlined only one tusk and the snout was drawn as two rows. That fix\nis merged and I checked it is genuinely live on the running site rather than trusting the merge\nnote, so it is now asking for your eye alongside round 6. Rounds 5 and 7 both closed earlier today\non your own words. Nothing on this page needs a decision from you tonight — only a look.\n\nTHE SHAPE OF THE LIST, SINCE IT IS WORTH ONE LINE. Eighty-four jobs are open and thirty-nine of\nthem have had nothing done to or said about them for a week. That is not a backlog of neglected\nwork — most of those thirty-nine are waiting on a decision, on another job, or on a design pass,\nand each says so on itself. The number worth watching is leftover worktrees on the machine, which\nhas grown every three days for a month and is now twenty-five gigabytes; it needs three decisions\nfrom nobody in particular and I have left it alone again.",
+  "edition": 775,
+  "updatedAt": "2026-10-29T17:40:00.000Z",
+  "shift": "A FINISHED REPAIR THAT WAS STUCK IS NOW LIVE ON YOUR ACCOUNT. Last night's note told you a job had passed every check, needed no review, and still could not move because another job had landed on the same file first. One person had to put the two versions together. That is done, it is merged, and the site is serving it.\n\nWHAT IT CHANGES FOR YOU, in the face reader. Two things. When a character wears something on something else they are wearing — a pendant on a chain — the studio now checks the pendant against the chain it actually hangs on, instead of only against the parts of the face. And when the detector says it cannot find something your reading named, the studio asks once more about just that part of the picture rather than giving up. On your own reading, a word it found nothing for on the whole picture came back correctly when asked about the nose alone.\n\nTHE CARE IT NEEDED, because this is the kind of job that can quietly undo work. Two repairs you have already seen — one pair of tusks under one row, and a snout no longer drawn as the whole head — live in the same two pieces of code this job rewrote. Putting them together wrongly would have thrown one of them away with nothing going red. So the check was a count rather than a judgement: the three versions of the test file hold 111, 125 and 130 separate checks, and the joined one holds 144 — exactly all of them, none dropped, all passing. Everything else green too, and the live site confirmed on a fresh start rather than taken on trust.\n\nTWO MORE JOBS READ RATHER THAN BUILT, AND I TURNED ONE DOWN. A job said the studio silently loses a feature when a call to the detector drops, and that two of ten names were lost that way on one of your readings. The loss is real in principle. But the site's own records say it has never happened: across every reading this part of the studio has ever done on the live site, 80 names asked and not one dropped call. The job also said another part of the studio already asks again when a call drops, and should be copied — it does not; the code deliberately gives up on a dropped call there too. And the one place that does ask twice has asked seven times and recovered nothing. So building a retry would have made every reading slower, which is the opposite of what you asked for last week, to fix something nobody has hit. The numbers are on the job and it stays open in case it ever bites.\n\nONE THING WILL HAPPEN AGAIN. A crew member who finishes for the night cannot put their own job back on the board, and cannot tidy up a clash like tonight's either — so a finished job can sit looking like work in progress while nobody is able to pick it up. Nothing is lost when it happens; it costs a night. Changing that rule is on the process review's list, not something you need to decide.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-29T12:42:07.682Z",
+      "readAt": "2026-10-29T17:07:00.706Z",
       "items": [
         {
           "issueNumber": 30,
@@ -11092,7 +11092,7 @@
     {
       "id": "stranded-pr-unreachable-2814",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "A finished piece of work is stuck where nobody can move it, and no road the crew has can reach it (#2814)",
       "detail": "This is the crew's own machinery, not the product — nothing a customer sees is affected.\n\nA job finished earlier today passed every check and needs no review, so it would normally merge on its own. It cannot. Another job landed on the same file first, so the two versions now disagree — and while they disagree, the checks cannot even be re-run, so the page still shows it as green and finished.\n\nThe crew member who built it had already closed for the night without handing it back, and handing a job back is something only the person who took it can do. So it sits looking like ordinary work in progress while in fact nobody can pick it up.\n\nNothing is lost and nothing in the work is wrong. What it needs is one person to put the two versions of that file together. I did not do it myself: both versions change the same part of the face reader, and getting it wrong would quietly throw away one of two repairs that are already live on your account. The measurements and the recommended way through are on job 2814."
     },
@@ -11620,7 +11620,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-29T12:42:07.682Z",
+    "readAt": "2026-10-29T17:07:00.705Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11738,28 +11738,22 @@
         }
       },
       {
-        "issueNumber": 2781,
-        "title": "N3 face reader, his eye round 3: the earring boxes span ear-to-nose, and the septum ring and lip piercing have no row",
+        "issueNumber": 2800,
+        "title": "N3 face reader, his eye round 6: an earring on a visible ear has no picture, and two pair rows are drawn empty",
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "YOU — your eye on a fresh face panel. Your placement word is already in."
+          "because": "YOU — the fix is live. One look at a fresh panel: the other earring should have a picture now, and no empty side rows. Then this closes."
         }
       },
       {
-        "issueNumber": 2796,
-        "title": "N3 face reader, his eye round 5: the lip-piercing row is the septum ring, and the real lip piercing has no row",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2800,
-        "title": "N3 face reader, his eye round 6: an earring on a visible ear has no picture, and two pair rows are drawn empty",
-        "urgent": false
-      },
-      {
-        "issueNumber": 2801,
-        "title": "N3 face reader, his eye round 7 (first creature): tusks split across Teeth and Tusks, an unreadable Brow ridge row, and a strap's buckle and ring listed as accessories",
-        "urgent": false
+        "issueNumber": 2810,
+        "title": "N3 face reader, his eye round 8 (fresh creature): Teeth outlines one tusk, and Nose and Snout are two rows for one snout, with Snout outlining the whole head",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU - the fix is live. One look at a fresh creature panel: both tusks under Teeth, and one Nose row instead of Nose plus Snout. Then this closes."
+        }
       }
     ]
   }

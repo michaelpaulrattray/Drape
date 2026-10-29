@@ -514,8 +514,10 @@ const SEVERAL = new Set(
     .filter((region): region is string => typeof region === "string" && region.length > 0),
 );
 
-/** The noun ONE SIDE of a bilateral region is asked by. */
-function singularOf(name: string): string {
+/** The noun ONE SIDE of a bilateral region is asked by. Exported since #2802
+ *  so a suite asserting WHICH question the second look asked reads it here
+ *  rather than keeping a copy of the mapping (working law 4). */
+export function singularOf(name: string): string {
   return name === "eyes" ? "eye" : name.replace(/s$/, "");
 }
 
@@ -1400,6 +1402,58 @@ export function createFalRegionReader(input: {
     return { atImageLeft: left.kept, atImageRight: right.kept };
   };
 
+  /**
+   * THE CUT ITSELF — her midline, the frame's size, and the two crops it makes.
+   *
+   * One copy, because there are now two readers of it: the crop road's own
+   * pair read, and the blind-side read `sideByCrop` performs for a half-answered
+   * pair (#2802). A second copy of this arithmetic is working law 4 in the one
+   * place it would be worst — two midlines would put the heal's answer on a
+   * different cut from the reading it is repairing.
+   *
+   * `null` is *there is no split to make*, before any call is spent.
+   */
+  const cutOf = async (
+    image: Buffer, name: string, imageUrl: string | undefined, axisKey: string | undefined,
+  ): Promise<{
+    width: number; height: number; midline: number; byFace: boolean;
+    crops: { imageLeft: { left: number; width: number }; imageRight: { left: number; width: number } };
+  } | null> => {
+    const sharp = (await import("sharp")).default;
+    const meta = await sharp(image).metadata();
+    const width = meta.width ?? 0;
+    const height = meta.height ?? 0;
+    if (!width || !height) throw new MaskError(`cannot read a ${name} on an image with no size`);
+    /* A picture one pixel wide has no two sides to cut between. */
+    if (width < 2) return null;
+    const axis = await axisOf(image, imageUrl, axisKey);
+    /* Clamped so a face read that lands on an edge cannot ask for a zero-width
+       crop — a degenerate half is a thrown sharp error in place of a reading. */
+    const midline = Math.min(width - 1, Math.max(1, Math.round(axis ?? width / 2)));
+    return {
+      width, height, midline, byFace: axis !== null,
+      crops: {
+        imageLeft: { left: 0, width: midline },
+        imageRight: { left: midline, width: width - midline },
+      },
+    };
+  };
+
+  /** ONE HALF-PICTURE, ASKED — the crop road's single read, placed back in the
+   *  caller's frame. */
+  const readOneCrop = async (
+    image: Buffer, noun: string, crop: { left: number; width: number },
+    width: number, height: number, callSignal: AbortSignal | undefined,
+  ): Promise<Mask | null> => {
+    const sharp = (await import("sharp")).default;
+    const bytes = await sharp(image)
+      .extract({ left: crop.left, top: 0, width: crop.width, height })
+      .png()
+      .toBuffer();
+    const mask = await askRegion(bytes, noun, "all", undefined, callSignal);
+    return mask ? placeInFrame(mask, crop, width, height) : null;
+  };
+
   /** The two halves as read, and the midline they were cut at. */
   const readHalves = async (
     image: Buffer, name: string, imageUrl: string | undefined, axisKey: string | undefined,
@@ -1408,19 +1462,10 @@ export function createFalRegionReader(input: {
     split: { atImageLeft: Mask | null; atImageRight: Mask | null };
     midline: number;
   } | null> => {
-    const sharp = (await import("sharp")).default;
-    const meta = await sharp(image).metadata();
-    const width = meta.width ?? 0;
-    const height = meta.height ?? 0;
-    if (!width || !height) throw new MaskError(`cannot read a ${name} on an image with no size`);
     const noun = singularOf(name);
-    /* A picture one pixel wide has no two sides to cut between. */
-    if (width < 2) return null;
-
-    const axis = await axisOf(image, imageUrl, axisKey);
-    /* Clamped so a face read that lands on an edge cannot ask for a zero-width
-       crop — a degenerate half is a thrown sharp error in place of a reading. */
-    const midline = Math.min(width - 1, Math.max(1, Math.round(axis ?? width / 2)));
+    const cut = await cutOf(image, name, imageUrl, axisKey);
+    if (cut === null) return null;
+    const { width, height, midline } = cut;
 
     /*
       ONE REQUEST FOR BOTH SIDES, when the caller has asked for that road
@@ -1456,7 +1501,7 @@ export function createFalRegionReader(input: {
           name,
           sides: [split.atImageLeft, split.atImageRight].filter((mask) => mask !== null).length,
           midline,
-          byFace: axis !== null,
+          byFace: cut.byFace,
           masked: whole !== null,
         },
         "[falRegionReader] bilateral read, one request for both sides",
@@ -1464,15 +1509,10 @@ export function createFalRegionReader(input: {
       return { split, midline };
     }
 
-    const crops = [{ left: 0, width: midline }, { left: midline, width: width - midline }] as const;
-    const sides = await Promise.all(crops.map(async (crop) => {
-      const bytes = await sharp(image)
-        .extract({ left: crop.left, top: 0, width: crop.width, height })
-        .png()
-        .toBuffer();
-      const mask = await askRegion(bytes, noun, "all", undefined, callSignal);
-      return mask ? placeInFrame(mask, crop, width, height) : null;
-    }));
+    const crops = [cut.crops.imageLeft, cut.crops.imageRight] as const;
+    const sides = await Promise.all(crops.map(
+      (crop) => readOneCrop(image, noun, crop, width, height, callSignal),
+    ));
 
     log.debug(
       {
@@ -1480,7 +1520,7 @@ export function createFalRegionReader(input: {
         noun,
         sides: sides.filter((mask) => mask !== null).length,
         midline,
-        byFace: axis !== null,
+        byFace: cut.byFace,
       },
       "[falRegionReader] bilateral read, one side to a picture",
     );
@@ -1910,6 +1950,81 @@ export function createFalRegionReader(input: {
           ? "[falRegionReader] the detector looked at the other ear and found nothing to keep"
           : "[falRegionReader] the detector found what the segmenter missed on the other ear",
       );
+      return kept;
+    },
+
+    /**
+     * ONE SIDE OF A PAIR, READ ON THE CROP ROAD (#2802).
+     *
+     * # The question the second look was asking, and why it could not answer
+     *
+     * Production reads a pair in ONE whole-picture request
+     * (`ENABLE_CASTING_PAIR_ONE_READ`, `pairInOneRead` above). When one side
+     * comes back at literal zero, `faceScan.ts` takes a second look — and on
+     * that road the second look **was the identical request**: same endpoint,
+     * same prompt, same bytes. Measured on the founder's own round-6 cast,
+     * `ear` at 1024 and at 598, five draws a size through the product's own
+     * reader: **the pair road answered 0 and 0 on 10 of 10 draws.** It is not
+     * a flaky read that a second ask might catch; it is the same question
+     * getting the same answer.
+     *
+     * **The crop road is a different question**, and that is this module's
+     * oldest measured fact rather than a hope — see {@link BILATERAL}: *"the
+     * same twelve features, asked as a PLAIN noun of a picture containing one
+     * side only, read 12 of 12."* On the same ten draws, the crop road found
+     * **both** ears every time (699–704px and 748–752px at 1024; 239px and
+     * 249–250px at 598), on a cast whose two ears the founder's own eye reads
+     * plainly.
+     *
+     * # And it does not invent a side that is not there
+     *
+     * Two negative controls, read at the frames first: a cast whose ears are
+     * both under her hair (6 draws) and a hooded cast with no ear in frame
+     * (6 draws). The crop road answered **nothing on the blind side in 12 of
+     * 12** — it recovered no ear either road could not see, which is the half
+     * of this that a positive arm cannot show.
+     *
+     * # What it costs
+     *
+     * One segmenter read, which is what the second look already spends. On the
+     * crop road itself the first reading was already a half-picture, so this
+     * asks that half again — today's heal exactly, at one read instead of the
+     * two a whole `regionSides` re-ask spends.
+     *
+     * `null` is *nothing to keep on that side*, and a name this reader does not
+     * read two-sidedly answers `null` before any call is spent, as
+     * `regionSides` does. `side` is anatomical, as `regionSides`' keys are.
+     */
+    async sideByCrop({ image, name, side, imageUrl, axisKey, onTheEars }): Promise<Mask | null> {
+      assertPicture(image, name);
+      if (!BILATERAL.has(name)) return null;
+      const cut = await cutOf(image, name, imageUrl, axisKey);
+      if (cut === null) return null;
+      /* `left` is HER left, which is the image's right — `regionSides`' own
+         mapping, read the same way. */
+      const imageSide = side === "left" ? "imageRight" : "imageLeft";
+      const half = await readOneCrop(
+        image, singularOf(name), cut.crops[imageSide], cut.width, cut.height, undefined,
+      );
+      if (half === null) return null;
+      if (onTheEars !== true) return half;
+      /* AN EAR IS AT THE SIDE OF THE FACE (#2781) — applied here too, so the
+         heal judges the same answer the panel will draw. The face read is the
+         one the midline came from, so it costs no request; with no face there
+         is no side to judge by and the answer is the half as read. */
+      const span = await faceOf(image, imageUrl);
+      if (span === null) return half;
+      const { kept, dropped } = keepPiecesAtTheSide(
+        half, imageSide, { midline: cut.midline, left: span.left, right: span.right },
+      );
+      if (dropped.length > 0) {
+        /* Numbers only — where the dropped pieces were and how big. Never a
+           word of the reading. */
+        log.info(
+          { name, side, midline: cut.midline, faceSides: [span.left, span.right], dropped },
+          "[falRegionReader] the blind side's own read answered something nearer the middle of the face — not that side's",
+        );
+      }
       return kept;
     },
 

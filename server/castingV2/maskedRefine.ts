@@ -473,6 +473,37 @@ export type RegionReader = {
     imageUrl?: string;
   }): Promise<Mask | null>;
   /**
+   * ONE SIDE OF A PAIR, READ FROM A PICTURE CONTAINING ONLY THAT SIDE (#2802).
+   *
+   * The second look a half-answered pair gets is only worth its read if it is a
+   * DIFFERENT question from the one that came back blind. Asked of the whole
+   * picture — which is how production reads a pair now — it is not: measured on
+   * the founder's own cast, the pair road answered nothing on either side on 10
+   * of 10 draws, while the same frame cut in half answered both ears on 10 of
+   * 10. So the caller that is healing a blind side asks for that side's own
+   * half-picture instead of asking the whole frame again.
+   *
+   * It is the SAME price as the re-ask it replaces — one segmenter read — and
+   * on a reader already reading a side at a time it is the same question that
+   * reader's second look asks today, at half the calls.
+   *
+   * `side` is anatomical, as `regionSides`' keys are. `null` is *nothing to
+   * keep on that side*, and a name the reader does not read two-sidedly answers
+   * `null` before any call is spent — a caller that cannot have this must fall
+   * back to its own road rather than treating `null` as an absence.
+   */
+  sideByCrop?(input: {
+    image: Buffer;
+    name: string;
+    side: "left" | "right";
+    imageUrl?: string;
+    /** The same face hint `regionSides` takes, under the same proof. */
+    axisKey?: string;
+    /** The same ear rule `regionSides` takes (#2781), so the heal judges the
+     *  answer the panel will draw. */
+    onTheEars?: true;
+  }): Promise<Mask | null>;
+  /**
    * WHERE A THING WOULD BE, even when nothing can see it.
    *
    * A different capability from segmentation, not a worse one. A segmenter
