@@ -191,7 +191,9 @@ export type StoredScanGeometry = {
     /** One of the five feature kinds. Narrowed on the way back out, for
      *  {@link StoredDiscoveredSlot.kind}'s reason. */
     kind?: string;
-    /** `scattered` · `makeup` · `uncut` — see `pointerCut`'s `NamedNotCut`. */
+    /** `scattered` · `makeup` · `uncut` · `dropped` — see `pointerCut`'s
+     *  `NamedNotCut`. Narrowed on the way back out, where a value outside the
+     *  four is dropped rather than admitted (`keptFaceScan`). */
     why: string;
   }[];
   /**

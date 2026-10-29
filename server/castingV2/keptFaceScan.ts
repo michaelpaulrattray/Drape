@@ -425,16 +425,34 @@ export async function serveKeptScan(input: {
       /*
         THE WORDS WITH NO PICTURE, read back under the same narrowing the kinds
         above get and for the same reason: the column is JSON, so `why` is
-        whatever was written. A row whose `why` is not one of the three is
+        whatever was written. A row whose `why` is not one of the four is
         DROPPED rather than admitted as an unknown reason — the panel branches
-        on it (makeup never reaches a row), and a fourth value would take a
+        on it (makeup never reaches a row), and a fifth value would take a
         branch nobody wrote. Dropping one entry costs its words; admitting it
         costs a destination nobody chose.
+
+        ⚠ **`dropped` IS THE FOURTH AND ITS DESTINATION WAS CHOSEN IN THE SAME
+        COMMIT (#2805), which is the only reason it is admitted** — the clause
+        above is the bar, not a ban, and it is met here rather than waived: the
+        panel treats a `dropped` entry exactly as an `uncut` one, so the branch
+        exists and nothing a customer sees moves. It records a name whose
+        detector call never completed, told apart from a name the detector
+        answered and could not usefully be cut.
+
+        ⚠ **A ROLLBACK DROPS THESE ENTRIES, AND THAT IS NAMED RATHER THAN
+        DISCOVERED**: a reading kept by this build and read back by the
+        previous one hits the three-value narrowing and loses its `dropped`
+        rows. It costs exactly what the entry carries — the words of a thing
+        with no row, which the panel already says nowhere — so the reading
+        reads as it did before this card, not as damaged.
       */
       ...(() => {
         const said: NamedNotCut[] = [];
         for (const one of kept.geometry.namedNotCut ?? []) {
-          if (one.why !== "scattered" && one.why !== "makeup" && one.why !== "uncut") continue;
+          if (
+            one.why !== "scattered" && one.why !== "makeup"
+            && one.why !== "uncut" && one.why !== "dropped"
+          ) continue;
           if (typeof one.noun !== "string" || one.noun.trim() === "") continue;
           said.push({
             noun: one.noun,

@@ -309,6 +309,48 @@ describe("what a kept scan serves", () => {
     expect(served?.asked).toBe(12);
   });
 
+  /*
+    THE FOURTH `why` SURVIVES THE READ-BACK, AND A FIFTH STILL DOES NOT (#2805).
+
+    The column is JSON, so `why` is whatever was written, and the narrowing here
+    is the only thing standing between a value nobody wrote a branch for and a
+    panel that branches on it. `dropped` — a name whose detector call never
+    completed, told apart from a name the detector answered and could not
+    usefully cut — joins the three, and the arm below is the control that the
+    narrowing still refuses an unknown word rather than having been widened to
+    anything at all.
+  */
+  const saidRow = (why: string) => ({
+    publicId: `why-${why}`,
+    frameKey: face.frameKey,
+    geometry: {
+      slots: [], words: [], sides: "", asked: 12, found: 0, empty: [],
+      namedNotCut: [{ noun: "star tattoo", on: "cheek", about: "a small star", kind: "marking", why }],
+    },
+    stencilBytes: 0,
+  });
+
+  it("reads back a DROPPED entry — the record of a call that never completed", async () => {
+    const it_ = bench();
+    it_.rows.push(saidRow("dropped"));
+
+    const served = await serveKeptScan({ ...face, dependencies: it_.dependencies });
+
+    expect(served?.namedNotCut?.map((one) => [one.noun, one.why])).toEqual([["star tattoo", "dropped"]]);
+  });
+
+  it("CONTROL — a `why` nobody wrote a branch for is still dropped", async () => {
+    /* Without this the arm above passes against a narrowing that admits every
+       string, which would be the opposite of what that clause is for. */
+    const it_ = bench();
+    it_.rows.push(saidRow("fetch failed"));
+
+    const served = await serveKeptScan({ ...face, dependencies: it_.dependencies });
+
+    expect(served, "the reading itself still serves").not.toBeNull();
+    expect(served?.namedNotCut).toBeUndefined();
+  });
+
   it("says SCAN THIS FACE when there is no row at all", async () => {
     const it_ = bench();
     expect(await serveKeptScan({ ...face, dependencies: it_.dependencies })).toBeNull();

@@ -2359,8 +2359,16 @@ export function facePanel(input: {
       somebody else's, and writing its words onto the host would describe the
       host with a sentence about something that is not drawn. It travels on the
       channel and nowhere else, and the next edit to that area asks again.
+
+      ⚠ **AND A NAME WHOSE CALL DROPPED IS TREATED IDENTICALLY (#2805), WHICH
+      IS THE WHOLE OF WHAT THAT CARD CHANGES ON THIS SURFACE.** The two are
+      told apart in the kept reading because `uncut` asserts an ask that a
+      dropped call never made — but the panel's question is *can any row carry
+      these words*, and the answer is no either way. So nothing a customer sees
+      moves, and no retry hangs off the new word: the second ask this card asks
+      for is refused on measurement and stays refused.
     */
-    if (said.why === "uncut") continue;
+    if (said.why === "uncut" || said.why === "dropped") continue;
     const about = said.about.trim();
     if (about === "" || said.on.trim() === "") continue;
     /* The same question `homeOf` answers for a region, asked the same way: a

@@ -378,6 +378,49 @@ describe("cutDiscovered — the two calls, and what is asked on each", () => {
     expect(out.failed).toEqual(["jacket"]);
     expect(out.declined).toEqual([]);
     expect(out.regions.map((one) => one.noun)).toEqual(["sash"]);
+    /*
+      ⚠ **AND THE KEPT RECORD SAYS SO TOO (#2805).** Until that card this name
+      was written `why: "uncut"`, whose own sentence is *the detector was asked*
+      — so the kept reading asserted an ask that never happened, and the
+      distinction lived only in `failedNouns` on a log line with about
+      thirty-six hours of retention. The two lists above are the LOG's; this is
+      the record that outlives it.
+    */
+    expect(out.named.map((one) => [one.noun, one.why])).toEqual([["jacket", "dropped"]]);
+  });
+
+  it("CONTROL — a name the detector ANSWERED and nothing could cut is still `uncut`, not dropped", async () => {
+    /*
+      The negative control for the arm above, and the one that matters: if a
+      dropped call and an unusable answer both read `dropped`, the new word says
+      nothing and the record is wrong in the other direction. Here the detector
+      answers a rectangle and the segmenter returns nothing for it — no call was
+      lost, so the detector WAS asked and `uncut` is the true word.
+    */
+    const rect = { x: 100, y: 200, width: 60, height: 40 };
+    const reader = readerWith({ detects: { jacket: [rect] }, cuts: () => null });
+    const out = await cutDiscovered({ frame: FRAME, features: [feature("jacket")], reader });
+
+    expect(out.failed, "nothing dropped").toEqual([]);
+    expect(out.named.map((one) => [one.noun, one.why])).toEqual([["jacket", "uncut"]]);
+  });
+
+  it("records a name whose CUT dropped as dropped too — the detector answered, the call did not", async () => {
+    /*
+      `broke` is not only the detect: a rectangle whose segmenter call throws
+      loses the same row for the same reason, and nothing was learned about the
+      thing either way. The difference from the control above is which half
+      failed, and the two look identical from the panel — which is exactly why
+      the record has to say.
+    */
+    const reader = readerWith({
+      detects: { jacket: [{ x: 100, y: 200, width: 60, height: 40 }] },
+      cuts: () => new Error("fetch failed"),
+    });
+    const out = await cutDiscovered({ frame: FRAME, features: [feature("jacket")], reader });
+
+    expect(out.failed).toEqual(["jacket"]);
+    expect(out.named.map((one) => [one.noun, one.why])).toEqual([["jacket", "dropped"]]);
   });
 
   it("drops a row the segmenter answered nothing for", async () => {
