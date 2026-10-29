@@ -2001,6 +2001,109 @@ describe("the fourth role — a picture the CUSTOMER supplied (fable-1096)", () 
   So the hole is not hypothetical: it is the exact set of rows the flag's
   off-period created, and `null` is every row's state today.
 */
+describe("a source riding a PRESENTATION clause — #2736 slice 2's ride", () => {
+  const CUT = { key: "casting-v2/reference-take/bb.png", sha: "deadbeef" };
+  /* The take's own scope shape (`takeScopeSentence`): what the picture may give
+     them, and that everything else they wear stays. REQUIRED, like every
+     source's. */
+  const SCOPE = "Dress her in this exact jacket — its cut, its colour and its material. "
+    + "Everything else she wears stays as it is, and nothing about the set, the backdrop or the props changes.";
+  const cut = {
+    clause: "wardrobe",
+    image: CUT,
+    pictures: "thingOnTransparency" as const,
+    noun: "jacket",
+    scope: SCOPE,
+  };
+  /* The real wardrobe-edit shape, driven on `repaintAsksFor` before the ride
+     was designed: NO asks, one presentation clause, no slots anywhere. */
+  const wardrobeEdit = {
+    master: MASTER, pronouns: SHE, library: [], asks: [],
+    presentation: [{ noun: "wardrobe", words: "a red bomber jacket, worn open" }],
+  };
+
+  it("rides beside the clause, described as what it is, with its scope beside it", () => {
+    const recipe = assembleRecipe({ ...wardrobeEdit, presentationSources: [cut] });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.references).toHaveLength(2);
+    expect(recipe.references[1]!.role).toEqual({ kind: "source", clause: "wardrobe" });
+    expect(recipe.references[1]!.image).toBe(CUT);
+    const sentence = recipe.references[1]!.sentence;
+    /* Named with the CUSTOMER'S OWN noun for what was cut — never the clause's
+       noun, which names the subject and not these bytes. */
+    expect(sentence).toContain("Reference 2 is the jacket supplied for this edit");
+    expect(sentence).toContain("that item alone on a transparent background");
+    expect(sentence).toContain("NOT part of the instruction");
+    /* And what it may give them — the required scope, spliced whole. */
+    expect(sentence).toContain("this exact jacket");
+    expect(sentence).toContain("stays as it is");
+    /* The sentence is ON THE WIRE, not near it: in `sentences` and in the
+       prompt, like every other reference's. */
+    expect(recipe.sentences).toContain(sentence);
+    expect(recipe.prompt).toContain(sentence);
+    /* And the clause's own words still ride the change sentence untouched —
+       one instruction in two registers, never two authors. */
+    expect(recipe.ask).toBe("Change only her wardrobe: a red bomber jacket, worn open.");
+  });
+
+  it("files NOTHING — D-136 holds: no slot, no mint, nothing a follow inherits", () => {
+    const recipe = assembleRecipe({ ...wardrobeEdit, presentationSources: [cut] });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    expect(recipe.edited).toEqual([]);
+    expect(recipe.carried).toEqual([]);
+    expect(recipe.vacated).toEqual([]);
+    expect(Array.from(recipe.wordStacks.keys())).toEqual([]);
+    /* The picture rides as a SOURCE and became nothing else. */
+    expect(recipe.references.map((one) => one.role.kind)).toEqual(["master", "source"]);
+  });
+
+  it("REFUSES a source whose clause this render does not say — sourceNotSaid", () => {
+    /*
+      `sourceNotAsked`'s exact mirror, one lane over: a reference no sentence
+      accounts for is a picture the painter may read as anything. Driven with
+      no presentation clause at all, and with a clause about something else.
+    */
+    const bare = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [],
+      asks: [{ slot: "hair", noun: "hair", words: "a copper crop" }],
+      presentationSources: [cut],
+    });
+    expect(bare.ok).toBe(false);
+    if (bare.ok) return;
+    expect(bare.reason).toBe("sourceNotSaid");
+    expect(bare.detail).toContain("wardrobe");
+
+    const otherClause = assembleRecipe({
+      master: MASTER, pronouns: SHE, library: [], asks: [],
+      presentation: [{ noun: "expression", words: "a soft smile" }],
+      presentationSources: [cut],
+    });
+    expect(otherClause.ok).toBe(false);
+    if (otherClause.ok) return;
+    expect(otherClause.reason).toBe("sourceNotSaid");
+  });
+
+  it("rides at most one picture per clause, keyed exactly as slot sources are", () => {
+    /* The Map dedupe `sourceOf` already uses, one lane over: the last write for
+       a clause wins and ONE reference rides — never two pictures with two
+       sentences about one subject. */
+    const recipe = assembleRecipe({
+      ...wardrobeEdit,
+      presentationSources: [
+        { ...cut, noun: "coat", image: { key: "casting-v2/reference-take/first.png" } },
+        cut,
+      ],
+    });
+    expect(recipe.ok).toBe(true);
+    if (!recipe.ok) return;
+    const sources = recipe.references.filter((one) => one.role.kind === "source");
+    expect(sources).toHaveLength(1);
+    expect(sources[0]!.image).toBe(CUT);
+  });
+});
+
 describe("an ink design rides only after somebody has looked at it", () => {
   const CARRIER = { key: "casting-v2/reference-carrier/ink.png", sha: "c0ffee" };
   const SCOPE = inkTakeSentence(SHE);

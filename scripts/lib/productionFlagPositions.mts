@@ -368,6 +368,19 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: "users:1",
     why: "the door that takes her picture at all; parent of the two reference lanes",
   },
+  CASTING_REFERENCE_TAKE_SCOPE: {
+    position: "off",
+    why:
+      "built dark 2026-10-29 (#2736 slice 2, the take road, on his word 'BUILD "
+      + "IT'). `off` is how this table says the variable is not on the service, "
+      + "and it is the position the slice shipped at: slice 3 of the design is "
+      + "`users:1` plus his eye on real edits -- his own jacket test, re-run by "
+      + "him -- and widening past his account is his word after that. It is a "
+      + "child of CASTING_REFERENCE_ATTACH_SCOPE in the boot chain, so it can "
+      + "never reach past the door that keeps the picture it cuts from; the "
+      + "garment half additionally rides CASTING_OUTFIT_EDIT_SCOPE and never "
+      + "widens it.",
+  },
   CASTING_FACE_SCAN_SCOPE: {
     position: "all",
     why:

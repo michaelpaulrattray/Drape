@@ -894,10 +894,36 @@ export function catalogueCutsOf(scan: {
   boxes: ReadonlyMap<FeatureSlot, PointerBox>;
   masks: ReadonlyMap<FeatureSlot, Mask>;
 }): CatalogueCut[] {
+  return scanCutsOf(scan, (definition) => definition.panel.row === "own" && definition.noRowOnDiscovery === undefined);
+}
+
+/**
+ * THE PLACES THE SCAN CUT AND THE PANEL DELIBERATELY DRAWS NO ROW FOR on the
+ * discovery road (#2810) — by the catalogue's own `noRowOnDiscovery` (his
+ * ruling of #2752), never a list here. Today that is the face's skin alone: the
+ * build is the other no-row slot, and it is composed rather than asked, so it
+ * is not among the scan's asked cuts this reads.
+ *
+ * Kept apart from {@link catalogueCutsOf} on purpose: every rule over THAT list
+ * may fold a found row into a row, and folding into a row that is not drawn
+ * would take a thing off the panel. The one rule that reads these is
+ * {@link unDrawnPlaceOf}, and it is about body parts only.
+ */
+export function unDrawnCutsOf(scan: {
+  boxes: ReadonlyMap<FeatureSlot, PointerBox>;
+  masks: ReadonlyMap<FeatureSlot, Mask>;
+}): CatalogueCut[] {
+  return scanCutsOf(scan, (definition) => definition.panel.row === "own" && definition.noRowOnDiscovery !== undefined);
+}
+
+function scanCutsOf(
+  scan: { boxes: ReadonlyMap<FeatureSlot, PointerBox>; masks: ReadonlyMap<FeatureSlot, Mask> },
+  keep: (definition: ReturnType<typeof scanPlan>[number]["slots"][number]) => boolean,
+): CatalogueCut[] {
   const cuts: CatalogueCut[] = [];
   for (const entry of scanPlan()) {
     for (const definition of entry.slots) {
-      if (definition.panel.row !== "own" || definition.noRowOnDiscovery !== undefined) continue;
+      if (!keep(definition)) continue;
       const box = scan.boxes.get(definition.slot);
       const mask = scan.masks.get(definition.slot);
       if (box === undefined || mask === undefined) continue;
@@ -953,6 +979,139 @@ export function catalogueRowOf(
     if (best === null || shared > best.shared) best = { cut, shared };
   }
   return best?.cut ?? null;
+}
+
+/*
+  ---- A BODY PART CUT AS THE WHOLE FACE IS NOT A PART OF IT (#2810, his eye
+  round 8, #2807 part 2) ----
+
+  His words, verbatim: *"also nose and snout im confused the snout nose is his
+  snout?"* Read on the founder's creature at 1024 wide: the reading named `snout`, the
+  detector's box was the whole head, and the cut inside it filled 0.638 of it —
+  one solid piece, so every bar passed. It holds **0.987 of the scan's own
+  face-skin cut** and the face skin is 0.798 of it; it holds every pixel of the
+  Nose, Lips and Teeth cuts and both eyes. The Nose cut is 0.062 of it, which
+  is why {@link catalogueRowOf} could not fold it: the larger cut decides.
+
+  #2795's header names the class: *"a loose cut is one that claims MORE than it
+  should, and a fill bar cannot see it"*. What CAN see it is a cut the scan
+  already has: the face skin is the scan's own picture of the face, and its
+  slot draws no row on this road by his ruling (#2752, *"same with skin not
+  neccesary to pick up"*). So it is judged by {@link catalogueRowOf}'s own
+  same-place rule, unchanged — more than half of the LARGER cut shared — against
+  those un-drawn places: a body part on the same place as the face's skin IS
+  that place under a part's name, and the panel already decided
+  not to draw that place. It gets no row and keeps its words (`uncut`).
+
+  ⚠ **Body parts only.** A worn mask cut as the face is a real thing the cast
+  wears and keeps its row; a garment is never judged here. And a real part of the face
+  is a small share of it — the measured snout, cut as a snout, would not be.
+
+  ⚠ **What it would refuse, said plainly.** A creature whose snout really is
+  most of its face (a long-jawed reptile) and is cut that way shares more than
+  half of the larger cut with the face skin too, and keeps only its words. None
+  is measured; it is the same call, made on the same majority, that folding
+  makes every day.
+*/
+
+/** The un-drawn place this body part's cut IS, by the same-place rule, or null. */
+export function unDrawnPlaceOf(
+  region: DiscoveredRegion,
+  unDrawn: readonly CatalogueCut[],
+): CatalogueCut | null {
+  if (region.kind !== "anatomy") return null;
+  const mine = pixelsIn(region.mask, region.box);
+  if (mine === 0) return null;
+  for (const cut of unDrawn) {
+    const theirs = pixelsIn(cut.mask, cut.box);
+    if (theirs === 0) continue;
+    if (sharedPixels(region, cut) * 2 > Math.max(mine, theirs)) return cut;
+  }
+  return null;
+}
+
+/*
+  ---- A BODY PART LYING ON OTHER PLACES IS NOT THAT BODY PART (#2801, the
+  founder's eye on the first creature) ----
+
+  The founder's words, verbatim: *"no idea what brow ridge is on this creature
+  exactly"*. The row's picture was scattered dark fragments. Read on the
+  founder's picture at 1024 wide (reading r4, the recorded masks): the `brow ridge` cut
+  is the insides of both ears. **0.911 of its own pixels lie on the catalogue's
+  own cuts** — 0.535 on the left ear, 0.333 on the right, 0.037 on a horn — and
+  the reading said it is on `face`, which names none of them. So the cut is a
+  second picture of the ears, under a name that is not the ears.
+
+  That is this module's existing class, a cut lying on another place's pixels
+  ({@link besideItsHost}, {@link catalogueRowOf}), and it is judged the same way:
+  by place, with "more than half" as the bar, no tuned number. A found body
+  part more than half of whose own pixels lie on catalogue cuts of places the
+  reading did NOT say it is on gets no row, and keeps its words (`uncut`).
+
+  # WHY NOT "A BODY PART IN PIECES" — the rule this replaced (the relay's finding)
+
+  The first repair refused any body part whose largest connected piece held
+  under three quarters of its cut. Many creature parts are in pieces by nature,
+  inside one box — whiskers, a row of spines, scales, gill slits, a frill, the
+  two nostrils of a snout — and that floor would have taken every one of them
+  off the panel. This rule never counts pieces: a cut in ten pieces that lies on
+  no other place is drawn exactly as before.
+
+  # THE TWO CASES IT LEAVES ALONE, and why each is a principle
+
+  1. **The place the reading named.** A cut lying on the catalogue cut of its
+     own `on` (nostrils `on: nose`, lying on the nose's cut) is where the
+     reading said it is. Only cuts of OTHER places count, through
+     {@link hostCutsOf} — the same words {@link besideItsHost} uses.
+  2. **A name the catalogue already drew part of.** On reading r2 the second
+     tusk lies 0.997 on the LIPS' cut — the segmenter's lips take in the mouth —
+     while the first tusk IS the Teeth row's cut. A name with a cut folded into
+     a catalogue row is that row's thing, and its other cuts sit ON that row
+     (the join below), so they are not judged here. Without this the tusks
+     repair beside it would be undone.
+
+  ⚠ **What it would still drop, said plainly.** A body part the catalogue drew
+  NONE of, lying mostly inside a loose catalogue cut of somewhere else — two
+  tusks swallowed by the lips' cut on a reading whose Teeth cut missed both —
+  gets no row and keeps its words. None of the four recorded readings has that
+  shape (the Teeth cut held one tusk on all four), and it is the same call
+  {@link besideItsHost} already makes about a stray. Body parts only: a worn
+  thing on a catalogue place (a stud on the lips) is judged by the host and
+  site rules above, and a garment is never a catalogue row.
+*/
+
+/**
+ * The share of a found cut's own pixels lying on the catalogue cuts of places
+ * the reading did NOT say it is on — 0 for a cut that claims nothing. A pixel
+ * counts once however many of those cuts claim it; a cut of another size
+ * shares nothing (the module's rule, see {@link sharedPixels}).
+ */
+export function shareOnOtherPlaces(
+  region: { box: PointerBox; mask: Mask; on: string },
+  cuts: readonly CatalogueCut[],
+): number {
+  const hosts = new Set(hostCutsOf(region.on, cuts));
+  const { box, mask } = region;
+  const others = cuts.filter(
+    (cut) => !hosts.has(cut) && cut.mask.width === mask.width && cut.mask.height === mask.height,
+  );
+  let own = 0;
+  let elsewhere = 0;
+  for (let y = box.y; y < box.y + box.height; y += 1) {
+    const row = y * mask.width;
+    for (let x = box.x; x < box.x + box.width; x += 1) {
+      if (!(mask.data[row + x]! > 0)) continue;
+      own += 1;
+      const onAnother = others.some(
+        (cut) =>
+          x >= cut.box.x && x < cut.box.x + cut.box.width &&
+          y >= cut.box.y && y < cut.box.y + cut.box.height &&
+          cut.mask.data[row + x]! > 0,
+      );
+      if (onAnother) elsewhere += 1;
+    }
+  }
+  return own === 0 ? 0 : elsewhere / own;
 }
 
 /*
@@ -1331,6 +1490,12 @@ export async function cutDiscovered(input: {
    * refused rather than drawn unchecked.
    */
   catalogue?: () => Promise<readonly CatalogueCut[] | null>;
+  /**
+   * THE PLACES THE SCAN CUT THAT DRAW NO ROW ON THIS ROAD (#2810) —
+   * {@link unDrawnCutsOf} over the same scan, asked the same lazy way. Absent
+   * or `null`, and a body part cut as the whole face is drawn, as before.
+   */
+  unDrawn?: () => Promise<readonly CatalogueCut[] | null>;
 }): Promise<{
   regions: DiscoveredRegion[];
   asked: number;
@@ -1362,6 +1527,10 @@ export async function cutDiscovered(input: {
   const strays: { from: number; region: DiscoveredRegion; nearest: CatalogueCut }[] = [];
   /* ...and every one of those a name on that place took as its own row. */
   const handedOver: { noun: string; to: string }[] = [];
+  /* Every body-part cut lying mostly on other places the scan cut (#2801). */
+  const notThere: { noun: string; on: string }[] = [];
+  /* Every body-part cut that was a place the panel draws no row for (#2810). */
+  const wholePlace: { noun: string; is: string }[] = [];
   /* Every name asked again on its own host's crop: boxes offered, and on the host. */
   const askedOnHost: {
     noun: string;
@@ -1385,6 +1554,11 @@ export async function cutDiscovered(input: {
   const catalogueCuts = (): Promise<readonly CatalogueCut[] | null> => {
     catalogueRead ??= (input.catalogue?.() ?? Promise.resolve(null)).catch(() => null);
     return catalogueRead;
+  };
+  let unDrawnRead: Promise<readonly CatalogueCut[] | null> | null = null;
+  const unDrawnCuts = (): Promise<readonly CatalogueCut[] | null> => {
+    unDrawnRead ??= (input.unDrawn?.() ?? Promise.resolve(null)).catch(() => null);
+    return unDrawnRead;
   };
 
   /* Known without asking anybody: no outline to cut, or makeup. Gathered before
@@ -1484,6 +1658,9 @@ export async function cutDiscovered(input: {
     const heldInto: FeatureSlot[] = [];
     /* How many of this name's cuts were nearer another place (#2796). */
     let wandered = 0;
+    /* This name's body-part cuts that lie mostly on other places (#2801),
+       judged at the foot of this task once every cut is in hand. */
+    const lying: DiscoveredRegion[] = [];
     let boxes: readonly PointerBox[] = [];
     /* The product's word, when it is what placed this name's boxes. */
     let product: string | null = null;
@@ -1568,6 +1745,9 @@ export async function cutDiscovered(input: {
       /** The things already drawn, or `null` while the asking is still going
        *  on — see the barrier above. */
       found: readonly FoundPlace[] | null,
+      /** The places the scan cut that the panel deliberately draws no row
+       *  for (#2810), or `null` when the caller offered no scan. */
+      unDrawn: readonly CatalogueCut[] | null,
     ): void => {
       /* A box from the product's word must be where that kind is worn. */
       if (product !== null && !onItsSite(region, product, cuts)) {
@@ -1627,6 +1807,22 @@ export async function cutDiscovered(input: {
         held = true;
         return;
       }
+      /* A body part cut as the whole face is not a part of it (#2810). */
+      const whole = unDrawn === null ? null : unDrawnPlaceOf(region, unDrawn);
+      if (whole !== null) {
+        log.warn(
+          { name: feature.name, is: whole.slot, answered: region.box },
+          "the cut of this body part is a whole place the panel draws no row for — not a part, no row",
+        );
+        wholePlace.push({ noun: feature.name, is: whole.slot });
+        return;
+      }
+      /* A body part lying mostly on other places is decided once this name's
+         every cut is in hand — see `shareOnOtherPlaces`. */
+      if (feature.kind === "anatomy" && cuts !== null && shareOnOtherPlaces(region, cuts) > 0.5) {
+        lying.push(region);
+        return;
+      }
       mine.push(region);
       draw(region);
     };
@@ -1645,6 +1841,7 @@ export async function cutDiscovered(input: {
     */
     const askOnHostCrop = async (
       cuts: readonly CatalogueCut[] | null,
+      unDrawn: readonly CatalogueCut[] | null,
       why: "strayed" | "declined",
     ): Promise<void> => {
       if (cuts === null) return;
@@ -1672,7 +1869,7 @@ export async function cutDiscovered(input: {
         const again = await Promise.all(near.map(cutInside));
         for (const one of again.sort((a, b) => a.index - b.index)) {
           if (one.broke) broke = true;
-          if (one.region !== null) settle(one.region, cuts, null);
+          if (one.region !== null) settle(one.region, cuts, null, unDrawn);
         }
       } catch (error) {
         log.warn(
@@ -1740,7 +1937,7 @@ export async function cutDiscovered(input: {
           `catch` above). The same reading is the warning: it declined NOTHING
           and its two word-only names were both `fetch failed`.
         */
-        await askOnHostCrop(await catalogueCuts(), "declined");
+        await askOnHostCrop(await catalogueCuts(), await unDrawnCuts(), "declined");
         /* Still nothing that could be drawn: the reading named it and the
            detector cannot find it. No row, by his ruling, and it is recorded
            rather than silently dropped — the words still reach the current
@@ -1759,7 +1956,8 @@ export async function cutDiscovered(input: {
       }
       if (landed.length > 0) {
         const cuts = await catalogueCuts();
-        for (const region of landed) settle(region, cuts, null);
+        const unDrawn = await unDrawnCuts();
+        for (const region of landed) settle(region, cuts, null, unDrawn);
         /*
           EVERY CUT WAS SOMEWHERE ELSE — ASK ONCE MORE, ON THE PLACE THE READING
           NAMED (#2796, the third defect: the real stud had no row at all).
@@ -1783,7 +1981,7 @@ export async function cutDiscovered(input: {
           something was already wrong.
         */
         if (mine.length === 0 && !held && deferred.length === 0 && wandered > 0) {
-          await askOnHostCrop(cuts, "strayed");
+          await askOnHostCrop(cuts, unDrawn, "strayed");
         }
       }
     };
@@ -1820,9 +2018,36 @@ export async function cutDiscovered(input: {
     if (deferred.length > 0) {
       const places = await foundPlaces;
       const cuts = await catalogueCuts();
-      for (const region of deferred) settle(region, cuts, places);
+      const unDrawn = await unDrawnCuts();
+      for (const region of deferred) settle(region, cuts, places, unDrawn);
     }
 
+    /*
+      ⚠ **THE HELD-BACK CUTS ARE SETTLED BEFORE THE LYING ONES ARE JUDGED, AND
+      THE ORDER IS LOAD-BEARING.** The loop below reads `held`, and a cut
+      released by the barrier can still fold into a catalogue row and set it —
+      so judging first would read a stale `held` and refuse a cut that the
+      fold was about to keep. This is the same reason the task's own state is
+      read once, at the foot, and not where each phase finishes.
+    */
+    /*
+      A NAME THE CATALOGUE DREW PART OF KEEPS ITS OTHER CUTS; ANY OTHER NAME
+      LYING ON OTHER PLACES GETS NO ROW (#2801). The first: the second tusk on
+      the lips' cut, beside the tusk that IS Teeth, joins Teeth below. The
+      second: the brow ridge on the two ears.
+    */
+    for (const region of lying) {
+      if (held) {
+        mine.push(region);
+        draw(region);
+        continue;
+      }
+      log.warn(
+        { name: feature.name, on: feature.on, answered: region.box },
+        "the cut of this body part lies mostly on other places the scan cut — not this body part, no row",
+      );
+      notThere.push({ noun: feature.name, on: feature.on });
+    }
     return { name: feature.name, regions: mine, declined, broke, held, heldInto };
   }));
 
@@ -1882,6 +2107,40 @@ export async function cutDiscovered(input: {
       handedOver.push({ noun: stray.region.noun, to: other.name });
       draw(handed);
     }
+  }
+
+  /*
+    ---- ONE COUNTED BODY PART IS ONE ROW, EVEN WHEN THE CATALOGUE DREW PART OF
+    IT (#2801, his eye on the first creature) ----
+
+    His words, verbatim: *"his tusks and teeth are getting confused"*. Read on
+    his picture: the catalogue's `all the teeth` cut ONE tusk, and that is the
+    Teeth row's picture. The reading named `tusks`, count 2, and the detector
+    boxed both. The fold above (#2757's rule) is decided one cut at a time, so
+    the tusk on the Teeth row's own pixels was folded into Teeth and the other
+    became a second row, *Tusks*. One thing, split across two rows.
+
+    So when a body part's name has a cut that IS a catalogue row's own cut, the
+    name's other cuts are more of that same thing: they sit ON that row, and
+    the panel draws them inside it (its children, under the same tap). The
+    picture decides where it sits, as `settleByPlace`'s garment rule already
+    does. Both tusks end up in the one Teeth row, and neither is drawn twice.
+
+    ⚠ **Body parts only, and that is the two-instance rule rather than a gap
+    (#2565 §6).** A second piercing on an ear shares no pixels with the
+    catalogue's earring and is a second thing with its own row (#2789). A body
+    part the reading counted is ONE feature with several pieces.
+  */
+  const slotNoun = new Map(catalogueSlots().map((definition) => [definition.slot, definition.noun]));
+  const joined: { noun: string; into: string }[] = [];
+  for (let at = 0; at < perName.length; at += 1) {
+    const one = perName[at]!;
+    if (population[at]!.kind !== "anatomy" || one.heldInto.length === 0 || one.regions.length === 0) continue;
+    const into = one.heldInto[0]!;
+    const noun = slotNoun.get(into);
+    if (noun === undefined) continue;
+    one.regions = one.regions.map((region) => ({ ...region, on: noun }));
+    joined.push({ noun: population[at]!.name, into });
   }
 
   /* Gathered in the READING's own order, never in the order the provider
@@ -2011,6 +2270,13 @@ export async function cutDiscovered(input: {
          way this road could cost a reading its rows. */
       strayedOnFound,
       heldBack,
+      /* Body parts partly drawn by a catalogue row, whose other cuts now sit on
+         that row (#2801). */
+      joined,
+      /* Body-part cuts that were pictures of other places, so got no row (#2801). */
+      notThere,
+      /* Body-part cuts that were a whole un-drawn place — the face — so got no row (#2810). */
+      wholePlace,
       /* What the place rules decided, so a merged or moved row can be traced to
          the pixels that decided it rather than looking like a lost one. */
       samePlace: settled.samePlace,

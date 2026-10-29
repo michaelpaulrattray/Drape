@@ -26,6 +26,7 @@ import { throughCensus } from "./callCensus";
 import { throughFalGate } from "./falConcurrency";
 import { classifyFalHttp, falHeaders } from "../providers/falTransport";
 import { REGION_CARDS, REGION_CARD_ENTRIES, type AskedAs, type RegionCard } from "./regionCards";
+import { judgeCut } from "./cutQuality";
 import { MaskError, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { PointerBox, RegionReader, SideRegions } from "./maskedRefine";
@@ -480,6 +481,21 @@ const BILATERAL = new Set(
     .map((definition) => definition.question as string),
 );
 
+/**
+ * THE REGIONS THAT ARE SEVERAL SEPARATE THINGS, asked for every instance and
+ * answered as their union (#2810) — read off the catalogue's own `several`,
+ * never a list here, the way {@link BILATERAL} reads `frame`.
+ *
+ * The region a scan asks for a slot is its question, or its display region when
+ * it has no question (`scanPlan`), so both are read.
+ */
+const SEVERAL = new Set(
+  catalogueSlots()
+    .filter((definition) => definition.several !== undefined)
+    .map((definition) => definition.question ?? definition.display)
+    .filter((region): region is string => typeof region === "string" && region.length > 0),
+);
+
 /** The noun ONE SIDE of a bilateral region is asked by. */
 function singularOf(name: string): string {
   return name === "eyes" ? "eye" : name.replace(/s$/, "");
@@ -526,6 +542,24 @@ function spanOf(mask: Mask): FaceSpan | null {
 
 /** One connected piece of a side's answer that was not kept, for the log. */
 export type DroppedPiece = { pixels: number; centreX: number };
+
+/**
+ * IS A THING CENTRED HERE WHERE THAT SIDE'S EAR IS (#2781's rule, one place).
+ *
+ * At least as near that side of the face as its middle. A tie is kept: the
+ * answer that cannot take a real earring away. Read by
+ * {@link keepPiecesAtTheSide} for a piece of a segmenter's answer and by the
+ * other-ear look below for a detector's rectangle (#2800), so the two cannot
+ * disagree about where an ear is.
+ */
+function atTheSide(
+  centreX: number,
+  side: "imageLeft" | "imageRight",
+  face: { midline: number; left: number; right: number },
+): boolean {
+  const edge = side === "imageLeft" ? face.left : face.right;
+  return Math.abs(centreX - face.midline) >= Math.abs(centreX - edge);
+}
 
 /**
  * ONLY THE PIECES THAT ARE WHERE AN EAR IS — one side of an ear-worn pair
@@ -632,12 +666,7 @@ export function keepPiecesAtTheSide(
       pieces.push({ pixels, sumX });
     }
   }
-  const edge = side === "imageLeft" ? face.left : face.right;
-  const drop = pieces.map(({ pixels, sumX }) => {
-    const centreX = sumX / pixels;
-    /* A tie is kept: the answer that cannot take a real earring away. */
-    return Math.abs(centreX - face.midline) < Math.abs(centreX - edge);
-  });
+  const drop = pieces.map(({ pixels, sumX }) => !atTheSide(sumX / pixels, side, face));
   if (!drop.some(Boolean)) return { kept: mask, dropped: [] };
   const out = Buffer.from(data);
   let left = 0;
@@ -1459,6 +1488,120 @@ export function createFalRegionReader(input: {
     return found.length === 1 ? found[0] : unionMasks(...found);
   };
 
+  /** The detector's rectangles round a noun, in pixels — `pointer`'s whole body, shared with the other-ear look. */
+  const detectBoxes = async (
+    image: Buffer,
+    name: string,
+    imageUrl: string | undefined,
+    callSignal: AbortSignal | undefined,
+  ): Promise<readonly PointerBox[]> => {
+    assertPicture(image, name);
+    const theirs = signalFor(callSignal);
+    const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
+    const sharp = (await import("sharp")).default;
+    const meta = await sharp(image).metadata();
+    if (!meta.width || !meta.height) throw new MaskError(`the frame asked about ${name} has no readable size`);
+    const { width, height } = meta;
+    /* ⚠ THE ROAD NAMES THIS CALL, NOT ITS PROMPT. `name` is the discovery
+       reading's own open-vocabulary noun — see `CensusLabel`. */
+    const json = await post(apiKey, DETECT, {
+      image_url: address ?? dataUri(image),
+      prompt: name,
+    }, theirs, { road: POINTER_DETECT_ABOUT });
+    const objects: any[] = Array.isArray(json.objects) ? json.objects : [];
+    const boxes: PointerBox[] = [];
+    for (const object of objects) {
+      const left = Number(object?.x_min);
+      const top = Number(object?.y_min);
+      const right = Number(object?.x_max);
+      const bottom = Number(object?.y_max);
+      if (![left, top, right, bottom].every((one) => Number.isFinite(one))) continue;
+      /* Clamped to the picture and ordered, because a rectangle is the
+         QUESTION the segmenter answers: a negative width or an edge past the
+         frame is not a tighter box, it is a prompt the provider has to
+         interpret, and what it interprets it as is nobody's measurement. */
+      const x = Math.round(Math.min(Math.max(Math.min(left, right), 0), 1) * width);
+      const y = Math.round(Math.min(Math.max(Math.min(top, bottom), 0), 1) * height);
+      const far = Math.round(Math.min(Math.max(Math.max(left, right), 0), 1) * width);
+      const low = Math.round(Math.min(Math.max(Math.max(top, bottom), 0), 1) * height);
+      if (far <= x || low <= y) continue;
+      boxes.push({ x, y, width: far - x, height: low - y });
+    }
+    log.debug(
+      { name, objects: objects.length, boxes: boxes.length },
+      boxes.length === 0
+        ? "[falRegionReader] the detector found no such thing, and that is the answer"
+        : "[falRegionReader] the detector put a rectangle round it",
+    );
+    return boxes;
+  };
+
+  /**
+   * THE REGION INSIDE ONE RECTANGLE — the pointer road's second half.
+   *
+   * The prompt goes out EMPTY on purpose: the rectangle is the question, and
+   * a noun beside it is a second question the model would have to reconcile
+   * with the first. #2532's bench sent `prompt: ""` with `box_prompts`, and
+   * every number this road rests on was measured that way, so sending the
+   * noun as well would be a different request than the one that was judged.
+   *
+   * `include_scores` rides along for the reason the text road's call carries
+   * it — the law's clause 4, read what the engine already gives you — and
+   * nothing here reads it yet, which is stated rather than implied: the
+   * presence head is #246's unfinished business and not this slice's.
+   *
+   * ⚠ **AND IT CANNOT SAY *WHICH NOUN* — DRIVEN 2026-10-29 (#2787), SO THE
+   * NEXT HAND DOES NOT BUY THESE CALLS AGAIN TO FIND OUT.** The score is a
+   * real signal and it is about the MASK rather than about the word: the
+   * prompt goes out empty two paragraphs above, so the segmenter is never
+   * told which noun the rectangle came from and two nouns whose rectangles
+   * agree get the same answer. Measured on the selector's own reference
+   * stand-in, where the detector returned `hoop earring` and `nose ring` as
+   * one object — boxes identical to the last bit (`305,462 44x56`) and
+   * therefore scores identical to the last bit (**0.89453125** each), while
+   * the correct `earring` at `306,462 42x56` scored 0.8984 and the nose's
+   * own box scored 0.8164. **So where two nouns land on one place this score
+   * is flat by construction**: it says how good a cut is, never whose it is.
+   * #246's absent-feature question is still the one it is for.
+   */
+  const cutInBox = async (
+    image: Buffer,
+    name: string,
+    box: PointerBox,
+    imageUrl: string | undefined,
+    callSignal: AbortSignal | undefined,
+  ): Promise<Mask | null> => {
+    assertPicture(image, name);
+    const theirs = signalFor(callSignal);
+    const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
+    const json = await post(apiKey, SAM3, {
+      image_url: address ?? dataUri(image),
+      prompt: "",
+      box_prompts: [{
+        x_min: box.x,
+        y_min: box.y,
+        x_max: box.x + box.width,
+        y_max: box.y + box.height,
+      }],
+      include_scores: true,
+      output_format: "png",
+    /* The prompt goes out EMPTY on this road, so there was never a word here
+       to label the call with — and an empty label opens no `byAbout` row, so
+       these calls were summed into the SAME `byModel` bucket as the
+       catalogue's SAM 3 reads and separable from them by nothing. That is the
+       half of the relay's question that scales with `count`. */
+    }, theirs, { road: POINTER_BOX_ABOUT });
+    const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
+    const url = masks
+      .map((entry) => (typeof entry === "string" ? entry : entry?.url))
+      .find((one): one is string => typeof one === "string" && one.length > 0);
+    if (url === undefined) {
+      log.debug({ name }, "[falRegionReader] the segmenter returned no mask inside that rectangle");
+      return null;
+    }
+    return fetchMask(url, theirs);
+  };
+
   return {
     async region({ image, name, absentIsAnswer, imageUrl, axisKey, signal: callSignal }) {
       assertPicture(image, name);
@@ -1544,7 +1687,20 @@ export function createFalRegionReader(input: {
         const both = await bilateral(image, name, imageUrl, axisKey, callSignal);
         return both ?? absent();
       }
-      const mask = await askRegion(image, name, "first", imageUrl, callSignal);
+      /*
+        A REGION THAT IS SEVERAL THINGS IS ASKED FOR ALL OF THEM (#2810, his eye
+        round 8: *"teeth highlighted his tooth/tusk thing"*).
+
+        Asked the one-instance way, SAM 3 answers its single best instance, so
+        `all the teeth` on a creature with two tusks came back as ONE tusk on
+        every reading — the engine had the other one and the request never asked
+        for it (the law's clause 4: read what the engine already gives you).
+        The same call with `return_multiple_masks` answered both tusks and the
+        row between them, so the union is the row. No extra request is bought:
+        it is one call either way, under the pair road's own ceiling.
+      */
+      const several = SEVERAL.has(name);
+      const mask = await askRegion(image, name, several ? "all" : "first", imageUrl, callSignal, several);
       if (!mask) return absent();
       return mask;
     },
@@ -1661,105 +1817,82 @@ export function createFalRegionReader(input: {
      * minute as a feature the cast has not got.
      */
     async pointer({ image, name, imageUrl, signal: callSignal }): Promise<readonly PointerBox[]> {
-      assertPicture(image, name);
-      const theirs = signalFor(callSignal);
-      const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
-      const sharp = (await import("sharp")).default;
-      const meta = await sharp(image).metadata();
-      if (!meta.width || !meta.height) throw new MaskError(`the frame asked about ${name} has no readable size`);
-      const { width, height } = meta;
-      /* ⚠ THE ROAD NAMES THIS CALL, NOT ITS PROMPT. `name` is the discovery
-         reading's own open-vocabulary noun — see `CensusLabel`. */
-      const json = await post(apiKey, DETECT, {
-        image_url: address ?? dataUri(image),
-        prompt: name,
-      }, theirs, { road: POINTER_DETECT_ABOUT });
-      const objects: any[] = Array.isArray(json.objects) ? json.objects : [];
-      const boxes: PointerBox[] = [];
-      for (const object of objects) {
-        const left = Number(object?.x_min);
-        const top = Number(object?.y_min);
-        const right = Number(object?.x_max);
-        const bottom = Number(object?.y_max);
-        if (![left, top, right, bottom].every((one) => Number.isFinite(one))) continue;
-        /* Clamped to the picture and ordered, because a rectangle is the
-           QUESTION the segmenter answers: a negative width or an edge past the
-           frame is not a tighter box, it is a prompt the provider has to
-           interpret, and what it interprets it as is nobody's measurement. */
-        const x = Math.round(Math.min(Math.max(Math.min(left, right), 0), 1) * width);
-        const y = Math.round(Math.min(Math.max(Math.min(top, bottom), 0), 1) * height);
-        const far = Math.round(Math.min(Math.max(Math.max(left, right), 0), 1) * width);
-        const low = Math.round(Math.min(Math.max(Math.max(top, bottom), 0), 1) * height);
-        if (far <= x || low <= y) continue;
-        boxes.push({ x, y, width: far - x, height: low - y });
-      }
-      log.debug(
-        { name, objects: objects.length, boxes: boxes.length },
-        boxes.length === 0
-          ? "[falRegionReader] the detector found no such thing, and that is the answer"
-          : "[falRegionReader] the detector put a rectangle round it",
-      );
-      return boxes;
+      return detectBoxes(image, name, imageUrl, callSignal);
     },
 
     /**
-     * THE REGION INSIDE ONE RECTANGLE — the pointer road's second half.
-     *
-     * The prompt goes out EMPTY on purpose: the rectangle is the question, and
-     * a noun beside it is a second question the model would have to reconcile
-     * with the first. #2532's bench sent `prompt: ""` with `box_prompts`, and
-     * every number this road rests on was measured that way, so sending the
-     * noun as well would be a different request than the one that was judged.
-     *
-     * `include_scores` rides along for the reason the text road's call carries
-     * it — the law's clause 4, read what the engine already gives you — and
-     * nothing here reads it yet, which is stated rather than implied: the
-     * presence head is #246's unfinished business and not this slice's.
-     *
-     * ⚠ **AND IT CANNOT SAY *WHICH NOUN* — DRIVEN 2026-10-29 (#2787), SO THE
-     * NEXT HAND DOES NOT BUY THESE CALLS AGAIN TO FIND OUT.** The score is a
-     * real signal and it is about the MASK rather than about the word: the
-     * prompt goes out empty two paragraphs above, so the segmenter is never
-     * told which noun the rectangle came from and two nouns whose rectangles
-     * agree get the same answer. Measured on the selector's own reference
-     * stand-in, where the detector returned `hoop earring` and `nose ring` as
-     * one object — boxes identical to the last bit (`305,462 44x56`) and
-     * therefore scores identical to the last bit (**0.89453125** each), while
-     * the correct `earring` at `306,462 42x56` scored 0.8984 and the nose's
-     * own box scored 0.8164. **So where two nouns land on one place this score
-     * is flat by construction**: it says how good a cut is, never whose it is.
-     * #246's absent-feature question is still the one it is for.
+     * THE REGION INSIDE ONE RECTANGLE — the pointer road's second half. Its
+     * account is on {@link cutInBox}, which the other-ear look reuses.
      */
     async regionInBox({ image, name, box, imageUrl, signal: callSignal }): Promise<Mask | null> {
+      return cutInBox(image, name, box, imageUrl, callSignal);
+    },
+
+    /**
+     * THE OTHER EAR, LOOKED AT BY THE DETECTOR (#2800, his eye round 6:
+     * *"why did it pick up her left ear but not the left earing?"*).
+     *
+     * # What the segmenter answered, measured on his screenshot
+     *
+     * Asked `earring` of the whole picture, SAM 3 answered ONE mask: the hoop
+     * in the cast's right ear (score 0.564 at 1024 wide, 0.511 at 598). The
+     * hoop in the left ear was never offered, at either size, and a second ask
+     * came back identical to the last digit — so the scan's second look, which
+     * asks the same question, cannot find it. Read half a picture at a time it
+     * was not found either. **The detector, asked `earring`, boxed BOTH hoops
+     * at both sizes**, and the box cut filled 0.804 and 0.766 of its rectangle.
+     *
+     * # What it does
+     *
+     * One detector call for the noun, on the whole frame. The rectangles kept
+     * are the ones whose centre is where THIS side's ear is — {@link atTheSide},
+     * the very rule the segmenter's own pieces are judged by, so the found
+     * side's earring and a septum ring are never this side's. Each is cut
+     * inside its rectangle, refused under #2795's fill floor exactly as the
+     * pointer road refuses a cut, and what is left is judged once more by
+     * {@link keepPiecesAtTheSide}. `null` when nothing is left.
+     *
+     * The face read is the one the midline came from (`faceOf`), so it costs no
+     * request; with no face there is no side to judge by and the answer is
+     * `null`, which is today's.
+     */
+    async sideByDetector({ image, name, side, imageUrl }): Promise<Mask | null> {
       assertPicture(image, name);
-      const theirs = signalFor(callSignal);
-      const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
-      const json = await post(apiKey, SAM3, {
-        image_url: address ?? dataUri(image),
-        prompt: "",
-        box_prompts: [{
-          x_min: box.x,
-          y_min: box.y,
-          x_max: box.x + box.width,
-          y_max: box.y + box.height,
-        }],
-        include_scores: true,
-        output_format: "png",
-      /* The prompt goes out EMPTY on this road, so there was never a word here
-         to label the call with — and an empty label opens no `byAbout` row, so
-         these calls were summed into the SAME `byModel` bucket as the
-         catalogue's SAM 3 reads and separable from them by nothing. That is the
-         half of the relay's question that scales with `count`. */
-      }, theirs, { road: POINTER_BOX_ABOUT });
-      const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
-      const url = masks
-        .map((entry) => (typeof entry === "string" ? entry : entry?.url))
-        .find((one): one is string => typeof one === "string" && one.length > 0);
-      if (url === undefined) {
-        log.debug({ name }, "[falRegionReader] the segmenter returned no mask inside that rectangle");
-        return null;
-      }
-      return fetchMask(url, theirs);
+      const span = await faceOf(image, imageUrl);
+      if (span === null) return null;
+      /* `left` is HER left, which is the image's right — `regionSides`' own
+         mapping, read the same way. */
+      const imageSide = side === "left" ? "imageRight" : "imageLeft";
+      const face = { midline: span.axis, left: span.left, right: span.right };
+      const boxes = await detectBoxes(image, singularOf(name), imageUrl, undefined);
+      const here = boxes
+        .filter((box) => atTheSide(box.x + box.width / 2, imageSide, face))
+        /* A pair read may come back with this many instances; so may a side. */
+        .slice(0, PAIR_MAX_MASKS);
+      const judged = await Promise.all(here.map(async (box) => {
+        const mask = await cutInBox(image, name, box, imageUrl, undefined);
+        return { box, mask, verdict: mask === null ? null : judgeCut({ mask, box }) };
+      }));
+      const used = judged.filter((one) => one.verdict?.use === true).map((one) => one.mask as Mask);
+      const kept = used.length === 0
+        ? null
+        : keepPiecesAtTheSide(used.length === 1 ? used[0] : unionMasks(...used), imageSide, face).kept;
+      /* Numbers only — where it looked, how full each cut was. Never a word of
+         the reading. */
+      log.info(
+        {
+          name,
+          side,
+          boxes: boxes.length,
+          atThisSide: here.length,
+          fills: judged.map((one) => (one.verdict === null ? null : one.verdict.fill)),
+          found: kept !== null,
+        },
+        kept === null
+          ? "[falRegionReader] the detector looked at the other ear and found nothing to keep"
+          : "[falRegionReader] the detector found what the segmenter missed on the other ear",
+      );
+      return kept;
     },
 
     /* NO per-call signal, for `regionSides`' reason: its callers place an

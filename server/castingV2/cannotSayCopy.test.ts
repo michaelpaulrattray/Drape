@@ -457,11 +457,22 @@ describe("the likeness confession names what it filed, and nothing else", () => 
  * THE UNUSED PICTURE SAYS WHY (card #2713).
  *
  * The founder attached a photograph of an outfit and asked for the outfit. No
- * reference road takes clothing, so the picture went unused — and the only
+ * reference road took clothing, so the picture went unused — and the only
  * sentence the product had for that said the change "didn't ask for anything I
  * could take from it". It had asked for exactly that. Three reasons now, each
  * with its own sentence, and the original kept byte for byte for the one case
  * it was always true of.
+ *
+ * ⚠ **ONE TENSE IN THAT PARAGRAPH MOVED ON 2026-10-29 AND THE SENTENCE IT
+ * GOVERNS HAD TO MOVE WITH IT (#2736 slice 2).** *"No reference road takes
+ * clothing"* was true of the whole product until that night; behind
+ * `CASTING_REFERENCE_TAKE_SCOPE` a road now does. So `unservable` — *"I can't
+ * take the jacket from a picture yet"* — is a sentence that must never reach an
+ * account inside that flag whose take was merely refused, and the classifier
+ * reads `takeAskedButNotTaken` for exactly that (`refineService.ts`): an
+ * attempted take falls through as `untaken`, whose wording is true of both
+ * roads. **The arms below are unchanged and still right** — what changed is who
+ * may be handed which, which is a caller's question and is driven there.
  */
 describe("the unused picture says why it went unused", () => {
   const ORIGINAL =
@@ -561,5 +572,50 @@ describe("the owed list says the rest went ahead once, at the end", () => {
       /* And none claims a finished paint: each is read while the paint runs. */
       expect(member, member).not.toMatch(/\bwas done\b|\bMade the\b/);
     }
+  });
+});
+
+/**
+ * WHAT THE PICTURE DID GIVE UP — the take's receipt (#2736 slice 2).
+ *
+ * The only member of this family that reports something that WORKED, so the
+ * arms that matter are the two it could get wrong in the direction nothing else
+ * would catch: quoting OUR word for the thing instead of theirs, and letting a
+ * pipeline word or a number into a sentence a customer reads.
+ */
+describe("the take says what it took, in the customer's own word", () => {
+  it("names their word", async () => {
+    const { thingTakenFromPictureNote } = await import("./cannotSayCopy");
+    expect(thingTakenFromPictureNote("jacket")).toBe("Took the jacket from your picture.");
+    expect(thingTakenFromPictureNote("leather coat")).toBe("Took the leather coat from your picture.");
+  });
+
+  it("lower-cases and trims whatever it was handed, and says 'it' with nothing to say", async () => {
+    const { thingTakenFromPictureNote } = await import("./cannotSayCopy");
+    expect(thingTakenFromPictureNote("  Jacket  ")).toBe("Took the jacket from your picture.");
+    for (const noun of ["", "   "]) {
+      expect(thingTakenFromPictureNote(noun), JSON.stringify(noun)).toBe("Took it from your picture.");
+    }
+  });
+
+  it("names no engine, no pipeline word, no number, and nothing about money", async () => {
+    const { thingTakenFromPictureNote } = await import("./cannotSayCopy");
+    const said = thingTakenFromPictureNote("jacket").toLowerCase();
+    for (const forbidden of [
+      "sunburst", "nano banana", "fal", "sam", "segment", "mask", "cut out",
+      "reference", "credit", "charged", "%",
+    ]) {
+      expect(said, forbidden).not.toContain(forbidden);
+    }
+    expect(said).not.toMatch(/\d/);
+  });
+
+  /* It is GOOD news and it still obeys the family's own closing rule: the
+     composer is the only voice that says the rest went ahead. */
+  it("carries no closing of its own", async () => {
+    const { thingTakenFromPictureNote } = await import("./cannotSayCopy");
+    const said = thingTakenFromPictureNote("jacket").toLowerCase();
+    expect(said).not.toContain("everything else you asked for");
+    expect(said).not.toContain("went ahead");
   });
 });

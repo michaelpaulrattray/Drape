@@ -202,6 +202,11 @@ export type SlotDefinition = {
    */
   noRowOnDiscovery?: { why: string };
   /**
+   * THE REGION IS SEVERAL THINGS — see {@link CatalogueEntry.several}. Absent on
+   * every slot but `teeth`, and absent is a one-instance read, as before.
+   */
+  several?: { why: string };
+  /**
    * WHY THIS SLOT HAS A QUESTION AND NO GUARD — the open lane's carve-out.
    *
    * Present on open slots ONLY, and never on a catalogued one. The invariant
@@ -462,6 +467,25 @@ type CatalogueEntry = {
    * keyed on the group would take those rows with it.
    */
   noRowOnDiscovery?: { why: string };
+  /**
+   * THE REGION IS SEVERAL SEPARATE THINGS IN THE PICTURE, SO ITS READ ASKS FOR
+   * EVERY ONE OF THEM (#2810, his eye round 8).
+   *
+   * One ROW, many pieces: the teeth are a row of separate teeth, and on a
+   * creature two tusks with a gap between them. The segmenter answers ONE
+   * instance unless it is asked for several, so a row asked the plain way is
+   * drawn round one of its pieces. Measured on the founder's creature at 1024 wide, the
+   * region `all the teeth` asked the way every one-instance region is asked
+   * answered ONE mask, the tusk on the image's right (score 0.807, twice to
+   * the last digit); asked for several on the same call it answered THREE —
+   * that tusk, the other tusk (0.742) and the whole row between them (0.672).
+   *
+   * ⚠ **Authored per slot, beside its measurement, and never derived from a
+   * plural noun.** A pair is two things too, and it already has its own road
+   * (`frame: "ownSide"`); `hair` is one thing even when it is in two buns, and
+   * nobody has measured what several would do to it.
+   */
+  several?: { why: string };
 };
 
 /**
@@ -671,6 +695,13 @@ const ANATOMY_SLOTS: readonly CatalogueEntry[] = [
       was traded for it.
     */
     display: "all the teeth",
+    several: {
+      why: "the teeth are many separate things, and a creature's two tusks have a gap "
+        + "between them: asked for one instance, `all the teeth` answered one tusk on the founder's "
+        + "creature (0.807), and asked for several on the same call it answered both tusks "
+        + "and the row between them (0.807, 0.742, 0.672). On a fanged human smile and a "
+        + "closed mouth the two asks answered identically (#2810)",
+    },
   },
   {
     feature: "cheekbone",
@@ -1308,6 +1339,8 @@ function definitionOf(entry: CatalogueEntry, instance: Instance | null): SlotDef
        down, so every other row is drawn on the discovery road exactly as it is
        off it. */
     ...(entry.noRowOnDiscovery ? { noRowOnDiscovery: entry.noRowOnDiscovery } : {}),
+    /* Same discipline (#2810): carried only where it was measured. */
+    ...(entry.several ? { several: entry.several } : {}),
     ...(entry.instances.of === "perSide" ? { pairNoun: entry.instances.pairNoun } : {}),
   };
 
