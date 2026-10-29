@@ -131,7 +131,7 @@ describe("the reader, both roads, with a segmenter answering the way his crop me
     stub();
     const reader = createFalRegionReader({ apiKey: "k", pairInOneRead: true });
     const sides = await reader.regionSides!({ image: await frame(), name: "earring", absentIsAnswer: true });
-    /* Her RIGHT is the image's left: the hoop at x 52 joined by the ring's
+    /* The cast's RIGHT is the image's left: the hoop at x 52 joined by the ring's
        left half, which runs to the midline. */
     const box = boundsOf(sides!.right)!;
     expect(box.x).toBe(52);

@@ -538,7 +538,7 @@ export type DroppedPiece = { pixels: number; centreX: number };
  * the face's midline is cut in two by the split every pair is read through,
  * and each half joins its side's real earring — so each side's rectangle ran
  * from the ear to the nose and the two met above the ring. Read on his
- * screenshot crop through this reader's own road (pair road: her right side
+ * screenshot crop through this reader's own road (pair road: the cast's right side
  * x240–362 against his panel's 241–369, the same rectangle), and on the crop
  * road it is worse: each half-frame answered the ring's half and NOT the ear.
  *
