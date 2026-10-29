@@ -1756,33 +1756,107 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       });
       const outfit = sectionOf(panel, "outfit")!.rows[0]!;
       expect(outfit.instances.map((one) => one.name), kind).toEqual(["Jacket"]);
-      expect(rowNames(panel, "open"), kind).toEqual(["Collar"]);
+      /* Never the Outfit, and never a fold: read as anatomy it is this
+         character, read as worn it is an accessory (his ruling, #2789). */
+      expect(rowNames(panel, kind === "accessory" ? "accessories" : "open"), kind).toEqual(["Collar"]);
     }
   });
 
-  /* ---- rule 3: a found thing folds under the row it sits on ---- */
+  /* ---- his ruling of 2026-10-29 (#2789): a worn thing is an accessory ---- */
 
-  it("folds a found thing under the catalogued row it sits on, never beside it", () => {
-    /* His own sentence: a lip ring goes under Lips. */
+  /*
+    ⚠ **THIS ARM USED TO SAY THE OPPOSITE, AND IT WAS HIS SENTENCE.** It read
+    ~~*"folds a found thing under the catalogued row it sits on — his own
+    sentence: a lip ring goes under Lips"*~~. On 2026-10-29 the founder took the relay's
+    recommendation instead (*"go with your reccomendation"*): every worn thing
+    is a row under Accessories and the body rows hold the body alone.
+  */
+  it("lists a worn thing under Accessories, and the body row it sits on holds the body alone", () => {
     const panel = panelOf({
       catalogued: ["lips"],
       found: [{ noun: "lip ring", kind: "accessory", on: "lips", x: 420, y: 700 }],
     });
-    expect(sectionOf(panel, "open")).toBeNull();
     const lips = sectionOf(panel, "face")!.rows.find((row) => row.name === "Lips")!;
-    expect(lips.instances.map((one) => one.name)).toEqual(["Lip ring"]);
-    expect(lips.instances[0]!.spoken).toBe("her lip ring");
-    expect(lips.instances[0]!.prefill).toBe("her lip ring — ");
-    /* Its own cut, kept — the design's *"the child keeps its own cut"*. */
-    expect(lips.instances[0]!.cutout).toEqual({
+    expect(lips.instances).toEqual([]);
+    expect(lips.regions.map((one) => one.name)).toEqual([null]);
+    expect(sectionOf(panel, "open")).toBeNull();
+    const ring = sectionOf(panel, "accessories")!.rows.find((row) => row.name === "Lip ring")!;
+    expect(ring.slots).toEqual(["discovered:lip-ring#1"]);
+    /* Its own cut, kept, and its own rectangle on the photograph. */
+    expect(ring.cutouts).toEqual([{
       contentUrl: "https://bucket.example/casting/master.jpg",
       maskUrl: "data:image/png;base64,lip ring",
       crop: { x: 420, y: 700, width: 80, height: 60, frame },
+    }]);
+    expect(ring.regions.map((one) => one.slot)).toEqual(["discovered:lip-ring#1"]);
+  });
+
+  it("lists every worn thing his ruling names there — piercings on any body row, and a choker on the neck", () => {
+    const panel = panelOf({
+      catalogued: ["nose", "lips", "brow@left", "brow@right", "ear@left", "ear@right"],
+      found: [
+        { noun: "septum ring", kind: "accessory", on: "nose" },
+        { noun: "lip piercing", kind: "accessory", on: "lips" },
+        { noun: "eyebrow bar", kind: "accessory", on: "eyebrows" },
+        { noun: "ear cuff", kind: "accessory", on: "ear" },
+        { noun: "choker", kind: "accessory", on: "neck" },
+      ],
+    });
+    expect(rowNames(panel, "accessories")).toEqual([
+      "Septum ring", "Lip piercing", "Eyebrow bar", "Ear cuff", "Choker",
+    ]);
+    /* Every body row holds the body alone. */
+    for (const row of sectionOf(panel, "face")!.rows) {
+      expect(row.instances.some((one) => one.slot.startsWith("discovered:")), row.name).toBe(false);
+    }
+    expect(sectionOf(panel, "open")).toBeNull();
+  });
+
+  it("keeps a mark on the skin in Also on this character, never under the body row it sits on", () => {
+    const panel = panelOf({
+      catalogued: ["lips"],
+      found: [{ noun: "lip tattoo", kind: "marking", on: "lips" }],
+    });
+    const lips = sectionOf(panel, "face")!.rows.find((row) => row.name === "Lips")!;
+    expect(lips.instances).toEqual([]);
+    expect(rowNames(panel, "open")).toEqual(["Lip tattoo"]);
+    expect(sectionOf(panel, "accessories")).toBeNull();
+  });
+
+  it("CONTROL — a worn thing on a worn row stays that row's child: a charm on the catalogue's Earrings", () => {
+    /* Not a body part, so the ruling does not move it — and the arm proves the
+       fold grammar still reaches an Accessories row. */
+    const panel = panelOf({
+      catalogued: ["earring@left", "earring@right"],
+      found: [{ noun: "charm", kind: "accessory", on: "earring" }],
+    });
+    const earrings = sectionOf(panel, "accessories")!.rows.find((row) => row.name === "Earrings")!;
+    expect(earrings.instances.map((one) => one.name)).toEqual(["Left earring", "Right earring", "Charm"]);
+    expect(rowNames(panel, "accessories")).toEqual(["Earrings"]);
+  });
+
+  /* ---- rule 3: what still folds under the row it sits on ---- */
+
+  it("folds a body feature under the catalogued row it sits on, never beside it", () => {
+    const panel = panelOf({
+      catalogued: ["lips"],
+      found: [{ noun: "cupid's bow", kind: "anatomy", on: "lips", x: 420, y: 700 }],
+    });
+    expect(sectionOf(panel, "open")).toBeNull();
+    const lips = sectionOf(panel, "face")!.rows.find((row) => row.name === "Lips")!;
+    expect(lips.instances.map((one) => one.name)).toEqual(["Cupid's bow"]);
+    expect(lips.instances[0]!.spoken).toBe("her cupid's bow");
+    expect(lips.instances[0]!.prefill).toBe("her cupid's bow — ");
+    /* Its own cut, kept — the design's *"the child keeps its own cut"*. */
+    expect(lips.instances[0]!.cutout).toEqual({
+      contentUrl: "https://bucket.example/casting/master.jpg",
+      maskUrl: "data:image/png;base64,cupid's bow",
+      crop: { x: 420, y: 700, width: 80, height: 60, frame },
     });
     /* And its rectangle on the photograph, NAMED, the way a pair's sides are. */
-    const ring = lips.regions.find((one) => one.name === "Lip ring")!;
-    expect(ring.slot).toBe("discovered:lip-ring#1");
-    expect(ring.spoken).toBe("her lip ring");
+    const bow = lips.regions.find((one) => one.name === "Cupid's bow")!;
+    expect(bow.slot).toBe("discovered:cupid-s-bow#1");
+    expect(bow.spoken).toBe("her cupid's bow");
   });
 
   it("reaches a pair row through the words the catalogue uses for it", () => {
@@ -1790,11 +1864,11 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
        would not, which is why the catalogue's five words are recorded. */
     const panel = panelOf({
       catalogued: ["ear@left", "ear@right"],
-      found: [{ noun: "ear piercing", kind: "accessory", on: "ear" }],
+      found: [{ noun: "pointed tip", kind: "anatomy", on: "ear" }],
     });
     expect(sectionOf(panel, "open")).toBeNull();
     const ears = sectionOf(panel, "face")!.rows.find((row) => row.name === "Ears")!;
-    expect(ears.instances.map((one) => one.name)).toEqual(["Left ear", "Right ear", "Ear piercing"]);
+    expect(ears.instances.map((one) => one.name)).toEqual(["Left ear", "Right ear", "Pointed tip"]);
   });
 
   /*
@@ -1825,12 +1899,12 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
        *eyebrows* to `eyebrow`, so the label alone cannot reach it. */
     const panel = panelOf({
       catalogued: ["brow@left", "brow@right"],
-      found: [{ noun: "brow piercing", kind: "accessory", on: "eyebrows" }],
+      found: [{ noun: "brow ridge", kind: "anatomy", on: "eyebrows" }],
     });
     expect(sectionOf(panel, "open")).toBeNull();
     const brows = sectionOf(panel, "face")!.rows.find((row) => row.name === "Brows")!;
     expect(brows.instances.map((one) => one.name)).toEqual([
-      "Left brow", "Right brow", "Brow piercing",
+      "Left brow", "Right brow", "Brow ridge",
     ]);
   });
 
@@ -1845,20 +1919,22 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
   it("takes a child AND a words line on one row, in either order", () => {
     const panel = panelOf({
       catalogued: ["lips"],
-      found: [{ noun: "lip ring", kind: "accessory", on: "lips" }],
+      found: [{ noun: "cupid's bow", kind: "anatomy", on: "lips" }],
       said: [{ noun: "chapping", on: "lips", about: "dry and chapped", kind: "marking", why: "scattered" }],
     });
     const lips = sectionOf(panel, "face")!.rows.find((row) => row.name === "Lips")!;
-    expect(lips.instances.map((one) => one.name)).toEqual(["Lip ring"]);
+    expect(lips.instances.map((one) => one.name)).toEqual(["Cupid's bow"]);
     expect(lips.words).toEqual(["dry and chapped"]);
   });
 
   it("keeps a parent's own ask about the parent — the fold does not widen it", () => {
     const panel = panelOf({
       catalogued: ["lips"],
-      found: [{ noun: "lip ring", kind: "accessory", on: "lips" }],
+      found: [{ noun: "cupid's bow", kind: "anatomy", on: "lips" }],
     });
     const lips = sectionOf(panel, "face")!.rows.find((row) => row.name === "Lips")!;
+    /* The arm is not vacuous: the fold happened. */
+    expect(lips.instances.map((one) => one.name)).toEqual(["Cupid's bow"]);
     /* ⚠ Tapping Lips is an ask about the lips, not about a ring on them. A row
        whose `slots` quietly included its lodgers would send an edit meaning
        both — which is the opposite of the Outfit row, where the noun IS the
@@ -1866,8 +1942,7 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     expect(lips.slots).toEqual(["lips"]);
   });
 
-  it("keeps two of one noun as two children, never a union", () => {
-    /* #2565 §6: left and right are separate items. Cast 2472's two straps. */
+  it("keeps two of one noun as two rows, never a union — two piercings are two rows (#2565 §6)", () => {
     const panel = panelOf({
       catalogued: ["lips"],
       found: [
@@ -1875,15 +1950,44 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
         { noun: "piercing", kind: "accessory", on: "lips", instance: 2, x: 500, y: 700 },
       ],
     });
+    const rows = sectionOf(panel, "accessories")!.rows;
+    expect(rows).toHaveLength(2);
+    expect(rows.map((row) => row.slots)).toEqual([["discovered:piercing#1"], ["discovered:piercing#2"]]);
+    expect(rows.map((row) => row.cutouts[0]?.crop?.x)).toEqual([400, 500]);
+  });
+
+  it("keeps two body features of one noun as two children, never a union", () => {
+    const panel = panelOf({
+      catalogued: ["lips"],
+      found: [
+        { noun: "dimple", kind: "anatomy", on: "lips", instance: 1, x: 400, y: 700 },
+        { noun: "dimple", kind: "anatomy", on: "lips", instance: 2, x: 500, y: 700 },
+      ],
+    });
     const lips = sectionOf(panel, "face")!.rows.find((row) => row.name === "Lips")!;
-    expect(lips.instances).toHaveLength(2);
-    expect(lips.instances.map((one) => one.slot)).toEqual([
-      "discovered:piercing#1", "discovered:piercing#2",
-    ]);
+    expect(lips.instances.map((one) => one.slot)).toEqual(["discovered:dimple#1", "discovered:dimple#2"]);
     expect(lips.instances.map((one) => one.cutout?.crop?.x)).toEqual([400, 500]);
   });
 
   it("folds under a FOUND row too, not only a catalogued one", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "third eye", kind: "anatomy", on: "forehead" },
+        { noun: "iris", kind: "anatomy", on: "third eye" },
+        { noun: "choker", kind: "accessory", on: "neck" },
+        { noun: "chain", kind: "accessory", on: "choker" },
+      ],
+    });
+    const open = sectionOf(panel, "open")!;
+    expect(open.rows.map((row) => row.name)).toEqual(["Third eye"]);
+    expect(open.rows[0]!.instances.map((one) => one.name)).toEqual(["Iris"]);
+    /* A worn thing on a worn thing stays its child, in Accessories. */
+    const accessories = sectionOf(panel, "accessories")!;
+    expect(accessories.rows.map((row) => row.name)).toEqual(["Choker"]);
+    expect(accessories.rows[0]!.instances.map((one) => one.name)).toEqual(["Chain"]);
+  });
+
+  it("never folds a worn thing under a FOUND body part either — a stud on a third eye is an accessory", () => {
     const panel = panelOf({
       found: [
         { noun: "third eye", kind: "anatomy", on: "forehead" },
@@ -1892,7 +1996,8 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     });
     const open = sectionOf(panel, "open")!;
     expect(open.rows.map((row) => row.name)).toEqual(["Third eye"]);
-    expect(open.rows[0]!.instances.map((one) => one.name)).toEqual(["Stud"]);
+    expect(open.rows[0]!.instances).toEqual([]);
+    expect(rowNames(panel, "accessories")).toEqual(["Stud"]);
   });
 
   /*
@@ -1905,15 +2010,15 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
   it("offers no narrow edit on a found child, and still offers one on a pair's sides", () => {
     const panel = panelOf({
       catalogued: ["ear@left", "ear@right"],
-      found: [{ noun: "ear piercing", kind: "accessory", on: "ear" }],
+      found: [{ noun: "pointed tip", kind: "anatomy", on: "ear" }],
     });
     const ears = sectionOf(panel, "face")!.rows.find((row) => row.name === "Ears")!;
     expect(ears.instances.map((one) => ({ name: one.name, scopable: one.scopable }))).toEqual([
       { name: "Left ear", scopable: true },
       { name: "Right ear", scopable: true },
-      { name: "Ear piercing", scopable: false },
+      { name: "Pointed tip", scopable: false },
     ]);
-    expect(ears.regions.find((one) => one.name === "Ear piercing")!.scopable).toBe(false);
+    expect(ears.regions.find((one) => one.name === "Pointed tip")!.scopable).toBe(false);
   });
 
   it("refuses a narrow edit on every piece of the outfit", () => {
@@ -1941,7 +2046,7 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
         { noun: "buckle", kind: "accessory", on: "strap" },
       ],
     });
-    expect(rowNames(panel, "open")).toEqual(["Strap", "Buckle"]);
+    expect(rowNames(panel, "accessories")).toEqual(["Strap", "Buckle"]);
   });
 
   it("reads a thing that sits on itself as hostless", () => {
@@ -1967,11 +2072,26 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     const row = sectionOf(panel, "outfit")!.rows[0]!;
     expect(row.instances.map((one) => one.name)).toEqual(["Robe"]);
     /* ⚠ The charm's host is not a ROW, so it keeps its own — the walk cannot
-       invent a parent out of a name nothing drew. */
-    expect(rowNames(panel, "open")).toEqual(["Charm"]);
+       invent a parent out of a name nothing drew. A worn thing's own row lists
+       under Accessories (his ruling, #2789). */
+    expect(rowNames(panel, "accessories")).toEqual(["Charm"]);
   });
 
   /* ---- rules 2 and 4: the words with no picture ---- */
+
+  it("never writes a scattered worn thing's words onto the body row his ruling emptied of worn things", () => {
+    const panel = panelOf({
+      catalogued: ["ear@left", "ear@right"],
+      said: [
+        { noun: "ear piercings", on: "ear", about: "a row of small studs", kind: "accessory", why: "scattered" },
+        { noun: "freckles", on: "ear", about: "a few freckles", kind: "marking", why: "scattered" },
+      ],
+    });
+    const ears = sectionOf(panel, "face")!.rows.find((row) => row.name === "Ears")!;
+    /* The positive control beside it: a mark's words still describe the skin
+       of the part, which is the body. */
+    expect(ears.words).toEqual(["a few freckles"]);
+  });
 
   it("puts a scattered thing's words on the row it sits on", () => {
     /* The design's own worked example. */
@@ -2084,14 +2204,14 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       said: [{ noun: "wrinkles", on: "face", about: "deep lines", kind: "marking", why: "scattered" }],
     });
     /* ONE outfit row holding the scarf, the robe and everything hanging off
-       it; four things that are this character rather than their clothes. */
+       it; two worn things that are not on the robe, as accessories (his ruling,
+       #2789); and two things that are this character's own body. */
     const outfit = sectionOf(panel, "outfit")!.rows[0]!;
     expect(outfit.instances.map((one) => one.name)).toEqual([
       "Scarf", "Pendant", "Strap", "Charm", "Robe",
     ]);
-    expect(rowNames(panel, "open")).toEqual([
-      "Third eye", "Jaw hardware", "Neck hardware", "Shoulder armor",
-    ]);
+    expect(rowNames(panel, "accessories")).toEqual(["Neck hardware", "Shoulder armor"]);
+    expect(rowNames(panel, "open")).toEqual(["Third eye", "Jaw hardware"]);
   });
 
   /*
@@ -2306,13 +2426,18 @@ describe("body hardware never reaches the Outfit through what it sits on", () =>
     expect(section(built, "open")!.rows.map((row) => row.name)).toEqual(["Neck implant"]);
   });
 
-  it("and what sits on the hardware stays with the hardware, not the outfit", () => {
+  it("and what sits on the hardware does not follow the collar into the outfit either", () => {
     const built = panelWith([
       { noun: "collar", kind: "clothing", on: "" },
       { noun: "jaw hardware", kind: "anatomy", on: "collar" },
       { noun: "stud", kind: "accessory", on: "jaw hardware" },
+      { noun: "ridge", kind: "anatomy", on: "jaw hardware" },
     ]);
+    expect(section(built, "outfit")!.rows[0]!.instances.map((one) => one.name)).toEqual(["Collar"]);
+    /* Body on the hardware stays with the hardware; a worn stud on it is an
+       accessory, never folded under a body part (his ruling, #2789). */
     const hardware = section(built, "open")!.rows.find((row) => row.name === "Jaw hardware")!;
-    expect(hardware.instances.map((one) => one.name)).toEqual(["Stud"]);
+    expect(hardware.instances.map((one) => one.name)).toEqual(["Ridge"]);
+    expect(section(built, "accessories")!.rows.map((row) => row.name)).toEqual(["Stud"]);
   });
 });

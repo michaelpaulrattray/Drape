@@ -1239,6 +1239,71 @@ describe("what a discovery's names become", () => {
   });
 
   /*
+    ⚠ ONE THING, ONE ROW, ACROSS THE SEAM (#2789). The catalogue's cuts exist
+    only once `scanFace` resolves, and the pointer road runs beside it: these
+    arms are what redden if the scan's cuts stop reaching the road — every
+    pointerCut arm would still pass against a catalogue handed in by hand.
+  */
+  const worn = (name: string, on: string): DiscoveredFeature => (
+    { ...discoveredFeature(name), kind: "accessory", on }
+  );
+
+  it("a found cut that is a catalogue row's own cut is never drawn again (#2789)", async () => {
+    /* The counting reader answers every catalogue question with ONE triangle at
+       (10,20 30x40); a found cut on exactly those pixels is that row. */
+    const reader = pointingReader({
+      "ear piercing": [{ x: 10, y: 20, width: 30, height: 40 }],
+      jacket: [{ x: 100, y: 200, width: 300, height: 400 }],
+    });
+    const { deps } = await dependencies(reader);
+    const reading = await scannedFace({
+      ...FACE,
+      dependencies: {
+        ...deps,
+        discover: async () => ({
+          ok: true,
+          features: [worn("ear piercing", "ear"), discoveredFeature("jacket")],
+          cannotSee: [],
+          unusable: [],
+          crops: ["head", "full"],
+        }),
+      },
+    });
+    expect(reader.pointed().sort()).toEqual(["ear piercing", "jacket"]);
+    expect(reading.discovered.map((one) => one.noun)).toEqual(["jacket"]);
+    /* Drawn as the catalogue's row, so not a name nothing could cut. */
+    expect(reading.namedNotCut).toEqual([]);
+  });
+
+  it("a box from the product's word is kept only where the scan cut that kind's site (#2789)", async () => {
+    const run = async (noseStud: { x: number; y: number; width: number; height: number }) => {
+      resetFaceScanCache();
+      const reader = pointingReader({ "nose stud": [noseStud] });
+      const { deps } = await dependencies(reader);
+      return scannedFace({
+        ...FACE,
+        dependencies: {
+          ...deps,
+          discover: async () => ({
+            ok: true,
+            features: [worn("septum ring", "nose")],
+            cannotSee: [],
+            unusable: [],
+            crops: ["head", "full"],
+          }),
+        },
+      });
+    };
+    /* Inside the nose the scan cut: drawn, under the reading's noun. */
+    const on = await run({ x: 20, y: 30, width: 10, height: 10 });
+    expect(on.discovered.map((one) => one.noun)).toEqual(["septum ring"]);
+    /* On the far side of the frame — his star, the lip stud at 768 px — refused. */
+    const off = await run({ x: 600, y: 900, width: 20, height: 20 });
+    expect(off.discovered).toEqual([]);
+    expect(off.namedNotCut.map((one) => `${one.noun}:${one.why}`)).toEqual(["septum ring:uncut"]);
+  });
+
+  /*
     ⚠ THE SETTLED READING IS WHAT GETS KEPT, so it has to WAIT for the pointer
     road. This arm is the one that reddens if `discovering` goes back to being
     fired and forgotten: a settled answer that omitted the jacket would be

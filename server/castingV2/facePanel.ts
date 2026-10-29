@@ -264,8 +264,10 @@ export type PanelScan = {
      * WHAT THE READING SAID IT IS AND WHAT IT SITS ON — the only two facts this
      * panel groups by (#2566 slice 2's grouping design).
      *
-     * `kind: "clothing"` is the ONLY thing that may enter the Outfit row, and
-     * `on` is what folds a lip ring under Lips. Both are the reading's own
+     * `kind: "clothing"` is the ONLY thing that may enter the Outfit row,
+     * `kind: "accessory"` lists under Accessories (his ruling of 2026-10-29,
+     * #2789), and `on` is what chains a buckle to its strap. Both are the
+     * reading's own
      * answer about the picture, which is the whole point: his ⚠ on the finding
      * was that the body implants were labelled *Collar*, so any rule keyed on
      * the WORD sweeps hardware into clothing. The measured reader put body
@@ -534,7 +536,7 @@ export type PanelInstance = {
    * DOOR REFUSES, AND THE CLIENT HAD NO WAY TO KNOW.** Every child here used to
    * be one side of a catalogued pair, so the browser could send `scope:
    * <child>` unconditionally and be right every time. A folded found row breaks
-   * that: a lip ring under Lips, a jacket under Outfit, keyed `discovered:…`,
+   * that: a charm under its chain, a jacket under Outfit, keyed `discovered:…`,
    * which `refineService`'s door answers `scope_unknown` on — driven at the
    * code, `slotDefinition("discovered:lip-ring#1")` is `null`. A tap that
    * dead-ends with a BAD_REQUEST is the entrance-before-the-road class with the
@@ -1720,8 +1722,13 @@ export function facePanel(input: {
 
       the one OUTFIT row    a `clothing` find, plus anything whose `on` chain
                             ends at one. Single pieces become its children.
+      ACCESSORIES           every worn thing that is not on a garment — a
+                            septum ring, a lip piercing, a choker — one row
+                            each, never folded under a body part (his ruling of
+                            2026-10-29, #2789; quoted at `placedHomeOf`).
       a CHILD of a row      an `on` that resolves to a row this panel already
-                            has: a lip ring under Lips, a piercing under Ears.
+                            has, where that is allowed: a charm under its chain,
+                            a body feature under the body row it belongs to.
       its OWN row in `open` everything else — the third eye, the jaw hardware,
                             the neck tattoo, the mole.
 
@@ -1864,6 +1871,53 @@ export function facePanel(input: {
     return { home: "own" };
   };
 
+  /*
+    ---- A WORN THING IS AN ACCESSORY, AND A BODY ROW HOLDS THE BODY ALONE (his
+    ruling, 2026-10-29, #2789) ----
+
+    His word, verbatim, on the relay's recommendation: *"go with your
+    reccomendation"*. The recommendation accepted:
+
+      every worn thing — earrings, a septum ring, a lip piercing, eyebrow bars,
+      glasses, any piercing or jewellery — is a row under ACCESSORIES and never
+      folds under a body part; the body rows (Eyes, Brows, Nose, Lips, Ears)
+      hold the body alone; marks on the skin (tattoos, scars) stay in *Also on
+      this character*; clothing stays in the Outfit.
+
+    It reverses his earlier sentence, which this block used to apply and which
+    is kept here struck rather than deleted, because a later hand reading the
+    old frames needs to know it was his and that he changed it:
+    ~~*"a lip ring goes under Lips, an ear piercing under Ears"*~~.
+
+    So the chain above still decides where a thing SITS, and this decides where
+    it LISTS. Three things do not move, each for a reason:
+
+      ON A GARMENT   a worn thing whose chain ends in the outfit stays there — a
+                     buckle on a strap on a coat is part of the coat (#2752), and
+                     *"clothing stays in the Outfit"* is the same sentence.
+      ON A WORN ROW  a charm on a chain, a chain on a choker, a charm on the
+                     catalogue's Earrings: a worn thing on a worn thing is not
+                     on a body part, so it stays that thing's child.
+      ANATOMY        a body feature on a body row is the body, and stays where
+                     it was.
+
+    ⚠ **The two-instance rule is untouched (#2565 §6)**: each cut instance is
+    its own row here exactly as it was its own child there, so two piercings are
+    two rows.
+  */
+  const BODY_SECTIONS: readonly PanelSection[] = ["face", "hair", "body"];
+  const placedHomeOf = (found: { noun: string; kind: FeatureKind; on: string }): FoundHome => {
+    const home = homeOf(found);
+    if (found.kind !== "accessory" && found.kind !== "marking") return home;
+    if (home.home === "child" && BODY_SECTIONS.includes(home.parent.group)) return { home: "own" };
+    if (home.home === "underFound" && home.host.kind === "anatomy") return { home: "own" };
+    return home;
+  };
+
+  /** The section a found thing's OWN row lists in: a worn thing is an
+   *  accessory, by his ruling above; anything else is also on this character. */
+  const ownSectionOf = (kind: FeatureKind): PanelSection => (kind === "accessory" ? "accessories" : "open");
+
   /** One found thing as a child of whatever it sits on. */
   const foundChild = (found: (typeof foundRows)[number]): PanelInstance => {
     const noun = found.noun.trim();
@@ -1916,7 +1970,7 @@ export function facePanel(input: {
   const foldedUnderFound = new Map<(typeof foundRows)[number], (typeof foundRows)[number][]>();
   const ownRows: (typeof foundRows)[number][] = [];
   for (const found of foundRows) {
-    const home = homeOf(found);
+    const home = placedHomeOf(found);
     if (home.home === "outfit") { outfitPieces.push(found); continue; }
     if (home.home === "child") {
       const held = foldedUnder.get(home.parent) ?? [];
@@ -1971,11 +2025,16 @@ export function facePanel(input: {
   /*
     ---- A FOUND THING FOLDS UNDER THE ROW IT SITS ON (rule 3) ----
 
-    His own sentence: a lip ring goes under Lips, an ear piercing under Ears.
-    The grammar is already here — the pair rows' children — so it is REUSED
-    rather than invented, which is the design's instruction in its own words.
+    ~~His own sentence: a lip ring goes under Lips, an ear piercing under
+    Ears.~~ ⚠ **Reversed by his ruling of 2026-10-29 (#2789), quoted in full at
+    `placedHomeOf` above: every worn thing is a row under Accessories and the
+    body rows hold the body alone.** What still folds here is a body feature
+    under the body row it belongs to, and anything worn on a worn row (a charm
+    under the catalogue's Earrings). The grammar is already here — the pair
+    rows' children — so it is REUSED rather than invented, which is the
+    design's instruction in its own words.
 
-    ⚠ **THE TWO-INSTANCE RULE SURVIVES THE FOLD**: two piercings are two
+    ⚠ **THE TWO-INSTANCE RULE SURVIVES THE FOLD**: two of a thing are two
     children with two cuts, never a union (#2565 §6). They arrive from the
     pointer road as two rows already, so nothing here has to preserve it — what
     this paragraph prevents is a later hand merging them *because they share a
@@ -2130,7 +2189,7 @@ export function facePanel(input: {
     const row: PanelRow = {
       state: "settled",
       slots: [found.slot],
-      group: "open",
+      group: ownSectionOf(found.kind),
       name: capitalize(noun),
       spoken: spokenName,
       /*
@@ -2184,7 +2243,7 @@ export function facePanel(input: {
         push({
           state: "settled",
           slots: [child.slot],
-          group: "open",
+          group: ownSectionOf(child.kind),
           name: capitalize(noun),
           spoken: spokenName,
           words: [],
@@ -2255,7 +2314,13 @@ export function facePanel(input: {
        scattered PIECE OF CLOTHING, and anything sitting on one, says its words
        on the Outfit row. `kind` is the thing's own, which is why a scattered
        garment reaches the outfit with no special case here. */
-    const home = homeOf({ noun: said.noun, kind: said.kind, on: said.on });
+    /* A worn thing's words follow its ROW's placement, so a scattered piercing
+       does not describe itself on the Ears row his ruling emptied of worn
+       things (#2789). A mark's words still describe the skin of the part they
+       sit on, which is the body — freckles across the nose. */
+    const home = said.kind === "accessory"
+      ? placedHomeOf({ noun: said.noun, kind: said.kind, on: said.on })
+      : homeOf({ noun: said.noun, kind: said.kind, on: said.on });
     if (home.home === "outfit") {
       const row = outfitRow();
       if (row !== null) wordsOnto(row, about);
