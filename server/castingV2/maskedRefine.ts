@@ -360,6 +360,23 @@ export type RegionReader = {
      * than guessing.
      */
     declaredTwoSided?: true;
+    /**
+     * THIS PAIR IS WORN ON THE EARS, so a piece of the answer that sits nearer
+     * the middle of the face than its side is something else (#2781).
+     *
+     * The segmenter asked `earring` answered a SEPTUM RING too, on the
+     * founder's own cast, and a ring on the midline is cut in half and handed
+     * to both sides — so each side's rectangle ran from the ear to the nose. An
+     * ear is at the side of the face, and that is a fact about what is being
+     * read, so the CALLER says it and the reader keeps only the pieces that are
+     * where an ear is. The face read that finds the midline already gives the
+     * face's two sides, so it costs no request.
+     *
+     * Optional and off by default, on `pairInOneRead`'s own reasoning: the face
+     * scan asks for it, and a masked refine — which PAINTS on what it gets back
+     * — is left exactly as it was until it is measured on its own card.
+     */
+    onTheEars?: true;
   }): Promise<SideRegions | null>;
   /** A soft whole-subject matte, for edge ramps. `signal` as on `region`. */
   subject(input: { image: Buffer; signal?: AbortSignal }): Promise<Mask>;
