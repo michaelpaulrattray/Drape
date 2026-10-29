@@ -247,7 +247,7 @@ export type NamedNotCut = {
    */
   kind: FeatureKind;
   /**
-   * WHY there is no row, because the three answers are not interchangeable:
+   * WHY there is no row, because the four answers are not interchangeable:
    *
    * `scattered` — it has no outline to cut (freckles, stubble, stitching), so
    *     the detector was never asked. Its words belong to the thing it sits on.
@@ -255,8 +255,28 @@ export type NamedNotCut = {
    *     cast. No row, no cut, and it is never retried.
    * `uncut` — the detector was asked and produced nothing usable, so this one
    *     is the only kind that is worth asking about again.
+   * `dropped` — a call on this name did not complete. Nothing was learned
+   *     about it either way, so it is not an absence and not an `uncut`.
+   *
+   * ⚠ **`dropped` WAS WRITTEN AS `uncut` UNTIL #2805, AND THE WORD MATTERED
+   * MORE THAN IT LOOKS.** `uncut`'s own sentence above says *the detector was
+   * asked*, and a name whose call threw was never asked at all — so the kept
+   * reading filed a dropped call under the one word that asserts it happened,
+   * and the two were told apart in the LOG (`failedNouns`) and nowhere else.
+   * That log reaches back about thirty-six hours, which is why #2805's own
+   * question — how often does this happen — was unanswerable at any artifact
+   * that outlives a day, and why two shifts measuring it could only count the
+   * readings still in retention.
+   *
+   * ⚠ **IT CHANGES NOTHING A CUSTOMER SEES AND THAT IS DELIBERATE** — the
+   * panel treats it exactly as `uncut` (no row of its own, and no words written
+   * onto whatever it sits on, `facePanel`), and no retry is built on it. The
+   * repair this card asks for is a SECOND ASK, refused twice on measurement
+   * (0 failures in every production reading the road has made) and still
+   * refused; what is fixed here is only that the record stops saying the call
+   * was made.
    */
-  why: "scattered" | "makeup" | "uncut";
+  why: "scattered" | "makeup" | "uncut" | "dropped";
 };
 
 /**
@@ -2153,7 +2173,7 @@ export async function cutDiscovered(input: {
     for (const region of one.regions) regions.push(region);
     /*
       ASKED, AND NOTHING CAME BACK THAT COULD BE DRAWN — the third `why`, and
-      the only one of the three worth asking about again.
+      the only one of the four worth asking about again.
 
       ⚠ **It is keyed on ROWS and not on `declined`**, which is the whole
       difference between this list and that one: a name the detector answered
@@ -2162,6 +2182,22 @@ export async function cutDiscovered(input: {
       Keying on the refusal would have silently dropped exactly the specimen
       this module's header is written about (the three-eyed cast's discarded
       cut), which is the direction that hides work.
+
+      ⚠ **AND A NAME WHOSE CALL DROPPED IS `dropped`, NOT `uncut` (#2805).**
+      `broke` already says a call on this name did not complete — the detect
+      threw, or every cut of its rectangles did — and in that case nothing was
+      learned about the thing: it is not an absence, and it is not "asked and
+      nothing usable came back" either. It was written as `uncut` until this
+      card, so the kept reading asserted an ask that never happened and the
+      distinction survived only in `failedNouns` on a log line with about
+      thirty-six hours of retention.
+
+      ⚠ **`broke` WINS OVER `declined` WHERE A NAME IS BOTH, and that pair is
+      reachable rather than theoretical**: a detect that answers nothing on the
+      whole frame sends the name to the host-crop ask, and a crop that offers
+      rectangles whose every cut then throws leaves `declined` AND `broke` both
+      true. The detector found something there; it is the cut that was lost, so
+      the honest word is the one that says a call is missing.
     */
     /* A name whose cut was a catalogue row's own cut IS drawn — as that row —
        so it is not a name nothing could draw (#2789). */
@@ -2172,7 +2208,7 @@ export async function cutDiscovered(input: {
       on: feature.on,
       about: feature.about,
       kind: feature.kind,
-      why: "uncut",
+      why: one.broke ? "dropped" : "uncut",
     });
   }
 
@@ -2230,10 +2266,20 @@ export async function cutDiscovered(input: {
         is 4 across 29 names, and a cast where it is suddenly most of them is a
         finding about the READING rather than about this module.
       */
+      /*
+        ⚠ **`dropped` IS A FOURTH COUNTER HERE AND IS NOT `failed` RESTATED
+        (#2805).** `failed` above counts every name a call dropped ON; this
+        counts the names that therefore have no row at all. A detect that
+        answered, one rectangle cut and a second that threw is `failed: 1` with
+        a row to show, so the two numbers differ on purpose and neither is a
+        mirror of the other (working law 4). Without this line the fourth `why`
+        would simply leave `gated`'s counts short of `named`.
+      */
       gated: {
         scattered: named.filter((one) => one.why === "scattered").length,
         makeup: named.filter((one) => one.why === "makeup").length,
         uncut: named.filter((one) => one.why === "uncut").length,
+        dropped: named.filter((one) => one.why === "dropped").length,
       },
       /*
         ⚠ AND BY NOUN, BECAUSE A COUNT COULD NOT ANSWER HIS FIFTH FINDING (#2752).
@@ -2245,6 +2291,10 @@ export async function cutDiscovered(input: {
         reading's own bare nouns — the same ones `rows` above already carries —
         and never the `about` prose, which stays out of every log.
       */
+      /* ⚠ **No `dropped` list here on purpose (#2805)**: `failedNouns` below is
+         already every noun a call dropped on, and the ones with no row are the
+         ones absent from `rows` above. A third list of the same nouns is the
+         mirror working law 4 is about. */
       wordsOnly: {
         scattered: named.filter((one) => one.why === "scattered").map((one) => one.noun),
         uncut: named.filter((one) => one.why === "uncut").map((one) => one.noun),

@@ -1612,7 +1612,7 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     on: string;
     about: string;
     kind: FeatureKind;
-    why: "scattered" | "makeup" | "uncut";
+    why: "scattered" | "makeup" | "uncut" | "dropped";
   };
 
   /**
@@ -2111,6 +2111,35 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     expect(skin.words).toEqual(["a dusting of freckles across the nose and cheeks"]);
     /* No row of its own and no cut — the class his eye found is gone at source. */
     expect(sectionOf(panel, "open")).toBeNull();
+  });
+
+  it("writes no words for a thing whose detector call DROPPED either — identically (#2805)", () => {
+    /*
+      THE WHOLE OF WHAT THAT CARD CHANGES ON THIS SURFACE, WHICH IS NOTHING.
+
+      `dropped` and `uncut` are told apart in the KEPT reading, because `uncut`
+      asserts an ask that a dropped call never made. The panel's question is a
+      different one — can any row carry these words — and the answer is no
+      either way.
+
+      ⚠ **THE SHAPE HERE IS THE SCATTERED-GARMENT ARM BELOW WITH ONE WORD
+      CHANGED, AND THAT IS WHY IT IS THIS SHAPE.** The first draft of this arm
+      used an accessory on a catalogued body row and asserted no words on it —
+      and it passed with the branch DELETED, because `placedHomeOf` sends a worn
+      thing off a body row to a row of its own anyway (his #2789 ruling). A
+      scattered piece of clothing on a found garment is the one shape whose
+      words demonstrably DO land somewhere, so it is the only shape on which
+      skipping can be proven to be the thing that stopped them.
+    */
+    const panel = panelOf({
+      found: [{ noun: "coat", kind: "clothing" }],
+      said: [
+        { noun: "leather patch", on: "coat", about: "leather patches at the elbows", kind: "clothing", why: "dropped" },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    expect(row.words, "the words of a thing no call ever reached say nothing about the coat").toEqual([]);
+    expect(row.instances.map((one) => one.name)).toEqual(["Coat"]);
   });
 
   it("puts a scattered piece of an outfit's words on the Outfit row", () => {
