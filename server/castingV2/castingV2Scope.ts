@@ -1251,6 +1251,116 @@ export function validateCastingReferenceTakeEnvironment(input: {
   return child;
 }
 
+/**
+ * THE REFERENCE SELECTOR'S OWN SWITCH — whether an attached picture is READ at
+ * all (#14 slice 2, the build design's §9).
+ *
+ * # WHAT IT GOVERNS, AND IT IS NARROWER THAN THE CARD
+ *
+ * One thing: whether attaching a picture also buys a READING of it — the
+ * discovery variant pointed at the reference, plus one detector rectangle per
+ * name it brings back. That reading's product is a bounded list of named,
+ * boxed markers and NOTHING ELSE. No cut is taken, no row is minted, no byte
+ * is stored, nothing reaches a render, and no customer sees a marker: the
+ * surface is slice 3's and the tap's cut is slice 4's. This flag buys the
+ * answer a later slice draws.
+ *
+ * # WHY THE PARENT IS THE ATTACH SCOPE
+ *
+ * The reading's whole input is an attachment, so an account armed here and not
+ * at the attach door would be offered a road with nothing to walk it on — the
+ * hair reference's argument and the take's, clause for clause, and the same
+ * parent for the same reason.
+ *
+ * # WHAT IS TRUE WHILE IT IS OFF, WHICH IS EVERYWHERE TODAY
+ *
+ * Byte-identical to the tree before it. An attach proceeds exactly as it does
+ * today: no text call, no detector call, no money, and the words road
+ * untouched. {@link captureCastingReferenceSelectorEnabled} is the only gate,
+ * and a caller that never asks reads no differently from one refused.
+ *
+ * # ⚠ IT BUYS PROVIDER CALLS, WHICH IS THE WHOLE REASON IT IS A FLAG
+ *
+ * A reading is one or two text calls plus one detect per name — measured by
+ * the slice-1 court on a real reference photograph: **8.3 s for 14 names over
+ * 2 crops**, and **~1.8 s per detect**, the four detects moving the fal
+ * balance by less than a cent. House money, never a customer credit, and the
+ * marker cap is what bounds the detect half rather than a hope.
+ *
+ * # ⚠ NO CLEANUP-WORKER CLAUSE HERE, AND THAT IS READ RATHER THAN OMITTED
+ *
+ * Nothing on this road writes a byte to storage — the reading returns names
+ * and rectangles in memory. The clause the take and the hair carrier each
+ * carry exists because they MINT bytes under a manifest; slice 4's mint will
+ * need it and this slice has nothing for it to delete.
+ */
+export const CASTING_REFERENCE_SELECTOR_SCOPE_ENV = "CASTING_REFERENCE_SELECTOR_SCOPE";
+
+export class CastingReferenceSelectorScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_REFERENCE_SELECTOR_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingReferenceSelectorScopeConfigurationError";
+  }
+}
+
+export class CastingReferenceSelectorCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_REFERENCE_SELECTOR_SCOPE_ENV} ${detail}`);
+    this.name = "CastingReferenceSelectorCoverageError";
+  }
+}
+
+export function parseCastingReferenceSelectorScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingReferenceSelectorScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's attached picture is read for takeable things.
+ *
+ * An AND of the whole chain at the point of use, like every sibling: the boot
+ * check refuses a scope reaching past its parent, and a boot check nobody
+ * invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingReferenceSelectorEnabled(userId: number): boolean {
+  const child = parseCastingReferenceSelectorScope(process.env[CASTING_REFERENCE_SELECTOR_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingReferenceAttachEnabled(userId);
+}
+
+export function validateCastingReferenceSelectorEnvironment(input: {
+  scope: string | undefined;
+  attachScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingReferenceSelectorScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingReferenceAttachScope(input.attachScope);
+  if (parent.kind === "off") {
+    throw new CastingReferenceSelectorCoverageError(
+      `cannot be enabled while ${CASTING_REFERENCE_ATTACH_SCOPE_ENV} is off — the picture this `
+      + "reading reads is attached at that door, so the road would open onto an ask with nothing "
+      + "to read",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingReferenceSelectorCoverageError(
+      `cannot be "all" while ${CASTING_REFERENCE_ATTACH_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingReferenceSelectorCoverageError(
+      `names users outside ${CASTING_REFERENCE_ATTACH_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}
+
 /* --------------------- the dispatch sub-flag, RETIRED (#1577 slice D4)
 
    `CASTING_REFINE_DISPATCH_SCOPE` stood here with its env constant, its two
