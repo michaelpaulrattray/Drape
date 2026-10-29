@@ -67,26 +67,52 @@
  *
  * # WHAT IT REFUSES, AND WHAT IT DELIBERATELY DOES NOT JUDGE
  *
- * Two refusals, and neither is a threshold somebody picked:
+ * Three refusals, and the one threshold among them was measured rather than
+ * picked:
  *
  *   **a mask with no pixels** — there is nothing to draw and nothing to point
  *   at, so there is no row;
  *   **a mask that does not overlap the rectangle that asked for it** — the
  *   segmenter answered about something else. A yes/no about two rectangles,
- *   with no tolerance to tune.
+ *   with no tolerance to tune;
+ *   **a mask that fills less than a fifth of that rectangle** — the "only the
+ *   straps" answer, a coherent fragment of the thing returned silently in
+ *   place of the thing. `cutQuality.ts` carries the measurement and the ⚠
+ *   below carries what it replaced.
  *
- * ⚠ **WHOLENESS AND LOOSENESS ARE NOT JUDGED HERE, AND THAT IS DECLARED RATHER
- * THAN OVERLOOKED.** #2532's own open list ends *"the loose-region case is still
- * unsolved"* — a shoulder wrap the detector declines, a forehead the detector
- * returns with the eyes inside it — and the bar that handles it is **#2565 §4's**
- * (*"a cut with holes or broken edges is not used"*, with the clean-up that
- * closes gaps and feathers outside only). That card's slice 2 is unbuilt at the
- * time of writing, so this road has no clean-and-refuse pipeline to call and
- * does not invent one: an area threshold here would be a number nobody
- * measured, standing in for a bar he has already approved the shape of. What
- * guards it meanwhile is that the flag is dark and the flip is **his eye on real
- * panels** (the design's §8 step 4), and that every cut logs its noun and its
- * area so the frames can be read rather than guessed at.
+ * ⚠ **BROKENNESS IS JUDGED HERE NOW, AND THE SENTENCE THAT SAID IT WAS NOT IS
+ * STRUCK — 2026-10-29, #2565 slice 2.** ~~*"this road has no clean-and-refuse
+ * pipeline to call and does not invent one: an area threshold here would be a
+ * number nobody measured"*~~ — **the number is measured and this road is its
+ * first caller.** `cutQuality.ts`'s `judgeCut` refuses a cut filling less than
+ * a fifth of the rectangle it was asked about; correct cuts measured 42.3–73.5%
+ * and the known-bad 8.3%, with 5.1× of room between them, and a correct nose
+ * stud and hoop earring clear it comfortably (49.6% and 67.1%), which was the
+ * falsification arm. The population and the two things §4's own sentence gets
+ * wrong — holes run BACKWARDS as a signal, and want closing rather than
+ * refusing — are in that module's header. **It is a third refusal of exactly
+ * the kind the two above already are**: local to one name, no row, every other
+ * row and the whole catalogue scan untouched.
+ *
+ * ⚠ **LOOSENESS IS STILL NOT JUDGED, AND THAT HALF STAYS DECLARED.** #2532's
+ * own open list ends *"the loose-region case is still unsolved"* — a shoulder
+ * wrap the detector declines, a forehead the detector returns with the eyes
+ * inside it. A loose cut is one that claims MORE than it should, and a fill bar
+ * cannot see it: filling a rectangle generously is what a correct garment cut
+ * does. What guards that case is every cut logging its noun, its area and now
+ * its fill, so the frames can be read rather than guessed at.
+ *
+ * ⚠ **AND "THE FLAG IS DARK" CAME OFF THAT SENTENCE ON 2026-10-29, BECAUSE IT
+ * WAS ALREADY FALSE WHEN THE QUALITY BAR WAS WIRED IN.** This paragraph read
+ * ~~*"the flag is dark and the flip is his eye on real panels"*~~, and
+ * `CASTING_FACE_DISCOVERY_SCOPE` has stood at **`users:1` — HIS ACCOUNT —
+ * since 2026-10-28** (read at `scripts/lib/productionFlagPositions.mts`, not
+ * assumed; his word was *"never ask me to switch things on for my account just
+ * do it"*). So this road is LIVE for him and he has been reading its panels in
+ * eye rounds 3 and 4 the same week. **A refusal added here is in front of him
+ * on the next deploy, not waiting behind a flip** — which is the argument for
+ * logging every fill rather than only the refusals, and for the floor being
+ * one exported constant.
  *
  * # It cannot take a row off the panel, and it cannot break a scan
  *
@@ -97,6 +123,7 @@
  * is the property slice 1 was held on twice and it is the one to protect.
  */
 import { boundsOf } from "./segmentCuts";
+import { judgeCut } from "./cutQuality";
 import { LANDMARK_OF_ACCESSORY, accessoryEntry } from "./accessoryKinds";
 import { scanPlan } from "./faceScan";
 import { catalogueSlots, type SlotGroup } from "./referenceSlotCatalogue";
@@ -1123,6 +1150,34 @@ export async function cutDiscovered(input: {
           );
           return { index, region: null, broke: false };
         }
+        /*
+          THE QUALITY BAR — #2565 §4's, measured, and this road's own declared
+          gap now filled (see this module's header, where the sentence saying
+          there was no pipeline to call is struck).
+
+          A cut that fills less than a fifth of the rectangle it was asked
+          about is the "only the straps" answer: the segmenter returning a
+          coherent fragment of the thing, silently, with a plausible-looking
+          mask. It gets no row, exactly as a cut with no pixels gets no row.
+
+          ⚠ **The fill is logged on EVERY judgement, used or refused, and that
+          is deliberate rather than noisy.** The floor is a FLOOR taken on one
+          known-bad specimen, so the population it wants is the one this road
+          produces in use; logging only refusals would grow a record of what
+          the bar already catches and tell nobody where the correct cuts sit.
+        */
+        const verdict = judgeCut({ mask, box });
+        if (!verdict.use) {
+          log.warn(
+            { name: feature.name, askedAbout: box, answered: bounds, fill: verdict.fill, why: verdict.why },
+            "the cut did not fill enough of the rectangle it was asked about — no row",
+          );
+          return { index, region: null, broke: false };
+        }
+        log.debug(
+          { name: feature.name, fill: verdict.fill, claimed: verdict.claimed },
+          "the cut cleared the quality bar",
+        );
         return {
           index,
           region: {
