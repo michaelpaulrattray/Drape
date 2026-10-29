@@ -4819,3 +4819,241 @@ window; a clock cannot fire while no shift runs, which is R22). Next due
    444 and remote 162.** Still not a seat's.
 8. ⚠ **A recorded control string is a spent control string** — §C. Use a fresh
    nonce, and never write a pattern file into the tree you are about to search.
+
+## Run 18 — 2026-10-30 00:30–01:1x AEST (Janitor, patrol #18; card #2814 filed; 106 local refs swept; run 17's knip prediction TESTED)
+
+**Window:** 2026-10-27 03:55Z (run 17's close) → 2026-10-29 14:30Z. **Two and a
+half days on a three-day clock** — `patrol-clocks.mts` read `Janitor DUE today`
+and the other three seats 4–5 days out, so this is the first Janitor run in a
+while to fire on an ordinary clock rather than after a park.
+
+**Why the Janitor ran, and why it ran FIRST.** Clock fired with switch
+**Housekeeping ON**, and #505 puts a fired clock ahead of the category order.
+Everything above it was read and genuinely unavailable:
+
+- **The urgent band is EMPTY** (`queue-standing-exceptions.mts`).
+- **0 of 17 rows in his ordered band are ON OFFER** — every one held, claimed or
+  being built, each saying so on its own line.
+- **No repair owed.** Two team pull requests open (#2804, #2799) plus five
+  dependabot; neither team PR's newest relay comment is a live
+  `**Relay finding — HELD`, so nothing is owed a repair. #2799 is correctly
+  **waiting on the relay's verdict** (its triage comment says a review is owed)
+  and was not touched.
+- **No new replies** — 303/303 acknowledged, re-read at the close.
+- **No card taps waiting** (`crew-card-intents.mts`: the one listed was answered
+  2026-09-14).
+- **One seat was live and its lane was left alone** — `seat1-20261030-001455`
+  (row #867), opened **five minutes before this row**, so it is alive on positive
+  evidence rather than on a verdict the tool could not give (its own line read
+  `supersession: not readable`). Its three claims were read **at the cards**, not
+  guessed: #2802, #2811, #2812, each carrying `CLAIMED — seat1-20261030-001455`.
+  **That is what left this patrol clear of the face reader**, where a fourth
+  agent would have been the third collision in two days.
+
+### ⚠ THE HEADLINE IS A STRANDED ARTIFACT, NOT LITTER: #2814
+
+**A finished pull request is sitting where no road the team has can move it.**
+**PR #2804** (card #2798) is **green on all 11 checks** at its own head
+`9008dafe6` and is **owed no review** — triage posted nothing, no `needs-fable`,
+two server files, no client/money/auth surface — so by the standing rule it
+merges on the gate alone. It cannot: it is **DIRTY**, and a conflicting pull
+request **fires no workflow run for any event** (#566), so it cannot even be
+re-gated while its checks page goes on showing green for a tree that can no
+longer be built.
+
+**Nobody picked it up because every road behaved exactly as written.** Its seat
+(`seat1-20261029-215807`, row #865) closed as `shipped` 90 minutes before this
+patrol and never wrote a `RELEASED` line; an open pull request is not one
+(#1701), so card #2798 reads **CLAIMED for twelve hours** and
+`crew-shift-start.mts` **refused this patrol the card by name** — correctly, and
+with the three artifacts it asks for printed. The row it refused on is the right
+one; what has no road is the *pull request*, not the card.
+
+⚠ **AND THE CONFLICT IS SEMANTIC, WHICH IS WHY THIS PATROL MEASURED IT AND DID
+NOT RESOLVE IT.** This is not the generated-map conflict every seat PR gets.
+Driven rather than assumed — `git merge origin/main`, then **aborted**:
+
+| | reading |
+|---|---|
+| conflicts | **3 content hunks in `pointerCut.ts`**, plus `pointerCut.test.ts` |
+| side A — the branch (#2798) | **+448 / −111** on `pointerCut.ts` |
+| side B — main, one commit `ca34a7371` (#2801) | **+151 / −0**, across **7 hunks** of the same two functions |
+| what both touch | **both rewrite `settle`** — the branch adds a third `found` parameter (`readonly FoundPlace[]`, nullable); main adds `held`, `heldInto`, `wandered`, `lying` and the body-part-lying rule |
+
+So resolving it means **re-threading #2801's four additions through #2798's
+rewritten `settle`** — build-class judgement on a claimed card, in a file where
+**three agents were live while this patrol ran** (`relay-agent-2810` on #2810,
+`seat1` on #2802/#2811/#2812). **A careless resolution there silently drops one
+of two already-shipped repairs**, which is the class this repository keeps
+paying for, and the last shift had to check for exactly it on PR #2803. The
+branch is **untouched at `9008dafe6`** and the seat's five measurement
+disposables are still in its worktree. Filed as **#2814** with the recommended
+resolution; commented on the PR and the card under this seat's own header, never
+the relay's.
+
+⚠ **The class outlives the instance, and it is a one-line gap in the orders.**
+They already say **a seat's PR is READY, never a draft, when the seat closes its
+row** (2026-09-26, PR #1376) — because a closed seat cannot lift its own draft
+flag. **This is that rule's sibling and it is not written down: a closed seat
+cannot re-merge main either.** A seat closing with a DIRTY pull request leaves an
+artifact that is green, finished, owed no review and unreachable, while the board
+shows it as ordinary work in flight. **Offered to the Retro as a proposal, not
+built** (the anti-boredom rule) — its clock fires ~2026-11-04.
+
+| run 17's next-run item | outcome |
+|---|---|
+| 1 — the third dev-server data point; `dev-servers.mts` still calls the cross-env layer "root" | ⚠ **Not re-read this run** — no dev server was started, so there is no third point, and the naming defect is still a proposal. Carried. |
+| 2 — the temp population restarts from 15 / 1, all inside the floor; **expect a sweepable set every run** | ⚠ **The prediction is WRONG, and why is structural.** 150 entries now, **0 sweepable.** §B |
+| 3 — `drape-scratch`'s manifest rule written | ✅ Honoured; nothing past its floor, not re-derived. |
+| 4 — knip: read the 27 Oct nightly, **the next run's first knip act** | ✅ **DONE, and it was this run's first knip act.** #2605's sweep **confirmed at the authority**: 131 → 75 symbols. §A |
+| 5 — memory index 348 files, 0 faults | ✅ **Re-run: 362 files, 0 faults, exit 0.** §D |
+| 6 — #2155 is `blocked` and grew to 58 / 444; still not a seat's | ⚠ **Re-read (law 2y): the hold SURVIVES**, and it grew on every axis. Numbers recorded on the card. §E |
+| 7 — local `team/*`: 444 local, 162 remote, **not swept** | ✅ **SWEPT — 106 refs, 527 → 421**, every one restorable two ways. §C |
+| 8 — run 17's own departure (a sweep with a manifest but no backup copy), recorded for the Retro | ✅ **Not repeated.** This run's manifest was copied **outside the repository** before anything was deleted. §C |
+
+### A. knip — run 17's prediction tested, and the types column is a finding
+
+Full reading, controls and named populations are in the row this run added to
+[`JANITOR_KNIP.md`](JANITOR_KNIP.md). The three things that belong here:
+
+1. **#2605's sweep is confirmed by the instrument with authority** — exports
+   **131 → 75 symbols** (16 → 27 Oct), **63 gone / 7 arrived**, against a sweep
+   that claimed 62. Run 17 predicted **~55 rows** and the nightly read **60**;
+   the 6-symbol excess is one code-bearing day at run 16's measured ~6.2 a
+   night, so **the prediction was close and the gap is explained rather than
+   waved at.**
+2. ⚠ **The types population moved +5 symbols in ONE night** (49 → 54) against
+   run 16's measured ~0.4 a night. **Recorded as a POINT, not a trend** — three
+   of the five arrive in the same files as that night's export arrivals, so one
+   or two commits likely carried both, and 28 Oct was the face reader's heaviest
+   night. The 29/30 Oct nightlies settle it; the symbol sets are kept so the
+   next run diffs rather than re-derives.
+3. ⚠ **THE INSTRUMENT ITSELF IS THE REAL FINDING, AND IT IS WORKING LAW 4.**
+   **Six consecutive runs have hand-written this extractor** (10, 11, 12, 16, 17,
+   18) and **three were caught out by their own controls** — run 12's first form
+   returned *0 symbols on all four logs* and would have reported arrival had
+   STOPPED; runs 10 and 11 compared a symbol count to a row count; run 16 had to
+   correct the column's meaning for the whole table. **A reader re-derived every
+   run drifts from itself, which is the law this ledger cites at other people.**
+   Mine was controlled three ways and agreed, but that is diligence, not a fix.
+   **Promoting it to a tracked script with its controls as arms is a change to
+   the team's own instruments — a proposal for the Retro, not a patrol's act.**
+
+### ⚠ B. The temp population — 150 entries and NOTHING to sweep, and the reason is the clock
+
+| | run 15 | run 16 | run 17 | **run 18** |
+|---|---|---|---|---|
+| `drape-*` entries | 189 | 262 | 209 → 15 after sweep | **150** |
+| files beneath them | 8,941 | 10,577 | 6,988 → 1 | **10** |
+| past the 7-day floor | 0 | 67 | 195 | **1** |
+| reparse points | 0 | 0 | 0 | **0** |
+
+**Swept: 0.** Run 17 predicted *"expect a sweepable set every run"* and that is
+**wrong**, not narrowly but structurally. The one entry past the floor is
+**`drape-logo-tight.png`** — **run 17's own recorded keep**, held on the citation
+rule because its name is cited by five live files. Applying the rule as written
+on the same file a second time costs 24 KB and keeps the rule a rule.
+
+⚠ **The structural reading, which is worth more than the counts: a three-day
+clock can never find a seven-day-old entry from a producer that writes daily.**
+The population regrew **15 → 150 in two and a half days** and *all* of it is
+inside the floor. The producers were identified rather than guessed: 3
+`drape-atlas-merge-*` holders stamped **14:35Z — written by this patrol's own
+aborted merge**, and the rest are the `#2590` suite's `-blind-` / `-other-`
+shells from today. **So run 17's sweep of 194 was not the normal case — it was
+the dividend of a ten-day park**, and the honest expectation for the next run on
+a normal clock is **0 again**. The sweepable set appears only after a pause, and
+no Janitor run before this one has said so.
+
+### C. 106 local branch refs swept — run 17's item 7 and item 8 both discharged
+
+`janitor-local-branches.mts`, **527 → 421**. Its criterion is the conservative
+one and it is not `git branch --merged` (every merge here is a squash, so a
+branch's commits never become ancestors of main — #1797): a registered
+worktree's hold, then a **MERGED** pull request, then that PR's recorded head
+read over the git protocol, which must **EQUAL** the local tip.
+
+**Controlled before anything was deleted, and the control that mattered is the
+one that protects live work:**
+
+| control | result |
+|---|---|
+| the stranded branch `team/found-host-place-2798` in DELETABLE | **0 occurrences** — held, `why: a registered worktree is checked out on it` |
+| `team/2736-take` (PR #2799, OPEN) in DELETABLE | **0 occurrences** |
+| every DELETABLE row claims a merged PR | **106 of 106** |
+| two rows verified at GitHub | PR #2550 `MERGED head=36f00793…` = local tip; PR #2556 `MERGED head=7cb8f2e3…` = local tip |
+| both open-PR branches after the sweep | **present, local and remote, at their PR heads** |
+
+⚠ **The dead seat's leftover worktree is what kept PR #2804's branch out of the
+delete set** — the hold is the tool's *first* criterion. Had this patrol swept
+the worktree as litter first, that branch would have become deletable on the
+same run. **Order mattered and it was not planned; it is recorded so the next
+run plans it.**
+
+**Run 17's §J departure is not repeated**: the manifest was written before the
+deletion *and copied outside the repository* to
+`C:/Users/Admin/janitor-backups/run18-local-branch-manifest-20261029T143759Z.txt`
+(116,515 bytes). It is the recoverable artifact here — the commits themselves
+were never at risk, since the second restore road on every row,
+`refs/pull/<n>/head`, is not a branch and survives the deletion forever. The
+tool **re-read before deleting** (`106 unchanged, 0 moved or gone, 0 newly
+held`), which is the right shape and is noted because a manifest written minutes
+earlier is a record rather than a reading.
+
+**Not swept, deliberately: the remote `origin/team/*` refs — 224 of them, and
+nothing has ever swept them.** This tool is local-only by design. Recorded as a
+reading, not a proposal.
+
+### D. The readings that cost nothing and found nothing
+
+- **Memory index** (`memory-index-audit.mts`, same 3-day clock): **0 faults** —
+  **362** files on disk, 362 pointed at, across 5 indexes; 0 unreachable, 0
+  dangling, 0 duplicate, 0 joined lines, 0 ellipsis hooks. Exit 0.
+  (Run 17: 348. **+14 in two and a half days.**)
+- **Script guards**: `scriptExitDiscipline` + `scriptConnectionDiscipline`
+  18/18 green; `pnpm check:scripts` **exit 0** (786 untracked files excluded).
+- **The main tree was checked against `origin/main` FIRST**, because run 17 and
+  run 8 were both told by their own digest that nothing had happened on a
+  morning when it had: `0 0` — level with origin, so this run's digest was
+  telling the truth.
+
+### E. #2155 re-read, not obeyed and not cleared — the hold survives
+
+Law 2y. Its body waits on **decisions, not sweeping**, and the three calls named
+there are still none of them a seat's. **Not swept.** Every axis grew: registered
+worktrees **58 → 65**, `drape-*` directories **69 → 77**, bytes **22.7 → 24.70
+GB**, local refs **444 → 527** (then 421 by §C), remote refs **162 → 224**. The
+table is on the card. ⚠ **The two ref columns are now growing faster than the
+worktrees** — +83 local and +62 remote in three days against +7 worktrees.
+
+### ⚠ F. What this run did NOT do, said plainly
+
+- **It resolved no merge.** The headline explains why, and that is a refusal
+  rather than an omission.
+- **It swept no worktree, including the dead seat's** at
+  `C:/Users/Admin/drape-shift-seat-1-20261029-215807`. It is clean but for the
+  five `_2798-*-disposable.mts` files its seat left, which are untracked and
+  would be destroyed with it, and **its pull request is still open and needs
+  work** — so it is not litter yet. **It becomes sweepable when PR #2804 is
+  merged or closed**, and §C is the reason to do it in that order and not before.
+- **It touched no card body of his**, and #2544's stale waiting line (run 17's
+  §K) is still the relay's act, not re-litigated here.
+- **It started no dev server, spent nothing, and moved no flag.**
+
+### For the next run, in order
+
+1. **knip: read the 29 Oct and 30 Oct nightlies and diff against
+   `output/janitor-run18/knip/{types,exports}-{27,28}oct.txt`.** The types
+   question is the open one — +5 in one night against run 16's ~0.4; two more
+   nights settle whether it was a burst or a rate.
+2. **The temp sweep is expected to find 0 again** on a normal clock. If it finds
+   a set, the team has paused — check that before reporting it as litter.
+3. **PR #2804 / card #2814**: if that pull request has merged or closed, the
+   dead seat's worktree at `drape-shift-seat-1-20261029-215807` becomes
+   sweepable — and sweeping it releases `team/found-host-place-2798` into the
+   next branch sweep's delete set. Do it in that order.
+4. **The remote `origin/team/*` refs are at 224 and nothing has ever swept
+   them.** A reading, not yet a proposal; the local tool is local-only by design.
+5. **#2155's hold still survives** — re-read it, do not clear it, and do not
+   sweep worktrees on its account.
+6. The dev-server trend (run 17's item 1) still wants a run that starts one.
