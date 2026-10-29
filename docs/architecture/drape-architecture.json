@@ -40792,6 +40792,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:shared/crewNextUpHold.ts",
+      "to": "module:shared/crewWorkSwitches.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:shared/crewPipelineGroups.ts",
       "to": "module:shared/crewQueueExclusions.ts",
       "kind": "imports"

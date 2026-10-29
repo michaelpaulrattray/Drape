@@ -95,12 +95,14 @@ import {
 } from "../shared/crewCardResolution.js";
 import {
   type LiveHoldReRead,
+  type UnheldDecision,
   type UnreadableHold,
   CREW_HOLD_LABELS,
   CREW_HOLD_MARKER,
   planDeskHoldLabels,
   planFounderHeldDrift,
   planLiveHoldReRead,
+  planUnheldDecisions,
   planUnreadableHolds,
 } from "../shared/crewNextUpHold.js";
 import {
@@ -335,10 +337,22 @@ const unreadableHolds: readonly UnreadableHold[] = openForHolds === null
 const liveHoldReReads: readonly LiveHoldReRead[] = openForHolds === null
   ? []
   : planLiveHoldReRead({ open: openForHolds });
+/*
+  ⚠ **AND THE CELL NEITHER OF THEM CAN REACH — #2764.** Both readers above
+  gate on a hold LABEL, so a card that declares a decision and carries none is
+  outside their population by construction; `planUnheldDecisions` owns the rule,
+  the three candidates it was chosen over and the floor it is. **Same read, same
+  instant, no extra `gh` call** — the mapped list above is already the whole
+  queue with bodies.
+*/
+const unheldDecisions: readonly UnheldDecision[] = openForHolds === null
+  ? []
+  : planUnheldDecisions({ open: openForHolds });
 if (allOpen === null) {
   skipped.push(
     "HOLDS: the open queue could not be read, so no card was checked for a hold that does not say"
-    + " whose it is, and no hold sentence was printed for re-reading. That is unread, NOT clean.",
+    + " whose it is, no hold sentence was printed for re-reading, and no card was checked for a"
+    + " decision declared with no hold at all (#2764). That is unread, NOT clean.",
   );
 }
 
@@ -1104,6 +1118,58 @@ if (liveHoldReReads.length > 0) {
     console.log(`  · #${hold.issueNumber} [${hold.heldStates.join(",")}]${whose}${mine} ${shown}`);
     console.log(`      ${hold.reason ?? "(no sentence — see the unreadable-hold block above)"}`);
   }
+}
+
+/*
+  ⚠ **A DECISION DECLARED WITH NO HOLD AT ALL (#2764).**
+
+  The two blocks above are a partition of the HELD cards. This is the cell
+  neither of them can reach: a card that ends its body with options and a
+  recommendation, filed `bug` with no hold label and no `**Waiting on:**` line,
+  is outside the population of `liveWaitingOnYou`, `planUnreadableHolds` and
+  `planLiveHoldReRead` at once — so his page cannot draw it, nothing names it,
+  and it stays on offer to every seat. **Two cards were in that cell hours
+  apart (#2761, #2757), filed by two different authors**, and it is the #2462
+  class the program has now paid for three times.
+
+  ⚠ **AND THIS BAND IS A FLOOR, WHICH THE PRINTING SAYS OUT LOUD.** It closes
+  the cell where the filer DECLARED a recommendation and no more: a question
+  phrased as plain prose is still invisible here, and #2719's was in a COMMENT,
+  which no reader on this road looks at. The reader's own docblock carries why
+  the two wider candidates were measured and declined — four permanent
+  unactionable rows against this one's zero.
+
+  Exit code 0, on the rule the tail of this file states: a briefing carrying
+  this is schema-VALID, so a shift can ship past it, and exit 2 is spent only
+  on what it cannot.
+*/
+if (unheldDecisions.length > 0) {
+  const titles = new Map<number, string>(
+    (allOpen ?? []).map((row) => [Number(row?.number), String(row?.title ?? "")]),
+  );
+  console.log("");
+  console.log(
+    `⚠ ${unheldDecisions.length} card(s) DECLARE a recommendation and carry no hold — so nothing`,
+  );
+  console.log("  asks him and nothing names them, and every seat is still offered them (#2764).");
+  console.log("  NOT repaired here: whether a recommendation is a question for HIM or a note for");
+  console.log("  the next shift is a judgement about work, and a label applied on a guess takes a");
+  console.log("  takeable card off every seat's offer. Read each one and either apply the hold");
+  console.log(`  with its \`${CREW_HOLD_MARKER}\` line, or leave it and the band stays silent next run.`);
+  for (const decision of unheldDecisions) {
+    const mine = decision.founderHeld === null ? "" : " — HIS CARD, nothing to do";
+    const title = titles.get(decision.issueNumber) ?? "";
+    /* An ellipsis when it was cut, because a truncated line that reads whole
+       is how a shortening changes a fact. */
+    const shownTitle = title.length > 58 ? `${title.slice(0, 57)}…` : title;
+    const line = decision.recommendation;
+    const shownLine = line.length > 110 ? `${line.slice(0, 109)}…` : line;
+    console.log(`  ! #${decision.issueNumber} [${decision.workLabels.join(",")}]${mine} ${shownTitle}`);
+    console.log(`      ${shownLine}`);
+  }
+  console.log("  ⚠ A FLOOR, not a sweep: this sees a declared `Recommendation` line and nothing");
+  console.log("  else. A question written as ordinary prose, or written into a COMMENT, is still");
+  console.log("  invisible to every reader the team owns — the filer is the only one who can know.");
 }
 
 /*

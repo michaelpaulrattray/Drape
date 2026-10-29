@@ -46,7 +46,8 @@
  * definition of "he is blocking this". It stays derived; putting it in a label
  * would let the queue claim he owes an answer he has already given.
  */
-import { decoratedLines } from "./crewMarkdownLead";
+import { blockOpeningLines, decoratedLines } from "./crewMarkdownLead";
+import { CREW_WORK_CATEGORIES, type CrewWorkCategoryKey } from "./crewWorkSwitches";
 
 /**
  * The label that puts a card in each held state.
@@ -712,6 +713,167 @@ export function planLiveHoldReRead(input: {
       heldStates,
       reason,
       owner,
+      founderHeld: FOUNDER_HELD_CARDS.get(row.issueNumber) ?? null,
+    });
+  }
+  return found.sort((a, b) => a.issueNumber - b.issueNumber);
+}
+
+/**
+ * The two work labels whose cards this reader is asked about, DERIVED from the
+ * switch panel's own list rather than typed here — two spellings of `small-fix`
+ * is exactly the drift working law 4 is about, and the keys are typed, so a
+ * category disappearing from that list is a compile error rather than a band
+ * that quietly stops looking at it.
+ */
+const CREW_DECISION_WORK_KEYS: ReadonlySet<CrewWorkCategoryKey> = new Set<CrewWorkCategoryKey>([
+  "bugs",
+  "smallFixes",
+]);
+
+/**
+ * ⚠ **`bug` AND `small-fix`, AND THE NARROWING IS MEASURED RATHER THAN
+ * STYLISTIC.** Read over the 72 open cards of 2026-10-29: widening this reader
+ * past these two labels adds **three** rows and every one of them is
+ * `design-unbuilt` or `research` — a card deliberately waiting its turn, whose
+ * recommendation is a note to whoever picks it up rather than a question his
+ * page is missing. #2764's own hand-read says the same of that population.
+ * **With the narrowing the band fires on nothing today**, and that is the state
+ * it is built to keep.
+ */
+export const CREW_DECISION_WORK_LABELS: readonly string[] = CREW_WORK_CATEGORIES
+  .filter((category) => CREW_DECISION_WORK_KEYS.has(category.key))
+  .map((category) => category.queueLabel);
+
+/**
+ * A line that DECLARES a recommendation, anchored at the start of the line and
+ * allowing the emphasis a filer puts on it — `**Recommendation:** …`,
+ * `Recommendation (approved)`, `_Recommended:_ …`.
+ */
+const CREW_RECOMMENDATION_LINE = /^\*{0,2}_{0,2}(?:recommendation|recommended)\b/i;
+
+/**
+ * The recommendation a card declares, or `null`.
+ *
+ * ⚠ **IT READS BLOCK-OPENING LINES, NOT EVERY LINE — the same reader
+ * `shared/crewCardBuildState.ts` uses to tell a CLAIM from prose about
+ * claiming**, and for the same reason: a recommendation is written as its own
+ * statement, and a hard-wrapped paragraph can put the word at the start of a
+ * continuation line. **The two readers were DRIVEN against each other before
+ * this one was chosen** (2026-10-29, over the whole open queue and both of
+ * #2764's specimens): per-line and block-opening select **the same three
+ * cards**, and both specimens match under both — so the stricter reader costs
+ * nothing measurable here and keeps the band's rows believable.
+ *
+ * ⚠ **It reads the FIRST such line and stops**, for `holdReasonFromBody`'s
+ * reason one family up: a body that says it twice is a card mid-edit, and
+ * taking the last would let a quoted example at the bottom win over the
+ * filer's own line.
+ *
+ * ⚠ **The whole line comes back untruncated.** Its caller slices it for a
+ * terminal and says so with an ellipsis; shortening a fact inside the reader is
+ * how a trimmed sentence comes to be quoted as the sentence.
+ */
+export function recommendationFromBody(body: string): string | null {
+  for (const line of blockOpeningLines(body)) {
+    const trimmed = line.trim();
+    if (CREW_RECOMMENDATION_LINE.test(trimmed)) return trimmed;
+  }
+  return null;
+}
+
+/** One card that declares a decision and carries no hold anybody can read. */
+export type UnheldDecision = {
+  readonly issueNumber: number;
+  /** Which of `CREW_DECISION_WORK_LABELS` it carries, so the row says why it is in scope. */
+  readonly workLabels: readonly string[];
+  /** The declaring line, whole — the caller decides how much of it fits. */
+  readonly recommendation: string;
+  /** Why this one is HIS, or `null` for an ordinary card (#2117). */
+  readonly founderHeld: string | null;
+};
+
+/**
+ * ⚠ **THE QUESTION THAT REACHES HIS PAGE NOWHERE — #2764, 2026-10-29.**
+ *
+ * The two readers above are a partition of the HELD cards. This one is about
+ * the cell neither of them can reach, and the card that named it measured the
+ * blindness at the code rather than reasoning about it: **every reader the team
+ * owns for *"is he being asked something"* gates on a hold LABEL first** —
+ * `liveWaitingOnYou` (`server/crew/liveDesk.ts`), `planUnreadableHolds` one
+ * type up, and the sweep's own bands. So a card that ends its body with three
+ * options and a recommendation for him, filed `bug` with no label and no
+ * `**Waiting on:**` line, is **outside the population of all of them by
+ * construction** — and only a person reading the body can find it.
+ *
+ * **Two cards were in that cell hours apart, filed by two different authors:**
+ * **#2761** (the see-through edit panel — three options and a recommendation)
+ * and **#2757** (a found mark doubling the Lips row — *"needs deciding
+ * first"*). Both are repaired; the class was not, and this is the #2462 class
+ * the program has now paid for three times.
+ *
+ * # WHY THIS SHAPE AND NOT THE TWO THE CARD PUT BESIDE IT
+ *
+ * #2764 offered three candidates and chose none, with one ⚠ governing all
+ * three: *"a reader-side repair must not be allowed to say more than it
+ * knows"* — a tool guessing wrongly in the quiet direction would be worse than
+ * the gap, because it would make the gap look closed. **The three were driven
+ * over the real queue (72 open cards, 2026-10-29) rather than argued:**
+ *
+ * - **Candidate 1 — a phrase list over the body** (*his call*, *needs
+ *   deciding*, *recommendation*…). Catches both specimens and prints **four**
+ *   rows today, **none of them a question for him**: two are the Retro cards
+ *   that DISCUSS this mechanism, one is `research`, one is a `debt` umbrella.
+ *   Four permanent unactionable rows at every close is the exact shape
+ *   `FOUNDER_HELD_CARDS`' docblock names as the thing a close-of-shift sweep
+ *   cannot afford — *a checker whose finding is always the same teaches its
+ *   reader to skim the rows beside it that are real.*
+ * - **Candidate 2 — this one.** Catches **both specimens** (#2761's
+ *   `**Recommendation:** option 2 — …`, #2757's `**Recommendation: fold it
+ *   in.**`) and fires on **zero** open cards today. It keys on a CONVENTION the
+ *   filer chose to write, never on what the prose means.
+ * - **Candidate 3 — leave the readers alone and rely on the filing rule.** Its
+ *   own honest version, in the card: *"it has failed three times."*
+ *
+ * ⚠ **AND IT IS A FLOOR, WHICH IS THE HALF THAT MUST BE SAID OUT LOUD.** A
+ * question written with no `Recommendation` line is still invisible to this and
+ * to everything else — #2719's was in a COMMENT, which no reader here looks at,
+ * and nothing mechanical sees a decision phrased as plain prose. **This closes
+ * the cell where the filer declared a recommendation, and no more.** The
+ * printed band says so in its own words, because a band that implies coverage
+ * it does not have is the failure this card warned about.
+ *
+ * ⚠ **IT REPORTS AND NEVER REPAIRS**, for both its siblings' reason: whether a
+ * recommendation is a question for HIM or a note for the next shift is a
+ * judgement about work, and a `blocked` label applied by a script would take a
+ * takeable card off every seat's offer on a guess.
+ */
+export function planUnheldDecisions(input: {
+  /** Every OPEN card, with the labels and body `gh issue list` returns. */
+  readonly open: ReadonlyArray<{
+    readonly issueNumber: number;
+    readonly labels: readonly string[];
+    readonly body: string;
+  }>;
+}): readonly UnheldDecision[] {
+  const found: UnheldDecision[] = [];
+  for (const row of input.open) {
+    /* A live hold is already drawn or already reported — this is the cell the
+       other two readers cannot reach, never a third opinion on their rows. */
+    if (heldStatesFromLabels(row.labels).length > 0) continue;
+    /* The filer wrote the marker and only forgot the label: a different, and
+       measurably different, population (three cards on 2026-10-29, all of them
+       `parked` or `design-unbuilt` and all naming somebody who is not him), so
+       it is not quietly swept in here on the way past. */
+    if (holdReasonFromBody(row.body) !== null) continue;
+    const workLabels = CREW_DECISION_WORK_LABELS.filter((label) => row.labels.includes(label));
+    if (workLabels.length === 0) continue;
+    const recommendation = recommendationFromBody(row.body);
+    if (recommendation === null) continue;
+    found.push({
+      issueNumber: row.issueNumber,
+      workLabels,
+      recommendation,
       founderHeld: FOUNDER_HELD_CARDS.get(row.issueNumber) ?? null,
     });
   }
