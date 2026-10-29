@@ -288,16 +288,38 @@ function catalogueVocabulary(): ReadonlySet<string> {
       buying a question for it* — and for an unasked accessory it is false.
     */
     if (definition.group === "accessories" && !asked.has(definition.slot)) continue;
-    for (const word of [
-      definition.question,
-      definition.display,
-      definition.noun,
-      definition.pairNoun,
-      definition.feature,
-    ]) {
-      if (typeof word !== "string" || word.trim() === "") continue;
-      words.add(normalisedName(word));
-    }
+    for (const word of catalogueWordsOf(definition)) words.add(word);
+  }
+  return words;
+}
+
+/**
+ * EVERY WORD THE CATALOGUE HAS FOR ONE SLOT, normalised — the five fields the
+ * header above names, read in ONE place.
+ *
+ * Three readers ask it three different questions: whether a name is a word the
+ * scan already buys ({@link catalogueVocabulary}), whether a found thing sits
+ * UNDER a drawn row (`facePanel`'s host words), and where the reading said a
+ * found thing is ({@link hostCutsOf}, #2796). Each kept its own copy of the
+ * five until #2796, and the third would have been a third copy (working law 4).
+ */
+export function catalogueWordsOf(definition: {
+  question: string | null;
+  display: string | null;
+  noun: string;
+  pairNoun?: string | null;
+  feature: string;
+}): string[] {
+  const words: string[] = [];
+  for (const word of [
+    definition.question,
+    definition.display,
+    definition.noun,
+    definition.pairNoun,
+    definition.feature,
+  ]) {
+    if (typeof word !== "string" || word.trim() === "") continue;
+    words.push(normalisedName(word));
   }
   return words;
 }
@@ -971,6 +993,173 @@ function onItsSite(
   return cuts.some((cut) => cut.question === site && overlaps(region.box, cut.box));
 }
 
+/*
+  ---- A FOUND THING IS WHERE THE READING SAID IT IS (#2796, his eye round 5) ----
+
+  His words, verbatim: *"everything else was correct but lip piercing was the
+  septum piercing and the lip piercing wasnt picked up at all"*. Read on a crop
+  of his screenshot, painted clean of the hover overlay and sized to the
+  1024-wide frame production reads: the reading said `lip piercing` on `lips`
+  and `nose piercing` on `nose`; the detector, asked `lip piercing`, put its
+  ONE rectangle on the septum ring, and the cut inside it cleared the fill
+  floor (0.230). Asked `nose piercing`, it put its rectangle round the whole
+  nose, and that cut was folded into the Nose row as the nose itself (#2757's
+  rule). So the ring was drawn once, as *Lip piercing*, and the stud under the
+  lip was drawn nowhere.
+
+  ⚠ **THE CLASS IS THE ONE #2789 CLOSED FOR THE PRODUCT'S WORD, ON THE READING'S
+  OWN WORD.** `onItsSite` above refused a box that the TABLE's word placed
+  somewhere that kind is not worn, and its own paragraph said why it stopped
+  there: the table's substring match sends a `lip stud` to the EAR. That
+  warning still binds, so this check never reads the table. It reads the
+  READING's own `on` — `lip piercing on=lips` — against the catalogue cuts the
+  scan made on the same frame, through the catalogue's own five words
+  ({@link catalogueWordsOf}), the same words the panel uses to put a found thing
+  under a row.
+
+  # WHY "NEARER ITS HOST THAN ANY OTHER PLACE", AND NOT "TOUCHES ITS HOST"
+
+  Touching was the obvious rule, and it refuses a real labret: a stud under the
+  lower lip sits in the hollow of the chin and need not touch the lips' own cut
+  at all. So the question is relative, and needs no tolerance: of every place
+  the scan cut on this frame, is the one the reading named the NEAREST to this
+  cut? Measured on his frame: the ring's cut is 0 px from the nose's pixels and
+  14 px from the lips', so `on=lips` is refused; the stud's own cut (one
+  segmenter call in a box round it) is 0 px from the lips and 74 px from the
+  nose, so it passes. On his frame that stud happens to touch the lips' cut by
+  three rows, so the stud that touches NOTHING — lower in the chin's hollow —
+  is proven by an arm in the suite rather than here. Distance is to the nearest pixel a
+  place's cut CLAIMS, never to its rectangle — the hair's rectangle holds the
+  whole face, and a rectangle test would make the hair the nearest place to
+  everything.
+
+  # WHEN IT DOES NOT JUDGE, DECLARED
+
+  When the reading's `on` names no place the scan cut — `neck`, `cheek`,
+  `forehead`, a found thing, or an ear the hair hides — there is nothing to be
+  nearer to, and the cut is used exactly as before. A refusal is local to the
+  one cut: no row, and the name keeps its words (`uncut`), exactly as a cut the
+  detector placed nowhere.
+*/
+
+/**
+ * THE CATALOGUE CUTS A READING'S `on` NAMES — both sides of a pair — or none.
+ *
+ * Matched through {@link catalogueWordsOf} on the cut's own slot definition, so
+ * `lips`, `lip`, `ears`, `ear` and `eyebrow` all reach the row the panel would
+ * put the thing under, and `neck` reaches nothing.
+ */
+export function hostCutsOf(
+  on: string,
+  cuts: readonly CatalogueCut[],
+): CatalogueCut[] {
+  if (on.trim() === "") return [];
+  const host = normalisedName(on);
+  const bySlot = new Map(catalogueSlots().map((definition) => [definition.slot, definition]));
+  return cuts.filter((cut) => {
+    const definition = bySlot.get(cut.slot);
+    return definition !== undefined && catalogueWordsOf(definition).includes(host);
+  });
+}
+
+/**
+ * How far a rectangle is from the nearest pixel a cut claims, squared — 0 when
+ * a claimed pixel lies inside it, and `Infinity` when the two are not of one
+ * frame (the module's rule: a size mismatch is a fault upstream, and the
+ * answer that cannot remove a row is "cannot say").
+ */
+function gapToCut(
+  box: PointerBox,
+  frame: { width: number; height: number },
+  cut: { box: PointerBox; mask: Mask },
+): number {
+  const { mask } = cut;
+  if (mask.width !== frame.width || mask.height !== frame.height) return Infinity;
+  const right = box.x + box.width - 1;
+  const bottom = box.y + box.height - 1;
+  let best = Infinity;
+  for (let y = cut.box.y; y < cut.box.y + cut.box.height; y += 1) {
+    const dy = y < box.y ? box.y - y : y > bottom ? y - bottom : 0;
+    if (dy * dy >= best) continue;
+    const row = y * mask.width;
+    for (let x = cut.box.x; x < cut.box.x + cut.box.width; x += 1) {
+      if (mask.data[row + x]! <= 0) continue;
+      const dx = x < box.x ? box.x - x : x > right ? x - right : 0;
+      const gap = dx * dx + dy * dy;
+      if (gap < best) {
+        best = gap;
+        if (best === 0) return 0;
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * THE RECTANGLE A SECOND ASK IS MADE ON — the hosts' own rectangles, together,
+ * grown by half their size on every side and kept inside the frame.
+ *
+ * Half is the measured size, not a tuned one: on his frame, the lips grown by
+ * half is where the detector offered the stud at all (see the re-ask in
+ * {@link cutDiscovered}). A crop that small still holds the septum ring, and
+ * that is safe because every box offered meets {@link besideItsHost} first.
+ */
+function grownAround(
+  boxes: readonly PointerBox[],
+  frame: { width: number; height: number },
+): PointerBox {
+  const left = Math.min(...boxes.map((box) => box.x));
+  const top = Math.min(...boxes.map((box) => box.y));
+  const right = Math.max(...boxes.map((box) => box.x + box.width));
+  const bottom = Math.max(...boxes.map((box) => box.y + box.height));
+  const padX = Math.round((right - left) / 2);
+  const padY = Math.round((bottom - top) / 2);
+  const x = Math.max(0, left - padX);
+  const y = Math.max(0, top - padY);
+  return {
+    x,
+    y,
+    width: Math.min(frame.width, right + padX) - x,
+    height: Math.min(frame.height, bottom + padY) - y,
+  };
+}
+
+/** What {@link besideItsHost} found. */
+export type HostVerdict =
+  /* The reading's `on` names no place the scan cut — nothing to be nearer to. */
+  | { at: "unchecked" }
+  /* Nearest the place the reading said, or tied with another for nearest. */
+  | { at: "host" }
+  /* Strictly nearer another place the scan cut, which is named. */
+  | { at: "elsewhere"; nearest: CatalogueCut };
+
+/**
+ * IS THIS CUT WHERE THE READING SAID IT IS — the block above, as one pure
+ * function over the cut and the scan's own cuts.
+ *
+ * Ties go to the host: a cut touching both the nose and the lips is on the
+ * place the reading named, and refusing it would take a right row away on a
+ * coin's edge.
+ */
+export function besideItsHost(
+  thing: { box: PointerBox; on: string },
+  frame: { width: number; height: number },
+  cuts: readonly CatalogueCut[] | null,
+): HostVerdict {
+  if (cuts === null) return { at: "unchecked" };
+  const hosts = hostCutsOf(thing.on, cuts);
+  if (hosts.length === 0) return { at: "unchecked" };
+  const host = Math.min(...hosts.map((cut) => gapToCut(thing.box, frame, cut)));
+  if (host === Infinity) return { at: "unchecked" };
+  let nearest: { cut: CatalogueCut; gap: number } | null = null;
+  for (const cut of cuts) {
+    if (hosts.includes(cut)) continue;
+    const gap = gapToCut(thing.box, frame, cut);
+    if (gap < host && (nearest === null || gap < nearest.gap)) nearest = { cut, gap };
+  }
+  return nearest === null ? { at: "host" } : { at: "elsewhere", nearest: nearest.cut };
+}
+
 /**
  * Cut every off-list thing the reading named.
  *
@@ -1035,6 +1224,13 @@ export async function cutDiscovered(input: {
   const refusedAs: { noun: string; as: string }[] = [];
   /* Every found cut that was a catalogue row's own cut, by noun and slot (#2789). */
   const intoCatalogue: { noun: string; into: string }[] = [];
+  /* Every cut nearer another place than the one the reading said (#2796)... */
+  const strayed: { noun: string; on: string; nearer: string }[] = [];
+  const strays: { from: number; region: DiscoveredRegion; nearest: CatalogueCut }[] = [];
+  /* ...and every one of those a name on that place took as its own row. */
+  const handedOver: { noun: string; to: string }[] = [];
+  /* Every name asked again on its own host's crop: boxes offered, and on the host. */
+  const askedOnHost: { noun: string; offered: number; onHost: number; cut: number }[] = [];
   let asked = 0;
 
   /* Asked once, the first time a cut needs it — see the input's own note. A
@@ -1084,7 +1280,7 @@ export async function cutDiscovered(input: {
     input.onFiled?.(region);
   };
 
-  const perName = await Promise.all(population.map(async (feature) => {
+  const perName = await Promise.all(population.map(async (feature, at) => {
     const mine: DiscoveredRegion[] = [];
     let boxes: readonly PointerBox[];
     /* The product's word, when it is what placed this name's boxes. */
@@ -1114,20 +1310,20 @@ export async function cutDiscovered(input: {
         { name: feature.name, why: error instanceof Error ? error.message : String(error) },
         "the detector could not be asked about this one — no row for it",
       );
-      return { name: feature.name, regions: mine, declined: false, broke: true, held: false };
+      return { name: feature.name, regions: mine, declined: false, broke: true, held: false, heldInto: [] as FeatureSlot[] };
     }
     if (boxes.length === 0) {
       /* The reading named it and the detector cannot find it. No row, by his
          ruling, and it is recorded rather than silently dropped: the words
          still reach the current description (#2565 §2) and the next edit to
          that area asks again. */
-      return { name: feature.name, regions: mine, declined: true, broke: false, held: false };
+      return { name: feature.name, regions: mine, declined: true, broke: false, held: false, heldInto: [] as FeatureSlot[] };
     }
 
     /* THE CAP — the module header carries the measurement it comes from. */
     const asking = boxes.slice(0, Math.max(1, feature.count));
     let broke = false;
-    const cut = await Promise.all(asking.map(async (box, index) => {
+    const cutInside = async (box: PointerBox, index: number) => {
       try {
         const mask = await regionInBox.call(input.reader, {
           image: input.frame.bytes,
@@ -1198,7 +1394,8 @@ export async function cutDiscovered(input: {
         );
         return { index, region: null, broke: true };
       }
-    }));
+    };
+    const cut = await Promise.all(asking.map(cutInside));
     const landed: DiscoveredRegion[] = [];
     for (const one of cut.sort((a, b) => a.index - b.index)) {
       if (one.broke) broke = true;
@@ -1206,31 +1403,156 @@ export async function cutDiscovered(input: {
     }
     /* Drawn by the catalogue already: not drawn again, and not "uncut" either. */
     let held = false;
+    const heldInto: FeatureSlot[] = [];
+    /* How many of this name's cuts were nearer another place (#2796). */
+    let wandered = 0;
+    /* One landed cut against the scan's own cuts: a row, a fold, or a refusal. */
+    const settle = (region: DiscoveredRegion, cuts: readonly CatalogueCut[] | null): void => {
+      /* A box from the product's word must be where that kind is worn. */
+      if (product !== null && !onItsSite(region, product, cuts)) {
+        log.warn(
+          { name: feature.name, as: product, answered: region.box },
+          "the product's word placed this somewhere that kind is not worn — no row",
+        );
+        refusedAs.push({ noun: feature.name, as: product });
+        return;
+      }
+      /* Any cut, in either word, must be where the READING said it is (#2796). */
+      const place = besideItsHost(region, region.mask, cuts);
+      if (place.at === "elsewhere") {
+        log.warn(
+          { name: feature.name, on: feature.on, nearer: place.nearest.slot, answered: region.box },
+          "the cut is nearer another place than the one the reading said it is on — not this name's row",
+        );
+        strayed.push({ noun: feature.name, on: feature.on, nearer: place.nearest.slot });
+        strays.push({ from: at, region, nearest: place.nearest });
+        wandered += 1;
+        return;
+      }
+      /* A cut on a catalogue row's own cut is that row (#2757's class). */
+      const row = cuts === null ? null : catalogueRowOf(region, cuts);
+      if (row !== null) {
+        intoCatalogue.push({ noun: feature.name, into: row.slot });
+        heldInto.push(row.slot);
+        held = true;
+        return;
+      }
+      mine.push(region);
+      draw(region);
+    };
     if (landed.length > 0) {
       const cuts = await catalogueCuts();
-      for (const region of landed) {
-        /* A box from the product's word must be where that kind is worn. */
-        if (product !== null && !onItsSite(region, product, cuts)) {
+      for (const region of landed) settle(region, cuts);
+      /*
+        EVERY CUT WAS SOMEWHERE ELSE — ASK ONCE MORE, ON THE PLACE THE READING
+        NAMED (#2796, the third defect: the real stud had no row at all).
+
+        Measured on his frame at 1024 wide: asked `lip piercing` on the WHOLE
+        frame, the detector offered ONE rectangle, the septum ring; `lip stud`
+        and `lip ring` offered the whole lower lip, and `labret` nothing.
+        Asked `lip piercing` on a crop round the lips' own cut, grown by half
+        its size on every side, it offered FOUR: the stud's two balls and the
+        septum ring's two. So the crop is where the thing becomes findable, and
+        the host check above is what makes the crop safe — the ring's balls are
+        in the crop too, and are nearer the nose. The boxes offered are
+        filtered to the ones on the host BEFORE the cap, so no segmenter call is
+        bought for a rectangle already known to be somewhere else.
+
+        ⚠ **Only here, and only once**: a name whose every cut lay on another
+        place. A name the detector declined outright is not re-asked by this —
+        that is unmeasured, and would put a second detector call on every
+        declined name of every reading. The spend is one `detect` and at most
+        `count` box cuts, on a reading where something was already wrong.
+      */
+      if (mine.length === 0 && !held && wandered > 0 && cuts !== null) {
+        const hosts = hostCutsOf(feature.on, cuts);
+        const area = grownAround(hosts.map((cut) => cut.box), frame);
+        try {
+          const sharp = (await import("sharp")).default;
+          const crop = await sharp(input.frame.bytes)
+            .extract({ left: area.x, top: area.y, width: area.width, height: area.height })
+            .png()
+            .toBuffer();
+          const offered = await pointer.call(input.reader, { image: crop, name: product ?? feature.name });
+          const onHost = offered
+            .map((box) => ({ x: box.x + area.x, y: box.y + area.y, width: box.width, height: box.height }))
+            .filter((box) => besideItsHost({ box, on: feature.on }, frame, cuts).at === "host");
+          /* THE CAP, as on the first ask, in the order the detector offered them. */
+          const near = onHost.slice(0, Math.max(1, feature.count));
+          askedOnHost.push({ noun: feature.name, offered: offered.length, onHost: onHost.length, cut: near.length });
+          const again = await Promise.all(near.map(cutInside));
+          for (const one of again.sort((a, b) => a.index - b.index)) {
+            if (one.broke) broke = true;
+            if (one.region !== null) settle(one.region, cuts);
+          }
+        } catch (error) {
           log.warn(
-            { name: feature.name, as: product, answered: region.box },
-            "the product's word placed this somewhere that kind is not worn — no row",
+            { name: feature.name, why: error instanceof Error ? error.message : String(error) },
+            "the place the reading named could not be asked about again — no row for it",
           );
-          refusedAs.push({ noun: feature.name, as: product });
-          continue;
         }
-        /* A cut on a catalogue row's own cut is that row (#2757's class). */
-        const row = cuts === null ? null : catalogueRowOf(region, cuts);
-        if (row !== null) {
-          intoCatalogue.push({ noun: feature.name, into: row.slot });
-          held = true;
-          continue;
-        }
-        mine.push(region);
-        draw(region);
       }
     }
-    return { name: feature.name, regions: mine, declined: false, broke, held };
+    return { name: feature.name, regions: mine, declined: false, broke, held, heldInto };
   }));
+
+  /*
+    ---- A CUT ON THE WRONG PLACE IS OFFERED TO THE NAME THAT PLACE HOSTS (#2796,
+    the second half of the class) ----
+
+    *"Two names whose boxes land on one thing must not leave that thing under
+    the wrong name and the other thing with no row at all."* On his frame the
+    one cut of the septum ring was `lip piercing`'s, and the name the reading
+    gave the ring — `nose piercing`, on the nose — had no cut of its own: its
+    rectangle was the whole nose, which is the Nose row. Refusing the cut for
+    `lip piercing` alone would leave the ring with no row under ANY name.
+
+    So a refused cut is offered, once, to the FIRST name in the reading's order
+    that the place it lies on hosts by the reading's own `on`, of the SAME kind,
+    with no row of its own — either nothing was cut for it, or its only cut was
+    its host itself. No request is made: the cut is evidence already bought,
+    and the reading already named what is there.
+
+    ⚠ **What it does not do, declared.** A name whose cut was folded into a
+    DIFFERENT catalogue row (a found hoop that is the Earrings row) is drawn,
+    as that row, and is not offered anything. A refused cut nobody on that place
+    can take is dropped — the reading did not name that thing, and a feature the
+    reading did not name gets no row. And the handed cut still meets
+    {@link catalogueRowOf}: a cut that is its new host's own pixels is that host.
+  */
+  if (strays.length > 0) {
+    const cuts = await catalogueCuts();
+    const taken = new Set<number>();
+    for (const stray of [...strays].sort((a, b) => a.from - b.from || a.region.instance - b.region.instance)) {
+      if (cuts === null) break;
+      const to = population.findIndex((other, at) => {
+        if (at === stray.from || taken.has(at)) return false;
+        if (other.kind !== stray.region.kind) return false;
+        if (normalisedName(other.name) === normalisedName(stray.region.noun)) return false;
+        const theirs = perName[at]!;
+        if (theirs.regions.length > 0) return false;
+        const hosts = hostCutsOf(other.on, cuts);
+        if (!hosts.some((cut) => cut.slot === stray.nearest.slot)) return false;
+        /* No row of its own: nothing cut, or only its own host's pixels. */
+        return theirs.heldInto.every((slot) => hosts.some((cut) => cut.slot === slot));
+      });
+      if (to < 0) continue;
+      const other = population[to]!;
+      const handed: DiscoveredRegion = {
+        ...stray.region,
+        slot: discoveredSlotOf(other.name, 1),
+        noun: other.name,
+        instance: 1,
+        kind: other.kind,
+        on: other.on,
+      };
+      if (catalogueRowOf(handed, cuts) !== null) continue;
+      taken.add(to);
+      perName[to]!.regions.push(handed);
+      handedOver.push({ noun: stray.region.noun, to: other.name });
+      draw(handed);
+    }
+  }
 
   /* Gathered in the READING's own order, never in the order the provider
      happened to answer in: a panel that re-orders itself between two readings
@@ -1347,6 +1669,11 @@ export async function cutDiscovered(input: {
       refusedAs,
       /* Found cuts that were a catalogue row's own cut, by noun and slot (#2789). */
       intoCatalogue,
+      /* Cuts nearer another place than the reading's own `on`, and the names
+         on that place that took them (#2796). */
+      strayed,
+      handedOver,
+      askedOnHost,
       /* What the place rules decided, so a merged or moved row can be traced to
          the pixels that decided it rather than looking like a lost one. */
       samePlace: settled.samePlace,
