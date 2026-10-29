@@ -36,10 +36,14 @@ import {
   oldestRepairAgeHours,
   REPAIR_PR_PAGE,
   REPAIRS_OWED_LIST_ARGS,
+  repairCardClaims,
+  repairClaimWord,
   repairsOwedFrom,
   repairsOwedWord,
   type RepairPullRequestRow,
 } from "../scripts/lib/repairsOwed.mts";
+import { factsFromRows } from "../scripts/lib/cardBuildState.mts";
+import { CREW_CLAIM_LIVE_MS, pullRequestBuildsCard } from "../shared/crewCardBuildState";
 
 /**
  * ⚠ **A SPAWNING SUITE TAKES THE CLASS'S OWN TIMEOUT, NOT ONE OF ITS OWN.**
@@ -309,7 +313,12 @@ describe("⚠ the cut offers the repair before the card (#1977)", () => {
     createdAt: "2026-10-08T06:00:00Z",
   };
 
-  const runCut = (repairsFixture: RepairPullRequestRow[]): { stdout: string; plan: Record<string, unknown> } => {
+  const runCut = (
+    repairsFixture: RepairPullRequestRow[],
+    /* The board and the card comments, for the #2769 arms below. Defaulted, so
+       every arm written before that card reads exactly as it did. */
+    extra?: { readonly cards?: readonly unknown[]; readonly comments?: readonly unknown[] },
+  ): { stdout: string; plan: Record<string, unknown> } => {
     const dir = scratch();
     const write = (name: string, value: unknown): string => {
       const path = join(dir, name);
@@ -325,9 +334,9 @@ describe("⚠ the cut offers the repair before the card (#1977)", () => {
         "--max-seats", "4",
         "--batch-size", "5",
         "--no-jev",
-        "--cards", write("cards.json", [CARD]),
+        "--cards", write("cards.json", extra?.cards ?? [CARD]),
         "--open-prs", write("prs.json", []),
-        "--comments", write("comments.json", []),
+        "--comments", write("comments.json", extra?.comments ?? []),
         "--not-built", write("not-built.json", []),
         "--repairs", write("repairs.json", repairsFixture),
         "--repairs-owner", LIVE.ownerLogin,
@@ -389,6 +398,133 @@ describe("⚠ the cut offers the repair before the card (#1977)", () => {
        ORDER of the work, never whether a card exists. */
     expect(plan.repairsOwed).toBeDefined();
     expect(JSON.stringify(plan)).toContain("4242");
+  });
+
+  /*
+    ── AND WHOSE HANDS ARE ALREADY ON IT (#2769) ───────────────────────────────
+
+    The repairs road never asked. A repair is handed out as a PULL REQUEST, so
+    the seat never declares a card and not one of the three claim readers is ever
+    reached; the measured instance cost one Opus session producing one comment,
+    over a claim that was six minutes old and perfectly readable.
+
+    These arms drive the REAL cut, because the question is what the cut PRINTS
+    and WRITES — the library cannot answer it, and the line the runner actually
+    logs is the one that matters: `foreman-runner.ps1` pipes this stdout through
+    `Where-Object { $_ -match "^SEATS " }` and keeps the last match, so a claim
+    named anywhere else reaches nobody on the automated road.
+  */
+  /** The cards two of the fixture's held pull requests name, open on the board. */
+  const CARD_1903 = { ...CARD, number: 1903, title: "a paid redo of a signed package" };
+  const CARD_1937 = { ...CARD, number: 1937, title: "a plan-change move" };
+
+  /** A claim comment as the REST listing hands one back (`cardActivity`'s captured shape). */
+  const claimRow = (issue: number, seat: string, at: string): unknown => ({
+    issue_url: `https://api.github.com/repos/michaelpaulrattray/Drape/issues/${issue}`,
+    user: { login: LIVE.ownerLogin },
+    created_at: at,
+    updated_at: at,
+    body: `CLAIMED — ${seat}, ${at}\n`,
+  });
+  /* ⚠ The CUT reads `Date.now()`, so a claim that must be LIVE is written
+     against the real clock rather than against `READ_AT_MS` — which is weeks
+     behind by now and would make every claim here stale. */
+  const ago = (ms: number): string => new Date(Date.now() - ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+
+  it("names the card each repair is for, and the live claim sitting on it", () => {
+    const { stdout, plan } = runCut(LIVE.rows, {
+      cards: [CARD, CARD_1903, CARD_1937],
+      comments: [claimRow(1903, "seat1-20261029-095243", ago(6 * 60 * 1000))],
+    });
+
+    /* THE LINE THE RUNNER LOGS — the seat and the age, never a bare count: a
+       claim six minutes old is somebody at a keyboard and an eleven-hour one is
+       a shift that never released, and those want opposite actions. */
+    const seats = stdout.split(/\r?\n/).find((line) => line.startsWith("SEATS "))!;
+    expect(seats).toContain("repair claims: PR #1924 -> card #1903 claimed by seat1-20261029-095243");
+    expect(seats).toMatch(/claimed by seat1-20261029-095243 \dm ago/);
+
+    /* THE LINE A PERSON READS, which carries the timestamp too. */
+    const owed = stdout.split(/\r?\n/).filter((line) => line.startsWith("REPAIR OWED |"));
+    expect(owed[0]).toContain("card #1903");
+    expect(owed[0]).toContain("⚠ #1903 CLAIMED by seat1-20261029-095243 at ");
+    /* The next repair's card is named and carries no claim — the same line, the
+       other answer, so the arm cannot pass by printing the warning always. */
+    expect(owed[1]).toContain("card #1937");
+    expect(owed[1]).not.toContain("CLAIMED");
+
+    /* THE MACHINE-READABLE HALF: the runner builds its own sentence out of these
+       fields, and the one line that prints `claim` is the relay's to land. */
+    const items = (plan.repairsOwed as {
+      items: { pullRequest: number; cards: number[]; claim: { card: number; seat: string } | null }[];
+    }).items;
+    expect(items[0]!.pullRequest).toBe(1924);
+    expect(items[0]!.cards).toEqual([1903]);
+    expect(items[0]!.claim).toMatchObject({ card: 1903, seat: "seat1-20261029-095243" });
+    expect(items[1]!.cards).toEqual([1937]);
+    expect(items[1]!.claim).toBeNull();
+  });
+
+  it("THE CONTROL: the same cut over the same repairs, with no claim, says nothing about claims", () => {
+    /*
+      ⚠ **Without this the arm above proves only that a sentence can be printed.**
+      Same nine repairs, same board, no comment on any card: every claim fact
+      must disappear and the cards must still be named — which is also the
+      measurement saying this road is SILENT in the ordinary case rather than a
+      line every pass has to read past.
+    */
+    const { stdout, plan } = runCut(LIVE.rows, { cards: [CARD, CARD_1903, CARD_1937], comments: [] });
+    const seats = stdout.split(/\r?\n/).find((line) => line.startsWith("SEATS "))!;
+    expect(seats).toContain("repairs 9");
+    expect(seats).not.toContain("repair claims");
+    const owed = stdout.split(/\r?\n/).filter((line) => line.startsWith("REPAIR OWED |"));
+    expect(owed[0]).toContain("card #1903");
+    expect(owed[0]).not.toContain("CLAIMED");
+    const items = (plan.repairsOwed as { items: { cards: number[]; claim: unknown }[] }).items;
+    expect(items[0]!.cards).toEqual([1903]);
+    expect(items[0]!.claim).toBeNull();
+  });
+
+  it("⚠ a repair whose title names no OPEN card is silent, and says so to a person", () => {
+    /*
+      The failure direction this derivation is allowed to have. A dependabot bump
+      names no card at all, and a pull request whose card has closed names none
+      that is open — in both cases the road behaves exactly as it did before this
+      card existed, and the per-repair line says which.
+    */
+    const { stdout, plan } = runCut(LIVE.rows, { cards: [CARD], comments: [] });
+    const seats = stdout.split(/\r?\n/).find((line) => line.startsWith("SEATS "))!;
+    expect(seats).not.toContain("repair claims");
+    const owed = stdout.split(/\r?\n/).filter((line) => line.startsWith("REPAIR OWED |"));
+    expect(owed).toHaveLength(9);
+    for (const line of owed) expect(line).toContain("no open card named in its title");
+    const items = (plan.repairsOwed as { items: { cards: number[]; claim: unknown }[] }).items;
+    for (const item of items) {
+      expect(item.cards).toEqual([]);
+      expect(item.claim).toBeNull();
+    }
+  });
+
+  it("⚠ IT NEVER WITHHOLDS A REPAIR — a claimed card changes the words and nothing else", () => {
+    /*
+      The card's own asymmetry, and the one thing these arms exist to protect: a
+      held pull request with a repair owed is the highest-priority work on the
+      board (his word, #1977), so a stale or a foreign claim must never be able
+      to stall one. Driven as an equality rather than asserted: the repair list,
+      its order and the seat count are identical with and without the claim.
+    */
+    const withClaim = runCut(LIVE.rows, {
+      cards: [CARD, CARD_1903, CARD_1937],
+      comments: [claimRow(1903, "seat1", ago(6 * 60 * 1000))],
+    });
+    const without = runCut(LIVE.rows, { cards: [CARD, CARD_1903, CARD_1937], comments: [] });
+
+    const owedOrder = (plan: Record<string, unknown>): number[] =>
+      (plan.repairsOwed as { items: { pullRequest: number }[] }).items.map((item) => item.pullRequest);
+    expect(owedOrder(withClaim.plan)).toEqual(owedOrder(without.plan));
+    expect((withClaim.plan as unknown as { seatCount: number }).seatCount)
+      .toBe((without.plan as unknown as { seatCount: number }).seatCount);
+    expect((withClaim.plan as unknown as { repairsOwed: { count: number } }).repairsOwed.count).toBe(9);
   });
 
   it("⚠ a repairs list that cannot be read NEVER refuses the pass — it says so and cuts as before", () => {
@@ -468,5 +604,173 @@ describe("⚠ the cut offers the repair before the card (#1977)", () => {
       ],
       { encoding: "utf8", timeout: CHILD_PROCESS_TEST_TIMEOUT_MS, stdio: ["ignore", "pipe", "pipe"] },
     )).toThrow();
+  });
+});
+
+/**
+ * WHOSE HANDS ARE ON A REPAIR'S CARD — the reading, over the same real
+ * population (#2769).
+ *
+ * ⚠ **THE POPULATION IS THE NINE HELD PULL REQUESTS OF 2026-10-08, not the
+ * merged history.** The card's premise is that a repair's card can be derived at
+ * all, and the only population that settles it is the one a repair hand-out
+ * actually walks. Measured here: **9 of 9 resolve exactly one card** from the
+ * title, and the fixture's two dependabot rows resolve NONE. (Over the 120
+ * newest merged pull requests the same reader holds at 114 of 120 — 4 name no
+ * card, 2 genuinely built two. That proxy is recorded in
+ * `scripts/lib/repairsOwed.mts`'s own block and is not what these arms drive.)
+ */
+describe("the card behind a repair, and the claim on it (#2769)", () => {
+  const HELD = repairsOwedFrom(LIVE.rows, LIVE.ownerLogin).repairs;
+  /** Every card the fixture's own titles name — the board, as it stood. */
+  const BOARD = [1903, 1937, 1954, 1936, 1959, 1941, 1961, 1962, 1966, 1971];
+  const NOW = Date.parse("2026-10-29T00:00:00Z");
+
+  const claimFact = (card: number, seat: string, at: string): unknown => ({
+    issue_url: `https://api.github.com/repos/michaelpaulrattray/Drape/issues/${card}`,
+    user: { login: LIVE.ownerLogin },
+    created_at: at,
+    updated_at: at,
+    body: `CLAIMED — ${seat}, ${at}\n`,
+  });
+  const releaseFact = (card: number, seat: string, at: string): unknown => ({
+    ...(claimFact(card, seat, at) as Record<string, unknown>),
+    body: `RELEASED — ${seat}, ${at}\n`,
+  });
+  const refusalFact = (card: number, at: string): unknown => ({
+    ...(claimFact(card, "x", at) as Record<string, unknown>),
+    body: "**NOT BUILT — the premise is wrong against the code, seat-janitor.**\n",
+  });
+
+  it("all nine held pull requests of that day resolve exactly ONE open card", () => {
+    const read = repairCardClaims({ repairs: HELD, openCards: BOARD, facts: [], nowMs: NOW });
+    expect(read).toHaveLength(9);
+    for (const row of read) expect(row.cards).toHaveLength(1);
+    expect(read.map((row) => [row.pullRequest, row.cards[0]])).toEqual([
+      [1924, 1903], [1946, 1937], [1960, 1954], [1963, 1936], [1974, 1959],
+      [1975, 1941], [1979, 1961], [1981, 1962], [1982, 1966],
+    ]);
+  });
+
+  it("THE NEGATIVE CONTROL: the fixture's two dependabot rows name no card", () => {
+    /* They are in the fixture precisely so this control needs no invention:
+       `chore(deps): Bump cookie from 1.0.2 to 2.0.1` carries version digits and
+       must still resolve nothing. */
+    const bumps = LIVE.rows.filter((row) => [1892, 1889].includes(row.number!));
+    expect(bumps).toHaveLength(2);
+    for (const row of bumps) {
+      const found = BOARD.filter((card) =>
+        pullRequestBuildsCard({ number: row.number!, title: row.title! }, card).length > 0);
+      expect(found).toEqual([]);
+    }
+  });
+
+  it("⚠ THE BRANCH LIMB IS NOT USED, and a seat branch is why", () => {
+    /*
+      `pullRequestBuildsCard` matches any digit RUN in a branch name, so a branch
+      called `team/seat-1-20261029-0105` resolves card #1 — for every seat branch
+      in the repository. This reading passes the TITLE alone, which is
+      `shared/crewShippedNotClosed.ts`'s own narrowing; the arm proves the
+      narrowing is live here rather than incidental.
+    */
+    const repair = {
+      pullRequest: 9001,
+      title: "fix(crew): something with no card in its title",
+      headRefName: "team/seat-1-20261029-0105",
+      draft: false,
+      heldSince: "2026-10-28T23:00:00Z",
+      findings: 1,
+    };
+    expect(pullRequestBuildsCard({ number: 9001, headRefName: repair.headRefName }, 1)).toContain("branch");
+    const read = repairCardClaims({ repairs: [repair], openCards: [1, 20261029], facts: [], nowMs: NOW });
+    expect(read[0]!.cards).toEqual([]);
+  });
+
+  it("a live claim on the card is reported with its seat and its time", () => {
+    const facts = factsFromRows([claimFact(1903, "seat1-20261029-095243", "2026-10-28T23:54:00Z")]);
+    expect(facts).toHaveLength(1);
+    const read = repairCardClaims({ repairs: HELD, openCards: BOARD, facts, nowMs: NOW });
+    expect(read[0]!.claim).toEqual({
+      card: 1903,
+      seat: "seat1-20261029-095243",
+      at: "2026-10-28T23:54:00Z",
+    });
+    /* And only that one — eight repairs with nothing said about their cards. */
+    expect(read.filter((row) => row.claim !== null)).toHaveLength(1);
+  });
+
+  it("⚠ a claim past the live window is not a claim — the same twelve hours a seat applies", () => {
+    const inside = NOW - (CREW_CLAIM_LIVE_MS - 60_000);
+    const outside = NOW - (CREW_CLAIM_LIVE_MS + 60_000);
+    const at = (ms: number): string => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+    expect(repairCardClaims({
+      repairs: HELD,
+      openCards: BOARD,
+      nowMs: NOW,
+      facts: factsFromRows([claimFact(1903, "seat1", at(inside))]),
+    })[0]!.claim).not.toBeNull();
+    expect(repairCardClaims({
+      repairs: HELD,
+      openCards: BOARD,
+      nowMs: NOW,
+      facts: factsFromRows([claimFact(1903, "seat1", at(outside))]),
+    })[0]!.claim).toBeNull();
+  });
+
+  it("⚠ THE NEWEST FACT WINS, NOT THE NEWEST CLAIM — a release or a refusal after it is silence", () => {
+    /*
+      The direction that costs a session: reporting a claim its own seat has
+      already released reads as hands on work that is free. Both facts that put a
+      card back on offer are driven, and the claim they follow is inside the
+      window in each case — so the arm cannot pass by the claim merely having
+      aged out.
+    */
+    const released = factsFromRows([
+      claimFact(1903, "seat1", "2026-10-28T22:00:00Z"),
+      releaseFact(1903, "seat1", "2026-10-28T23:30:00Z"),
+    ]);
+    expect(repairCardClaims({ repairs: HELD, openCards: BOARD, facts: released, nowMs: NOW })[0]!.claim)
+      .toBeNull();
+
+    const refused = factsFromRows([
+      claimFact(1903, "seat1", "2026-10-28T22:00:00Z"),
+      refusalFact(1903, "2026-10-28T23:30:00Z"),
+    ]);
+    expect(repairCardClaims({ repairs: HELD, openCards: BOARD, facts: refused, nowMs: NOW })[0]!.claim)
+      .toBeNull();
+
+    /* AND THE POSITIVE HALF: the same two facts the other way round — a claim
+       after a release — is a live claim, which is what makes the arms above a
+       test of the ORDER rather than of the extra fact. */
+    const reclaimed = factsFromRows([
+      releaseFact(1903, "seat1", "2026-10-28T22:00:00Z"),
+      claimFact(1903, "seat2", "2026-10-28T23:30:00Z"),
+    ]);
+    expect(repairCardClaims({ repairs: HELD, openCards: BOARD, facts: reclaimed, nowMs: NOW })[0]!.claim?.seat)
+      .toBe("seat2");
+  });
+
+  it("the word for the runner's line: empty with nothing to say, the seat and the age when there is", () => {
+    expect(repairClaimWord([], NOW)).toBe("");
+    expect(repairClaimWord([{ pullRequest: 1924, cards: [1903], claim: null }], NOW)).toBe("");
+
+    const minutes = repairClaimWord(
+      [{ pullRequest: 1924, cards: [1903], claim: { card: 1903, seat: "seat1", at: "2026-10-28T23:54:00Z" } }],
+      NOW,
+    );
+    expect(minutes).toBe(" | repair claims: PR #1924 -> card #1903 claimed by seat1 6m ago");
+
+    const hours = repairClaimWord(
+      [{ pullRequest: 1924, cards: [1903], claim: { card: 1903, seat: "seat1", at: "2026-10-28T13:00:00Z" } }],
+      NOW,
+    );
+    expect(hours).toContain("11.0h ago");
+
+    /* An unattributed claim is still somebody's — the asymmetry `readCardClaim`
+       states: a missed claim costs an hour of a seat, a named one costs a word. */
+    expect(repairClaimWord(
+      [{ pullRequest: 1924, cards: [1903], claim: { card: 1903, seat: null, at: "2026-10-28T23:54:00Z" } }],
+      NOW,
+    )).toContain("a seat that did not name itself");
   });
 });

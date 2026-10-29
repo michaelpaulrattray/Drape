@@ -2290,9 +2290,20 @@ describe("the cut derives rather than mirrors", () => {
       than looser: the repairs word leads the trailing words on BOTH branches,
       which is #1977's own rule (a repair owed comes before any new card) said
       where the runner logs it.
+
+      ⚠ **AND IT STILL PINNED ADJACENCY ONE WORD ALONG, WHICH #2769 THEN HIT —
+      so it names the ORDER now, which is what the paragraph above says it
+      means.** That card adds `${repairClaimSentence}` immediately after the
+      repairs word, and the adjacency pin reddened this arm about the milestone
+      for it. The contract is *repairs lead*, not *repairs touch*; the
+      claim-sentence pin below is its own line because it is its own claim.
     */
-    expect(/`SEATS 0 \| nothing on offer\$\{repairWord\}\$\{rungWord\}/.test(cli)).toBe(true);
-    expect(/cards \$\{plan\.cardCount\}[^`]*\$\{repairWord\}\$\{rungWord\}/.test(cli)).toBe(true);
+    expect(/`SEATS 0 \| nothing on offer\$\{repairWord\}[^`]*\$\{rungWord\}/.test(cli)).toBe(true);
+    expect(/cards \$\{plan\.cardCount\}[^`]*\$\{repairWord\}[^`]*\$\{rungWord\}/.test(cli)).toBe(true);
+    /* ⚠ WHOSE HANDS ARE ON A REPAIR'S CARD RIDES WITH ITS REPAIRS WORD (#2769) —
+       on this line and not another, because the runner keeps only the lines
+       matching `^SEATS ` and every other line the cut prints reaches nobody. */
+    expect(/\$\{repairWord\}\$\{repairClaimSentence\}/.test(cli)).toBe(true);
   });
 
   it("names no work label, hold label or domain of its own — IN EVERY FILE OF THE FEATURE", () => {
