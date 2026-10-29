@@ -99,10 +99,20 @@
  * wrap the detector declines, a forehead the detector returns with the eyes
  * inside it. A loose cut is one that claims MORE than it should, and a fill bar
  * cannot see it: filling a rectangle generously is what a correct garment cut
- * does. What guards that case is unchanged — the flag is dark and the flip is
- * **his eye on real panels** (the design's §8 step 4), and every cut logs its
- * noun, its area and now its fill, so the frames can be read rather than
- * guessed at.
+ * does. What guards that case is every cut logging its noun, its area and now
+ * its fill, so the frames can be read rather than guessed at.
+ *
+ * ⚠ **AND "THE FLAG IS DARK" CAME OFF THAT SENTENCE ON 2026-10-29, BECAUSE IT
+ * WAS ALREADY FALSE WHEN THE QUALITY BAR WAS WIRED IN.** This paragraph read
+ * ~~*"the flag is dark and the flip is his eye on real panels"*~~, and
+ * `CASTING_FACE_DISCOVERY_SCOPE` has stood at **`users:1` — HIS ACCOUNT —
+ * since 2026-10-28** (read at `scripts/lib/productionFlagPositions.mts`, not
+ * assumed; his word was *"never ask me to switch things on for my account just
+ * do it"*). So this road is LIVE for him and he has been reading its panels in
+ * eye rounds 3 and 4 the same week. **A refusal added here is in front of him
+ * on the next deploy, not waiting behind a flip** — which is the argument for
+ * logging every fill rather than only the refusals, and for the floor being
+ * one exported constant.
  *
  * # It cannot take a row off the panel, and it cannot break a scan
  *
