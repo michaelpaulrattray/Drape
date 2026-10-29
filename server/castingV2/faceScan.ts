@@ -626,6 +626,47 @@ export async function scanFace(input: {
             rightMask = again.right;
           }
         }
+        /*
+          AND AN EAR-WORN PAIR STILL ONE-SIDED IS LOOKED AT BY THE DETECTOR
+          (#2800, his eye round 6: *"why did it pick up her left ear but not the
+          left earing?"*).
+
+          Measured on his screenshot: asked `earring` of the whole picture, the
+          segmenter offered one hoop and never the other, and the second look
+          above asked the same question and got the same answer to the last
+          digit. The detector boxed both. So one earring found is taken as the
+          sign that earrings are worn, and the other ear gets that one
+          different look.
+
+          AFTER the second look and never instead of it, so the half-answered
+          log above still counts every half-answered pair. A pair empty on both
+          sides is not asked: an empty earring read is the born-worn detector
+          being careful (see the re-ask below). A failure here costs this look
+          and never the side already found.
+        */
+        if (
+          onTheEars && region.slots.length === 2
+          && zeroOf(leftMask) !== zeroOf(rightMask) && input.reader.sideByDetector
+        ) {
+          const blindSide = zeroOf(leftMask) ? "left" : "right";
+          try {
+            const found = await input.reader.sideByDetector({
+              image: input.frame.bytes,
+              name: region.question,
+              side: blindSide,
+              ...(input.frame.url ? { imageUrl: input.frame.url } : {}),
+            });
+            if (found !== null) {
+              if (blindSide === "left") leftMask = found;
+              else rightMask = found;
+            }
+          } catch (error) {
+            log.warn(
+              { question: region.question, blindSide, why: error instanceof Error ? error.message : String(error) },
+              "[faceScan] the detector could not look at the other ear — the pair stays as read",
+            );
+          }
+        }
         for (const slot of region.slots) {
           const mask = slot.instance === "left" ? leftMask : rightMask;
           const box = binaryCoverage(mask) > floor ? boxIn(mask, frame) : null;

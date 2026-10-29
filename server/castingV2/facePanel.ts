@@ -1240,10 +1240,19 @@ export function facePanel(input: {
           scopable: side.definition.instance !== null,
         })),
         /*
-          THE TWO CHILDREN (founder, fable-452) — always both, whether or not
-          they agree, because the pair is the row and these are its sides.
+          THE TWO CHILDREN (founder, fable-452) — both, whether or not they
+          agree, because the pair is the row and these are its sides.
           Everything here already exists per instance, so opening a pair fetches
           nothing and closing one stores nothing.
+
+          ⚠ **A SIDE NOTHING FOUND IS NOT DRAWN (#2800, his eye round 6).** This
+          read *"always both"* and drew a side with no picture and no place on
+          the photograph: "Right ear" and "Left earring" on his panel, which a
+          tap filled into the ask box while nothing lit on the picture. That is
+          fable-414's rule failing one level down — *"everything in the right
+          panel should have a bounding box"* — so a child keeps its place by the
+          same measure the row does: a place on the picture, or a picture of
+          it. The parent row is untouched and still means the pair.
 
           Left then right, from the catalogue: a list is read in the words it is
           written in, while the tile above is ordered by where the eye finds
@@ -1252,7 +1261,7 @@ export function facePanel(input: {
         instances: [
           { definition: left, state: leftState },
           { definition: right, state: rightState },
-        ].map(({ definition: side, state }) => ({
+        ].filter(({ state }) => state.box !== null || state.thumb !== null).map(({ definition: side, state }) => ({
           slot: side.slot,
           name: labelOf(side, false),
           spoken: spokenOf(side, input.pronouns.possessive, false),
