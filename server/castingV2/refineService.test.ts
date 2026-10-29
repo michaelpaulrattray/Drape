@@ -16908,3 +16908,302 @@ wear her hair down`);
 
 });
 
+
+
+/**
+ * THE TAKE ROAD AT THE ENTRANCE — #2736 slice 2, and these are the arms that
+ * answer invariant 7 rather than the module's own suite.
+ *
+ * `referenceTake.test.ts` proves the cutter and the mint on masks whose answers
+ * are arithmetic. **It cannot prove that anything calls them**, and *a control
+ * that is not invoked does not exist* is the failure this repository has
+ * catalogued more than any other. So every arm here drives the real
+ * `refineCandidate`, with the take's cutter and mint INJECTED, and asserts on
+ * what the service did with them and on **the prompt the repaint engine
+ * actually received** (working law 5 — a contract about what gets sent is
+ * proven on the outgoing request).
+ *
+ * The injected cutter is also the negative control: a flag-off arm that merely
+ * found no reference on the wire would pass with the branch deleted, because
+ * there is no reference either way. **A spy that must never be called is the
+ * only arm that can tell those two states apart.**
+ *
+ * ⚠ **AND ONE ARM EXISTS BECAUSE THIS CHANGE MADE A SHIPPED SENTENCE LIE.**
+ * `attachedPictureUnusedNote`'s `unservable` branch says *"I can't take the
+ * jacket from a picture yet"*, and until this slice that was true of the whole
+ * product. For an account inside the flag whose cut was merely REFUSED it is
+ * false, so the classifier reads an attempted take as `untaken` — and the arm
+ * asserts the SENTENCE a customer would read, never the variable beside it.
+ */
+describe("a named thing is taken out of the attached picture", () => {
+  const REFERENCE = {
+    id: 11,
+    storageKey: "casting-v2/reference/their-jacket.png",
+    provenance: "consented" as const,
+    digest: "e".repeat(64),
+    mime: "image/png",
+    width: 900,
+    height: 900,
+  };
+  const CUT_KEY = "casting-v2/reference-take/cut.png";
+
+  /** The prompts the repaint engine was handed, and the bytes beside them. */
+  const painted: Array<{ prompt: string; references: ReadonlyArray<{ bytes: Buffer }> }> = [];
+  /** What the service asked the cutter for, so an arm can read the noun. */
+  const asked: Array<{ noun: string; bytes: Buffer }> = [];
+  /** Every mint the service performed. Empty is the flag-off answer. */
+  const mints: Array<{ userId: number; noun: string }> = [];
+
+  const TAKEN = {
+    bytes: Buffer.from("the jacket, cut out"),
+    width: 300,
+    height: 420,
+    noun: "jacket",
+    verdict: { use: true, fill: 0.61, claimed: 300, insideBox: 300, why: "used" as const },
+    facesRemoved: 1,
+  };
+
+  /*
+    THE INTERPRETER, ANSWERING THE WAY THE REAL ONE DOES FOR HIS OWN TEST.
+
+    A wardrobe free ask whose filed words carry the customer's own noun, with
+    `fromReference` beside it — which is what *"wear this jacket"* with a
+    photograph attached parses to once `CASTING_OUTFIT_EDIT_SCOPE` serves
+    clothing. The noun has to appear in BOTH the instruction and the filed value
+    for `theirNounForTheOneThingFiled` to answer; that is the reader's own rule
+    and not this fixture's convenience.
+  */
+  const wardrobeFromThePicture = async () => ({
+    ok: true as const,
+    delta: { free: { wardrobe: "the jacket in the attached picture" } },
+    fromReference: true,
+  });
+
+  const road = (over: Record<string, unknown> = {}) => ({
+    interpret: wardrobeFromThePicture,
+    repaintEngine: () => ({
+      id: "test:repaint",
+      edit: async (request: {
+        prompt: string;
+        references: ReadonlyArray<{ bytes: Buffer }>;
+        width: number;
+        height: number;
+      }) => {
+        painted.push({ prompt: request.prompt, references: request.references });
+        return {
+          bytes: Buffer.from("repainted"),
+          contentType: "image/png",
+          width: request.width,
+          height: request.height,
+          latencyMs: 10,
+          provenance: { provider: "fal" as const, model: "gpt-image-2", providerRef: "req-r" },
+        };
+      },
+    }),
+    readBytes: async (key: string) => (key === REFERENCE.storageKey
+      ? { bytes: Buffer.from("their photograph"), contentType: "image/png" }
+      : key === CUT_KEY
+        ? { bytes: TAKEN.bytes, contentType: "image/png" }
+        : { bytes: TINY_MASTER_PNG, contentType: "image/png" }),
+    readBaseWorn: async () => ({
+      compiledBrief: null,
+      lockContract: null,
+      briefText: "A dock foreman in his sixties.",
+    }),
+    /* Clothing is this account's to change — #2544's flag, which the take rides
+       and never widens. */
+    outfitEditEnabled: () => true,
+    referenceTakeEnabled: () => true,
+    cutThing: async ({ noun, bytes }: { noun: string; bytes: Buffer }) => {
+      asked.push({ noun, bytes });
+      return { ok: true as const, thing: { ...TAKEN, noun } };
+    },
+    mintTake: async ({ userId, thing }: { userId: number; thing: { noun: string } }) => {
+      mints.push({ userId, noun: thing.noun });
+      /* The REAL mint's own sha — of the bytes actually stored — because the
+         repaint hashes what it loads against this declaration and refuses a
+         reference whose bytes have moved. A fake sha here passed only while
+         nothing rode; the ride made the wire read it. */
+      return {
+        key: CUT_KEY,
+        sha: createHash("sha256").update(TAKEN.bytes).digest("hex"),
+        contentType: "image/png",
+      };
+    },
+    ...over,
+  });
+
+  const wearIt = { ...input, instruction: "wear this jacket", referenceId: "ref-public" };
+
+  beforeEach(() => {
+    painted.length = 0;
+    asked.length = 0;
+    mints.length = 0;
+    resolveAskReferenceMock.mockResolvedValue(REFERENCE);
+  });
+
+  afterEach(() => { resolveAskReferenceMock.mockReset(); });
+
+  it("⚠ FLAG OFF: the cutter is never called and the picture is confessed as before", async () => {
+    const result = await refineCandidate(
+      road({ referenceTakeEnabled: () => false }) as never,
+      wearIt,
+    );
+    /* The whole flag-off claim, and it is about CALLS rather than about the
+       absence of a reference: with the branch deleted this arm still passes on
+       the wire and fails here. */
+    expect(asked).toEqual([]);
+    expect(mints).toEqual([]);
+    /* Nothing of a take reached the engine either. */
+    for (const one of painted) {
+      expect(one.prompt).not.toContain("supplied for this edit");
+      expect(one.references.map((r) => r.bytes.toString())).not.toContain(TAKEN.bytes.toString());
+    }
+    /* And today's sentence is still today's sentence for an account off the
+       road — the one case `unservable` was always true of. */
+    expect(JSON.stringify(result)).toContain("I can't take the jacket from a picture yet");
+  });
+
+  it("⚠ FLAG ON: the cutter is asked for the customer's OWN word, on their own bytes", async () => {
+    await refineCandidate(road() as never, wearIt);
+    expect(asked).toHaveLength(1);
+    expect(asked[0]!.noun).toBe("jacket");
+    expect(asked[0]!.bytes.toString()).toBe("their photograph");
+    /* And the cut was minted for the account that asked for it — `ctx.user.id`
+       through the service, never from procedure input. */
+    expect(mints).toEqual([{ userId: input.userId, noun: "jacket" }]);
+  });
+
+  /**
+   * ⚠ THE WIRE ARM — it stood declared-failing (`it.fails`) while the ride was
+   * the slice's escalated blocker, and was flipped to `it` in the commit that
+   * landed the ride, exactly as its own instruction ordered.
+   *
+   * It asserts the three promises the ride owes: the CUT's own bytes reach the
+   * engine (not the photograph's), the sentence says what the picture IS, and
+   * the scope sentence says what to do with it while keeping the rest of the
+   * outfit.
+   *
+   * **The ride, as decided (2026-10-29, the escalated Fable shift):** clothing
+   * keeps no slot — D-136 and `FACET_SLOTS.wardrobe`'s `notASlot` are untouched
+   * — and the cut rides keyed on the wardrobe PRESENTATION CLAUSE instead
+   * (`presentationSources`, a clause-keyed `source` role). The invariant
+   * generalises rather than loosens: a picture rides only beside a sentence
+   * this render says about the thing it shows, and the clause is that sentence.
+   */
+  it("⚠ puts the CUT on the wire, described as what it is, with its scope beside it", async () => {
+    await refineCandidate(road() as never, wearIt);
+    expect(painted.length).toBeGreaterThan(0);
+    const sent = painted[0]!;
+    /* THE CUT'S BYTES, and never the photograph's — the likeness fence at the
+       wire rather than in a docblock. */
+    const bytes = sent.references.map((one) => one.bytes.toString());
+    expect(bytes).toContain(TAKEN.bytes.toString());
+    expect(bytes).not.toContain("their photograph");
+    /* Said as what it IS, with the part that is not the instruction named. */
+    expect(sent.prompt).toContain("is the jacket supplied for this edit");
+    expect(sent.prompt).toContain("nothing else from the");
+    expect(sent.prompt).toContain("transparent area is NOT part of the instruction");
+    /* And what it may give them. */
+    expect(sent.prompt).toContain("this exact jacket");
+    expect(sent.prompt).toContain("stays as it is");
+  });
+
+  it("⚠ FLAG ON but clothing unserved: nothing is cut — the take never widens the wall", async () => {
+    await refineCandidate(road({ outfitEditEnabled: () => false }) as never, wearIt);
+    expect(asked).toEqual([]);
+    expect(mints).toEqual([]);
+  });
+
+  /**
+   * ⚠ A TAKEN PICTURE IS NEVER ALSO CONFESSED AS UNUSED — and the SECOND half of
+   * this arm is here because the first half alone survived a sabotage.
+   *
+   * Removing `takeSource === null` from `pictureUnused` makes a successful take
+   * ALSO unused, so the receipt would carry *"Took the jacket from your
+   * picture."* and an unused-picture note in the same breath. The arm as first
+   * written asserted only that the positive sentence was PRESENT, and passed
+   * with the term gone — a guard checking the shape of its own output instead of
+   * the decision that output drives, which is #2565 slice 2's own lesson from
+   * the night before, repeating on the next road.
+   *
+   * So both halves, and the negative one is the load-bearing one.
+   */
+  it("⚠ says what it took, and never also says the picture went unused", async () => {
+    const result = await refineCandidate(road() as never, wearIt);
+    const said = JSON.stringify(result);
+    expect(said).toContain("Took the jacket from your picture.");
+    /* Not one of the three unused-picture sentences may appear beside it. */
+    expect(said).not.toContain("wasn't used");
+    expect(said).not.toContain("I can't take");
+    expect(said).not.toContain("didn't ask for anything I could take from it");
+  });
+
+  it("⚠ a REFUSED cut never claims the road does not exist", async () => {
+    /*
+      The sentence correction this slice owed. `unservable` says *"I can't take
+      the jacket from a picture yet"*; for an account on this road that is false,
+      and a customer told it would go away and stop attaching pictures.
+    */
+    const result = await refineCandidate(road({
+      cutThing: async ({ noun }: { noun: string }) => {
+        asked.push({ noun, bytes: Buffer.alloc(0) });
+        return { ok: false as const, why: "cut-refused" as const, verdict: null };
+      },
+    }) as never, wearIt);
+    const said = JSON.stringify(result);
+    expect(asked).toHaveLength(1);
+    expect(mints).toEqual([]);
+    expect(said).not.toContain("I can't take the jacket from a picture yet");
+    expect(said).toContain("Your picture wasn't used this time");
+    /* And nothing claims a take that did not happen. */
+    expect(said).not.toContain("Took the jacket from your picture.");
+    /* Nor did a refused cut reach the engine. */
+    for (const one of painted) expect(one.prompt).not.toContain("supplied for this edit");
+  });
+
+  it("a sentence with no word for the thing buys no cut — an unreadable noun is not a guess", async () => {
+    await refineCandidate(road({
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { wardrobe: "the thing in the picture" } },
+        fromReference: true,
+      }),
+    }) as never, { ...wearIt, instruction: "wear this" });
+    expect(asked).toEqual([]);
+  });
+
+  /**
+   * ⚠ TWO GARMENTS IN ONE SENTENCE TAKES THE FIRST ONE, SILENTLY — and this arm
+   * pins the behaviour as it IS rather than as the design describes it, because
+   * the gap is a finding and not a thing to assert away.
+   *
+   * `theirNounForTheOneThingFiled` keys on ONE SUBJECT, not one thing: a
+   * wardrobe value naming a jacket and boots is still one subject, and the
+   * reader returns the longest `SUBJECT_NOUNS.wardrobe` entry typed in both the
+   * sentence and the filed value. Driven on the real reader: *"give them the
+   * jacket and the boots from this"* → `"jacket"`.
+   *
+   * The step-0 design's §6 promises the opposite — *"It never silently picks
+   * one"* — and the ask-back that would keep that promise is NOT built. So this
+   * arm exists to make the gap visible rather than to bless it: when §6's
+   * ask-back lands, this arm is the one it changes, and it says so.
+   */
+  it("⚠ KNOWN GAP: two garments in one sentence takes the longest-named one, silently", async () => {
+    await refineCandidate(road({
+      interpret: async () => ({
+        ok: true as const,
+        delta: { free: { wardrobe: "the jacket and the boots in the attached picture" } },
+        fromReference: true,
+      }),
+    }) as never, { ...wearIt, instruction: "give them the jacket and the boots from this" });
+    expect(asked.map((one) => one.noun)).toEqual(["jacket"]);
+  });
+
+  it("an ask that never pointed at the picture buys no cut", async () => {
+    await refineCandidate(road({
+      interpret: async () => ({ ok: true as const, delta: { eyeColour: "green" as const } }),
+    }) as never, { ...input, instruction: "make their eyes green", referenceId: "ref-public" });
+    expect(asked).toEqual([]);
+  });
+});

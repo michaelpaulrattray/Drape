@@ -324,6 +324,24 @@ const COLLECTORS: Readonly<Record<string, string>> = {
   */
   "server/castingV2/hairReferenceCutter.ts": "a carrier cut for one render, collected after it",
   /*
+    #2736 slice 2, 2026-10-29 — the hair carrier's own class, for the hair
+    carrier's own reason, on the road beside it: a named thing cut out of a
+    picture the customer attached, so one render can put it on their cast.
+
+    A COLLECTOR and not a KEEPER, and the choice is not a shortcut. The cut
+    belongs to ONE ask: it is minted from the words of that ask, it is
+    digest-pinned at the recipe, and nothing holds a reference to it afterwards.
+    What persists past the render is the DESCRIPTION, which is #2565 slice 1's
+    road, and the cast's own delivered frame — the stranger's photograph never
+    carries forward, which is the design's §5 rule and already how a words-only
+    outfit edit persists today.
+
+    ⚠ **The day a kept item needs this cut to survive its render, this file
+    moves to KEEPERS and records a row** — that is #2565's kept-item slice, and
+    this table is what will refuse to let it happen quietly.
+  */
+  "server/castingV2/referenceTake.ts": "a thing cut out of an attached picture for one render, collected after it",
+  /*
     #129 slice 1, 2026-09-16. A COLLECTOR whose hold IS its retention: a refused
     roll's sent words are reserved under a manifest born held for 30 days, and
     the worker collecting them when the hold lapses is the design, not a leak.

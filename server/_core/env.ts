@@ -59,9 +59,11 @@ import {
   validateCastingInkRegionCropEnvironment,
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
+  validateCastingReferenceTakeEnvironment,
   validateCastingReferenceAttachEnvironment,
   CASTING_HAIR_REFERENCE_SCOPE_ENV,
   CASTING_REFERENCE_ATTACH_SCOPE_ENV,
+  CASTING_REFERENCE_TAKE_SCOPE_ENV,
   validateCastingInkReferenceEnvironment,
   CASTING_INK_REFERENCE_SCOPE_ENV,
   validateCastingRetryEnvironment,
@@ -576,6 +578,19 @@ export function validateEnv(): void {
   */
   validateCastingHairReferenceEnvironment({
     scope: process.env[CASTING_HAIR_REFERENCE_SCOPE_ENV],
+    attachScope: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
+  });
+  /*
+    TAKING A NAMED THING OUT OF AN ATTACHED PICTURE (#2736). Its parent is the
+    ATTACH door and nothing else, for the hair take's reason exactly: the take's
+    whole input is an attachment, so armed without it the road opens onto an ask
+    with nothing to take from. The cleanup worker rides in through the attach
+    flag's own check rather than being restated here — the cut's bytes are minted
+    under a manifest, and a second copy of that refusal is a second list that can
+    come to disagree.
+  */
+  validateCastingReferenceTakeEnvironment({
+    scope: process.env[CASTING_REFERENCE_TAKE_SCOPE_ENV],
     attachScope: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
   });
   /*
