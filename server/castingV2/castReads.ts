@@ -62,7 +62,7 @@ import { createModuleLogger } from "../logging/logger";
 import { ProviderError, type ReferenceImage, type TextEngine } from "../providers/types";
 import {
   castPersonaCraftRules,
-  castPersonaEditBlock,
+  castPersonaEditAsk,
   fitProseToCap,
   trimTrailingJunk,
 } from "./castPersona";
@@ -169,6 +169,8 @@ export type CastReadsRequest = {
   brief: string | null;
   /** Their own correction sentences, oldest first. */
   editSentences: readonly string[];
+  /** What a kept sentence above once asked for and no longer does (#2669). */
+  takenBack?: readonly string[];
   /**
    * THE LINE ALREADY ON THE CARD, so the six can be alternatives to it.
    *
@@ -329,9 +331,7 @@ export function createCastReadsReader(config: { engine: TextEngine }): CastReads
         "WHAT THE CUSTOMER ASKED FOR when casting, in their own words:",
         brief ? brief : "Nothing was typed — read the photograph alone.",
         "",
-        "CORRECTIONS THE CUSTOMER MADE while refining this face, oldest first.",
-        "Each one is the customer telling you who this person is:",
-        castPersonaEditBlock(request.editSentences),
+        castPersonaEditAsk({ sentences: request.editSentences, takenBack: request.takenBack }),
         "",
         castReadsCurrentBlock(request.current),
       ].join("\n");

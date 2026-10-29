@@ -1427,6 +1427,93 @@ describe("N2b's two lines are born inside the Sign", () => {
     expect(ask.anchor).toBeTruthy();
     /* Her pronouns, so the lines read as English about the right person. */
     expect(ask.pronouns).toMatchObject({ subject: "she" });
+    /* And nothing is claimed taken back on a branch that was never pruned. */
+    expect(ask.takenBack).toEqual([]);
+  });
+
+  /*
+    #2669 — AND WHAT A PRUNE TOOK OUT OF A SENTENCE THE RECORD STILL CARRIES.
+
+    A pruned step KEEPS its sentence (D-171), so `editSentences` above can name
+    a feature this face no longer has, and the reader — asked for "the ONE
+    thing that breaks the rest" — reaches for exactly that. Driven through the
+    real entrance before this landed, the drafted line wrote it 3 times out of
+    3; with the words handed over, 0 of 3.
+
+    This arm owns the WIRING rather than the derivation: that the Sign reads
+    the version ancestry and hands the answer to the reader. The derivation's
+    own controls are `signedFaceTakenBack.test.ts`; without this arm both could
+    be perfect while the Sign never called either.
+  */
+  it("hands the reader what an earlier prune took out of a kept sentence", async () => {
+    selectedVariant = {
+      id: 77,
+      publicId: "variant-public",
+      imageKey: "casting-v2/variants/refined.png",
+      thumbKey: null,
+      internalPrompt: { prompt: "composed", resolved: { sex: "female" } },
+    };
+    editSentences = ["add fangs and red lipstick"];
+    const fanged = {
+      instruction: "add fangs and red lipstick",
+      delta: { open: { fangs: { noun: "fangs", words: "long white fangs" } }, free: { lips: "red lipstick" } },
+    };
+    const kept = { instruction: fanged.instruction, delta: { free: { lips: "red lipstick" } } };
+    const persona = reader(LINES);
+
+    await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({}),
+        personaReader: () => persona,
+        listVariants: (async () => [
+          { id: 76, parentVariantId: null, instructions: [fanged.instruction], stepDeltas: [fanged.delta], deltas: fanged.delta },
+          { id: 77, parentVariantId: 76, instructions: [kept.instruction], stepDeltas: [kept.delta], deltas: kept.delta },
+        ]) as unknown as SignServiceDependencies["listVariants"],
+      },
+      input,
+    );
+
+    const ask = persona.read.mock.calls[0]?.[0] as Record<string, unknown>;
+    /* The sentence is untouched — it is what she typed, and the record keeps it. */
+    expect(ask.editSentences).toEqual(["add fangs and red lipstick"]);
+    /* What it no longer asks for rides beside it. */
+    expect(ask.takenBack).toEqual(["fangs"]);
+  });
+
+  /*
+    AND A LINEAGE THAT CANNOT BE READ DOES NOT FAIL THE SIGN — the arm that
+    matters more than the one above it. This read is an EXTRA on a road whose
+    whole contract is that it cannot break a Sign, so a throwing ancestry must
+    leave the Cast signed and the two lines drafted exactly as they were before
+    this card.
+  */
+  it("signs, and still drafts the lines, when the version ancestry throws", async () => {
+    selectedVariant = {
+      id: 77,
+      publicId: "variant-public",
+      imageKey: "casting-v2/variants/refined.png",
+      thumbKey: null,
+      internalPrompt: { prompt: "composed", resolved: { sex: "female" } },
+    };
+    editSentences = ["add fangs and red lipstick"];
+    const persona = reader(LINES);
+
+    const result = await signCandidate(
+      {
+        schedulePackage: awaitPackage,
+        buildPackage: packageReturning({}),
+        personaReader: () => persona,
+        listVariants: (async () => { throw new Error("the database is away"); }) as unknown as SignServiceDependencies["listVariants"],
+      },
+      input,
+    );
+
+    expect(result.castPublicId).toBeTruthy();
+    expect(persona.read).toHaveBeenCalledTimes(1);
+    const ask = persona.read.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(ask.editSentences).toEqual(["add fangs and red lipstick"]);
+    expect(ask.takenBack).toEqual([]);
   });
 
   /*

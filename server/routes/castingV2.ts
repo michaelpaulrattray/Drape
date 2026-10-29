@@ -127,7 +127,7 @@ import {
 } from "../castingV2/refineLimits";
 import {
   readAskReference, readAskScope, readRefineStep, readRegeneratedFrom, referencesOf,
-  refineCandidate,
+  refineCandidate, takenBackForSelectedVariant,
 } from "../castingV2/refineService";
 import { pendingStage } from "../castingV2/pendingStage";
 import {
@@ -2439,10 +2439,38 @@ export const castingV2Router = router({
         });
       }
 
+      /*
+        AND WHAT AN EARLIER PRUNE TOOK OUT OF A SENTENCE THAT STAYED (#2669).
+
+        `editSentences` is the customer's own words and a pruned step keeps its
+        sentence (D-171), so one of them can name a feature this face no longer
+        has. Measured on this door before it landed — *"the fangs showing
+        before the sound does"*, on a cast whose closed mouth shows small even
+        teeth — 2 of 3 then, 0 of 3 with the words handed over.
+
+        ⚠ A LINEAGE THAT CANNOT BE READ IS NOT A REFUSAL. The six reads are
+        still six good reads without it, exactly as they were before this card,
+        and failing a pressed button over a derived extra would be the worse
+        answer by a distance.
+      */
+      let takenBack: string[] = [];
+      if (sources.candidatePublicId) {
+        try {
+          const variants = await listCandidateVariants(ctx.user.id, sources.candidatePublicId);
+          takenBack = takenBackForSelectedVariant(variants, sources.selectedVariantId);
+        } catch (error) {
+          log.warn(
+            { castId: input.castId, err: error },
+            "[castingV2] the version ancestry could not be read — the six reads are written without it",
+          );
+        }
+      }
+
       const reads = await reader.read({
         anchor,
         brief: sources.briefText,
         editSentences: sources.editSentences,
+        takenBack,
         /* The line on the card right now, so the six are alternatives to it
            rather than six guesses that might include it. */
         current: model.personality ?? null,

@@ -22,6 +22,7 @@ import type { TextEngine, TextRequest } from "../providers/types";
 import { ProviderError } from "../providers/types";
 import { renderLikeFrame } from "../testing/renderLikeFrame";
 import {
+  castPersonaEditAsk,
   castPersonaEditBlock,
   castPersonaSystemPrompt,
   createCastPersonaReader,
@@ -766,5 +767,92 @@ describe("the Sign's cleaning never costs a cast its card (the relay's finding o
     expect(
       parseCastPersonaDraft(JSON.stringify({ personality: clean, voice: "x".repeat(CAST_VOICE_MAX_LENGTH + 40) })),
     ).toBeNull();
+  });
+});
+
+/**
+ * WHAT A PRUNED STEP TOOK BACK, AND THAT IT REACHES THE WIRE (#2669).
+ *
+ * A pruned refine step keeps its sentence (D-171), so `editSentences` can name
+ * a feature the signed photograph does not hold. Driven through the real
+ * entrance on a dev cast with no external ears, three repeats an arm, the
+ * drafted line wrote *"the one break is the notched left ear"* 3 times out of
+ * 3; with the words handed over it wrote it 0 times out of 3. These arms hold
+ * the half of that a suite can own: that the words are COMPOSED into the
+ * instruction and that they reach the outgoing request (invariant 5).
+ *
+ * ⚠ The negative arm is the one that matters most here. Almost every Cast has
+ * nothing taken back, so the clause must be ABSENT then rather than present
+ * and empty — a paragraph about corrections that do not exist is an instruction
+ * telling a reader to guard against nothing.
+ */
+describe("a sentence that was partly taken back (#2669)", () => {
+  it("names the words, under a heading that says they are no longer true", () => {
+    const ask = castPersonaEditAsk({
+      sentences: ["add fangs and horns"],
+      takenBack: ["fangs"],
+    });
+
+    expect(ask).toContain("- add fangs and horns");
+    expect(ask).toContain("TAKEN BACK");
+    expect(ask).toContain("no longer true of this performer");
+    expect(ask).toContain("- fangs");
+  });
+
+  it("says nothing at all when nothing was taken back — the ordinary Cast", () => {
+    const ask = castPersonaEditAsk({ sentences: ["give her shorter hair"] });
+
+    expect(ask).toContain("- give her shorter hair");
+    expect(ask).not.toContain("TAKEN BACK");
+  });
+
+  it("treats blank entries as no entries rather than sending an empty bullet", () => {
+    expect(castPersonaEditAsk({ sentences: ["a"], takenBack: ["  ", ""] })).not.toContain("TAKEN BACK");
+  });
+
+  it("bounds the list the same way the sentences are bounded", () => {
+    const many = Array.from({ length: PERSONA_EDIT_SENTENCE_LIMIT + 4 }, (_, i) => `taken ${i}`);
+    const ask = castPersonaEditAsk({ sentences: ["x"], takenBack: many });
+
+    expect(ask).toContain("- taken 0");
+    expect(ask).not.toContain(`- taken ${PERSONA_EDIT_SENTENCE_LIMIT + 3}`);
+  });
+
+  it("reaches the OUTGOING REQUEST, not just the composed string", async () => {
+    let seen: TextRequest | null = null;
+    const engine: TextEngine = {
+      id: "test-persona",
+      complete: vi.fn(async (req: TextRequest) => {
+        seen = req;
+        return { text: good, latencyMs: 1, provenance: { provider: "openrouter" as const, model: "t" } };
+      }),
+    };
+    await createCastPersonaReader({ engine }).read({
+      anchor,
+      brief: "a lizard man, emerald scales",
+      editSentences: ["a notch missing from the left ear"],
+      takenBack: ["a notch missing from the left ear"],
+      pronouns: she,
+    });
+
+    expect((seen as unknown as TextRequest).user).toContain("TAKEN BACK");
+    expect((seen as unknown as TextRequest).user).toContain("- a notch missing from the left ear");
+  });
+
+  it("and the wire carries NO such clause for a Cast with nothing taken back", async () => {
+    let seen: TextRequest | null = null;
+    const engine: TextEngine = {
+      id: "test-persona",
+      complete: vi.fn(async (req: TextRequest) => {
+        seen = req;
+        return { text: good, latencyMs: 1, provenance: { provider: "openrouter" as const, model: "t" } };
+      }),
+    };
+    await createCastPersonaReader({ engine }).read({
+      anchor, brief: null, editSentences: ["give her shorter hair"], pronouns: she,
+    });
+
+    expect((seen as unknown as TextRequest).user).toContain("give her shorter hair");
+    expect((seen as unknown as TextRequest).user).not.toContain("TAKEN BACK");
   });
 });

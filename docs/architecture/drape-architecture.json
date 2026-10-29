@@ -15263,6 +15263,10 @@
       "path": "server/castingV2/signViewEngineChain.test.ts"
     },
     {
+      "id": "test:server/castingV2/signedFaceTakenBack.test.ts",
+      "path": "server/castingV2/signedFaceTakenBack.test.ts"
+    },
+    {
       "id": "test:server/castingV2/skinTonePin.test.ts",
       "path": "server/castingV2/skinTonePin.test.ts"
     },
@@ -33778,6 +33782,11 @@
     },
     {
       "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/castingV2/refineService.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
       "to": "module:server/castingV2/rollProjection.ts",
       "kind": "imports"
     },
@@ -33829,6 +33838,11 @@
     {
       "from": "module:server/castingV2/signService.ts",
       "to": "module:server/db/castingV2Sign.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/signService.ts",
+      "to": "module:server/db/castingV2Variants.ts",
       "kind": "imports"
     },
     {

@@ -2004,6 +2004,20 @@ export type CastReadsSources = {
   briefText: string | null;
   /** Their correction sentences while refining this face, oldest first. */
   editSentences: string[];
+  /**
+   * THE CANDIDATE AND VERSION BEHIND THOSE SENTENCES (#2669).
+   *
+   * The reads door needs the version ANCESTRY to know what a pruned step took
+   * out of a sentence that stayed, and the ancestry is many rows. So this read
+   * carries the two names that address it — owner-scoped already, by the same
+   * statement — and the caller takes the second read; deriving it here would
+   * put a service-layer answer inside a db reader.
+   *
+   * Both are `null` for a Cast signed from an unrefined candidate, which is
+   * most of them, and the caller then has nothing to look up.
+   */
+  candidatePublicId: string | null;
+  selectedVariantId: number | null;
 };
 
 export async function getCastReadsSources(input: {
@@ -2019,6 +2033,8 @@ export async function getCastReadsSources(input: {
       candidateImageKey: castingCandidates.imageKey,
       briefText: castingRolls.briefText,
       instructions: castingCandidateVariants.instructions,
+      candidatePublicId: castingCandidates.publicId,
+      selectedVariantId: castingCandidates.selectedVariantId,
     })
     .from(models)
     .leftJoin(castingRolls, eq(castingRolls.id, models.sourceRollId))
@@ -2042,5 +2058,11 @@ export async function getCastReadsSources(input: {
   const editSentences = Array.isArray(instructions)
     ? instructions.filter((entry): entry is string => typeof entry === "string")
     : [];
-  return { anchorStorageKey, briefText: row.briefText ?? null, editSentences };
+  return {
+    anchorStorageKey,
+    briefText: row.briefText ?? null,
+    editSentences,
+    candidatePublicId: row.candidatePublicId ?? null,
+    selectedVariantId: row.selectedVariantId ?? null,
+  };
 }
