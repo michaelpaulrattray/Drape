@@ -954,6 +954,49 @@ export function repairFlaggedAtForPullRequest(input: {
     .sort((a, b) => b.at.localeCompare(a.at))[0];
   return newest?.kind === "finding" ? newest.at : null;
 }
+
+/**
+ * IS A LIVE CLAIM THE NEWEST THING SAID ON THIS CARD — pure, and the ONE owner
+ * of that question.
+ *
+ * ⚠ **THE NEWEST FACT WINS, NOT THE NEWEST CLAIM.** A release or a refusal
+ * posted after a claim puts the card back on offer, so this reads the newest
+ * non-`verdict` fact and answers `null` unless that fact is ITSELF a claim
+ * inside {@link CREW_CLAIM_LIVE_MS}. Keying on the newest CLAIM instead would
+ * report a claim its own seat had already released — and that is the direction
+ * that costs a session, because it reads as hands on work that is free.
+ *
+ * ⚠ **A `verdict` NAMES A PULL REQUEST, NOT A CARD**, and is filtered exactly
+ * as {@link crewCardBuildState} filters it. That function is this one's first
+ * consumer and calls it rather than repeating it, so the two cannot come to
+ * disagree about which facts count.
+ *
+ * # Why it is a function at all (#2769)
+ *
+ * The repairs lane needs this answer about the card a HELD PULL REQUEST is for —
+ * and for that card {@link crewCardBuildState} returns a `pull-request` state,
+ * because an open pull request outranks every comment there by design. So the
+ * claim limb is structurally unreachable on exactly the population a repair
+ * hand-out walks, and the lane cannot get the answer from the judgement above.
+ * A second reader of the same English question is the drift working law 4 is
+ * about, on a question four queue readers have already disagreed about once
+ * (#1094).
+ */
+export function liveCardClaimFromFacts(input: {
+  readonly card: number;
+  readonly facts: readonly CrewCardCommentFact[];
+  readonly nowMs: number;
+}): { readonly seat: string | null; readonly at: string } | null {
+  const newest = input.facts
+    .filter((fact): fact is Exclude<CrewCardCommentFact, { kind: "verdict" }> =>
+      fact.card === input.card && fact.kind !== "verdict")
+    .sort((a, b) => b.at.localeCompare(a.at))[0];
+  if (newest === undefined || newest.kind !== "claim") return null;
+  const atMs = Date.parse(newest.at);
+  if (!Number.isFinite(atMs) || input.nowMs - atMs > CREW_CLAIM_LIVE_MS) return null;
+  return { seat: newest.seat, at: newest.at };
+}
+
 /**
  * THE ONE JUDGEMENT — what is happening to this card right now, or `null` when
  * nothing is.
@@ -1029,12 +1072,13 @@ export function crewCardBuildState(input: {
   const latest = mine[0];
   if (latest !== undefined) {
     if (latest.kind === "refusal") return { kind: "refused", at: latest.at };
-    if (latest.kind === "claim") {
-      const atMs = Date.parse(latest.at);
-      if (Number.isFinite(atMs) && nowMs - atMs <= CREW_CLAIM_LIVE_MS) {
-        return { kind: "claimed", seat: latest.seat, at: latest.at };
-      }
-    }
+    /* ⚠ THE CLAIM JUDGEMENT IS NOT MADE HERE ANY MORE — it is
+       {@link liveCardClaimFromFacts}, called rather than repeated, because the
+       repairs lane has to ask the same question about a card this function can
+       only answer `pull-request` about (#2769). The answer is identical: that
+       reader keys on the newest non-verdict fact exactly as `latest` does. */
+    const claim = liveCardClaimFromFacts({ card, facts, nowMs });
+    if (claim !== null) return { kind: "claimed", seat: claim.seat, at: claim.at };
     /* A release, or a claim that has aged out — both fall through to the label,
        per the order in the docblock. Neither erases a refusal nobody withdrew. */
   }
