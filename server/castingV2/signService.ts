@@ -1272,9 +1272,17 @@ async function completeSignPackage(
         input.candidatePublicId,
       );
       personaTakenBack = takenBackForSelectedVariant(variants, input.selectedVariantId);
-    } catch (error) {
+    /*
+      ⚠ THE BINDING IS NAMED, AND THAT IS NOT A STYLE CHOICE. This function's
+      OUTER `catch (error)` is the anchor `liveTerminalEvents.test.ts` uses to
+      prove the delivered receipt is recorded before it and its backstop after
+      it — so an inner catch wearing the same binding becomes the first match
+      and reads as though the ordering had been broken. It went red exactly
+      that way when this block was written.
+    */
+    } catch (lineageError) {
       log.warn(
-        { operationId: input.operationId, err: error },
+        { operationId: input.operationId, err: lineageError },
         "[signService] the version ancestry could not be read — the two lines are drafted without it",
       );
     }
