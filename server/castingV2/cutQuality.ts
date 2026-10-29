@@ -136,67 +136,6 @@ export const CUT_FILL_FLOOR = 0.2;
 export const CUT_WIDEN_PX = 2;
 export const CUT_FEATHER_PX = 2;
 
-/**
- * A BODY PART IS ONE PIECE — the share of a cut its largest connected piece
- * must hold before a found BODY PART may be drawn from it (#2801, his eye on
- * the first creature).
- *
- * His words, verbatim: *"no idea what brow ridge is on this creature
- * exactly"*. The row's thumbnail was scattered dark fragments. Read on the
- * clean frame of his picture at 1024 wide, the `brow ridge` cut is **11
- * separate pieces, mostly the insides of both ears; its largest piece holds
- * 58% of it**. The fill floor above cannot see that: scattered pieces can fill
- * a fifth of a box.
- *
- * Every correct cut on the same frame measured **1.000** for a body part (each
- * tusk, the snout) and **0.884–0.979** for a ragged garment (harness, scarf,
- * cloak, loincloth). The floor sits at three quarters, between the specimen and
- * the worst correct cut of any kind. ⚠ **It is a floor on ONE known-bad
- * specimen, exactly as {@link CUT_FILL_FLOOR} is**, and it is applied to body
- * parts alone. A garment in torn pieces is still a garment, and that population
- * was never measured against it.
- */
-export const BODY_PART_ONE_PIECE_FLOOR = 0.75;
-
-/**
- * The share of a mask's claimed pixels held by its largest connected piece
- * (eight-connected, `boundsOf`'s `> 0` predicate), or 0 for an empty mask.
- */
-export function largestPieceShare(mask: Mask): number {
-  const { width, height, data } = mask;
-  const seen = new Uint8Array(width * height);
-  const stack: number[] = [];
-  let total = 0;
-  let largest = 0;
-  for (let start = 0; start < width * height; start += 1) {
-    if (seen[start] || !CLAIMED(data[start])) continue;
-    seen[start] = 1;
-    stack.push(start);
-    let size = 0;
-    while (stack.length > 0) {
-      const at = stack.pop()!;
-      size += 1;
-      const x = at % width;
-      const y = (at - x) / width;
-      for (let dy = -1; dy <= 1; dy += 1) {
-        const yy = y + dy;
-        if (yy < 0 || yy >= height) continue;
-        for (let dx = -1; dx <= 1; dx += 1) {
-          const xx = x + dx;
-          if (xx < 0 || xx >= width) continue;
-          const next = yy * width + xx;
-          if (seen[next] || !CLAIMED(data[next])) continue;
-          seen[next] = 1;
-          stack.push(next);
-        }
-      }
-    }
-    total += size;
-    if (size > largest) largest = size;
-  }
-  return total === 0 ? 0 : largest / total;
-}
-
 /** Why a cut was or was not used — one word, for the log and for the row. */
 export type CutRefusal = "used" | "no-pixels" | "no-box-area" | "below-fill-floor";
 

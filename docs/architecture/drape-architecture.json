@@ -42751,10 +42751,10 @@
       "message": "Names 6 of ResolvedIdentity's 11 fields (server/castingV2/castingIntent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/cutQuality.ts:216",
+      "id": "finding:redeclared-shape:server/castingV2/cutQuality.ts:155",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/cutQuality.ts:216",
+      "subject": "server/castingV2/cutQuality.ts:155",
       "message": "Names 4 of SegmentBox's 4 fields (server/castingV2/segmentCuts.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
