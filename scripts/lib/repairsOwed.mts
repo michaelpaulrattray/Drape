@@ -36,9 +36,10 @@
  * not owed at all; `tallyRounds` keeps those apart as `staleFindings`.
  */
 import {
-  liveCardClaimFromFacts,
+  liveCardClaimsFromFacts,
   pullRequestBuildsCard,
   type CrewCardCommentFact,
+  type CrewLiveClaim,
 } from "../../shared/crewCardBuildState.ts";
 import { reviewPresence, tallyRounds, type HandVerdictReading } from "./reviewRounds.mjs";
 
@@ -284,7 +285,7 @@ export type RepairCardClaim = {
    */
   readonly cards: readonly number[];
   /**
-   * The newest live claim across those cards, or `null`.
+   * The live claims on the livest of those cards, or `null` when none is held.
    *
    * ⚠ **`mine` IS NOT A STATE THIS ROAD CAN HAVE, and it is said rather than
    * left to be noticed.** The cut does not know which seat will be handed which
@@ -292,8 +293,16 @@ export type RepairCardClaim = {
    * every claim here is reported and none is filtered out as the reader's own.
    * The seat reads the name and decides, which is also what makes a claim of its
    * own harmless to report.
+   *
+   * ⚠ **AND IT CARRIES EVERY LIVE CLAIM ON THAT CARD, NOT THE NEWEST ONE
+   * (#2775).** It was `{ card, seat, at }`, which on a contested card named the
+   * seat that got there LAST — so the hand-out whose whole job is to say *whose
+   * hands are already on it* pointed at the wrong seat on the one occasion two
+   * seats are involved. `claims` is newest-first and non-empty whenever this
+   * field is set; `liveCardClaimsFromFacts` carries the measurement for why no
+   * single name is chosen here.
    */
-  readonly claim: { readonly card: number; readonly seat: string | null; readonly at: string } | null;
+  readonly claim: { readonly card: number; readonly claims: readonly CrewLiveClaim[] } | null;
 };
 
 /**
@@ -318,12 +327,15 @@ export function repairCardClaims(input: {
       pullRequestBuildsCard({ number: repair.pullRequest, title: repair.title }, card).length > 0);
     let claim: RepairCardClaim["claim"] = null;
     for (const card of cards) {
-      const live = liveCardClaimFromFacts({ card, facts: input.facts, nowMs: input.nowMs });
-      if (live === null) continue;
-      /* The newest claim across the cards it names. In practice there is one
-         card; a two-card pull request reports on whichever is livest. */
-      if (claim === null || live.at.localeCompare(claim.at) > 0) {
-        claim = { card, seat: live.seat, at: live.at };
+      const live = liveCardClaimsFromFacts({ card, facts: input.facts, nowMs: input.nowMs });
+      if (live.length === 0) continue;
+      /* The livest CARD across the cards it names, judged on that card's newest
+         claim exactly as before. In practice there is one card; a two-card pull
+         request reports on whichever is livest — and then on ALL of that card's
+         live claims (#2775), because the question this answers is "whose hands
+         are on it" and a contested card has more than one honest answer. */
+      if (claim === null || live[0].at.localeCompare(claim.claims[0].at) > 0) {
+        claim = { card, claims: live };
       }
     }
     return { pullRequest: repair.pullRequest, cards, claim };
@@ -347,12 +359,19 @@ export function repairClaimWord(claims: readonly RepairCardClaim[], nowMs: numbe
   );
   if (held.length === 0) return "";
   const words = held.map((row) => {
-    const hours = (nowMs - Date.parse(row.claim.at)) / 3_600_000;
-    const age = Number.isFinite(hours)
-      ? hours < 1 ? Math.max(0, Math.round(hours * 60)) + "m" : hours.toFixed(1) + "h"
-      : "age unreadable";
-    const seat = row.claim.seat ?? "a seat that did not name itself";
-    return "PR #" + row.pullRequest + " -> card #" + row.claim.card + " claimed by " + seat + " " + age + " ago";
+    /* ⚠ EVERY LIVE CLAIM, EACH WITH ITS OWN AGE (#2775). The age stays per
+       seat rather than collapsing to a count, for this function's own stated
+       reason: three minutes is somebody at a keyboard and eleven hours is a
+       finished shift that never released, and on a contested card the two seats
+       can be one of each — which is precisely the thing worth reading. */
+    const seats = row.claim.claims.map((claim) => {
+      const hours = (nowMs - Date.parse(claim.at)) / 3_600_000;
+      const age = Number.isFinite(hours)
+        ? hours < 1 ? Math.max(0, Math.round(hours * 60)) + "m ago" : hours.toFixed(1) + "h ago"
+        : "age unreadable";
+      return (claim.seat ?? "a seat that did not name itself") + " " + age;
+    });
+    return "PR #" + row.pullRequest + " -> card #" + row.claim.card + " claimed by " + seats.join(" and ");
   });
   return " | repair claims: " + words.join("; ");
 }
