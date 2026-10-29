@@ -368,6 +368,21 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     position: "users:1",
     why: "the door that takes her picture at all; parent of the two reference lanes",
   },
+  CASTING_REFERENCE_TAKE_SCOPE: {
+    position: "users:1",
+    why:
+      "built dark 2026-10-29 (#2736 slice 2, the take road, on his word 'BUILD "
+      + "IT'), shipped at `off`. Slice 3 of the design is `users:1` plus his eye "
+      + "on real edits -- his own jacket test, re-run by him: the relay set it to "
+      + "users:1 on 2026-10-29 at 16:43Z (railway variables set, read back by "
+      + "name, /api/health on a fresh uptime), on his standing word that his own "
+      + "account is never asked (2026-10-28). Both parents read users:1 first. "
+      + "Widening past his account is his word after the jacket test. It is a "
+      + "child of CASTING_REFERENCE_ATTACH_SCOPE in the boot chain, so it can "
+      + "never reach past the door that keeps the picture it cuts from; the "
+      + "garment half additionally rides CASTING_OUTFIT_EDIT_SCOPE and never "
+      + "widens it.",
+  },
   CASTING_FACE_SCAN_SCOPE: {
     position: "all",
     why:

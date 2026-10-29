@@ -176,6 +176,25 @@ const BORN_HELD_WRITERS = [
   "castingV2/keptFaceScan.ts",
   "castingV2/referenceAttachService.ts",
   "castingV2/referenceMint.ts",
+  /*
+    ⚠ THE TAKE'S CUT (#2736 slice 2, 2026-10-29) — the hair carrier's own road
+    beside it, and here for the identical reason: a named thing cut out of a
+    picture the customer attached, stored BEFORE anything names it.
+
+    It is born held because the manifest's operation id is SYNTHETIC — cutting a
+    take is not a generation operation of its own — and the worker's in-flight
+    fence tests a batch against a live operation row, which a synthetic id
+    matches none of. An unheld manifest would therefore be claimable while the
+    bytes it names are still being written.
+
+    **Added by the commit that created the writer**, which is what the wardrobe
+    pair below did not manage and what this list exists to make visible. It was
+    found by this guard rather than by the shift: `pnpm preflight` could not see
+    it, because its population is derived from `server/` and the slice's diff
+    touches no `server/db/` file — the honest remainder preflight's own clause
+    names.
+  */
+  "castingV2/referenceTake.ts",
   "castingV2/refusalLoopCapture.ts",
   /*
     ⚠ THE KEPT VOICE'S CLIP ARRIVED WITH #2470's REPAIR, and it is the first

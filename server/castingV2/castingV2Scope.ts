@@ -1118,6 +1118,139 @@ export function validateCastingHairReferenceEnvironment(input: {
   return child;
 }
 
+/* ------------------------------- the open reference TAKE sub-flag */
+
+/**
+ * WHETHER A NAMED THING MAY BE TAKEN OUT OF AN ATTACHED PICTURE — #2736's
+ * slice 2, under his word of 2026-10-29 (chat, verbatim and entire: *"BUILD
+ * IT"*), on the step-0 design merged on that card.
+ *
+ * One row is: *the customer attached a photograph, typed "wear this jacket",
+ * and the jacket in their picture reached the render as a person-free cut.*
+ *
+ * # WHY IT IS A FLAG OF ITS OWN RATHER THAN THE ATTACH DOOR'S
+ *
+ * The attach door decides whether a photograph may be KEPT. This decides
+ * whether a thing may be CUT OUT of one and carried to a paint engine, which is
+ * a different risk with a different failure: the attach door's worst day is a
+ * picture nobody can use, and this road's worst day is a stranger's face
+ * arriving on somebody's cast. The fence against that is in the bytes (§4 of
+ * the design, {@link cutThingFromPicture}) and it is NEW code, so it earns a
+ * switch that opening is a decision somebody makes.
+ *
+ * # WHY THE PARENT IS THE ATTACH SCOPE
+ *
+ * The take's whole input is an attachment. A user armed here and not at the
+ * attach door would be offered a road with nothing to walk it on — the hair
+ * reference's argument clause for clause, and its own parent for the same
+ * reason.
+ *
+ * # ⚠ IT IS NOT THE ONLY GATE, AND THE SECOND ONE IS NOT HERE
+ *
+ * A GARMENT take additionally lands only where the stage wall already serves
+ * clothing (`CASTING_OUTFIT_EDIT_SCOPE`, through `servedSubjectsFor` —
+ * `refineSubjects.ts`). **The take never widens the wall**: it rides what #2544
+ * opened, and a garment ask outside that flag is refused by the wall before this
+ * road is ever consulted. That gate is sited at the ask rather than duplicated
+ * here, because a second copy of it is the mirror this repository has been
+ * bitten by (working law 4).
+ *
+ * # WHAT IS TRUE WHILE IT IS OFF, WHICH IS EVERYWHERE TODAY
+ *
+ * Byte-identical to the tree before it. An attached picture an account cannot
+ * take from falls through exactly as one attached outside the hair road does —
+ * the picture is CONFESSED as unused rather than silently ignored (#2713's
+ * `attachedPictureUnusedNote`), which is the line D-181 has required since the
+ * dropped reference went unmentioned for its whole life. No cut is minted, no
+ * segmenter read is bought, no source rides.
+ *
+ * # ⚠ NO CLEANUP-WORKER CLAUSE HERE, AND THAT IS READ AT THE PARENT RATHER
+ * THAN AN OMISSION
+ *
+ * The cut's bytes are minted under a storage cleanup manifest
+ * ({@link mintTakeCut}, the hair carrier's own road), so the worker is what
+ * deletes them. It is not re-demanded on this flag because the PARENT already
+ * refuses to boot without it (`validateCastingReferenceAttachEnvironment`), and
+ * this child cannot be non-off while its parent is off. A second copy of that
+ * refusal would be a second list that could come to disagree.
+ */
+export const CASTING_REFERENCE_TAKE_SCOPE_ENV = "CASTING_REFERENCE_TAKE_SCOPE";
+
+export class CastingReferenceTakeScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_REFERENCE_TAKE_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingReferenceTakeScopeConfigurationError";
+  }
+}
+
+export class CastingReferenceTakeCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_REFERENCE_TAKE_SCOPE_ENV} ${detail}`);
+    this.name = "CastingReferenceTakeCoverageError";
+  }
+}
+
+export function parseCastingReferenceTakeScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingReferenceTakeScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user may have a named thing taken out of their picture.
+ *
+ * An AND of the whole chain at the point of use, like every sibling: the boot
+ * check refuses a scope reaching past its parent, and a boot check nobody
+ * invoked is the second way a flag pair goes wrong.
+ */
+export function captureCastingReferenceTakeEnabled(userId: number): boolean {
+  const child = parseCastingReferenceTakeScope(process.env[CASTING_REFERENCE_TAKE_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingReferenceAttachEnabled(userId);
+}
+
+/*
+  THE RIDE FENCE STOOD HERE AND IS DELETED IN THE COMMIT THAT LANDS THE RIDE,
+  exactly as its own thrown string ordered (#2736 slice 2; the
+  `INK_REFERENCE_TAKE_BUILT` precedent, clause for clause).
+  `REFERENCE_TAKE_RIDE_BUILT = false` refused every non-off position while the
+  cut had nowhere to ride; the ride exists now — a clause-keyed `source` on the
+  wardrobe presentation clause (`PresentationSource`, `recipeAssembler.ts`),
+  the escalated decision of 2026-10-29 — so an opened gate buys a cut that
+  reaches the engine, and the fence's reason is discharged rather than loosened.
+*/
+export function validateCastingReferenceTakeEnvironment(input: {
+  scope: string | undefined;
+  attachScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingReferenceTakeScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingReferenceAttachScope(input.attachScope);
+  if (parent.kind === "off") {
+    throw new CastingReferenceTakeCoverageError(
+      `cannot be enabled while ${CASTING_REFERENCE_ATTACH_SCOPE_ENV} is off — the picture a take `
+      + "is cut out of is attached at that door, so the road would open onto an ask with nothing "
+      + "to take from",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingReferenceTakeCoverageError(
+      `cannot be "all" while ${CASTING_REFERENCE_ATTACH_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingReferenceTakeCoverageError(
+      `names users outside ${CASTING_REFERENCE_ATTACH_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}
+
 /* --------------------- the dispatch sub-flag, RETIRED (#1577 slice D4)
 
    `CASTING_REFINE_DISPATCH_SCOPE` stood here with its env constant, its two
