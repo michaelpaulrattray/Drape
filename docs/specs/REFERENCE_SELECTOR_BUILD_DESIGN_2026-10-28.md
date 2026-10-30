@@ -316,6 +316,48 @@ cuts hold their piece; does anything of the photo's person leak. **The 08-24
 design's $0.03 point-prompt probe is cancelled** (§1) — this court replaces
 it on the road actually taken.
 
+⚠ **THE COURT HAS RUN AND IS COMPLETE — ALL THREE KINDS, IN TWO SITTINGS
+(2026-10-29 and 2026-10-30). Nothing above is a plan any more.** It is recorded
+here because §9 sends a builder to slice 1 first, and a finished court that
+reads as pending is re-run.
+
+- **The WORN kind**, 2026-10-29 (`foreman-20261029-1543`), through the CAST road
+  — slice 2 did not exist yet. Cell `scripts/_14-reference-court-disposable.mts`,
+  frames `output/_14court/run/`.
+- **The HANGER and PRODUCT-SHOT kinds**, 2026-10-30 (`foreman-20261030-1234`),
+  through **slice 2's own `readAndMarkReference`**. Cell
+  `scripts/_14-court-kinds-disposable.mts`, frames `output/_14court/kinds/`.
+  Their fixtures were minted on the house key through the product's own
+  text-to-image engine and looked at before use — the Codex road that stopped
+  this arm twice is closed on his word (#2788, *"it can generate images using
+  fal.ai"*).
+
+**The four questions, answered on all three kinds:** the reading names a flat or
+hanging garment (12 and 7 bare nouns, 0 unmarked); boxes land (19 of 19 on the
+two new kinds, both absence controls empty); cuts hold their piece on whole
+garments (90.7% / 76.8% / 73.8% / 53.5% of their own boxes, each read at the
+frame); and no person leaked, which on the two person-free kinds is a `face`
+probe at 0 boxes rather than a discharge — ⚠ **Q4's face subtraction is still
+owed on #2736's open-garment case.**
+
+⚠ **AND THE ONE-TEXT-CALL ECONOMY IS MEASURED, NOT INFERRED.** `personPresent`
+came back **false** on both person-free kinds with `crops: ["full"]` and
+**exactly 1 text call each**, counted by wrapping the REAL engine — the head
+crop is never bought. Slice 2 could only assert that against a fake.
+
+**Three findings, each carded rather than folded in:** **#2787** reproduces on
+both new kinds (3 of 3 — and the PART noun inherits the WHOLE object's box every
+time); **#2841**, a cut in 29 separate pieces passes `judgeCut` with `use=true`,
+so slice 4's *"a cut with holes or broken edges is still not used"* is true of
+holes and not of pieces; **#2842**, a noun made of several parts keeps the
+biggest single part (`laces` returned 9 boxes and kept a 57x66 speck).
+
+⚠ **One number here contradicts the latency line above and slice 3 owns it:** a
+whole picture took **169 s** (12 markers) and **116 s** (7), because the detect
+calls run one at a time at ~13 s each. The *"first markers within ~10–20 s"*
+sentence still holds for the FIRST marker — **so slice 3 streams markers as they
+land and never awaits the road.**
+
 ---
 
 ## 9 · FLAG, SLICES, AND WHAT CLOSES IT
@@ -329,6 +371,9 @@ in the same commit (the capability-atlas law).
 reads this document and the mock verdict first):
 
 1. **The court** (§8) — before any code believes the reference-photo numbers.
+   ⚠ **DONE — all three kinds, 2026-10-29 (worn) and 2026-10-30 (hanger,
+   product shot). Do not re-run it; §8 carries the result and the three
+   findings it produced.**
 2. **The reference reading, dark**: discovery variant + detect boxes on
    attach, server-side, no UI; the crops-table migration ceremony (§2) rides
    ahead of the first mint.

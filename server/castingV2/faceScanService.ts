@@ -143,6 +143,13 @@ export type ScannedFace = {
    * detector found none of them. There is no state here for *the pointer road
    * failed*, because a failure costs exactly the rows it could not cut and the
    * panel is then what it is today.
+   *
+   * ⚠ **"Exactly the rows it could not cut" was true of ONE look and false of
+   * every look after it until #2833**: a reading that lost its found rows was
+   * kept like a clean one, so the loss outlived the minute that caused it. Such
+   * a reading is now served and NOT kept (`foundRowsLost` in `scannedFace`), so
+   * the next look asks again. Still no field here: it is a fact about whether
+   * to keep the reading, not about what the panel draws.
    */
   discovered: readonly DiscoveredPanelRow[];
   /**
@@ -696,6 +703,27 @@ export async function scannedFace(input: {
     cost table, and the arithmetic behind "promote this cache to a table".
   */
   let spent: CallCensus | null = null;
+  /*
+    WHY THE READING'S OWN ROWS CANNOT BE TRUSTED COMPLETE, or `null` (#2833,
+    his eye round 9).
+
+    The missing-eyes law below decides whether a reading is kept, and until
+    this card it read the CATALOGUE's failures alone. The discovery road fails
+    open by design (a read that came back `{ ok: false }`, a detect or a cut
+    that threw, a road that threw outright), and each of those leaves a reading
+    that LOOKS clean: every catalogue row drawn, and not one row the reading
+    would have added. Kept, it is the end of the asking for that frame, so one
+    bad minute at the provider took the outfit and the tattoos off that
+    candidate for good. His round-9 panel is that shape exactly: a settled
+    panel with Eyes, Brows, Nose, Lips, Ears, Hair and Earrings, and not one
+    found row, where two readings of the same picture on the same build both
+    drew an Outfit and a Tattoo.
+
+    Set by the discovery road, read once at the keep decision. A plain variable
+    rather than a field on the reading, because the reading is what gets kept
+    and this is a fact about whether to keep it.
+  */
+  let foundRowsLost: string | null = null;
   const read = (async () => {
     const { value, census } = await withCallCensus(async () => {
     const readBytes = input.dependencies?.readBytes ?? storageReadBytes;
@@ -866,7 +894,14 @@ export async function scannedFace(input: {
       ? Promise.resolve({ regions: [], namedNotCut: [] })
       : discover({ bytes: frame.bytes, width: metadata.width, height: metadata.height })
         .then(async (discovery) => {
-          if (!discovery.ok) return { regions: [], namedNotCut: [] };
+          /* Fail-open is still the answer the panel gets — the catalogue,
+             exactly as before. What changes is only that it is not written
+             down as complete (#2833, `foundRowsLost` above). The `why` is the
+             reader's own fixed sentence, never a word of the reading. */
+          if (!discovery.ok) {
+            foundRowsLost = `the discovery read: ${discovery.why}`;
+            return { regions: [], namedNotCut: [] };
+          }
           const cut = await cutDiscovered({
             frame: {
               bytes: frame.bytes,
@@ -890,9 +925,20 @@ export async function scannedFace(input: {
              third only at the end, so a per-name write would show a flickering
              list of reasons on a panel that is already drawing pictures. */
           if (cut.named.length > 0) fileWordsToPartial(cut.named);
+          /* A detect or a cut that THREW is a row this reading could not ask
+             about, which is weather and not an answer (`RegionReader.pointer`:
+             *"a transport failure is NOT an absence"*). The detector finding
+             nothing is an answer, and `declined` does not land here. Counted,
+             never named: the `pointer road` line already carries the nouns. */
+          if (cut.failed.length > 0) {
+            foundRowsLost = `the pointer road: ${cut.failed.length} name(s) whose call failed`;
+          }
           return { regions: cut.regions, namedNotCut: cut.named };
         })
-        .catch(() => ({ regions: [], namedNotCut: [] }));
+        .catch(() => {
+          foundRowsLost = "the pointer road threw";
+          return { regions: [], namedNotCut: [] };
+        });
     let scan: Awaited<ReturnType<typeof scanFace>>;
     try {
       scan = await scanFace({
@@ -997,13 +1043,23 @@ export async function scannedFace(input: {
         session (staleTime Infinity), so that is bounded by how often somebody
         opens the version afresh — and the alternative is a wrong panel that
         cannot be fixed by looking again.
+
+        ⚠ **AND IT COVERED THE CATALOGUE ROAD ONLY UNTIL #2833.** The rows the
+        discovery road adds (an outfit, a tattoo, a collar) were lost the same
+        way and kept anyway, because nothing they lost reached `failed`. Same
+        law, same trade, one more road: `foundRowsLost` is read beside the
+        weather. It is NOT put into `failed`, on purpose — `failed` is a list
+        of catalogue QUESTIONS that `absentSlotsOf` and the panel read, and a
+        found row is not one of them.
       */
       const weather = value.failed.filter((one) => one.retryable === true);
-      if (weather.length > 0) {
+      if (weather.length > 0 || foundRowsLost !== null) {
         counters.damaged += 1;
         log.warn(
-          { failed: value.failed.length, weather: weather.map((one) => one.question) },
-          "[faceScanService] this reading lost regions — serving it and NOT keeping it, so the next look re-asks",
+          { failed: value.failed.length, weather: weather.map((one) => one.question), foundRowsLost },
+          weather.length > 0
+            ? "[faceScanService] this reading lost regions — serving it and NOT keeping it, so the next look re-asks"
+            : "[faceScanService] this reading lost the rows it would have found — serving it and NOT keeping it, so the next look re-asks",
         );
         if (cache.get(key) === entry) cache.delete(key);
       } else {
