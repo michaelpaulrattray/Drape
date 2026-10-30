@@ -1,7 +1,7 @@
 {
-  "edition": 781,
-  "updatedAt": "2026-10-30T02:05:00.000000Z",
-  "shift": "One job tonight, and it found something worth your attention — though nothing here needs you to do anything.\n\nThere is a feature in the studio that is meant to keep your characters steady. When you change one thing about a character, it saves a small picture of each thing you have already chosen — the tattoo, the earring, the hairstyle — so those things come back looking exactly the same on every later edit instead of drifting.\n\nThe studio has only ever tried to save one such picture, back on the 17th, on your cyberpunk character with the platinum hair. Nobody had ever opened it. Three sessions in a row had quoted the number beside it and left the picture itself alone, so I opened it.\n\nThe picture is perfect. It is a clean cut of the whole hairstyle — the bun, the fringe, the loose strands — and the studio threw it away. Its own checker had looked at the finished render and decided the platinum hair was not there. It plainly is: I put that render beside the two before it and the hair is right in all three, and the studio's OWN description of that same picture, written in the same minute, says the hair reads as platinum blonde. Two readers, one picture, opposite answers — and the wrong one won.\n\nThe part that matters most: you had not asked about the hair. You asked for vampire fangs. The hair had been set three edits earlier and had not been touched since. So a feature you were happy with got marked as missing, and the picture that would have kept it steady was binned.\n\nIt is written up as its own job with the evidence. Nothing is changed yet, on purpose — that check is live on your account while you are in the middle of looking at the feature panel, and moving it under you would make your next look unreadable against your last.\n\nAlso shipped, and waiting on a review: our own schema was telling anyone who opened it that this exact row should not exist. It said pictures are only ever kept for one kind of refusal; there are four. That is the paragraph anyone building this feature reads first, and it is now held to the real list by a test, so it cannot quietly go wrong again.",
+  "edition": 782,
+  "updatedAt": "2026-10-30T03:20:00.000000Z",
+  "shift": "One job tonight, and it was one that had been stuck twice. Nothing here needs you to do anything.\n\nThere is a part of the studio being built where you attach a photograph, tap something in it — your jacket, that haircut, those earrings — and the studio takes that exact thing from your picture instead of making you describe it in words. Before building the part you can see, we had to check that the reading underneath actually works on the kinds of photographs people really attach.\n\nHalf that check was done last week, on a photo of a person wearing clothes. The other half — a garment on a hanger, and a flat catalogue-style product shot — had been stuck since the 28th, because we had no such photographs and the tool we used to make test pictures had stopped working. It had blocked this same check twice. You unstuck it yesterday when you said to use fal for pictures, so tonight it ran.\n\nIt works. On a leather jacket hanging on a rail it found twelve things and drew a box round every one — the jacket, the collar, the zip, a pocket, the hanger, the scarf beside it. On a flat-lay of a sweater, a belt and a trainer it found seven and boxed all seven. Asked for something that was not in the picture, it correctly said there was nothing there. And the cut-outs it makes are clean: I looked at every one.\n\nOne number is worth having. A photograph with nobody in it costs us one expensive read instead of two, because the studio works out for itself that there is no face worth looking at twice. That had only ever been assumed; it is now measured on real photographs, and it is a large part of why attaching a picture stays cheap.\n\nThree problems came out of it and each is written up:\n\nA cut-out can come back as twenty-nine separate scraps instead of one clean shape, and our quality check passes it — it only measures how much of the box is filled and never notices the thing is in pieces. A real example: we asked for a jacket collar and got the two lapel points and a scrap, with the collar itself missing, and the check said use it.\n\nA thing made of several parts gets marked on just one part. Asked for the shoelaces, the studio found nine separate pieces of lacing and kept the single biggest one — a speck about the size of a fingernail. Tap it and you would get the speck, not the laces.\n\nAnd a problem we already knew about turns out to be everywhere, not a one-off: two different words for the same object come back with the identical box. We had seen it once on jewellery; it happened on both new photographs too, and every time it is the word for the PART that lands on the WHOLE thing — \"zip pull\" got the whole zip, \"sole\" got the whole shoe.\n\nNothing in the product changed tonight and no setting moved. What did ship is tidying: two documents were telling the next person to run a check that is now finished, which is how work gets done twice.\n\nOne last thing, on your side of the board. Round 9 of the face-panel fixes was finished and live earlier tonight, but it was not marked as waiting for your eye — so it was not showing up in your list the way rounds 6 and 8 do. That is corrected; it will now ask you for the one look it needs.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-30T01:51:50.943Z",
+      "readAt": "2026-10-30T03:13:39.675Z",
       "items": [
         {
           "issueNumber": 30,
@@ -11155,6 +11155,13 @@
       "status": "in-review",
       "prNumber": 2836,
       "note": "Gate green in 4.1 minutes. Held for a human review because any change under the database folder counts as a money path, whatever it touches — here it is comment text and a test, no column moved."
+    },
+    {
+      "id": "reference-court-complete-14",
+      "title": "The photo-reading check is finished on all three kinds of reference picture, and the two documents that still called it pending now say it is done (#14)",
+      "status": "merged",
+      "prNumber": 2843,
+      "note": "Documents only — no product code, no setting moved. Gate green in 3.8 minutes, merged on the gate as an ordinary change."
     }
   ],
   "problems": [
@@ -11703,7 +11710,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-30T01:51:50.942Z",
+    "readAt": "2026-10-30T03:13:39.675Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11845,7 +11852,11 @@
       {
         "issueNumber": 2833,
         "title": "N3 face reader, his eye round 9: no Outfit or tattoo rows on a harness top and two sleeves, and one ear's box holds one earring of several",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — the fix is live. One look at a fresh panel: both ears should box every earring, and a reading that lost its rows is asked again. Then this closes."
+        }
       }
     ]
   }
