@@ -1,7 +1,7 @@
 {
-  "edition": 787,
-  "updatedAt": "2026-10-30T15:32:00.000000Z",
-  "shift": "A short one, and nothing a customer can see changed. It was about your next-up list telling the truth about itself.\n\nYour list had twenty-four jobs on it tonight and, read one at a time against the code, not one of them could be started. That is not a backlog problem: three finished pieces of work are sitting with the relay for a read, and of the four other open ones, two touch the same files as those three and one must not be merged at all. So the whole casting lane is parked behind one desk. Nothing is lost, nothing is waiting on you, and no shift should be sent at those again.\n\nThe job at the top of your list was the picture selector, and that one was worth the night. Its written design says the next thing to build is the small round markers you tap on a photo. But on the 30th you looked at a lit-up version instead and said you liked it much better than the boxes — and those are two different builds with different machinery underneath, not two looks. So whoever picked this up next would have either built the version you liked less, or invented a design nobody has written down. I stopped it: the card now says the design has to be rewritten to match what you picked, and that is a job this shift is not allowed to do itself, so it goes to the seat that can. Your own words on the card are untouched, and the two pieces already built stay built.\n\nThe second job on your list turned out not to be a job at all. Your 'one thing, one row' ruling is a rule four other pieces of work answer to — it says so in its own last line — and it was sitting at the top of the queue looking like something to build. It now says what it is actually waiting for: those four landing, and then your eye on the panel.\n\nOne small thing came out of checking a third job: a piece of work that already had its answer written and in review was being reported every night as though nobody had been offered it. The answer is now recorded where the next shift will read it, and the reporting fault is its own card.",
+  "edition": 788,
+  "updatedAt": "2026-10-30T17:10:00.000000Z",
+  "shift": "The picture selector's held decision is made, and the next piece of it is buildable again.\n\nThe top job on your list was waiting on one question: the written design said tappable named dots on the photo, but on the 30th you saw the lit-up version and said you liked it much better than the boxes. The design now says what you picked. When you attach a photo it is split into pieces once; the piece under your mouse lights up and the rest darkens, exactly as you described; a tap takes the piece under your finger, and the chip above the ask box names what was actually cut — before you spend anything. Small things like an earring never light up (the splitter cannot see them), but a tap on them still works, measured four for four. And a face never lights up and is never cut, on any road — that rule is written into the design in your name.\n\nIt is also cheaper and faster than the dots would have been: about half a cent when the photo is attached and about half a cent per tap, instead of two to seven cents on every attach — and the three-minute wait the dots road measured is gone, because one call replaces twelve.\n\nTwo tidy-ups rode along. The question on your desk asking your eye on the dots mock is retired — you already answered it by preferring the lit-up version, so nothing there waits on you. And the same lit-up style for the FACE PANEL (your words covered both) now has its own job card (#2868), waiting behind the panel rebuild you already ordered, so it is not forgotten.\n\nNothing a customer can see changed tonight, nothing was spent, and the selector's switch stays off. What comes next on this card is ordinary build work — the machinery behind the lit-up picture — and the crew can start it without you.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -38,7 +38,7 @@
           "state": "waiting"
         },
         {
-          "title": "The studio surfaces — the Pinterest-style reference selector (#14): FIRST PIECE BUILT, switched off. The studio can read an attached picture and work out what is in it and where. The next piece is the picture on screen, and it is waiting on a decision rather than on building: the written design has small round markers you tap, and on the 30th you saw a lit-up version instead and said you liked it much better than the boxes. Those are two different builds, so the design is being rewritten to match what you picked before anyone starts. Then the settings' second pass (#15), outfit-card thumbnails (#61), the honest sentence at a words-only tattoo sale (#65)",
+          "title": "The studio surfaces — the Pinterest-style reference selector (#14): FIRST PIECE BUILT, switched off, and the DESIGN NOW SAYS THE LIT-UP VERSION you picked over the boxes (decided and shipped 2026-10-31). When you attach a photo it is split into pieces once; the piece under your mouse lights and the rest darkens; a tap takes the piece under your finger and names it on a chip before anything is spent; a face never lights and is never cut. The next piece — the machinery behind the lit-up picture — is ordinary build work and the crew can start it. Then the settings' second pass (#15), outfit-card thumbnails (#61), the honest sentence at a words-only tattoo sale (#65)",
           "state": "waiting"
         },
         {
@@ -7718,8 +7718,8 @@
     {
       "id": "reference-selector-mock-14",
       "title": "Taking things from a picture — the selector's surface, three moments, your eye before any build",
-      "question": "WHAT YOU ARE LOOKING AT — the mock of the tap-to-pick selector (#14), not a live screen. Three moments, left to right: the picture just attached and being read; the things it found, each with a named dot on the picture; and two things chosen — hair and earrings, your own example — with the box saying that nothing typed means the full look of both.\n\nThe photo is a stand-in (one of our own generated test pictures), and the dots are placed by hand to show the surface — in the real thing they come from reading the picture, whatever it holds, never from a menu.\n\nWHAT I AM ASKING: does this surface read right? Three things worth your eye: (1) dots on the picture with names — is that how you want to choose, or too busy on a crowded photo? (2) the 'Whole outfit' affordance beside per-piece dots — right call? (3) the no-words line under the box — plain enough? If it reads right, reply on the card and the build is cut into slices (a small court on real reference photos runs first, house money). If anything reads wrong, say which and the design moves before anything is built.",
-      "state": "open",
+      "question": "ANSWERED — NOTHING HERE WAITS ON YOU. This was the dots mock for the selector (#14). You passed it on the 29th (\"it reads well enough for now aslong as we get the tech working\"), and on the 30th you saw the lit-up prototype and said you liked it much better than the boxes. That later word is the answer: the design is rewritten to the lit-up version you picked (2026-10-31), these dots frames are history, and your next look at this card will be the built lit-up surface on your own account.",
+      "state": "answered",
       "filedAt": "2026-10-28T03:09:45.000Z",
       "issueNumber": 14,
       "frames": [
@@ -7767,6 +7767,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "selector-spotlight-design-14",
+      "title": "The selector's design now says the lit-up version you picked over the boxes (#14)",
+      "status": "merged",
+      "prNumber": 2869,
+      "note": "Design document only, merged ebce311e — no product code, no switch moved, nothing spent."
+    },
     {
       "id": "cut-quality-bar-2565",
       "title": "A cut-out that fills almost none of the area it was asked about is thrown away (#2565)",
