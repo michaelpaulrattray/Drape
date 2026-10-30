@@ -453,6 +453,10 @@ describe("mintTakeCut", () => {
     noun: "jacket",
     verdict: { use: true, fill: 0.5, claimed: 50, insideBox: 50, why: "used" as const },
     facesRemoved: 0,
+    /* Evidence the mint does not read, carried because a `TakenThing` has it
+       (#2842). The mint's own arms assert the key, the manifest and the digest;
+       this field is here so the fixture is a real one. */
+    spread: { parts: 1, union: { x: 0, y: 0, width: 10, height: 10 }, fill: 1 },
   };
 
   it("⚠ writes the manifest BEFORE the bytes exist", async () => {
