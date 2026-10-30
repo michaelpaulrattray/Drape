@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 216
+      "moduleCount": 217
     },
     {
       "id": "domain:castingV2",
@@ -4113,6 +4113,12 @@
     {
       "id": "module:server/castingV2/faceDiscovery.ts",
       "path": "server/castingV2/faceDiscovery.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/faceExtent.ts",
+      "path": "server/castingV2/faceExtent.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -14535,6 +14541,10 @@
     {
       "id": "test:server/castingV2/faceDiscovery.test.ts",
       "path": "server/castingV2/faceDiscovery.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/faceExtent.test.ts",
+      "path": "server/castingV2/faceExtent.test.ts"
     },
     {
       "id": "test:server/castingV2/faceFeatureOnTheFace.test.ts",
@@ -29758,6 +29768,11 @@
     },
     {
       "from": "module:server/castingV2/facePanel.ts",
+      "to": "module:server/castingV2/faceExtent.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/facePanel.ts",
       "to": "module:server/castingV2/pointerCut.ts",
       "kind": "imports"
     },
@@ -29999,6 +30014,11 @@
     {
       "from": "module:server/castingV2/falRegionReader.ts",
       "to": "module:server/castingV2/cutQuality.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/falRegionReader.ts",
+      "to": "module:server/castingV2/faceExtent.ts",
       "kind": "imports"
     },
     {
@@ -42927,45 +42947,45 @@
       "message": "Names 2 of TiltReading's 4 fields (server/castingV2/canthalTilt.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1796",
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1797",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:1796",
+      "subject": "server/castingV2/facePanel.ts:1797",
       "message": "Names 3 of NamedNotCut's 5 fields (server/castingV2/pointerCut.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1847",
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1848",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:1847",
+      "subject": "server/castingV2/facePanel.ts:1848",
       "message": "Names 3 of NamedNotCut's 5 fields (server/castingV2/pointerCut.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1855",
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1856",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:1855",
+      "subject": "server/castingV2/facePanel.ts:1856",
       "message": "Names 3 of NamedNotCut's 5 fields (server/castingV2/pointerCut.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1948",
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:1949",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:1948",
+      "subject": "server/castingV2/facePanel.ts:1949",
       "message": "Names 3 of NamedNotCut's 5 fields (server/castingV2/pointerCut.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
-    },
-    {
-      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:721",
-      "severity": "warn",
-      "kind": "redeclared-shape",
-      "subject": "server/castingV2/facePanel.ts:721",
-      "message": "Names 2 of PresentationClause's 2 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
       "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:722",
       "severity": "warn",
       "kind": "redeclared-shape",
       "subject": "server/castingV2/facePanel.ts:722",
+      "message": "Names 2 of PresentationClause's 2 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/facePanel.ts:723",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/facePanel.ts:723",
       "message": "Names 2 of PresentationClause's 2 fields (server/castingV2/recipeAssembler.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
@@ -42990,17 +43010,38 @@
       "message": "Names 2 of DiscoveryCrop's 3 fields (server/castingV2/faceDiscovery.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/falRegionReader.ts:968",
+      "id": "finding:redeclared-shape:server/castingV2/falRegionReader.ts:638",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/falRegionReader.ts:968",
+      "subject": "server/castingV2/falRegionReader.ts:638",
+      "message": "Names 3 of FaceExtent's 6 fields (server/castingV2/faceExtent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/falRegionReader.ts:693",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/falRegionReader.ts:693",
+      "message": "Names 3 of FaceExtent's 6 fields (server/castingV2/faceExtent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/falRegionReader.ts:747",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/falRegionReader.ts:747",
+      "message": "Names 6 of FaceExtent's 6 fields (server/castingV2/faceExtent.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
+    },
+    {
+      "id": "finding:redeclared-shape:server/castingV2/falRegionReader.ts:941",
+      "severity": "warn",
+      "kind": "redeclared-shape",
+      "subject": "server/castingV2/falRegionReader.ts:941",
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/falRegionReader.ts:970",
+      "id": "finding:redeclared-shape:server/castingV2/falRegionReader.ts:943",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/falRegionReader.ts:970",
+      "subject": "server/castingV2/falRegionReader.ts:943",
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
