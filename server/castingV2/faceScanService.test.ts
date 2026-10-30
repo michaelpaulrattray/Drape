@@ -21,6 +21,7 @@ import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import { scanPlan } from "./faceScan";
 import { slotDefinition } from "./referenceSlotCatalogue";
+import type { FeatureSlot } from "./recipeAssembler";
 import type { DiscoveredFeature, FaceDiscovery } from "./faceDiscovery";
 
 /* One place a discovered feature is built in this suite, so a new field on
