@@ -75,6 +75,7 @@ import {
   crewCardBuildPhrase,
   crewCardBuildState,
   handFindingNoteForPullRequest,
+  shiftAnsweredFindingFor,
   handVerdictForPullRequest,
   notBuiltCards,
   type CrewBuildPullRequest,
@@ -417,6 +418,14 @@ export function buildBoard(input: {
          read different things about one pull request, which is this reader's
          whole reason for sharing the one above. */
       handFindingNote: handFindingNoteForPullRequest({
+        pullRequest: typeof pr.number === "number" ? pr.number : 0,
+        updatedAt: pr.updatedAt ?? null,
+        facts,
+      }),
+      /* WHO THE ROW IS WAITING ON (#2855) — the same reading his page makes,
+         from the same facts, for this file's own stated reason: a shift and the
+         founder must not read different words about one pull request. */
+      handFindingAnswered: shiftAnsweredFindingFor({
         pullRequest: typeof pr.number === "number" ? pr.number : 0,
         updatedAt: pr.updatedAt ?? null,
         facts,
