@@ -2593,10 +2593,34 @@ describe("the boxes beyond the count — his second sleeve, and the third eye th
       catalogue: async () => headScan,
     });
 
-    expect(reader.asked.boxes).toHaveLength(3);
+    /* TWO of the three cut, not three: the ceiling is `count` again, so one
+       counted rectangle buys at most one extra. The third is truncated and the
+       answer does not change — both extras here are an ordinary eye. */
+    expect(reader.asked.boxes.map((one) => one.box)).toEqual([third, leftEye]);
     /* ONE row, and it is the forehead eye. */
     expect(out.regions.map((one) => one.noun)).toEqual(["third eye"]);
     expect(out.regions[0]!.box).toMatchObject(third);
+  });
+
+  /*
+    ⚠ **THE CEILING, ON ITS OWN, ASSERTED ON THE ASK.** `boxes.slice(counted)`
+    with no bound let the DETECTOR decide how many paid cuts a reading buys —
+    the frame is the customer's picture and the noun is the customer's words, so
+    a busy picture answered with many rectangles for one name is many segmenter
+    calls on that name. At most `2 x count` are ever cut.
+  */
+  it("the detector cannot buy more cuts than twice the count, however many rectangles it offers", async () => {
+    const many = Array.from({ length: 9 }, (_, at) => ({ x: 40 + at * 90, y: 1200, width: 40, height: 40 }));
+    const reader = readerWith({ detects: { freckle: many }, cuts: (box) => bigMask(box) });
+    await cutDiscovered({
+      frame: BIG,
+      features: [feature("freckle", 2, { kind: "marking", on: "arm" })],
+      reader,
+      catalogue: async () => headScan,
+    });
+
+    /* count 2 -> two counted and at most two extra, never nine. */
+    expect(reader.asked.boxes.map((one) => one.box)).toEqual(many.slice(0, 4));
   });
 
   /*
@@ -2654,9 +2678,9 @@ describe("the boxes beyond the count — his second sleeve, and the third eye th
       catalogue: async () => headScan,
     });
 
-    /* All three asked; nothing drawn. The hair is not a third eye and neither
-       eye is one either. */
-    expect(reader.asked.boxes).toHaveLength(3);
+    /* Two asked — one counted, one extra under the ceiling — and nothing drawn.
+       The hair is not a third eye and the eye it folded into is not one either. */
+    expect(reader.asked.boxes.map((one) => one.box)).toEqual([onTheHair, leftEye]);
     expect(out.regions).toEqual([]);
   });
 

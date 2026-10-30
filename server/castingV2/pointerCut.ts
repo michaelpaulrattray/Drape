@@ -2180,7 +2180,35 @@ export async function cutDiscovered(input: {
         and without this line the three-eyed cast's two extras would become two
         rows in exactly the case where nothing could notice.
       */
-      const over = boxes.slice(counted);
+      /*
+        ⚠ **AND THE EXTRAS HAVE A CEILING, WHICH THE FIRST SHAPE OF THIS DID
+        NOT — `boxes.slice(counted)` let the DETECTOR'S OWN ANSWER decide how
+        many paid cuts a reading buys.** The frame is the customer's picture and
+        the noun is the customer's words, so a busy picture answered with twenty
+        rectangles for one name is twenty segmenter calls on that name — and the
+        measured sentence this whole road rests on, *0.4 extra calls a reading*,
+        would be true of five readings and of nothing else.
+
+        **The ceiling is `count` again, and that is the point: it is not a new
+        number.** The module already trusts exactly one quantity to say how many
+        of a thing there are, and road 2 asks about at most that many more — so
+        at most `2 x max(1, count)` rectangles are ever cut for one name. It
+        covers every case the measurement found (count 1, one extra), it scales
+        the way the defect scales (a reading that counts two anklets and the
+        detector boxes four gets four), and a tuned constant would have needed a
+        bench nobody has run.
+
+        A truncation is LOGGED rather than silent, for the same reason the
+        verdict is: the rate at which real readings hit this is the only thing
+        that could ever justify moving it.
+      */
+      const over = boxes.slice(counted, counted + counted);
+      if (boxes.length > counted + counted) {
+        log.warn(
+          { name: feature.name, boxes: boxes.length, count: counted, asked: counted + counted },
+          "the detector offered more rectangles than twice what the reading counted — the ones past the ceiling are not cut",
+        );
+      }
       /*
         ⚠ **THE COUNTED CUTS SETTLE FIRST AND THE ORDER IS LOAD-BEARING**, for
         the same reason the held-back cuts settle before the lying ones are
