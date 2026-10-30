@@ -72,14 +72,47 @@
  * stopped mattering. Recorded here so the next reader does not resurrect
  * mint-tagging machinery that the edit law already made unreachable.
  *
- * # WHAT CAN ACTUALLY MINT A CROP TODAY: `hair`, AND NOTHING ELSE
+ * # WHAT CAN ACTUALLY KEEP A PICTURE TODAY: `hair`, `eyes`, `horns`, `earring`
  *
- * A crop enters the library only if its kind has a positive completeness
- * specimen, and one kind has one (`referenceCompleteness.ts`). Every other slot
- * with a perfectly good question — lips, eyes, brows, ears, earrings — will be
- * refused at the door with its reading attached, and will write its words. That
- * is fable-173's ruling working as designed, and the refusal is also the thing
- * that produces the specimen.
+ * A crop enters the library only if its kind has a MEASURED bar — a positive
+ * completeness specimen, or a centreline family for a shape area cannot judge
+ * (`referenceCompleteness.ts`). **Four kinds have one, which is 7 of this
+ * catalogue's 25 slots**: `hair`, `eye@left/right`, `horns@left/right` and
+ * `earring@left/right`. Every other slot with a perfectly good question — lips,
+ * brows, ears, `glasses`, `nose-stud` — is refused at the door with its reading
+ * attached and writes its words instead. That is fable-173's ruling working as
+ * designed, and the refusal is also the thing that produces the specimen.
+ *
+ * ⚠ **THIS SECTION READ *"`hair`, AND NOTHING ELSE"* UNTIL 2026-10-30, AND IT
+ * NAMED `eyes` AND `earrings` AMONG THE REFUSED — BOTH OF WHICH MINT.** It was
+ * true when one kind had a bar; three more were measured afterwards — `eyes`
+ * and `horns` into the area table, `earring` into the centreline one — and none
+ * of them came back to this paragraph. So the module that owns *which slot is a
+ * picture of what* told every reader that nothing but hair could ever be kept,
+ * which is the one sentence #2565's slice 2 opens this file to read.
+ *
+ * It is DERIVED now rather than restated: {@link slotsThatCanKeepAPicture}
+ * answers from the catalogue and the door's own two tables, and
+ * `referenceSlotCatalogue.test.ts` reads **the kind names and both numbers back
+ * out of the paragraph above** and reddens when they drift — so a fifth family
+ * cannot be adopted without this line moving with it.
+ *
+ * # ⚠ AND THE OPEN LANE KEEPS A PICTURE WITH NO FAMILY AT ALL
+ *
+ * The count above is the CLOSED catalogue's. An open kind — the customer's own
+ * word for something nobody catalogued — needs no specimen: past the absence
+ * control, a reading of exactly 1.0 means the crop holds every pixel of an
+ * independent second read of its own region, so there is no shortfall left for
+ * a bar to divide. `referenceMint.ts` asserts `ceilingIsTheBar` for
+ * `slot.openKind` **and for nothing else**, so this is a road and not a
+ * loophole: a closed slot like `glasses` can never reach it, and an open crop
+ * below the ceiling still refuses `noSpecimen` and still keeps its pixels.
+ *
+ * That matters to #2565's slice 2 more than the count does, and it points the
+ * same way as his N3 ruling (*"we really cannot be working from fixed lists in
+ * a fluid editing application"*): the fixed-list road needs a measured family
+ * per noun before a garment or a pair of glasses can be kept, and the open lane
+ * already does not.
  */
 import { LANDMARK_OF_ACCESSORY } from "./accessoryKinds";
 import { facetTableOf } from "./facetCards";
@@ -91,6 +124,7 @@ import {
 import { regionNameOf } from "./maskedRefine";
 import type { FeatureSlot, FeatureTier } from "./recipeAssembler";
 import type { SlotSpec } from "./referenceMint";
+import { CENTRELINE_SPECIMENS, thresholdFor } from "./referenceCompleteness";
 import { isOpenKindKey, openKindNoSpecimenReason } from "./openKindPolicy";
 import {
   parseSlot,
@@ -1851,6 +1885,56 @@ export function catalogueSlots(): SlotDefinition[] {
  */
 export function slotsRemintedEveryRender(): SlotDefinition[] {
   return catalogueSlots().filter((definition) => definition.remint === "everyRender");
+}
+
+/**
+ * WHETHER THIS SLOT CAN KEEP A PICTURE AT ALL — asked of the door's own bars.
+ *
+ * The library refuses a crop whose kind has no measured bar (`noSpecimen`), so
+ * for most of this catalogue a perfectly good cut can never become a carried
+ * picture and the slot rides on words. That is a fact about the DOOR, and this
+ * reader is the one place the two halves meet: the catalogue knows which family
+ * a slot is judged under (`guardKind`), and `referenceCompleteness.ts` knows
+ * which families have a number.
+ *
+ * ## Both tables, because a kind may own a bar in either
+ *
+ * `thresholdFor` answers only for the AREA instrument. `earring` is measured by
+ * the LENGTH instrument and has no area row, so an area-only reading would call
+ * the one accessory kind that CAN be kept unkeepable — which is exactly the
+ * mistake the header's own stale paragraph made. Asked of both, in the order
+ * the door itself consults them.
+ *
+ * ## What it deliberately does NOT answer
+ *
+ * **It is about the FAMILY, never about a particular crop.** `true` here means a
+ * bar exists for this slot's kind, not that any given cut will clear it —
+ * `underCaptured`, `subjectAbsent`, `disputedDelivery`, `brokenOutline` and
+ * `duplicateOfSlot` are all still ahead of it, and the one anatomy crop
+ * production has ever attempted was refused `disputedDelivery` at 99.79%.
+ *
+ * **And it answers the CLOSED catalogue only.** An open kind keeps its picture
+ * at the ceiling with no family (`ceilingIsTheBar`, see the header), and no open
+ * slot is in `SLOT_CATALOGUE` to be handed to this function at all — so a
+ * `false` here is never a statement about the open lane.
+ */
+export function canKeepAPicture(definition: SlotDefinition): boolean {
+  const { guardKind } = definition;
+  if (guardKind === null) return false;
+  return thresholdFor(guardKind) !== null || CENTRELINE_SPECIMENS[guardKind] !== undefined;
+}
+
+/**
+ * The slots that can keep a picture today, in panel order.
+ *
+ * Derived from the one catalogue and the door's own tables rather than listed a
+ * second time here — the same reason {@link slotsRemintedEveryRender} is
+ * derived, and the header's stale paragraph is what a hand-kept list of these
+ * actually cost: it named one kind for as long as it took three more to be
+ * measured, in the module a builder opens to find out.
+ */
+export function slotsThatCanKeepAPicture(): SlotDefinition[] {
+  return catalogueSlots().filter(canKeepAPicture);
 }
 
 /**
