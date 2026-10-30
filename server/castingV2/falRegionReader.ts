@@ -27,7 +27,7 @@ import { throughFalGate } from "./falConcurrency";
 import { classifyFalHttp, falHeaders } from "../providers/falTransport";
 import { REGION_CARDS, REGION_CARD_ENTRIES, type AskedAs, type RegionCard } from "./regionCards";
 import { judgeCut } from "./cutQuality";
-import { MaskError, unionMasks } from "./maskGeometry";
+import { MaskError, overlapWith, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { PointerBox, RegionReader, SideRegions } from "./maskedRefine";
 
@@ -1167,13 +1167,20 @@ export function createFalRegionReader(input: {
     imageUrl?: string,
     theirs?: AbortSignal,
     /**
-     * SEVERAL INSTANCES OF THE ONE NOUN, for the `pairInOneRead` road only.
+     * SEVERAL INSTANCES OF THE ONE NOUN.
      *
      * fal's published schema carries `return_multiple_masks` (default FALSE)
      * and `max_masks`, and this product had never sent either — so the August
      * reading that *"SAM 3 returns exactly ONE instance for a bilateral noun"*
      * was a fact about our REQUEST and not about the model (#2532 arm 1, law
      * clause 4: read what the engine already gives you).
+     *
+     * ⚠ **This line read *"for the `pairInOneRead` road only"* until 2026-10-30
+     * (#2818), and the CROP road asks for them too now** — a side can wear more
+     * than one of a thing, and asking for one gave a refine one earring off an
+     * ear wearing two. What comes back is not all instances: on a feature there
+     * is only one of, the extra answers are that same feature outlined again,
+     * and `askRegion` drops those at the pixels rather than by noun.
      */
     multiple = false,
   ): Promise<readonly string[]> => {
@@ -1200,10 +1207,23 @@ export function createFalRegionReader(input: {
        is awaiting. That is the shared-read rule, and it costs nothing — the
        check already bounds itself with `MASK_FETCH_TIMEOUT_MS`. */
     callSignal?: AbortSignal,
-    /** Several instances of the one noun — `askRegionUrls`' own field, and the
-     *  memo below is deliberately not keyed on it: the one asker that sets it
-     *  never asks the shared prompt, and the guard there says so. */
-    multiple = false,
+    /**
+     * SEVERAL INSTANCES OF THE ONE NOUN, and what the caller means by them.
+     *
+     * `false` asks for one. `"all"` asks for several and unions every answer,
+     * which is the pair road's reading: the two sides of a pair come back as
+     * separate instances of one noun and both are wanted. `"separate"` asks for
+     * several and keeps only the answers that are a SEPARATE THING, which is
+     * the crop road's (#2818) — on a half there is only one feature on, the
+     * extra answers are that feature outlined again.
+     *
+     * The wire field is the same for both; what differs is which answers
+     * survive, and the two roads say which they mean rather than inheriting one
+     * reading from the other. The memo below is deliberately not keyed on this:
+     * the askers that set it never ask the shared prompt, and the guard there
+     * says so.
+     */
+    multiple: false | "all" | "separate" = false,
   ): Promise<Mask | null> => {
     /*
       ⚠ THE SHARED `face` READ MAY NEVER ASK FOR SEVERAL INSTANCES — measured,
@@ -1243,12 +1263,65 @@ export function createFalRegionReader(input: {
         urls = await asked;
       }
     } else {
-      urls = await askRegionUrls(image, prompt, imageUrl, theirs, multiple);
+      /* The wire field is a boolean — both roads send the same request and
+         differ only in which answers they keep. */
+      urls = await askRegionUrls(image, prompt, imageUrl, theirs, multiple !== false);
     }
     if (urls.length === 0) return null;
     if (keep === "first") return fetchMask(urls[0], theirs);
     const every = await Promise.all(urls.map((url) => fetchMask(url, theirs)));
-    return every.length === 1 ? every[0] : unionMasks(...every);
+    if (every.length === 1) return every[0];
+    if (multiple !== "separate") return unionMasks(...every);
+    /*
+      ⚠ SEVERAL INSTANCES MEANS SEVERAL THINGS, NOT SEVERAL READINGS OF ONE
+      THING — and which of the two arrived is read off the ANSWER (#2818).
+
+      Asked for several, SAM 3 returns both: a second earring further up the
+      same ear, and — on a feature there is only one of — another outline of
+      that same feature, tighter or looser than the first. Unioning the second
+      kind silently GROWS the region, and a refine paints on the mask it gets
+      back, so that is a delivered picture somebody paid for.
+
+      Measured through the product's own crop geometry, two humans and a
+      creature, `eyes` / `eyebrows` / `ear` / `horns`, one half at a time at two
+      sizes — **36 cells, and not one genuine second instance on any anatomy
+      pair.** Four extra masks came back and all four were the same feature read
+      again: two TIGHTER (inside the first) and two LOOSER, and a looser one
+      unioned in would have taken one eye from 1,042px to 1,995px. The worn pair
+      is the opposite and is this card's defect: on a cast wearing several
+      earrings in one ear the extras are real hoops — 1,500 + 334 at 1024, and
+      513 + 109 + 85 at 598.
+
+      **The two populations separate at the PIXELS, which is why no list is
+      needed and none is kept here**: every one of the extra earrings shares
+      ZERO pixels with the answer already in hand, and every one of the anatomy
+      extras is one shape wholly inside the other. So an extra is kept when it
+      touches nothing already kept, and dropped when it does — read from the
+      answer, never looked up by noun (N3's rule).
+
+      It costs no request: the instances come back from the SAME call, so this
+      changes what is read and not what is spent. Boxes rather than shapes is
+      the tempting cheaper test and it is wrong here — two boxes can overlap
+      while the shapes inside them never touch.
+    */
+    const kept: Mask[] = [every[0]!];
+    let dropped = 0;
+    for (const mask of every.slice(1)) {
+      if (kept.some((already) => overlapWith(mask, already) > 0)) {
+        dropped += 1;
+        continue;
+      }
+      kept.push(mask);
+    }
+    if (every.length > 1) {
+      /* Numbers only — how many answers came back and how many were the same
+         thing again. Never a word of the reading. */
+      log.debug(
+        { prompt, answers: every.length, kept: kept.length, dropped },
+        "[falRegionReader] asked for several instances",
+      );
+    }
+    return kept.length === 1 ? kept[0] : unionMasks(...kept);
   };
 
   /** A frame-sized mask holding nothing — the shape of "there is none of this
@@ -1439,8 +1512,19 @@ export function createFalRegionReader(input: {
     };
   };
 
-  /** ONE HALF-PICTURE, ASKED — the crop road's single read, placed back in the
-   *  caller's frame. */
+  /**
+   * ONE HALF-PICTURE, ASKED — the crop road's single read, placed back in the
+   * caller's frame.
+   *
+   * ⚠ **IT ASKS FOR EVERY INSTANCE ON THAT HALF, NOT THE BEST ONE (#2818).**
+   * A side can wear more than one of a thing: measured on a cast wearing
+   * several earrings in one ear, this ask returned ONE of them — 1,500px where
+   * the ear also carried a 334px hoop further up — so a refine that touches the
+   * earrings painted on one and left the others out of the edit. The
+   * instances come back from the same call, so this costs no request; which of
+   * them survive is `askRegion`'s business and is decided at the pixels, in the
+   * block there.
+   */
   const readOneCrop = async (
     image: Buffer, noun: string, crop: { left: number; width: number },
     width: number, height: number, callSignal: AbortSignal | undefined,
@@ -1450,7 +1534,7 @@ export function createFalRegionReader(input: {
       .extract({ left: crop.left, top: 0, width: crop.width, height })
       .png()
       .toBuffer();
-    const mask = await askRegion(bytes, noun, "all", undefined, callSignal);
+    const mask = await askRegion(bytes, noun, "all", undefined, callSignal, "separate");
     return mask ? placeInFrame(mask, crop, width, height) : null;
   };
 
@@ -1489,7 +1573,7 @@ export function createFalRegionReader(input: {
       way: one read, then one more only if a side is missing.
     */
     if (pairInOneRead) {
-      const whole = await askRegion(image, name, "all", imageUrl, callSignal, true);
+      const whole = await askRegion(image, name, "all", imageUrl, callSignal, "all");
       /* No masks at all is the crop road's own both-halves-empty answer, at one
          read instead of two — `absentIsAnswer` and the empty-anatomy re-ask
          above decide what it means, exactly as they do today. */
@@ -1758,7 +1842,13 @@ export function createFalRegionReader(input: {
         it is one call either way, under the pair road's own ceiling.
       */
       const several = SEVERAL.has(name);
-      const mask = await askRegion(image, name, several ? "all" : "first", imageUrl, callSignal, several);
+      /* ⚠ `"all"` AND NOT `"separate"`, AND THE PARAGRAPH ABOVE IS WHY (#2818).
+         This road wants the answers that OVERLAP: both tusks and the row
+         between them are three answers that touch, and the union of them is the
+         row. The crop road's rule — keep only what touches nothing already kept
+         — would throw two of the three away here. Two roads, two meanings of
+         "several", each saying which it means. */
+      const mask = await askRegion(image, name, several ? "all" : "first", imageUrl, callSignal, several ? "all" : false);
       if (!mask) return absent();
       return mask;
     },

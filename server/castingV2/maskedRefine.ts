@@ -349,11 +349,24 @@ export type RegionReader = {
    * gained a 144px piece sitting higher up the ear. A second cast with one hoop
    * a side answered one both ways, which is the control.
    *
-   * **Nothing is changed here on that reading**, and the reason is the consumer
-   * rather than the number: a refine PAINTS on the mask it gets back, so a
-   * second instance arriving on an `eyes` or `eyebrows` half is a delivered
-   * picture the customer paid for. Widening it is its own card with its own
-   * measurement on the anatomy pairs (**#2818**).
+   * ✅ **THAT MEASUREMENT RAN AND THIS ROAD NOW ASKS FOR EVERY INSTANCE — #2818,
+   * 2026-10-30. The clause that stood here read *"Nothing is changed here on
+   * that reading"*, and its reasoning is exactly why the repair is not the
+   * one-line setting the card proposed.** A refine PAINTS on the mask it gets
+   * back, so the question was whether a second instance on an `eyes` or
+   * `eyebrows` half is a real second thing. Measured over **36 cells** — two
+   * humans and a creature, `eyes` / `eyebrows` / `ear` / `horns`, one half at a
+   * time at two sizes — **there is no second instance on any anatomy pair.**
+   * The four extra masks that came back were the same feature outlined again,
+   * and two of them LOOSER: unioned in, one eye would have gone from 1,042px to
+   * 1,995px, which is the delivered picture this clause was protecting.
+   *
+   * **So the extras are judged at the pixels rather than by noun**: an extra is
+   * kept only where it touches nothing already in hand. Every extra earring
+   * shares ZERO pixels with the first (4 of 4); every anatomy extra is one
+   * shape wholly inside the other (4 of 4). The rule lives in `askRegion`
+   * (`falRegionReader.ts`), it reads the answer rather than a list, and it
+   * costs no request — the instances arrive from the same call.
    */
   regionSides?(input: {
     image: Buffer;

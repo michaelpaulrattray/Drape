@@ -261,10 +261,9 @@ afterEach(() => {
 });
 
 describe("the road is dark until a caller asks for it", () => {
-  it("leaves a pair on two half-frame reads, and sends the new fields on nothing", async () => {
+  it("leaves a pair on two half-frame reads", async () => {
     const { wire, sides } = await readPair({ pairInOneRead: false, shape: "spanning" });
     expect(wire.halfFrameAsks, "two half frames, one per side").toBe(2);
-    expect(wire.multipleAsked, "no request asks for several instances").toEqual([]);
     expect(coverage(sides!.left)).toBeGreaterThan(0);
     expect(coverage(sides!.right)).toBeGreaterThan(0);
   });
@@ -281,7 +280,28 @@ describe("the road is dark until a caller asks for it", () => {
     const reader = createFalRegionReader({ apiKey: "test-key" });
     await reader.regionSides?.({ image: await frame(), name: "ear", absentIsAnswer: true });
     expect(wire.halfFrameAsks).toBe(2);
-    expect(wire.multipleAsked).toEqual([]);
+  });
+
+  it("and its half-frame reads ask for SEVERAL instances now (#2818)", async () => {
+    /*
+      ⚠ **THESE TWO ARMS ASSERTED `multipleAsked` IS EMPTY UNTIL 2026-10-30, AND
+      THAT IS THE CONTRACT #2818 CHANGED — ON PURPOSE AND ON A MEASUREMENT.**
+      The arm above is right that this road paints: a side can wear more than
+      one of a thing, and asking each half for a single instance gave a paid
+      refine ONE earring off an ear wearing two.
+
+      What replaced "do not ask" is not "ask and hope" — it is that an extra
+      answer is kept only where it touches nothing already in hand. Measured
+      over 36 cells, two humans and a creature: there is no genuine second
+      instance on any anatomy pair, every extra there is the same feature
+      outlined again (and would have grown an eye from 1,042px to 1,995px), and
+      every extra EARRING shares zero pixels with the first. That rule and its
+      sabotages are `server/castingV2/severalInstancesOnOneSide.test.ts`; this
+      arm is only the wire half of it, so the request shape cannot go back
+      silently.
+    */
+    const { wire } = await readPair({ pairInOneRead: false, shape: "spanning" });
+    expect(wire.multipleAsked, "both halves, by the singular noun").toEqual(["eye", "eye"]);
   });
 });
 
