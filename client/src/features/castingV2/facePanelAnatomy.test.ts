@@ -922,7 +922,15 @@ describe("the rectangle names what it covers (fable-378 (c))", () => {
 
     expect(regions).toContain("const active = open?.scope !== undefined");
     expect(regions).toContain("? open.scope === region.slot");
-    expect(regions).toContain(": row.slots.some((slot) => selection.isSelected(slot));");
+    expect(regions).toContain(": row.slots.some((slot) => selection.isSelected(slot))");
+    /* ⚠ THIS ARM USED TO END THE LINE WITH A SEMICOLON AND IT IS UPDATED RATHER
+       THAN RELAXED (#2845). The unscoped branch now also asks whether the row
+       has a rectangle of its own, so that one ask lights ONE rectangle instead
+       of a garment's five. The rule this arm exists for is untouched — a scoped
+       ask still lights exactly its own rectangle — and dropping the semicolon
+       alone would have let the new clause vanish silently, which is why the
+       clause is asserted here beside it. */
+    expect(regions).toContain("&& (whole === null || region.whole)");
   });
 });
 
@@ -1079,7 +1087,14 @@ describe("the pair nests, and the child is the scoping gesture again", () => {
     expect(panel).toContain("? selection.selected?.scope === instance.slot");
     expect(panel).toContain(": selection.isSelected(instance.slot);");
     expect(panel).toContain("selection.hover([instance.slot])");
-    expect(regions).toContain("const lit = selection.isHovered(region.slot);");
+    /* ⚠ UPDATED, NOT DELETED (#2845): the per-instance rule is still the
+       fallback and still the thing this arm is about, but a COLLECTION row's
+       own rectangle outranks its pieces while that row is the subject — his
+       word, *"also outfit should be selectablke as a whole"*. Both halves are
+       pinned, so neither the instance rule nor the collection rule can go back
+       in silence. */
+    expect(regions).toContain(": selection.isHovered(region.slot);");
+    expect(regions).toContain("const lit = rowIsSubject ? region.whole");
     expect(regions).toContain("selection.hover([region.slot])");
   });
 

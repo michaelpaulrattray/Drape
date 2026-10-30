@@ -309,7 +309,7 @@ describe("what the library adds to a row", () => {
     expect(built.regions).toEqual([
       {
         box: { x: 12, y: 30, width: 200, height: 140, frame: { width: 1024, height: 1536 } },
-        name: null, spoken: null, prefill: null, slot: "hair", scopable: false,
+        name: null, spoken: null, prefill: null, slot: "hair", scopable: false, whole: false,
       },
     ]);
   });
@@ -509,7 +509,7 @@ describe("what a scan adds to a row", () => {
       maskUrl: "data:image/png;base64,nose",
       crop: { x: 400, y: 600, width: 120, height: 160, frame },
     }]);
-    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose", scopable: false }]);
+    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose", scopable: false, whole: false }]);
   });
 
   it("leaves the MINTED cutout in place where an edit made one", () => {
@@ -530,7 +530,7 @@ describe("what a scan adds to a row", () => {
     */
     expect(hair.cutouts[0]!.contentUrl).toBe("https://bucket.example/library/hair.png");
     expect(hair.cutouts[0]!.crop).toBeNull();
-    expect(hair.regions).toEqual([{ box: { x: 12, y: 30, width: 200, height: 140, frame }, name: null, spoken: null, prefill: null, slot: "hair", scopable: false }]);
+    expect(hair.regions).toEqual([{ box: { x: 12, y: 30, width: 200, height: 140, frame }, name: null, spoken: null, prefill: null, slot: "hair", scopable: false, whole: false }]);
   });
 
   it("gives a measured row its click target even when the crop came from an edit", () => {
@@ -547,7 +547,7 @@ describe("what a scan adds to a row", () => {
       .find((panelRow) => panelRow.name === "Hair")!;
 
     expect(hair.cutouts[0]!.contentUrl).toBe("https://bucket.example/library/hair.png");
-    expect(hair.regions).toEqual([{ box: { x: 900, y: 900, width: 50, height: 50, frame }, name: null, spoken: null, prefill: null, slot: "hair", scopable: false }]);
+    expect(hair.regions).toEqual([{ box: { x: 900, y: 900, width: 50, height: 50, frame }, name: null, spoken: null, prefill: null, slot: "hair", scopable: false, whole: false }]);
   });
 
   it("still refuses to invent a box for a region the scan did not find", () => {
@@ -588,11 +588,11 @@ describe("what a scan adds to a row", () => {
     expect(eyes.regions).toEqual([
       {
         box: { x: 300, y: 500, width: 60, height: 30, frame },
-        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right", scopable: true,
+        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right", scopable: true, whole: false,
       },
       {
         box: { x: 640, y: 500, width: 60, height: 30, frame },
-        name: "Left eye", spoken: "her left eye", prefill: "her left eye — ", slot: "eye@left", scopable: true,
+        name: "Left eye", spoken: "her left eye", prefill: "her left eye — ", slot: "eye@left", scopable: true, whole: false,
       },
     ]);
   });
@@ -651,7 +651,7 @@ describe("a pair whose geometry is one instance", () => {
     expect(eyes.regions).toEqual([
       {
         box: { x: 640, y: 500, width: 60, height: 30, frame },
-        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right", scopable: true,
+        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right", scopable: true, whole: false,
       },
     ]);
     expect(eyes.cutouts).toHaveLength(1);
@@ -671,7 +671,7 @@ describe("a pair whose geometry is one instance", () => {
     /* Null is not an omission: it means the row's own name is the label. */
     const nose = scanned({ nose: { x: 400, y: 600, width: 120, height: 160 } })
       .find((row) => row.name === "Nose")!;
-    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose", scopable: false }]);
+    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose", scopable: false, whole: false }]);
   });
 
   it("draws no row at all when nothing can place it — not an unclickable one", () => {
@@ -1726,7 +1726,7 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     expect(sectionOf(panel, "open")).toBeNull();
   });
 
-  it("lights every piece from the row, because the outfit IS the collection", () => {
+  it("draws the WHOLE outfit first, then every piece inside it", () => {
     const panel = panelOf({
       found: [
         { noun: "jacket", kind: "clothing" },
@@ -1734,10 +1734,94 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       ],
     });
     const row = sectionOf(panel, "outfit")!.rows[0]!;
+    /* UNCHANGED, and it is the half his complaint was NOT about: the edit has
+       meant the whole outfit since #2566 slice 2. */
     expect(row.slots).toEqual(["discovered:outfit", "discovered:jacket#1", "discovered:harness#1"]);
-    /* One rectangle per PIECE and not the union: a union rectangle over a
-       dressed figure is the whole figure, which points at nothing. */
-    expect(row.regions.map((one) => one.name)).toEqual(["Jacket", "Harness"]);
+    /*
+      ⚠ THIS ARM PINNED THE OPPOSITE AND IS UPDATED WITH HIS WORD RATHER THAN
+      DELETED (#2845, 2026-10-30). It read:
+
+        ~~"One rectangle per PIECE and not the union: a union rectangle over a
+          dressed figure is the whole figure, which points at nothing."~~
+        ~~expect(row.regions.map((one) => one.name)).toEqual(["Jacket", "Harness"]);~~
+
+      His words: *"why cant i select his outfit box as a whole its selecting
+      individual pieces?"* and *"also outfit should be selectablke as a whole"*.
+      The struck reasoning is true of a union drawn ALONE; what he was shown was
+      two lit rectangles and no outfit, and he read it as the panel editing
+      pieces one at a time. The pieces are still here, inside it.
+    */
+    expect(row.regions.map((one) => one.name)).toEqual([null, "Jacket", "Harness"]);
+    expect(row.regions.map((one) => one.whole)).toEqual([true, false, false]);
+    /* The whole rectangle is the ROW's, so it carries the row's own key and
+       narrows to nothing — a scope here would mean a piece. */
+    expect(row.regions[0]!.slot).toBe("discovered:outfit");
+    expect(row.regions[0]!.scopable).toBe(false);
+  });
+
+  it("gives the whole rectangle the SAME extent the row's own thumbnail is cropped to", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "jacket", kind: "clothing" },
+        { noun: "harness", kind: "accessory", on: "jacket" },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    /*
+      ONE VALUE USED TWICE, NEVER TWO MEASUREMENTS OF ONE THING (working law 4).
+      The thumbnail was already cropped to the union before this card; if the
+      rectangle were computed a second time the picture and the tile beside it
+      could drift, and the customer would see a box that does not match the
+      thing it is a picture of.
+    */
+    expect(row.regions[0]!.box).toEqual(row.cutouts[0]!.crop);
+  });
+
+  it("CONTROL — the whole rectangle encloses every piece it was built from", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "jacket", kind: "clothing" },
+        { noun: "harness", kind: "accessory", on: "jacket" },
+        { noun: "belt", kind: "clothing" },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    const whole = row.regions.find((one) => one.whole)!.box;
+    const pieces = row.regions.filter((one) => !one.whole).map((one) => one.box);
+    /* Three pieces, so this is not satisfied by a single box being its own
+       union — the shape that would pass while the arithmetic was wrong. */
+    expect(pieces.length).toBe(3);
+    for (const piece of pieces) {
+      expect(piece.x, piece.toString()).toBeGreaterThanOrEqual(whole.x);
+      expect(piece.y).toBeGreaterThanOrEqual(whole.y);
+      expect(piece.x + piece.width).toBeLessThanOrEqual(whole.x + whole.width);
+      expect(piece.y + piece.height).toBeLessThanOrEqual(whole.y + whole.height);
+    }
+    /* And it is the SMALLEST such rectangle — a union that simply returned the
+       frame would pass every bound above. */
+    expect(whole.x).toBe(Math.min(...pieces.map((one) => one.x)));
+    expect(whole.y).toBe(Math.min(...pieces.map((one) => one.y)));
+    expect(whole.x + whole.width).toBe(Math.max(...pieces.map((one) => one.x + one.width)));
+    expect(whole.y + whole.height).toBe(Math.max(...pieces.map((one) => one.y + one.height)));
+  });
+
+  it("CONTROL — no other row on the panel grows a whole rectangle", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "jacket", kind: "clothing" },
+        { noun: "scar", kind: "mark", on: "cheek" },
+      ],
+    });
+    /*
+      The field is `false` everywhere but the one collection row, which is what
+      lets the browser's rule be *"a row that HAS one"* rather than a list of
+      which rows do. A second `true` anywhere here would silently start
+      suppressing some other row's rectangles.
+    */
+    const whole = panel.groups
+      .flatMap((group) => group.rows.flatMap((row) => row.regions.map((one) => ({ group: group.group, one }))))
+      .filter((each) => each.one.whole);
+    expect(whole.map((each) => each.group)).toEqual(["outfit"]);
   });
 
   /*

@@ -415,6 +415,35 @@ export type PanelRegion = {
    * the mirror working law 4 is about.
    */
   prefill: string | null;
+  /**
+   * DOES THIS RECTANGLE COVER THE WHOLE ROW, RATHER THAN ONE THING IN IT
+   * (his word, 2026-10-30, #2845).
+   *
+   * His complaint, verbatim: *"why cant i select his outfit box as a whole its
+   * selecting individual pieces? like shouldnt there be a box for the whole
+   * outfit with the individual pieces inside it"* — and, again, *"also outfit
+   * should be selectablke as a whole"*.
+   *
+   * ⚠ **WHAT WAS WRONG WAS THE PICTURE, NOT THE EDIT — read at the code before
+   * anything moved.** The Outfit row's `slots` has carried every piece since
+   * #2566 slice 2, so tapping it already meant the whole outfit. What it DREW
+   * was one rectangle per PIECE and none for the outfit, so the photograph said
+   * *"these five separate things"* while the ask said *"all of it"*. That is
+   * the rule {@link FaceRegions} already states in the other direction — *the
+   * picture may never claim what the ask does not say* — and this is its
+   * mirror: the ask meant everything and the picture claimed less.
+   *
+   * So a `whole` rectangle is the row's own extent, and the pieces stay real
+   * underneath it. `false` on every instance rectangle, which is what every
+   * rectangle before this one was.
+   *
+   * ⚠ **IT IS A FIELD AND NOT A KEY TEST IN THE BROWSER, for the reason its
+   * siblings here already carry twice over**: the client would otherwise ask
+   * whether a slot `=== "discovered:outfit"`, which is a second copy of a
+   * server fact and wrong the first time a second collection row exists
+   * (working law 4). The side that knows the fact states it.
+   */
+  whole: boolean;
 };
 
 export type PanelRow = {
@@ -1119,6 +1148,7 @@ export function facePanel(input: {
                scope naming the whole face is the silent whole-face render the
                server's door refuses. */
             scopable: definition.instance !== null,
+            whole: false,
           }]
           : [],
         /* There is only one of it, so there is nothing to open. */
@@ -1238,6 +1268,7 @@ export function facePanel(input: {
           /* A catalogued instance, which is exactly what the scope door
              admits. */
           scopable: side.definition.instance !== null,
+          whole: false,
         })),
         /*
           THE TWO CHILDREN (founder, fable-452) — both, whether or not they
@@ -1550,6 +1581,7 @@ export function facePanel(input: {
            other two are one-of-it, so a sided ink rectangle narrows and a
            sideless one has nothing to narrow to (fable-1291 §3). */
         scopable: definition.instance !== null,
+        whole: false,
       }],
       instances: [],
     });
@@ -1628,6 +1660,7 @@ export function facePanel(input: {
     prefill: null,
     slot,
     scopable: false,
+    whole: false,
   });
 
   for (const filed of Array.from(openFiled.values())) {
@@ -2012,6 +2045,9 @@ export function facePanel(input: {
       prefill: prefillFor(spokenName),
       slot: found.slot,
       scopable: false,
+      /* A PIECE, never the collection — the Outfit row's own whole rectangle is
+         built beside the row itself (#2845). */
+      whole: false,
     };
   };
 
@@ -2162,9 +2198,56 @@ export function facePanel(input: {
         maskUrl: null,
         crop: union,
       }],
-      /* One rectangle per PIECE rather than the union: a union rectangle over a
-         dressed figure is the whole figure, which points at nothing. */
-      regions: outfitPieces.map(foundChildRegion),
+      /*
+        THE WHOLE OUTFIT FIRST, THEN ITS PIECES — his word, 2026-10-30 (#2845):
+        *"also outfit should be selectablke as a whole"*, and *"shouldnt there
+        be a box for the whole outfit with the individual pieces inside it"*.
+
+        ⚠ **THE CLAUSE THAT STOOD HERE IS STRUCK RATHER THAN DELETED, because
+        its reasoning is exactly what he overruled and the next hand should see
+        what it cost:** ~~"One rectangle per PIECE rather than the union: a
+        union rectangle over a dressed figure is the whole figure, which points
+        at nothing."~~ The sentence is true of a rectangle drawn ALONE — and
+        drawn alone was never what he asked for. What he saw instead was five
+        lit rectangles and read it, correctly, as the panel editing pieces one
+        at a time: *"why cant i select his outfit box as a whole its selecting
+        individual pieces?"*
+
+        ⚠ **AND THE EDIT ALREADY MEANT ALL OF IT — only the picture disagreed.**
+        `slots` above has carried every piece since #2566 slice 2, so a tap on
+        this row has always sent one ask about the whole outfit. So nothing
+        about what an edit MEANS moves here; what moves is that the photograph
+        now says the same thing the ask says.
+
+        The union is the row's extent and is the same rectangle the thumbnail
+        above is already cropped to — so it is one value used twice rather than
+        a second measurement that can disagree with the picture beside it. The
+        pieces stay real underneath, each with its own rectangle and its own
+        child row, which is his *"with the individual pieces inside it"*.
+
+        Largest-first paint order (`FaceRegions`'s own smallest-wins rule) puts
+        this rectangle UNDERNEATH every piece by construction, because a union
+        can never be smaller than what it unions — so a point over a piece
+        still belongs to that piece and nothing had to be told about z-order.
+      */
+      regions: [
+        {
+          box: union,
+          /* NAMED NOTHING, which on this panel means *it covers what the row
+             says it does* — the row says Outfit and this is the outfit. A name
+             here would be the product inventing a noun for all-of-these-pieces
+             that no reading gave, which {@link OUTFIT_SLOT} forbids. */
+          name: null,
+          spoken: null,
+          prefill: null,
+          slot: OUTFIT_SLOT,
+          /* Not a narrowing: tapping the whole outfit is the ROW's ask, which
+             is every piece. A scope would say the opposite of what it is. */
+          scopable: false,
+          whole: true,
+        },
+        ...outfitPieces.map(foundChildRegion),
+      ],
       instances: outfitPieces.map(foundChild),
     }, ["outfit"]);
   }
