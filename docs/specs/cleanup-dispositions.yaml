@@ -1684,3 +1684,9 @@
   verdict: KEEP
   why: "the read that names a tapped cut, dark with no caller yet (#14 slice 3a-1). It is the half of the spotlight that keeps section 1's law-9 property at full strength — a point returns a part as readily as a whole (the court's belt tap cut the keeper alone), so the chip carries the cut's OWN name and the customer sees it before any money moves. Awaiting 3a-2's caller, exactly as the two roads above. `pieceOnGrey` is exported beside it for its own suite and is reachable from here, which is why only the entrance is listed"
   argued: "#14, docs/specs/REFERENCE_SELECTOR_BUILD_DESIGN_2026-10-28.md section 9 slice 3a"
+
+- symbol: resetCutNameEngineForTests
+  file: server/castingV2/referenceSpotlight.ts
+  verdict: KEEP
+  why: "the same seam three modules over (`resetConceptReaderForTests`, `resetAuthorEngineForTests`) — the namer memoizes its own engine over the shared interpreter queue, so an arm that ran with a key set would hand its engine to every later arm; the entrance suite drops it in `beforeEach` and the NAME says test-only (#14 slice 3a-2)"
+  argued: "#14, docs/specs/REFERENCE_SELECTOR_BUILD_DESIGN_2026-10-28.md section 9 slice 3a-2"

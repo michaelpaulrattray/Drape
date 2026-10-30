@@ -34,6 +34,7 @@ import sharp from "sharp";
 
 import { appRouter } from "../routers";
 import type { TrpcContext } from "../_core/context";
+import { resetCutNameEngineForTests } from "./referenceSpotlight";
 
 const FRAME = { width: 32, height: 32 };
 const reads: Array<{ userId: number; attachmentPublicId: string }> = [];
@@ -101,6 +102,10 @@ function openTheScope(): void {
 }
 
 beforeEach(async () => {
+  /* The naming engine is memoized on first use, so an arm that ran with a key
+     set would hand its engine to every later arm. Dropped here rather than
+     left to the order the file happens to be in. */
+  resetCutNameEngineForTests();
   reads.length = 0;
   row.answer = null;
   bytes.answer = await sharp({
