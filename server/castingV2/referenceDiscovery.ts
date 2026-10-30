@@ -75,11 +75,29 @@
  * one thing: a collision is counted and logged with both nouns, so the surface
  * slice inherits a measured fact rather than rediscovering it, and a marker is
  * never silently dropped on the strength of a box it shares.
+ *
+ * # ⚠ AND ONE NAME CAN COME BACK AS SEVERAL PARTS — #2842, ALSO RECORDED ONLY
+ *
+ * The other half of the same lesson, measured in the same court: `laces` on a
+ * product shot returned **nine boxes** and the marker that reached the surface
+ * was a **57x66 speck of one lace** on a 1536x1024 frame. {@link biggestOf} is
+ * unchanged and still keeps the biggest, because a union is right for a lacing
+ * and wrong for four pockets and nobody has measured which nouns are which.
+ *
+ * What changed is that nothing is thrown away any more:
+ * {@link ReferenceMarker}'s `spread` carries the part count, their union and
+ * its fill, **and the reading's own `count` and `coverage`**, which this road
+ * had been dropping on the way into the marker while the CAST road decided
+ * exactly this question on both of them. Every one of those facts was already
+ * paid for. The law's clause 4 names that as the cheapest finding available,
+ * and {@link referenceBoxes} carries the arithmetic for both reference roads.
  */
+import { biggestOf, spreadOf } from "./referenceBoxes";
 import { boundForJudge } from "./judgeFrame";
 import { isBareNoun, mergeDiscoveries, parseDiscovery } from "./faceDiscovery";
 import { createModuleLogger } from "../logging/logger";
-import type { DiscoveredFeature, FeatureKind, UnseenFeature } from "./faceDiscovery";
+import type { BoxSpread } from "./referenceBoxes";
+import type { DiscoveredFeature, FeatureCoverage, FeatureKind, UnseenFeature } from "./faceDiscovery";
 import type { PointerBox, RegionReader } from "./maskedRefine";
 import type { TextEngine } from "../providers/types";
 
@@ -122,6 +140,41 @@ export type ReferenceMarker = {
    * from the list it was handed.
    */
   readonly area: number;
+  /**
+   * WHAT CAME BACK FOR THIS NOUN, AND WHAT THE READING SAID ABOUT IT — #2842.
+   *
+   * Recorded, never acted on. `box` above is still the biggest rectangle and
+   * this slice decides nothing differently; what this closes is that the facts
+   * were being bought and thrown away.
+   */
+  readonly spread: MarkerSpread;
+};
+
+/**
+ * THE THREE THINGS THE ENGINE ALREADY ANSWERED ABOUT ONE NOUN — #2842.
+ *
+ * All of it was bought before this type existed and none of it was kept: the
+ * detector's part count and their union were discarded by a sort, and the
+ * READING's own `count` and `coverage` were dropped on the way into
+ * {@link ReferenceMarker}. The disappearing-technology law's clause 4 — *read
+ * what the engine already gives you before reaching for a better one* — is the
+ * whole of why this is a recording and not a repair.
+ *
+ * ⚠ **AND THE SIBLING ROAD ALREADY DECIDES THIS EXACT QUESTION ON THE TWO
+ * DROPPED FIELDS, which is the fact that makes the omission a defect rather
+ * than a tidiness note.** On a cast, `pointerCut.ts` reads `coverage ===
+ * "scattered"` to send a thing to WORDS with no cut at all (`foundRoadOf`), and
+ * reads `count` to decide how many of the detector's rectangles become rows
+ * (`boxes.slice(0, Math.max(1, feature.count))`) — so the cast road cuts one
+ * region per instance where this road keeps one fragment of one.
+ */
+export type MarkerSpread = {
+  /** How many rectangles the detector returned, their union, and its fill. */
+  readonly boxes: BoxSpread;
+  /** How many of it the READING said are visible. At least 1. */
+  readonly said: number;
+  /** `single` or `scattered`, as the READING answered it. */
+  readonly saidCoverage: FeatureCoverage;
 };
 
 export type ReferenceReading =
@@ -474,11 +527,6 @@ export async function readReferencePicture(input: {
   };
 }
 
-/** The biggest rectangle the detector drew. One box per name — `pointerCut`'s cap rule. */
-function biggestOf(boxes: readonly PointerBox[]): PointerBox | null {
-  return [...boxes].sort((a, b) => b.width * b.height - a.width * a.height)[0] ?? null;
-}
-
 /**
  * BOX WHAT THE READING NAMED — one detect per name, capped.
  *
@@ -532,14 +580,58 @@ export async function markReferenceThings(input: {
       continue;
     }
     const box = biggestOf(boxes);
-    if (box === null) {
+    const spread = spreadOf(boxes);
+    if (box === null || spread === null) {
       /* An empty list is the ABSENCE answer and the pointer road rests on it
          (#2532's three negative controls). The reading named something the
          detector cannot find; words stay open. */
       unmarked.push(feature.name);
       continue;
     }
-    markers.push({ name: feature.name, kind: feature.kind, box, area: box.width * box.height });
+    markers.push({
+      name: feature.name,
+      kind: feature.kind,
+      box,
+      area: box.width * box.height,
+      spread: { boxes: spread, said: feature.count, saidCoverage: feature.coverage },
+    });
+  }
+
+  /*
+    A NOUN THAT NAMES SEVERAL PARTS, RECORDED RATHER THAN RESOLVED (#2842).
+
+    Measured on a product shot 2026-10-30: `laces` returned NINE boxes and the
+    marker that reached the surface was a 57x66 speck of one lace. The card's
+    own recommendation is this line and not a repair — *record the discarded box
+    count and their union beside each marker first, and let the spread say which
+    nouns want a union* — because `pocket` on one of four pockets is a perfectly
+    good marker to tap and `laces` on one lace is not, and which nouns are which
+    is unmeasured.
+
+    ⚠ **The reading's own two answers are in here on purpose and they are the
+    cheapest half of it**: `said` and `saidCoverage` were bought on the text
+    call this road already pays for and were being dropped on the floor, while
+    the CAST road decides this very question on both of them. A spread where the
+    reading said `scattered`, or said more than one, is a different case from one
+    where it said a single thing and the detector disagreed — and until now the
+    log could not tell those apart.
+  */
+  const several = markers.filter((marker) => marker.spread.boxes.parts > 1);
+  if (several.length > 0) {
+    log.info(
+      {
+        nouns: several.map((marker) => ({
+          name: marker.name,
+          parts: marker.spread.boxes.parts,
+          said: marker.spread.said,
+          saidCoverage: marker.spread.saidCoverage,
+          kept: marker.area,
+          union: marker.spread.boxes.union.width * marker.spread.boxes.union.height,
+          fill: Number(marker.spread.boxes.fill.toFixed(3)),
+        })),
+      },
+      "[referenceDiscovery] these nouns came back as several parts and the biggest one was kept — #2842, recorded not resolved",
+    );
   }
 
   /*
@@ -614,6 +706,10 @@ export async function readAndMarkReference(input: {
       named: reading.features.length,
       marked: marked.markers.length,
       unmarked: marked.unmarked.length,
+      /* #2842: how many of the markers are one part of a several-part thing.
+         On the one line a reader actually opens, so the spread is visible
+         without going looking for the per-noun line above. */
+      severalParts: marked.markers.filter((marker) => marker.spread.boxes.parts > 1).length,
       personPresent: reading.personPresent,
       crops: reading.crops,
     },

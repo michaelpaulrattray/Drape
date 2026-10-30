@@ -32,7 +32,7 @@
     {
       "id": "domain:casting-v2",
       "name": "casting-v2",
-      "moduleCount": 216
+      "moduleCount": 217
     },
     {
       "id": "domain:castingV2",
@@ -4575,6 +4575,12 @@
     {
       "id": "module:server/castingV2/referenceAttachService.ts",
       "path": "server/castingV2/referenceAttachService.ts",
+      "domain": "casting-v2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:server/castingV2/referenceBoxes.ts",
+      "path": "server/castingV2/referenceBoxes.ts",
       "domain": "casting-v2",
       "lifecycle": "active"
     },
@@ -15039,6 +15045,10 @@
     {
       "id": "test:server/castingV2/referenceAttachService.test.ts",
       "path": "server/castingV2/referenceAttachService.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/referenceBoxes.test.ts",
+      "path": "server/castingV2/referenceBoxes.test.ts"
     },
     {
       "id": "test:server/castingV2/referenceCentreline.test.ts",
@@ -31777,6 +31787,11 @@
       "kind": "imports"
     },
     {
+      "from": "module:server/castingV2/referenceBoxes.ts",
+      "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
       "from": "module:server/castingV2/referenceCentreline.ts",
       "to": "module:server/castingV2/maskedComposite.ts",
       "kind": "imports"
@@ -31824,6 +31839,11 @@
     {
       "from": "module:server/castingV2/referenceDiscovery.ts",
       "to": "module:server/castingV2/maskedRefine.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceDiscovery.ts",
+      "to": "module:server/castingV2/referenceBoxes.ts",
       "kind": "imports"
     },
     {
@@ -32039,6 +32059,11 @@
     {
       "from": "module:server/castingV2/referenceTake.ts",
       "to": "module:server/castingV2/readerDown.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceTake.ts",
+      "to": "module:server/castingV2/referenceBoxes.ts",
       "kind": "imports"
     },
     {
@@ -43053,17 +43078,17 @@
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/referenceDiscovery.ts:274",
+      "id": "finding:redeclared-shape:server/castingV2/referenceDiscovery.ts:327",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/referenceDiscovery.ts:274",
+      "subject": "server/castingV2/referenceDiscovery.ts:327",
       "message": "Names 3 of DiscoveryCrop's 3 fields (server/castingV2/faceDiscovery.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/referenceTake.ts:252",
+      "id": "finding:redeclared-shape:server/castingV2/referenceTake.ts:273",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/referenceTake.ts:252",
+      "subject": "server/castingV2/referenceTake.ts:273",
       "message": "Names 3 of Raster's 3 fields (server/castingV2/maskedComposite.ts), 3 of Mask's 3 fields (server/castingV2/maskedComposite.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {

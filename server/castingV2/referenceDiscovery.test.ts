@@ -94,6 +94,14 @@ function featureNamed(name: string): DiscoveredFeature {
   return { name, count: 1, about: "", kind: "clothing", on: "", coverage: "single" };
 }
 
+/** The same, with the two answers the marker used to drop on the floor (#2842). */
+function featureSaying(
+  name: string,
+  said: { count: number; coverage: DiscoveredFeature["coverage"] },
+): DiscoveredFeature {
+  return { ...featureNamed(name), count: said.count, coverage: said.coverage };
+}
+
 /** A detector that answers per noun, counting what it was asked. */
 function detectorAnswering(
   answers: Record<string, readonly PointerBox[] | Error>,
@@ -299,6 +307,76 @@ describe("boxing what the reading named", () => {
       reader,
     });
     expect(marked.markers[0]!.box).toEqual(BOX(5, 5, 100, 100));
+  });
+
+  /**
+   * ⚠ THE PARTS NOT KEPT ARE RECORDED — #2842, and both halves matter: the
+   * choice has NOT changed, and the discarded answer is no longer lost.
+   *
+   * Measured on a product shot 2026-10-30: `laces` came back as NINE boxes and
+   * the marker that reached the surface was a 57x66 speck of one lace on a
+   * 1536x1024 frame. Unioning is not obviously the repair — `pocket` on one of
+   * four pockets is a perfectly good marker to tap — so the box is still the
+   * biggest and the spread is what makes the per-noun choice measurable.
+   */
+  it("⚠ records how many parts came back, their union and its fill — #2842", async () => {
+    const reader = detectorAnswering({
+      jacket: [BOX(0, 0, 10, 10), BOX(5, 5, 100, 100), BOX(1, 1, 20, 20)],
+    });
+    const marked = await markReferenceThings({
+      picture: Buffer.from("picture"),
+      features: [featureNamed("jacket")],
+      reader,
+    });
+    /* THE CHOICE IS UNCHANGED. */
+    expect(marked.markers[0]!.box).toEqual(BOX(5, 5, 100, 100));
+    /* AND THE OTHER TWO ARE NO LONGER LOST. */
+    expect(marked.markers[0]!.spread.boxes.parts).toBe(3);
+    expect(marked.markers[0]!.spread.boxes.union).toEqual(BOX(0, 0, 105, 105));
+    expect(marked.markers[0]!.spread.boxes.fill).toBeGreaterThan(0.8);
+  });
+
+  it("⚠ a one-box noun records one part and a full union, never a spread of several", async () => {
+    const reader = detectorAnswering({ laces: [BOX(1094, 671, 57, 66)] });
+    const marked = await markReferenceThings({
+      picture: Buffer.from("picture"),
+      features: [featureNamed("laces")],
+      reader,
+    });
+    expect(marked.markers[0]!.spread.boxes.parts).toBe(1);
+    expect(marked.markers[0]!.spread.boxes.union).toEqual(BOX(1094, 671, 57, 66));
+    expect(marked.markers[0]!.spread.boxes.fill).toBe(1);
+  });
+
+  /**
+   * ⚠ THE ARM THAT WOULD HAVE CAUGHT THE OMISSION IN THE FIRST PLACE.
+   *
+   * `DiscoveredFeature` carries `count` (how many are visible) and `coverage`
+   * (`single` or `scattered`), both answered on the text call this road already
+   * pays for — and {@link ReferenceMarker} dropped both. The CAST road decides
+   * this very question on them: `pointerCut.ts` sends a `scattered` thing to
+   * words with no cut at all, and cuts `count` of the detector's rectangles. So
+   * the facts were bought, thrown away, and already load-bearing one road over,
+   * which is the disappearing-technology law's clause 4 exactly.
+   */
+  it("⚠ carries what the READING said — its count and its coverage, not just the boxes", async () => {
+    const reader = detectorAnswering({ laces: [BOX(1094, 671, 57, 66)] });
+    const marked = await markReferenceThings({
+      picture: Buffer.from("picture"),
+      features: [featureSaying("laces", { count: 9, coverage: "scattered" })],
+      reader,
+    });
+    expect(marked.markers[0]!.spread.said).toBe(9);
+    expect(marked.markers[0]!.spread.saidCoverage).toBe("scattered");
+    /* NEGATIVE CONTROL — a reading that said one single thing reads as that,
+       so the two fields are not constants wearing the reading's name. */
+    const plain = await markReferenceThings({
+      picture: Buffer.from("picture"),
+      features: [featureNamed("laces")],
+      reader: detectorAnswering({ laces: [BOX(1094, 671, 57, 66)] }),
+    });
+    expect(plain.markers[0]!.spread.said).toBe(1);
+    expect(plain.markers[0]!.spread.saidCoverage).toBe("single");
   });
 
   /**
