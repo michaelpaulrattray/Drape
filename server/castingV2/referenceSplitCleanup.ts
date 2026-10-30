@@ -175,8 +175,89 @@ export const SPLIT_HOLE_SHARE = 0.02;
  */
 export const SPLIT_FACE_COVER_SHARE = 0.5;
 
+/**
+ * TWO MASKS THIS ALIKE ARE ONE THING ANSWERED TWICE, AND THE SECOND ONE LEAVES.
+ *
+ * ⚠ **MEASURED ON ALL THREE OF THE COURT'S FIXTURES, NOT CHOSEN — AND THE
+ * COURT'S OWN 0.85 IS MEASURABLY TOO HIGH** (#2873, 2026-10-31). Four cells, in
+ * the order they ran: `scripts/_2873-raw-split-buy-disposable.mts` buys the raw
+ * grid once and saves it, `_2873-dedupe-sweep-disposable.mts` sweeps the band,
+ * `_2873-shipped-road-disposable.mts` holds THIS code's answer equal to the
+ * sweep's chosen row, and `_2873-native-size-disposable.mts` re-asks the whole
+ * question at the size production actually splits at.
+ *
+ * The quantity this bar compares is, for each piece in area order, its highest
+ * IoU against a LARGER piece. On a real 32-point grid that distribution is two
+ * clusters with a cliff between them, and this is the whole of it:
+ *
+ *     worn     0.996 … 0.881  0.835  0.734  0.588 │ 0.336 0.312 … 0.000
+ *     hanger   0.999 … 0.965                0.781 │ 0.199 0.079 … 0.001
+ *     product  0.999 … 0.946         0.899        │ 0.417 0.126 … 0.000
+ *
+ * **The widest gap in each is 0.252 (0.588 → 0.336), 0.582 (0.781 → 0.199) and
+ * 0.482 (0.899 → 0.417)**, and the bar is read off those cliffs the same way
+ * {@link SPLIT_FACE_COVER_SHARE} was read off the face-cover distribution.
+ *
+ * ⚠ **THE WINDOW IS CLOSED AT BOTH ENDS BY A MEASURED FAILURE, which is better
+ * evidence than a gap's midpoint and is why the band was opened past the one
+ * #2873 asked for.** A sweep of 0.20 … 0.95 over all three fixtures:
+ *
+ * - **Too high and a duplicate reads as its own thing.** At the court's own 0.85
+ *   the worn photograph keeps three (0.835, 0.734, 0.588) and the hanger keeps
+ *   one (0.781) — 13 and 7 pieces against 11 and 6. At 0.90 the product shot
+ *   loses a garment outright.
+ * - **Too low and a GARMENT reads as a duplicate of the person wearing it.** The
+ *   tank top's IoU with the whole-person piece is **0.336**, so at 0.30 the tank
+ *   top is dropped as the person's double — and the person is then dropped by
+ *   §6's face rule, so the garment is gone altogether: **best IoU 0.978 → 0.000**.
+ * - **Between them, 0.40 … 0.80 is FLAT** — eight measured thresholds, all of
+ *   them 11 / 6 / 8 pieces and 6 of the 9 things garment-level. Nothing here
+ *   turns on the third decimal; the bar sits in the middle of 0.336 … 0.588,
+ *   where the two failures are furthest away.
+ *
+ * What the rule buys, in the one number a customer feels — point at the middle
+ * of a thing and see how much of it lights:
+ *
+ *     thing            no rule    this rule
+ *     tank top           0.203        0.978
+ *     sweater            0.211        0.981
+ *     belt               0.553        0.954
+ *     leather jacket     0.671        0.991
+ *     scarf              0.785        0.994
+ *     sneaker            0.816        0.986
+ *     hair               0.419        0.653
+ *
+ * ⚠ **AND THE BAR WAS RE-ASKED AT THE SIZE PRODUCTION SPLITS AT, because a
+ * threshold read at one resolution and shipped at another is #2873's own defect
+ * one axis along.** Everything above is measured on the court's 1024-max frames,
+ * where its true cuts live; `referenceSpotlight.ts` hands the customer's picture
+ * over at its own size. Bought at native size — 900x1200, 1024x1536, 1536x1024 —
+ * the shipped road gives **12 / 6 / 8 pieces against 11 / 6 / 8**, with 17 / 22 /
+ * 22 duplicates dropped against 18 / 22 / 23. The one-piece difference on the
+ * worn photograph is inside the provider's run-to-run spread (the court measured
+ * one call at 52.3 s against 4–7 s for the others, and #2873's own control row
+ * read 27 pieces on the hanger where a fresh grid reads 26). **The clean-up costs
+ * 535–631 ms on those larger frames**, against 156–270 ms at 1024-max.
+ *
+ * ⚠ **A MINIMUM-AREA FLOOR WAS MEASURED BESIDE IT AND IS NOT ADDED.** #2873's
+ * step 1 asked for one; 0, 50 and 500 pixels gave byte-identical results on all
+ * three fixtures at every threshold, so a floor would be a number in the code
+ * that no reading supports. The sweep still carries it so the answer is
+ * re-derived rather than remembered.
+ *
+ * ⚠ **AND THE RULE'S PLACEMENT IS STRUCTURAL RATHER THAN TUNED — it must run
+ * BEFORE the arbitration, and after it nothing could fire.** The contest gives
+ * every contested pixel to exactly one winner, so the pieces `cleanSplit`
+ * returns are pairwise DISJOINT and every pair's IoU is 0. That is also the
+ * mechanism #2873 measured: thirty-two near-identical masks are not collapsed
+ * by the contest, they are CARVED into slivers of one another — which is how
+ * pointing at a tank top came to light a fifth of it. The disjointness is held
+ * by an arm so this paragraph cannot quietly stop being true.
+ */
+export const SPLIT_SAME_THING_IOU = 0.5;
+
 /** Why a piece is not in the cleaned split, for the log and the measurement. */
-export type SplitDropReason = "empty" | "lost-to-neighbours" | "covers-a-face";
+export type SplitDropReason = "empty" | "lost-to-neighbours" | "covers-a-face" | "the-same-thing-twice";
 
 /** One piece that did not survive, with the number that decided it. */
 export type DroppedSplitPiece = { at: number; reason: SplitDropReason };
@@ -199,6 +280,8 @@ export type CleanedSplit = {
   contestedPixels: number;
   /** Pixels taken off a piece because a neighbour sat deeper under them. */
   reassignedPixels: number;
+  /** Pieces dropped as a larger piece's near-duplicate — {@link SPLIT_SAME_THING_IOU}. */
+  duplicatesDropped: number;
   /** Pieces dropped as the person themself — §6's whole-person rule. */
   personPiecesDropped: number;
   /** Pixels zeroed inside a detected face box on a piece that was KEPT. */
@@ -230,6 +313,111 @@ function boundsOf(mask: Mask): { x0: number; y0: number; x1: number; y1: number 
     }
   }
   return x1 < 0 ? null : { x0, y0, x1, y1 };
+}
+
+/**
+ * HOW ALIKE TWO MASKS ARE — intersection over union, counted over the overlap
+ * of their bounding boxes alone.
+ *
+ * ⚠ **THE RESTRICTED LOOP IS EXACT AND NOT AN APPROXIMATION.** A pixel outside
+ * the overlap of the two boxes cannot be in BOTH masks, so it can never join the
+ * intersection; it can still join the union, and it does — the union is
+ * `a + b - intersection` from the two pixel counts the caller already holds,
+ * never a second walk. So the answer is the full-frame IoU, read off a box that
+ * is usually a fraction of the frame.
+ */
+function iouOf(
+  a: Mask,
+  b: Mask,
+  aPixels: number,
+  bPixels: number,
+  aBounds: { x0: number; y0: number; x1: number; y1: number },
+  bBounds: { x0: number; y0: number; x1: number; y1: number },
+): number {
+  const x0 = Math.max(aBounds.x0, bBounds.x0);
+  const x1 = Math.min(aBounds.x1, bBounds.x1);
+  const y0 = Math.max(aBounds.y0, bBounds.y0);
+  const y1 = Math.min(aBounds.y1, bBounds.y1);
+  if (x1 < x0 || y1 < y0) return 0;
+  const { width } = a;
+  let both = 0;
+  for (let y = y0; y <= y1; y += 1) {
+    const row = y * width;
+    for (let x = x0; x <= x1; x += 1) {
+      if (a.data[row + x]! > 127 && b.data[row + x]! > 127) both += 1;
+    }
+  }
+  const union = aPixels + bPixels - both;
+  return union === 0 ? 0 : both / union;
+}
+
+/**
+ * THE SAME THING ANSWERED TWICE — {@link SPLIT_SAME_THING_IOU}, the court's own
+ * step, ported.
+ *
+ * Largest piece first, and a piece goes if it agrees that far with any piece
+ * already kept. Largest-first is the court's order and it is load-bearing: the
+ * survivor of a duplicate pair is the FULLER answer, which is the one a pointer
+ * should light.
+ *
+ * ⚠ **TWO CHEAP REFUSALS PRUNE ALMOST EVERY PAIR, AND BOTH ARE EXACT BOUNDS
+ * RATHER THAN HEURISTICS** — stated because a prune that could be wrong would
+ * make this rule silently miss duplicates, which is the defect it exists to fix.
+ * With `I` the intersection and `U` the union, `I ≤ min(a, b)` and
+ * `U ≥ max(a, b)`, so:
+ *
+ * - `IoU ≤ min(a, b) / max(a, b)` — a piece a tenth the size of another can
+ *   never reach 0.5 with it, whatever the shapes.
+ * - `IoU ≤ (overlap of the bounding boxes) / max(a, b)` — two pieces at opposite
+ *   corners need no pixels read at all.
+ *
+ * Both are upper bounds, so a pair they refuse is a pair that could not have
+ * passed. `referenceSplitCleanup.test.ts` holds the pruned answer equal to a
+ * brute-force full-frame IoU over every pair of a fixture built to defeat both
+ * bounds, because "it is exact" is the kind of claim that wants an arm and not a
+ * paragraph. It matters: a 32-mask split of a 1536x1024 photograph is 496 pairs,
+ * and reading every frame in full is 390 million pixel tests on a road that runs
+ * when a customer opens a picture.
+ */
+function dropTheSameThingTwice(
+  arriving: readonly { at: number; mask: Mask }[],
+): { kept: { at: number; mask: Mask }[]; dropped: number[] } {
+  const measured = arriving.map((one) => ({ ...one, pixels: pixelsOf(one.mask), bounds: boundsOf(one.mask) }));
+  const order = [...measured].sort((a, b) => b.pixels - a.pixels);
+  const kept: typeof measured = [];
+  const dropped: number[] = [];
+  for (const one of order) {
+    if (one.bounds === null) {
+      /* An empty piece is nobody's duplicate — rule 1 drops it as `empty`
+         two steps along, and reporting it here would hide that. */
+      kept.push(one);
+      continue;
+    }
+    let twin = false;
+    for (const standing of kept) {
+      if (standing.bounds === null) continue;
+      const larger = Math.max(standing.pixels, one.pixels);
+      const smaller = Math.min(standing.pixels, one.pixels);
+      if (larger === 0 || smaller <= SPLIT_SAME_THING_IOU * larger) continue;
+      const boxOverlap =
+        Math.max(0, Math.min(standing.bounds.x1, one.bounds.x1) - Math.max(standing.bounds.x0, one.bounds.x0) + 1) *
+        Math.max(0, Math.min(standing.bounds.y1, one.bounds.y1) - Math.max(standing.bounds.y0, one.bounds.y0) + 1);
+      if (boxOverlap <= SPLIT_SAME_THING_IOU * larger) continue;
+      if (
+        iouOf(standing.mask, one.mask, standing.pixels, one.pixels, standing.bounds, one.bounds) >
+        SPLIT_SAME_THING_IOU
+      ) {
+        twin = true;
+        break;
+      }
+    }
+    if (twin) dropped.push(one.at);
+    else kept.push(one);
+  }
+  /* ARRIVAL ORDER BACK: a surviving piece's position in the result is its id in
+     the hit-test map, so the order the caller sees must not depend on area. */
+  kept.sort((a, b) => a.at - b.at);
+  return { kept: kept.map(({ at, mask }) => ({ at, mask })), dropped };
 }
 
 /**
@@ -299,6 +487,7 @@ function depthWithin(
  */
 export function cleanSplit(pieces: readonly Mask[], faces: readonly PointerBox[] = []): CleanedSplit {
   const out: CleanedSplit = {
+    duplicatesDropped: 0,
     personPiecesDropped: 0,
     facePixelsRemoved: 0,
     pieces: [],
@@ -320,10 +509,27 @@ export function cleanSplit(pieces: readonly Mask[], faces: readonly PointerBox[]
     }
   }
 
-  /* ---- RULE 1: each piece's main body ---- */
   type Kept = { at: number; mask: Mask };
+
+  /* ---- THE SAME THING ANSWERED TWICE, FIRST — the court's own order ----
+
+     `court.mjs:67` ran this step before it saved or scored anything, so every
+     figure the spotlight court reported was taken with it in place; it stayed in
+     the harness and the product road went without it, which is #2873. It runs
+     FIRST here for two reasons, one structural and one measured. Structural: the
+     arbitration makes the surviving pieces disjoint, so after it no threshold
+     could ever fire again. Measured: placing it after rule 1 instead — comparing
+     trimmed main bodies rather than raw masks — was swept over the same band and
+     moved nothing anywhere in 0.40 … 0.80, so the simpler order is not a
+     compromise. */
+  const arriving: Kept[] = pieces.map((mask, at) => ({ at, mask }));
+  const unique = dropTheSameThingTwice(arriving);
+  out.duplicatesDropped = unique.dropped.length;
+  for (const at of unique.dropped) out.dropped.push({ at, reason: "the-same-thing-twice" });
+
+  /* ---- RULE 1: each piece's main body ---- */
   const bodies: Kept[] = [];
-  pieces.forEach((piece, at) => {
+  unique.kept.forEach(({ at, mask: piece }) => {
     /* ONE walk per piece: `largestPixels` arrives from the labelling itself,
        which is why the predicate was widened rather than a second walk added
        to measure the largest component first. */
