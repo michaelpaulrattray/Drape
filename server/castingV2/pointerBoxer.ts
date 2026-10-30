@@ -68,9 +68,35 @@ export type BoxerStep = {
   /** How the measured sentence spells the layout. */
   readonly spec: string;
   /**
-   * How long a step may take before the next one is asked. Derived from the
-   * measured worst rather than tuned: Argon's worst scan was 20.1 s on part 4
-   * and 12 s on part 5, Qwen's 10.9 s and 4 s.
+   * How long a step may take before the next one is asked — a DEADLINE TO HAND
+   * OVER, and deliberately NOT the worst time either engine has ever taken.
+   *
+   * Argon 12 s then Qwen 10 s, so the worst wait to an answer is about 22 s and
+   * today's detector still waits behind both. ⚠ They were 25 s and 15 s until
+   * #2863's review, which is the reason this block is long: the two stacked to
+   * **40 seconds before a fallback answered**, and on the take a customer who
+   * has already paid waits through all of it — on the face panel, every found
+   * row does.
+   *
+   * ⚠ **12 s is the worst Argon took on the blind marks that CHOSE it** (#2846
+   * part 5). It is not its worst anywhere, and the difference is the cost of
+   * this number rather than a footnote: part 4 measured **20.1 s**, and on
+   * #14's reference photos this PR measured **24 s** on the product shot and
+   * one outright timeout at 25 s. **So a picture Argon would have boxed in 20 s
+   * now goes to Qwen instead**, and that costs the Argon call the account has
+   * already paid for plus Qwen's — two priced census rows for one answer. Qwen
+   * answered those same three photos in 5–8 s.
+   *
+   * **What makes the trade cheap is quality, measured on the same blind marks:**
+   * Argon 62 right / 3 partly / 0 wrong, Qwen3-VL 60 right / 0 wrong, today's
+   * detector 57 right / **5 wrong**. Handing over early loses very little; it
+   * is the 40-second wait that the customer could not be asked to pay.
+   *
+   * ⚠ **Qwen's 10 s sits just UNDER its own measured worst** (10.9 s on part 4,
+   * 4 s on part 5), so the slowest Qwen reading on record would itself hand
+   * over — to today's detector, which is the road every one of these surfaces
+   * ran on until this card. That is the stated floor of this ladder, not a
+   * failure of it.
    */
   readonly timeoutMs: number;
 };
@@ -83,7 +109,7 @@ export const BOXER_STEPS: readonly BoxerStep[] = [
     layout: "yxyx",
     key: "box_2d",
     spec: "[ymin, xmin, ymax, xmax]",
-    timeoutMs: 25_000,
+    timeoutMs: 12_000,
   },
   {
     engine: "qwen",
@@ -91,7 +117,7 @@ export const BOXER_STEPS: readonly BoxerStep[] = [
     layout: "xyxy",
     key: "bbox_2d",
     spec: "[x1, y1, x2, y2]",
-    timeoutMs: 15_000,
+    timeoutMs: 10_000,
   },
 ];
 

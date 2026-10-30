@@ -283,6 +283,52 @@ describe("the fallback, in his order", () => {
     expect(answer?.get("belt")).toEqual([]);
     expect(toOpenRouter(sent).map((one) => one.body.model)).toEqual(["hung", QWEN.model]);
   });
+
+  /**
+   * THE DEADLINE IS THE STEP'S OWN NUMBER, AND THE SHIPPED NUMBER IS 12 s
+   * (#2863's review: the two deadlines stacked to 40 s before a fallback
+   * answered, on a road a customer has paid for).
+   *
+   * ⚠ These are TWO arms on purpose, because neither alone proves the claim.
+   * A hung engine waiting out the real 12 s would put twelve seconds of sleep
+   * into a suite every preflight runs, and a fake clock cannot stand in for it
+   * — measured on this machine rather than assumed: `vi.useFakeTimers()` does
+   * NOT drive `AbortSignal.timeout` (Node's own timer is not intercepted), so
+   * an arm built on advancing a fake clock passes while proving nothing. So
+   * the mechanism is driven at two DIFFERENT injected deadlines, which is what
+   * shows the handover tracks the step's own field rather than any fixed
+   * number, and the shipped field is pinned beside it.
+   */
+  it("the handover time tracks the step's OWN deadline, not a number fixed in the runner", async () => {
+    const handoverAfter = async (timeoutMs: number): Promise<number> => {
+      const sent = wire({ openrouter: { hung: "hang", [QWEN.model]: { content: "[]" } } });
+      const boxer = createOpenRouterBoxer({ apiKey: "k", steps: [{ ...ARGON, model: "hung", timeoutMs }, QWEN] });
+      const startedAt = Date.now();
+      await boxer.boxAll({ image: await frame(), width: WIDTH, height: HEIGHT, names: ["belt"] });
+      const elapsed = Date.now() - startedAt;
+      expect(toOpenRouter(sent).map((one) => one.body.model)).toEqual(["hung", QWEN.model]);
+      return elapsed;
+    };
+    /* A timer fires late or on time, never early, so the FLOOR is the safe
+       assertion and the ceiling is generous. The two readings must separate:
+       a runner ignoring the field would hand over at the same moment twice. */
+    const quick = await handoverAfter(60);
+    const slow = await handoverAfter(600);
+    expect(quick).toBeLessThan(400);
+    expect(slow).toBeGreaterThanOrEqual(550);
+    expect(slow - quick).toBeGreaterThan(300);
+  });
+
+  it("the SHIPPED ladder hands over at 12 s and answers inside ~22 s — never the 40 s it was", () => {
+    expect(BOXER_STEPS.map((step) => [step.engine, step.timeoutMs])).toEqual([
+      ["argon", 12_000],
+      ["qwen", 10_000],
+    ]);
+    /* The number the finding was about: the worst wait to an answer before
+       today's detector is asked. 40_000 is what it must never be again. */
+    const worstToAnAnswer = BOXER_STEPS.reduce((total, step) => total + step.timeoutMs, 0);
+    expect(worstToAnAnswer).toBeLessThanOrEqual(22_000);
+  });
 });
 
 describe("the census: one priced row per call, labelled by the road and never by a noun", () => {
