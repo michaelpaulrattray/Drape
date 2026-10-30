@@ -107,6 +107,13 @@ import {
   planUnheldDecisions,
   planUnreadableHolds,
 } from "../shared/crewNextUpHold.js";
+/* #2866: the one owner of "which open pull request is building this card", so
+   the unheld-decision band stops claiming every seat is still offered a card
+   an open pull request already holds off offer. */
+import {
+  openPullRequestBuilding,
+  type CrewBuildPullRequest,
+} from "../shared/crewCardBuildState.js";
 import {
   type ShellDamageFinding,
   planShellDamage,
@@ -339,17 +346,6 @@ const unreadableHolds: readonly UnreadableHold[] = openForHolds === null
 const liveHoldReReads: readonly LiveHoldReRead[] = openForHolds === null
   ? []
   : planLiveHoldReRead({ open: openForHolds });
-/*
-  ⚠ **AND THE CELL NEITHER OF THEM CAN REACH — #2764.** Both readers above
-  gate on a hold LABEL, so a card that declares a decision and carries none is
-  outside their population by construction; `planUnheldDecisions` owns the rule,
-  the three candidates it was chosen over and the floor it is. **Same read, same
-  instant, no extra `gh` call** — the mapped list above is already the whole
-  queue with bodies.
-*/
-const unheldDecisions: readonly UnheldDecision[] = openForHolds === null
-  ? []
-  : planUnheldDecisions({ open: openForHolds });
 if (allOpen === null) {
   skipped.push(
     "HOLDS: the open queue could not be read, so no card was checked for a hold that does not say"
@@ -431,9 +427,19 @@ const mergedRead = mergedPrReadVerdict({
   population: mergedPopulation,
   rows: mergedPrs === null ? null : mergedPrs.length,
 });
+/*
+  ⚠ `headRefName` IS ON THIS READ FOR #2866 AND IT COSTS NOTHING — one more
+  field on a call that was already being made. `pullRequestBuildsCard` reads a
+  pull request's TITLE, its body's `card #N` sentence and its BRANCH's digit
+  runs, and the branch is the half a title can miss: the specimen that proved
+  the band wrong (#2841 / PR #2860) matched on both, so title alone would have
+  caught it — and a seat branch named `team/<slug>-<card>` whose title says the
+  card another way would not. Asking for the field a reader uses is cheaper than
+  finding out which pull request it missed.
+*/
 const openPrsForShipped = gh([
   "pr", "list", "--state", "open", "--limit", "100",
-  "--json", "number,title",
+  "--json", "number,title,headRefName",
 ]) as Json[] | null;
 /*
   ⚠ **AND THE ONE ROW OF THAT LIST A MACHINE CAN JUDGE (#2777).**
@@ -470,6 +476,44 @@ if (openForHolds !== null && openPrsForShipped === null) {
     + " condition that has already been met (#2777). That is unread, NOT clean.",
   );
 }
+
+/*
+  ⚠ **AND THE CELL NEITHER OF THEM CAN REACH — #2764.** Both hold readers above
+  gate on a hold LABEL, so a card that declares a decision and carries none is
+  outside their population by construction; `planUnheldDecisions` owns the rule,
+  the three candidates it was chosen over and the floor it is. **Same read, same
+  instant, no extra `gh` call** — the mapped list above is already the whole
+  queue with bodies.
+
+  ⚠ **AND IT IS COMPUTED HERE, BELOW THE PULL-REQUEST READ, RATHER THAN BESIDE
+  ITS TWO SIBLINGS — #2866.** The band's own sentence claimed *"every seat is
+  still offered them"* about cards an open pull request already holds off offer,
+  and the repair needs the board, so the reading moved down to where the board
+  exists. `openPullRequestBuilding` is the one owner of that selection and the
+  ANSWER is injected rather than the board, because its module imports
+  `crewNextUpHold` and handing the board the other way would close a cycle.
+
+  ⚠ **AN UNREAD BOARD PASSES NO RESOLVER AT ALL**, so every row answers `null`
+  and the printed band says it could not look — never that the cards are on
+  offer. That is this family's standing failure direction: a card may read as
+  possibly free, never as provably free.
+*/
+const unheldDecisionBoard: readonly CrewBuildPullRequest[] | null = openPrsForShipped === null
+  ? null
+  : openPrsForShipped.map((row) => ({
+    number: Number((row as { number?: unknown })?.number),
+    title: String((row as { title?: unknown })?.title ?? ""),
+    headRefName: String((row as { headRefName?: unknown })?.headRefName ?? ""),
+  }));
+const unheldDecisions: readonly UnheldDecision[] = openForHolds === null
+  ? []
+  : planUnheldDecisions({
+    open: openForHolds,
+    ...(unheldDecisionBoard === null ? {} : {
+      heldOffOfferBy: (card: number) =>
+        openPullRequestBuilding(unheldDecisionBoard, card)?.number ?? null,
+    }),
+  });
 
 const asPullRequest = (row: Json): ShippedNotClosedPullRequest => ({
   number: Number((row as { number?: unknown })?.number),
@@ -1179,10 +1223,20 @@ if (staleHoldCitations.length > 0) {
   neither of them can reach: a card that ends its body with options and a
   recommendation, filed `bug` with no hold label and no `**Waiting on:**` line,
   is outside the population of `liveWaitingOnYou`, `planUnreadableHolds` and
-  `planLiveHoldReRead` at once — so his page cannot draw it, nothing names it,
-  and it stays on offer to every seat. **Two cards were in that cell hours
-  apart (#2761, #2757), filed by two different authors**, and it is the #2462
-  class the program has now paid for three times.
+  `planLiveHoldReRead` at once — so his page cannot draw it and nothing names
+  it. **Two cards were in that cell hours apart (#2761, #2757), filed by two
+  different authors**, and it is the #2462 class the program has now paid for
+  three times.
+
+  ⚠ **AND THIS BLOCK'S OWN SENTENCE USED TO END *"and it stays on offer to
+  every seat"* — #2866, and it was false of the first card the band ever fired
+  on.** An open pull request is one of only two states that take a card off
+  every seat's offer (`buildStateHoldsOffOffer`), and this reader was handed no
+  pull requests at all. Measured over the live queue: the band named **#2841**,
+  which PR #2860 was building by title AND by branch, and the seat cut skipped
+  it on the same pass. **The row is kept and only the claim is dropped** — the
+  band's value is that a person reads the row and decides, and its defect was
+  one clause that pre-decided wrongly in the direction that makes work.
 
   ⚠ **AND THIS BAND IS A FLOOR, WHICH THE PRINTING SAYS OUT LOUD.** It closes
   the cell where the filer DECLARED a recommendation and no more: a question
@@ -1203,7 +1257,37 @@ if (unheldDecisions.length > 0) {
   console.log(
     `⚠ ${unheldDecisions.length} card(s) DECLARE a recommendation and carry no hold — so nothing`,
   );
-  console.log("  asks him and nothing names them, and every seat is still offered them (#2764).");
+  console.log("  asks him and nothing names them (#2764).");
+  /*
+    ⚠ **WHAT THIS SENTENCE MAY CLAIM ABOUT OFFER IS DERIVED, NEVER FIXED PROSE
+    (#2866).** It said *"and every seat is still offered them"* flatly, and that
+    was wrong on 1 of 1 rows the first night the band fired. Three states, three
+    sentences, and the unread one is a sentence rather than a silence.
+  */
+  const held = unheldDecisions.filter((decision) => decision.heldOffOfferBy !== null).length;
+  if (unheldDecisionBoard === null) {
+    console.log("  The open pull requests could not be read, so whether any of them is ALREADY held");
+    console.log("  off every seat's offer by one is unread — not clean, and not a claim either way.");
+  } else if (held === 0) {
+    console.log("  No open pull request is building any of them, so every seat is still offered them.");
+  } else {
+    /* ⚠ "The rest" is only said when there IS a rest. On the night this shipped
+       the band was 1 of 1, and a fixed sentence would have invented a
+       remainder — the same overstatement one clause along. */
+    const rest = unheldDecisions.length - held;
+    const subject = held === unheldDecisions.length
+      ? (held === 1 ? "The one card here is" : `All ${held} of them are`)
+      : `${held} of them ${held === 1 ? "is" : "are"}`;
+    console.log(`  ⚠ ${subject} already held off every seat's offer by an open pull`);
+    console.log(
+      `  request, named on the row — so ${held === 1 ? "it is" : "those are"} NOT work going begging,`
+      + " whatever else is",
+    );
+    console.log(
+      `  true of ${held === 1 ? "it" : "them"}.`
+      + (rest === 0 ? "" : ` The other ${rest} ${rest === 1 ? "is" : "are"} still offered to every seat.`),
+    );
+  }
   console.log("  NOT repaired here: whether a recommendation is a question for HIM or a note for");
   console.log("  the next shift is a judgement about work, and a label applied on a guess takes a");
   console.log("  takeable card off every seat's offer. Read each one and either apply the hold");
@@ -1218,10 +1302,19 @@ if (unheldDecisions.length > 0) {
     const shownLine = line.length > 110 ? `${line.slice(0, 109)}…` : line;
     console.log(`  ! #${decision.issueNumber} [${decision.workLabels.join(",")}]${mine} ${shownTitle}`);
     console.log(`      ${shownLine}`);
+    /* ⚠ The pull request is named rather than the row being dropped, and the
+       sentence stops at what was asked: a LIVE CLAIM also holds a card off
+       offer and this band is handed no comment facts, so the silence is about
+       the pull-request half alone. */
+    if (decision.heldOffOfferBy !== null) {
+      console.log(`      PR #${decision.heldOffOfferBy} is building it — already held off every seat's offer.`);
+    }
   }
   console.log("  ⚠ A FLOOR, not a sweep: this sees a declared `Recommendation` line and nothing");
   console.log("  else. A question written as ordinary prose, or written into a COMMENT, is still");
   console.log("  invisible to every reader the team owns — the filer is the only one who can know.");
+  console.log("  ⚠ And the offer line reads PULL REQUESTS only: a live CLAIM takes a card off offer");
+  console.log("  too, and this band is handed no card comments, so it never speaks about that half.");
 }
 
 /*
