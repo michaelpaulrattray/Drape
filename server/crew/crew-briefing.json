@@ -1,7 +1,7 @@
 {
-  "edition": 785,
-  "updatedAt": "2026-10-30T08:02:00.000000Z",
-  "shift": "Your round-10 note had four things in it. Three are built. Tonight is the fourth, and it is the one you put first: her tattoos were not picked up.\n\nBoth full sleeves on that character got no row at all. You could not pick either one — even though the studio had looked at the picture and described them perfectly well, as large black ink sleeves covering both arms with floral and portrait designs. It saw them, wrote them down, and then threw them away.\n\nThe cause was one sentence, and it was not the analyzer you asked about. When the studio reads a character it decides, for each thing it finds, whether that thing is one piece worth drawing an outline around, or lots of little bits like freckles. Little bits only get described in words and never get a row, because there is nothing sensible to outline. A full sleeve made of many separate flowers and faces fits the description of lots of little bits — so a sleeve kept being filed as freckles.\n\nThat sentence now asks a better question: is this one small thing repeated over an area, or one design that happens to cover an area? Freckles, scales and stubble are the first. A sleeve, a back piece, a chest piece are the second.\n\nI measured it rather than assumed it, because that sentence is one the studio is not allowed to reword without re-running the measurement behind it. Sixty real readings of your own round-9 and round-10 characters, on the current engine, with nothing else changed: a tattoo row appeared in four readings out of twelve before, and twelve out of twelve after. Freckles stayed filed as freckles in every reading on both sides, which was the thing most worth checking — freckles being cut out like an object is the exact fault that sentence exists to prevent.\n\nTwo honest limits. The sleeves still often come back counted as one rather than two, so you will usually get one row covering one arm rather than a row for each; that is a separate fault we already knew about, and it is now the one in front. And the readings named about one fewer thing each on average, which I checked and cannot explain — it is written down beside the sentence so that whoever touches it next starts with a bigger sample rather than my six readings.\n\nOne thing it also settles for you. Your question about whether we are using the best image analyzer came back last night as keep all three, with one caveat: the newer naming engine's single clear advantage was that it found these sleeves. The current engine finds them now too, so that advantage is gone and only speed is left. Nothing was swapped and your look at the box pictures still decides that one.\n\nThe same repair also reaches a tattoo in a photograph you attach, not only one on a character, because the sentence is written in three places in the studio and all three had to move together. It cost about two dollars of our money and none of your credits. It is waiting on a review before it goes live.",
+  "edition": 789,
+  "updatedAt": "2026-10-30T19:20:00.000000Z",
+  "shift": "The machinery behind the lit-up picture is built, and the one job you gave it was measured on your own test pictures.\n\nLast night's job was the decision: dots or the lit-up version. Tonight was the work behind it. When you attach a photo, the studio now knows how to split it into pieces in one go, how to tidy those pieces up, how to cut whatever is under your finger when you tap, and how to name what it actually cut. None of it is wired to a screen yet, so the studio behaves exactly as it did this morning and the selector's switch is still off.\n\nYou set one condition on this piece: that the tidy-up had to be measured on the test pictures, not just written. It was, and it cost nothing to do it — the earlier test had saved its own results to disk, so the tidy-up was re-run against the real thing with no new charges at all. The question you asked at the picture was why the jacket was lighting up part of the scarf. Answer: it was covering nearly a third of the scarf, and now it covers none of it. The jacket also matches its own true shape almost perfectly where before it was noticeably off.\n\nThe measurement earned its keep by catching a real mistake of mine before it reached you. I had the steps in the wrong order, and the result was that on a photo of a person the whole body counted as one piece and swallowed the top — hovering the picture would have lit the person and erased the clothing. On the test photo the top went from matching almost perfectly to barely a third. It is fixed, and there is now a test that fails if anyone ever puts those two steps back the wrong way round.\n\nOne thing is worse than before and it is a decision for you, not for the crew. Hovering HAIR now lights less of it. Hair frames a face, and your rule takes the face's rectangle out of every piece before anything can light up — so the hair sitting inside that rectangle goes with it, and what lights is the hair around the outside. That rule is also the thing stopping a hover from ever lighting someone's face, so the two obvious ways to get the hair back both weaken it. Nothing is being changed either way. You will see it on a real screen at the next step and can decide then, looking at it rather than at a number.\n\nI also cleared up after myself: merging this made two of the crew's other open jobs temporarily unmergeable, and both are repaired. A third was left alone on purpose, because it is waiting on a review and touching it would have quietly wiped that out.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -38,7 +38,7 @@
           "state": "waiting"
         },
         {
-          "title": "The studio surfaces — the Pinterest-style reference selector (#14): FIRST PIECE BUILT, switched off. The studio can read an attached picture and work out what is in it and where; the markers on screen are the next piece and the tap-to-cut the one after. Then the settings' second pass (#15), outfit-card thumbnails (#61), the honest sentence at a words-only tattoo sale (#65)",
+          "title": "The studio surfaces — the Pinterest-style reference selector (#14): THE MACHINERY BEHIND THE LIT-UP PICTURE IS BUILT, MEASURED AND LIVE, and still switched off (shipped 2026-10-31). The studio now knows how to split an attached photo into pieces in one go, tidy them, cut whatever is under your finger on a tap, and name what it cut — nothing is wired to a screen, so nothing a customer can see has changed. Your condition was met: the tidy-up was measured on the test pictures and cost nothing to measure, and it answers the question you asked at the picture — the jacket was lighting nearly a third of the scarf and now lights none of it. The measurement also caught a real ordering mistake of mine that would have lit the whole person and erased their top; it is fixed and guarded. ONE THING IS WORSE AND IT IS YOURS TO DECIDE LATER: hovering hair lights less of it, because your face rule takes a rectangle out of every piece and hair frames a face — you see it on a real screen at the next step. Next is the entrance that ties it to the switch, then the screen itself. Then the settings' second pass (#15), outfit-card thumbnails (#61), the honest sentence at a words-only tattoo sale (#65)",
           "state": "waiting"
         },
         {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-30T08:00:43.246Z",
+      "readAt": "2026-10-30T15:31:06.457Z",
       "items": [
         {
           "issueNumber": 30,
@@ -194,6 +194,12 @@
           "issueNumber": 2551,
           "title": "N3: the ink-form demand table has no reachable writer — zero rows in both worlds, all time (ghost audit, found at slice 2)",
           "kind": "design-unbuilt",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 2858,
+          "title": "N3 slice 2: which things may keep a saved picture - the fixed list, or the customer's own words (a design decision, parent #2565)",
+          "kind": "rung",
           "rung": "N3"
         },
         {
@@ -7712,8 +7718,8 @@
     {
       "id": "reference-selector-mock-14",
       "title": "Taking things from a picture — the selector's surface, three moments, your eye before any build",
-      "question": "WHAT YOU ARE LOOKING AT — the mock of the tap-to-pick selector (#14), not a live screen. Three moments, left to right: the picture just attached and being read; the things it found, each with a named dot on the picture; and two things chosen — hair and earrings, your own example — with the box saying that nothing typed means the full look of both.\n\nThe photo is a stand-in (one of our own generated test pictures), and the dots are placed by hand to show the surface — in the real thing they come from reading the picture, whatever it holds, never from a menu.\n\nWHAT I AM ASKING: does this surface read right? Three things worth your eye: (1) dots on the picture with names — is that how you want to choose, or too busy on a crowded photo? (2) the 'Whole outfit' affordance beside per-piece dots — right call? (3) the no-words line under the box — plain enough? If it reads right, reply on the card and the build is cut into slices (a small court on real reference photos runs first, house money). If anything reads wrong, say which and the design moves before anything is built.",
-      "state": "open",
+      "question": "ANSWERED — NOTHING HERE WAITS ON YOU. This was the dots mock for the selector (#14). You passed it on the 29th (\"it reads well enough for now aslong as we get the tech working\"), and on the 30th you saw the lit-up prototype and said you liked it much better than the boxes. That later word is the answer: the design is rewritten to the lit-up version you picked (2026-10-31), these dots frames are history, and your next look at this card will be the built lit-up surface on your own account.",
+      "state": "answered",
       "filedAt": "2026-10-28T03:09:45.000Z",
       "issueNumber": 14,
       "frames": [
@@ -7761,6 +7767,13 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "selector-spotlight-design-14",
+      "title": "The selector's design now says the lit-up version you picked over the boxes (#14)",
+      "status": "merged",
+      "prNumber": 2869,
+      "note": "Design document only, merged ebce311e — no product code, no switch moved, nothing spent."
+    },
     {
       "id": "cut-quality-bar-2565",
       "title": "A cut-out that fills almost none of the area it was asked about is thrown away (#2565)",
@@ -11152,7 +11165,7 @@
     {
       "id": "schema-kept-pixels-2565",
       "title": "Our schema stops saying that only one kind of refusal keeps a picture — there are four, and the only one the live site holds is one of the other three (#2565)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2836,
       "note": "Gate green in 4.1 minutes. Held for a human review because any change under the database folder counts as a money path, whatever it touches — here it is comment text and a test, no column moved."
     },
@@ -11182,7 +11195,7 @@
       "title": "A tattoo sleeve is one piece of ink, so it gets a row you can pick (#2848)",
       "status": "in-review",
       "prNumber": 2852,
-      "note": "Server only, but a customer sees the result, so it is held for a human review rather than merged on the gate. The evidence is a 60-reading measurement rather than a frame: nothing about the panel's drawing changed, only how often the reading produces a row."
+      "note": "⚠ STUCK, and not on the review. Another piece of work landed on the same file, so this one can no longer be merged until somebody re-merges it — and while it is in that state nothing can even re-run its checks. That is the relay's hand, not a shift's: five shifts in a row have now been sent at it and all five were right to leave it alone, because re-merging it here would quietly clear the hold the relay put on it.\n\nNothing is lost and nothing is waiting on you. The work itself is finished and measured."
     }
   ],
   "problems": [
@@ -11196,9 +11209,9 @@
     {
       "id": "cut-floor-drops-correct-feature-2831",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The face panel can drop a feature that is really there, and keep one that is not (#2831)",
-      "detail": "Live on your account only.\n\nA check decides whether the cut-out picture of a feature is good enough to keep. Measured tonight on two characters: it threw away a correct cut of a long curved tail, so that tail would not be listed at all, and it kept a cut of a sword that had been asked for as chest armour.\n\nThe cause is that the check asks how much of its own rectangle a cut fills, and anything thin — a chain, a cord, a tail — fills very little of its rectangle however right the cut is. Measured: a band worn around something must be about seven per cent of its own width before it passes.\n\nNothing was changed, because you are mid-round on this panel and moving the bar between rounds would make your next look unreadable against the last. The numbers and the recommendation are on card 2831, for the relay."
+      "detail": "RESOLVED — card #2831 closed 2026-10-30T10:25:37Z, read at the card rather than at a merge note.\n\nA check decides whether the cut-out picture of a feature is good enough to keep, and it was throwing away a correct cut of a long curved tail while keeping a cut of a sword asked for as chest armour. Anything thin — a chain, a cord, a tail — fills very little of its own rectangle however right the cut is.\n\nNothing on this row needs you."
     },
     {
       "id": "stranded-pr-unreachable-2814",
@@ -11731,12 +11744,16 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-30T08:00:43.245Z",
+    "readAt": "2026-10-30T15:31:06.456Z",
     "items": [
       {
         "issueNumber": 14,
         "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "fable",
+          "because": "a Fable seat — a DESIGN DECISION: does slice 3 build markers or the spotlight he preferred? RECOMMENDED: amend the design to the spotlight."
+        }
       },
       {
         "issueNumber": 1598,
@@ -11800,7 +11817,11 @@
       {
         "issueNumber": 2565,
         "title": "N3: Refine keeps what the customer chose — every edit from the original, one current description, and a saved picture of each chosen thing (his word 2026-10-16)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2858 — a design decision (which kinds may keep a picture), and #2856 — box checks, which step-aside needs. Both open. Build #2856 first."
+        }
       },
       {
         "issueNumber": 2566,
@@ -11882,7 +11903,11 @@
       {
         "issueNumber": 2844,
         "title": "N3 face reader, his eye round 10: the Left eye's outline reaches a face tattooed on the arm (a paid refine paints on it), sleeves have no row, and a Collarbone row",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2848 (sleeves get no Tattoo row, PR #2852) and #2840 (Collarbone under Face, PR #2851) — defect 1 shipped in #2849."
+        }
       },
       {
         "issueNumber": 2845,
@@ -11897,6 +11922,29 @@
           "state": "blocked",
           "because": "YOU — the court is done. RECOMMENDED: change nothing, all three readers stay. Your eye on the box frames closes it; they are on your machine, not here."
         }
+      },
+      {
+        "issueNumber": 2856,
+        "title": "His ruling: a cautious panel. Reliable rows always show, and a piece gets a row only when its box passes the checks; failed pieces are edited by words",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "the four it governs landing to it — PR #2850 and cards #2845, #2787, #2840. Then your eye on the panel closes it. It needs no build of its own."
+        }
+      },
+      {
+        "issueNumber": 2862,
+        "title": "His ruling: one thing, one row, one plain name. No duplicate names, no splitting a thing into compartments (hair is one row)",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "the relay — add TYPESAFE_API_KEY to the Drape service, then build after PR #2864 merges (the wiring needs six of its files)."
+        }
+      },
+      {
+        "issueNumber": 2863,
+        "title": "His ruling: the face panel's box step moves to Gemini 4 Argon with Qwen3-VL as fallback, behind a new flag on his account first",
+        "urgent": false
       }
     ]
   }

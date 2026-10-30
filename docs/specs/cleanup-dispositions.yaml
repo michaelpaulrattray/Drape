@@ -1666,3 +1666,21 @@
   verdict: KEEP
   why: "the reference reading's ENTRANCE, built dark with no caller yet on purpose (#14 slice 2). The sweep is right that nothing imports it: the surface that calls it is slice 3 and the tap's cut is slice 4, so this slice ships the answer before anything draws it. It is KEEP and not HELD because HELD claims a symbol is awaiting deletion with a named blocker, and this one is awaiting a CALLER — the opposite direction; a HELD row here would also read REWIRED the moment slice 3 lands, turning a correct build into a table fault. The two halves it composes (`readReferencePicture`, `markReferenceThings`) are exported for their own suite and are reachable from here, which is why only the entrance is listed. ⚠ If slice 3 is ever abandoned rather than built, this row is the thing that should become HELD with that abandonment as its blocker — an entrance with no road is the `entrance-before-the-road` shape and it is exactly what this register exists to keep visible"
   argued: "#14, docs/specs/REFERENCE_SELECTOR_BUILD_DESIGN_2026-10-28.md section 9 slice order"
+
+- symbol: splitAtPoints
+  file: server/castingV2/falRegionReader.ts
+  verdict: KEEP
+  why: "the spotlight's hover road, built dark with no caller yet on purpose (#14 slice 3a-1). The sweep is right that nothing imports it: the service that reads an attachment's bytes and gates on `CASTING_REFERENCE_SELECTOR_SCOPE` is slice 3a-2 and the surface is 3b, so this slice ships the roads before anything calls them. KEEP and not HELD for `readAndMarkReference`'s reason one row up — HELD claims a symbol is awaiting DELETION with a named blocker, and this one is awaiting a CALLER, the opposite direction; a HELD row here would read REWIRED the moment 3a-2 lands, turning a correct build into a table fault. ⚠ If the spotlight is ever abandoned rather than finished, this row becomes HELD with that abandonment as its blocker — road with no entrance is the `entrance-before-the-road` shape and keeping it visible is what this register is for"
+  argued: "#14, docs/specs/REFERENCE_SELECTOR_BUILD_DESIGN_2026-10-28.md section 9 slice 3a"
+
+- symbol: cutAtPoint
+  file: server/castingV2/falRegionReader.ts
+  verdict: KEEP
+  why: "the spotlight's TAP road — one SAM 3 point at the tapped spot — dark with no caller yet, same slice and same reasoning as `splitAtPoints` above (#14 slice 3a-1). It is listed separately rather than folded in because the two are bought on different clocks: the split once a picture, this once a TAP, and the cost program has to be able to keep those apart"
+  argued: "#14, docs/specs/REFERENCE_SELECTOR_BUILD_DESIGN_2026-10-28.md section 9 slice 3a"
+
+- symbol: nameTheCut
+  file: server/castingV2/referenceCutName.ts
+  verdict: KEEP
+  why: "the read that names a tapped cut, dark with no caller yet (#14 slice 3a-1). It is the half of the spotlight that keeps section 1's law-9 property at full strength — a point returns a part as readily as a whole (the court's belt tap cut the keeper alone), so the chip carries the cut's OWN name and the customer sees it before any money moves. Awaiting 3a-2's caller, exactly as the two roads above. `pieceOnGrey` is exported beside it for its own suite and is reachable from here, which is why only the entrance is listed"
+  argued: "#14, docs/specs/REFERENCE_SELECTOR_BUILD_DESIGN_2026-10-28.md section 9 slice 3a"

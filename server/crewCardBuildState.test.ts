@@ -655,6 +655,46 @@ describe("the phrase his page draws", () => {
       .toBe("not built — the reason is on the card");
   });
 
+  it("a held PR a shift has answered says who it is waiting on (#2855)", () => {
+    /*
+      ⚠ **A REPAIR IS NOT ALWAYS A COMMIT.** When the relay asks for a
+      re-measurement rather than for code (PR #2852, the live instance), the
+      answer lands in a comment and the head never moves — so this row said
+      *repair owed* over work that was done and on the record, which is the
+      direction that HIDES work. The stage is still `finding` on every row
+      below: nothing here clears a hold.
+    */
+    expect(crewCardBuildPhrase(
+      { kind: "pull-request", pullRequest: 2852, stage: "finding", findingNote: null, findingAnswered: true },
+      NOW,
+    )).toBe("answered — waiting on the relay — PR #2852");
+
+    /* UNCHANGED, and it is the ordinary case: nobody has acted. */
+    expect(crewCardBuildPhrase(
+      { kind: "pull-request", pullRequest: 2850, stage: "finding", findingNote: null, findingAnswered: false },
+      NOW,
+    )).toBe("held on the relay's finding — repair owed — PR #2850");
+    /* And a row from before the field existed reads exactly as it did. */
+    expect(crewCardBuildPhrase(
+      { kind: "pull-request", pullRequest: 2850, stage: "finding", findingNote: null },
+      NOW,
+    )).toBe("held on the relay's finding — repair owed — PR #2850");
+
+    /*
+      ⚠ **THE RELAY'S OWN NOTE STILL WINS (#1705).** A header saying *held for
+      merge order, not a defect* is a fact about the hold; an answer is a fact
+      about who is next. The first is the relay's words and is never overwritten
+      by a shift's.
+    */
+    expect(crewCardBuildPhrase(
+      {
+        kind: "pull-request", pullRequest: 1682, stage: "finding",
+        findingNote: "held for merge order, not a defect", findingAnswered: true,
+      },
+      NOW,
+    )).toBe("held for merge order, not a defect — PR #1682");
+  });
+
   it("a claim names the seat and how long ago, and the first hour says so in words", () => {
     expect(crewCardBuildPhrase({
       kind: "claimed",

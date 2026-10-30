@@ -41,6 +41,7 @@ import {
   type CrewCardCommentFact,
   type CrewLiveClaim,
 } from "../../shared/crewCardBuildState.ts";
+import { isShiftAnswer } from "../../shared/handVerdict.ts";
 import { reviewPresence, tallyRounds, type HandVerdictReading } from "./reviewRounds.mjs";
 
 /**
@@ -89,6 +90,27 @@ export type RepairOwed = {
   readonly heldSince: string;
   /** How many fresh findings sit on this head, for the line that reports it. */
   readonly findings: number;
+  /**
+   * WHEN A SHIFT ANSWERED IT, or `null` when none has (#2855).
+   *
+   * ⚠ **A REPAIR IS NOT ALWAYS A COMMIT, and that is the whole of this field.**
+   * `tallyRounds` calls a finding stale only when the head moved under it, which
+   * is right — a pushed repair IS a new head. But the relay's finding on PR
+   * #2852 asked for a **re-measurement** and said so in its own last line; a
+   * shift ran it (72 readings, $2.00 of house money) and answered under the
+   * standing orders' header. **The head never moved**, so this reader went on
+   * offering a repair that was delivered and sitting in a comment — and the
+   * cost is the silent direction: a seat that trusts the row re-runs the
+   * measurement.
+   *
+   * ⚠ **IT HOLDS NOTHING BACK AND CLEARS NOTHING.** The pull request stays on
+   * this list, stays held, and `pr-merge-in-order` has never heard of this
+   * field. What it changes is the ORDER: an answered repair sorts behind every
+   * un-answered one, so a seat is handed the work nobody has touched first. A
+   * shift cannot clear its own hold by writing a header, and the way it cannot
+   * is that no decision reads this.
+   */
+  readonly answeredAt: string | null;
 };
 
 export type RepairsOwedReading = {
@@ -155,6 +177,19 @@ export function repairsOwedFrom(
     if (reviewPresence(tally, false) !== "finding") continue;
     const oldest = tally.findings[0];
     if (!oldest) continue;
+    /*
+      ⚠ MEASURED AGAINST THE NEWEST FRESH FINDING, never the oldest (#2855). The
+      list is ordered by the oldest because that is how long the repair has been
+      owed; whether it has been ANSWERED is a different question, and an answer
+      older than the relay's second reading answers nothing. Both facts come off
+      the same tally, so they cannot disagree about which findings are fresh.
+    */
+    const newestFinding = tally.findings[tally.findings.length - 1];
+    const answered = (row.comments ?? [])
+      .filter((comment) => (comment.author?.login ?? "") === ownerLogin && isShiftAnswer(comment.body ?? ""))
+      .map((comment) => comment.createdAt ?? "")
+      .filter((at) => at !== "" && newestFinding !== undefined && at > newestFinding.createdAt)
+      .sort((a, b) => b.localeCompare(a))[0] ?? null;
     repairs.push({
       pullRequest: number,
       title: row.title ?? "",
@@ -162,10 +197,17 @@ export function repairsOwedFrom(
       draft: row.isDraft === true,
       heldSince: oldest.createdAt,
       findings: tally.findings.length,
+      answeredAt: answered,
     });
   }
 
   repairs.sort((a, b) => {
+    /* ⚠ AN ANSWERED REPAIR SORTS BEHIND EVERY UN-ANSWERED ONE (#2855). It is
+       not removed — the work may still be owed if the relay disagrees, and a
+       list that could lose a repair is the behaviour this module exists to end
+       — but a seat is handed what nobody has touched first. */
+    const answered = Number(a.answeredAt !== null) - Number(b.answeredAt !== null);
+    if (answered !== 0) return answered;
     const by = a.heldSince.localeCompare(b.heldSince);
     /* A tie on the clock falls to the lower pull request number, so two seats
        cutting the same pass are handed the same order rather than whatever the
@@ -204,7 +246,12 @@ export function repairsOwedWord(reading: RepairsOwedReading, nowMs: number): str
   const hours = oldestRepairAgeHours(reading, nowMs);
   const oldest = reading.repairs[0]!;
   const age = hours === null ? "age unreadable" : `oldest ${hours.toFixed(1)}h`;
-  return ` | repairs ${reading.repairs.length} (${age}, PR #${oldest.pullRequest})`
+  /* ⚠ THE ANSWERED ONES ARE COUNTED APART (#2855). A bare total reads as work
+     nobody has touched, and on a night when every held pull request has already
+     been answered that number is the one somebody acts on. */
+  const answered = reading.repairs.filter((repair) => repair.answeredAt !== null).length;
+  const said = answered === 0 ? "" : `, ${answered} answered — waiting on the relay`;
+  return ` | repairs ${reading.repairs.length} (${age}, PR #${oldest.pullRequest}${said})`
     + (reading.partial ? " — page full, may be short" : "");
 }
 

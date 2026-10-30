@@ -69,7 +69,7 @@ _Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `empty` | interpreter-refusal |  | server/castingV2/refineDelta.ts:946<br>server/castingV2/refineInterpreter.ts:1039<br>(+1) | 4 test(s) | guard.empty |
+| `empty` | interpreter-refusal |  | server/castingV2/referenceSplitCleanup.ts:337<br>server/castingV2/referenceSplitCleanup.ts:386<br>(+3) | 5 test(s) | guard.empty |
 | `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1425<br>server/castingV2/castingIntent.ts:1462<br>(+14) | 9 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
 | `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:920<br>server/castingV2/refineInterpreter.ts:1263<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:500<br>server/castingV2/refineDelta.ts:2261<br>(+2) | 6 test(s) | guard.likeness |
@@ -455,7 +455,7 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | concept.reader_outage | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts |
 | concept.unreadable | concept-refusal |  | conceptDescribe.test.ts, conceptDescribeCopy.test.ts |
 | departure | cannot-say | refunded | cannotSayCopy.test.ts |
-| empty | interpreter-refusal |  | diagnosticCapture.test.ts, faceScan.test.ts, readerOutageRefusal.test.ts, refineRefusals.test.ts |
+| empty | interpreter-refusal |  | diagnosticCapture.test.ts, faceScan.test.ts, readerOutageRefusal.test.ts, referenceSplitCleanup.test.ts, refineRefusals.test.ts |
 | gate_ink_coverage_unread | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
 | gate_ink_document | interpreter-refusal |  | inkReferenceGate.test.ts, refineDelta.test.ts, refineRefusals.test.ts |
 | gate_ink_uncarried | interpreter-refusal |  | refineDelta.test.ts, refineRefusals.test.ts, refineService.test.ts |
