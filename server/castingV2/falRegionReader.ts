@@ -2272,6 +2272,12 @@ export function createFalRegionReader(input: {
           boxes: boxes.length,
           atThisSide: here.length,
           fills: judged.map((one) => (one.verdict === null ? null : one.verdict.fill)),
+          /* HOW MANY SEPARATE PIECES EACH CUT CAME BACK IN, and how big its
+             biggest one was (#2841). Measured, refusing nothing — the fill
+             beside them cannot see fragmentation at all, which is how a cut in
+             29 scraps passed the judge. */
+          pieces: judged.map((one) => (one.verdict === null ? null : one.verdict.pieces)),
+          largestPieceShares: judged.map((one) => (one.verdict === null ? null : one.verdict.largestPieceShare)),
           found: kept !== null,
         },
         kept === null
