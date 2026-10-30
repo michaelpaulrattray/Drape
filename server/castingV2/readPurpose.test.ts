@@ -90,7 +90,15 @@ describe("the read stage's purpose vocabulary", () => {
     fixed list it replaces, and that question cannot be asked of a bucket this
     shares with `describe`.
   */
-  it("is exactly the twelve members the design note enumerated, plus `author`, `persona`, `reads`, `persona.translate`, `voice.card`, `refine.describe`, `follow.brief` and `discover`", () => {
+  /*
+    TWENTY since #14 slice 3a: `reference.cutName` prices naming ONE piece
+    tapped out of a customer's own photograph. It is the only text read on the
+    reference road and the only one in this list bought **per TAP** rather than
+    per picture or per render — so what it exists to keep answerable is *what
+    does a tap cost us*, a figure that disappears the moment it is pooled with
+    anything bought once a picture.
+  */
+  it("is exactly the twelve members the design note enumerated, plus `author`, `persona`, `reads`, `persona.translate`, `voice.card`, `refine.describe`, `follow.brief`, `discover` and `reference.cutName`", () => {
     expect([...READ_PURPOSES]).toEqual([
       "interpret",
       "reask.echo",
@@ -111,6 +119,7 @@ describe("the read stage's purpose vocabulary", () => {
       "refine.describe",
       "follow.brief",
       "discover",
+      "reference.cutName",
     ]);
   });
 

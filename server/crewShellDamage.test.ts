@@ -18,6 +18,21 @@
  * transcript in a fenced block, a quoted path in backticks, a real Windows
  * path, and the strikethrough markers the filing sweep's ten false candidates
  * turned out to be.
+ *
+ * ⚠ **AND SINCE #2853 THEY INCLUDE THE ONE FALSE ROW THIS DETECTOR EVER
+ * PRINTED**: a card naming its own scratch folder (`…\drape-scratch\relay-2846\
+ * frames`), in BARE PROSE rather than backticks, so no stripping reaches it.
+ * That shape is the house convention rather than an accident — frames stay off
+ * this public repository, so a card with pictures names them on the machine in
+ * a folder called after its own card — which made **every correctly-filed card
+ * with local frames a false positive.** The third new arm pins the case the fix
+ * deliberately GIVES UP (a bare amount welded to a path), because no price form
+ * can produce one; the module's docblock carries the shell readings that settle
+ * it, `$HOME50` expanding to nothing among them.
+ *
+ * Both directions were driven before these numbers were believed (law 2):
+ * restoring the optional dot reddens exactly the three new arms and nothing
+ * else, and blinding the detector reddens all seven positive controls.
  */
 import { describe, expect, it } from "vitest";
 
@@ -179,6 +194,63 @@ describe("planShellDamage — the negative controls, which are this board's real
        price. The pattern requires a path separator or the number itself next. */
     const found = planShellDamage([
       card({ issueNumber: 9, title: "the /homepage.2 redesign", body: "and /usr/binary.5 of it" }),
+    ]);
+    expect(found).toEqual([]);
+  });
+
+  it("does NOT fire on a card that names its own scratch folder (#2853's measured instance)", () => {
+    /*
+      ⚠ THE ARM THAT CHOSE THE DOT. This is #2846's real body, byte for byte,
+      and it is the ONE row the sweep reported on 2026-10-30 — falsely. The path
+      is in BARE PROSE rather than backticks, so the stripping never reaches it;
+      what fired was the then-optional dot letting the segment walker give back
+      `2846` from `relay-2846`. Those folder names are the house convention —
+      frames stay off this public repository — so every correctly-filed card
+      with local frames was a false positive, and the better the filer behaved
+      the more often it fired.
+    */
+    const found = planShellDamage([
+      card({
+        issueNumber: 2846,
+        body:
+          "They are on your own machine at C:\\Users\\Admin\\drape-scratch\\relay-2846\\frames"
+          + " — they are not on GitHub, because they are pictures of your casts."
+          + "\n\nCost: about $3.20 of house money. No customer credit.",
+      }),
+    ]);
+    expect(found).toEqual([]);
+  });
+
+  it("does NOT fire on the other scratch-folder spellings this board writes", () => {
+    /* `_2848` and `drape-scratch/_2840` are the same convention with an
+       underscore, and a POSIX spelling of the same tree. All bare prose. */
+    const found = planShellDamage([
+      card({
+        issueNumber: 2854,
+        body: [
+          "composites are at C:\\Users\\Admin\\drape-scratch\\_2848",
+          "and the round-9 set at /c/Users/Admin/drape-scratch/_2840 on this machine",
+          "and the relay's at C:/Users/Admin/drape-scratch/relay-2521/frames too",
+        ].join("\n"),
+      }),
+    ]);
+    expect(found).toEqual([]);
+  });
+
+  it("does NOT fire on a bare amount welded to a path, because no price can make one", () => {
+    /*
+      ⚠ THE CASE DELIBERATELY GIVEN UP, PINNED SO THE GIVING-UP IS DRIVEN RATHER
+      THAN IMPLIED (#2853). The docblock carries the shell readings: the only
+      `$`-form expanding to a path is `$0`, and a price written with `$0` is
+      `$0.75` — it has a decimal point by construction. A dotless weld needs the
+      source to be `$05`, and `$HOME50` is the UNSET VARIABLE `HOME50`, which
+      expands to nothing at all rather than to a welded home path.
+
+      So this arm asserts a MISS on purpose. If a real dotless weld is ever
+      observed on a card, this arm is the thing to come and argue with.
+    */
+    const found = planShellDamage([
+      card({ issueNumber: 2855, title: "a pack is /usr/bin/bash5 a unit", body: "/c/Users/Admin50 too" }),
     ]);
     expect(found).toEqual([]);
   });
