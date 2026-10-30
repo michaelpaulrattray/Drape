@@ -1606,6 +1606,9 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     instance?: number;
     x?: number;
     y?: number;
+    /** His check 1 (#2856): measured at the pixels by the scan service and
+     *  carried, so here it is simply given. */
+    coversFace?: boolean;
   };
   type Said = {
     noun: string;
@@ -1643,6 +1646,7 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
         on: one.on ?? "",
         box: { x: one.x ?? 100 + at * 100, y: one.y ?? 200 + at * 50, width: 80, height: 60, frame },
         maskUrl: `data:image/png;base64,${one.noun}`,
+        ...(one.coversFace === undefined ? {} : { coversFace: one.coversFace }),
       })),
       namedNotCut: input.said ?? [],
     },
@@ -1803,6 +1807,81 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     expect(whole.y).toBe(Math.min(...pieces.map((one) => one.y)));
     expect(whole.x + whole.width).toBe(Math.max(...pieces.map((one) => one.x + one.width)));
     expect(whole.y + whole.height).toBe(Math.max(...pieces.map((one) => one.y + one.height)));
+  });
+
+  it("leaves a piece whose SHAPE lies over the face out of the whole outline, and keeps its row", () => {
+    /*
+      HIS RULING, 2026-10-30 (#2856, point 4): *"The whole-Outfit outline must
+      never be built from a failed piece."* The relay's finding on PR #2850 is
+      the case — a union inherits the worst piece, so one garment reading from
+      the mouth to the waist would drag the outfit's own rectangle over the
+      face.
+
+      ⚠ **Judged at the SHAPE and never at the rectangle, which is his own
+      amendment the same hour**: *"im not worried about the box covering the
+      neck that sort of normal if its the outfit or whatever"*. The boolean
+      arrives measured at the pixels (`maskCoverage`, driven on its own).
+    */
+    const panel = panelOf({
+      found: [
+        { noun: "cloak", kind: "clothing", x: 200, y: 900 },
+        { noun: "face wrap", kind: "clothing", x: 100, y: 100, coversFace: true },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    const whole = row.regions.find((one) => one.whole)!;
+    const wrap = row.regions.find((one) => one.name === "Face wrap")!;
+    /* The outline is the cloak's extent alone — it does not reach up to the
+       wrap at y 100. */
+    expect(whole.box).toEqual({ x: 200, y: 900, width: 80, height: 60, frame });
+    expect(whole.box.y).toBeGreaterThan(wrap.box.y);
+    /* ⚠ AND THE FAILING PIECE IS STILL A ROW AND STILL A RECTANGLE. Point 3 of
+       his ruling — a failed piece gets no row at all — is #2845's defect 2 and
+       waits for the other three checks; taking one of four would hide pieces
+       for one reason while three others still drew theirs. */
+    expect(row.instances.map((one) => one.name)).toEqual(["Cloak", "Face wrap"]);
+    expect(wrap.whole).toBe(false);
+    /* And the thumbnail is the same window as the outline, still one value. */
+    expect(row.cutouts[0]!.crop).toEqual(whole.box);
+  });
+
+  it("draws NO whole rectangle at all when every piece lies over the face", () => {
+    /*
+      A row with nothing it may outline must not outline the wrong thing. The
+      picture falls back to one rectangle per piece — the panel exactly as it
+      was before this card — and the thumbnail keeps the window it always had.
+    */
+    const panel = panelOf({
+      found: [
+        { noun: "face wrap", kind: "clothing", x: 100, y: 100, coversFace: true },
+        { noun: "mask", kind: "clothing", x: 300, y: 150, coversFace: true },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    expect(row.regions.some((one) => one.whole)).toBe(false);
+    expect(row.regions.map((one) => one.name)).toEqual(["Face wrap", "Mask"]);
+    /* The row is still the whole outfit to tap — only the picture changed. */
+    expect(row.slots).toEqual(["discovered:outfit", "discovered:face-wrap#1", "discovered:mask#1"]);
+    /* The window is the union of all of them, which is what it was before. */
+    expect(row.cutouts[0]!.crop).toEqual({ x: 100, y: 100, width: 280, height: 110, frame });
+  });
+
+  it("CONTROL — a piece the scan did not measure is treated as clear, so today's panel is unchanged", () => {
+    /*
+      ⚠ THE ARM THAT MAKES THE FIELD FREE. A reading kept before the check
+      existed restores without it, and the live preview a scan serves while it
+      is still running never carries it. Both must draw what they drew
+      yesterday: inside the outline.
+    */
+    const panel = panelOf({
+      found: [
+        { noun: "jacket", kind: "clothing", x: 100, y: 100 },
+        { noun: "belt", kind: "clothing", x: 400, y: 800, coversFace: false },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    const whole = row.regions.find((one) => one.whole)!;
+    expect(whole.box).toEqual({ x: 100, y: 100, width: 380, height: 760, frame });
   });
 
   it("CONTROL — no other row on the panel grows a whole rectangle", () => {

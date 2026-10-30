@@ -5,6 +5,7 @@ import {
   FACE_SCAN_CACHE_LIMIT,
   STENCIL_MAX_SIDE,
   defaultDiscoverer,
+  faceCutsOf,
   faceScanCacheStats,
   panelScanOf,
   resetFaceScanCache,
@@ -19,6 +20,7 @@ import { MaskError } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import { scanPlan } from "./faceScan";
+import { slotDefinition } from "./referenceSlotCatalogue";
 import type { DiscoveredFeature, FaceDiscovery } from "./faceDiscovery";
 
 /* One place a discovered feature is built in this suite, so a new field on
@@ -1101,6 +1103,78 @@ describe("a reading that lost its found rows is served and not kept", () => {
     keptCalls.kept.length = 0;
     keptAnswer = null;
     armTable();
+  });
+
+  it("asks about the FACE group and nothing else — the population, read directly", async () => {
+    /*
+      ⚠ THIS ARM EXISTS BECAUSE A SABOTAGE SURVIVED. Swapping the group this
+      filter reads from `face` to `accessories` left the two arms below GREEN:
+      the bench's reader answers every question with the same shape, so a scan
+      driven end to end cannot tell which rows were compared. The population is
+      therefore read here, where the slots are distinguishable.
+
+      Hair and an accessory are the negative controls and both are real panel
+      rows — a garment lying over the HAIR is an outfit doing its job, and his
+      check is about the face.
+    */
+    const face = maskOf({ x: 1, y: 1, width: 4, height: 4 });
+    const hair = maskOf({ x: 9, y: 9, width: 4, height: 4 });
+    const worn = maskOf({ x: 20, y: 20, width: 4, height: 4 });
+    const cuts = faceCutsOf(new Map([
+      ["lips" as FeatureSlot, face],
+      ["hair" as FeatureSlot, hair],
+      ["earring@left" as FeatureSlot, worn],
+    ]));
+    expect(cuts).toEqual([face]);
+    /* And the slots used above are real, or the arm proves nothing about the
+       catalogue it claims to derive from. */
+    expect(slotDefinition("lips" as FeatureSlot)?.group).toBe("face");
+    expect(slotDefinition("hair" as FeatureSlot)?.group).toBe("hair");
+    expect(slotDefinition("earring@left" as FeatureSlot)?.group).toBe("accessories");
+  });
+
+  it("measures whether a found shape lies over the face's own cuts, and says so on the row", async () => {
+    /*
+      HIS CHECK 1, WIRED (#2856, 2026-10-30, and his amendment the same hour:
+      *"im not worried about the box covering the neck that sort of normal if
+      its the outfit or whatever"*). The rule itself is driven directly in
+      `maskCoverage.test.ts`; this is the arm that proves the SCAN asks it —
+      invariant 7, a control that is not invoked does not exist.
+
+      ⚠ **Measured here and nowhere else, because this is the one moment both
+      shapes are raw bytes.** `facePanel` receives a base64 stencil it cannot
+      decode and a kept reading restores one, so nothing downstream could ever
+      retake this.
+
+      This bench's catalogue reader answers every face question with
+      `maskOf(CATALOGUE_BOX)`, so a garment cut from the SAME box is the same
+      shape and lies wholly over them.
+    */
+    const CATALOGUE_BOX = { x: 10, y: 20, width: 30, height: 40 };
+    const reader = pointing(async () => [CATALOGUE_BOX]);
+    const { deps } = await dependencies(reader);
+    const over = await scannedFace({
+      ...FACE,
+      dependencies: { ...deps, discover: async () => jacketOnly() },
+    });
+    await settle();
+    expect(over.discovered.map((one) => [one.noun, one.coversFace])).toEqual([["jacket", true]]);
+  });
+
+  it("CONTROL — a garment nowhere near the face is not called covering", async () => {
+    /*
+      Without this the arm above passes on a reader that simply answers `true`.
+      `JACKET` is at 100,200 and the catalogue's cuts are at 10,20 — no shared
+      pixel, so the honest answer is the one that changes nothing.
+    */
+    const reader = pointing(async () => [JACKET]);
+    const { deps } = await dependencies(reader);
+    const clear = await scannedFace({
+      ...FACE,
+      dependencies: { ...deps, discover: async () => jacketOnly() },
+    });
+    await settle();
+    expect(clear.discovered.map((one) => [one.noun, one.coversFace])).toEqual([["jacket", false]]);
   });
 
   it("a discovery that came back { ok: false } is served and NOT kept — the next look asks again", async () => {

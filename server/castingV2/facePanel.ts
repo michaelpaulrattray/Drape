@@ -278,6 +278,26 @@ export type PanelScan = {
     on: string;
     box: PanelBox;
     maskUrl: string;
+    /**
+     * DOES THIS SHAPE LIE OVER THE FACE'S OWN CUTS — his check 1 (#2856,
+     * 2026-10-30), measured at the pixels by `faceScanService` and carried.
+     *
+     * ⚠ **This panel cannot ask it and that is why the fact travels.** A
+     * `facePanel` is a pure projection — *"rows in, rows out: no database, no
+     * storage, no clock"* — and by the time a row reaches here its shape is a
+     * base64 PNG. The one moment both this shape and the scan's face cuts are
+     * raw bytes is inside the scan service, so that is where it is answered.
+     *
+     * ⚠ **And it is the BOX that is not the question, which is his own
+     * correction**: *"im not worried about the box covering the neck that sort
+     * of normal if its the outfit or whatever"*. A rag cloth or a high collar
+     * has a rectangle reaching the chin and is still outfit.
+     *
+     * Optional, and absent means *not covering* — a reading kept before the
+     * check existed, and the live preview a scan serves while it is still
+     * running, both arrive without it and both draw today's panel exactly.
+     */
+    coversFace?: boolean;
   }[];
   /**
    * WHAT THE READING NAMED AND NOTHING CUT — words with no picture (#2566
@@ -2162,7 +2182,33 @@ export function facePanel(input: {
     *Lips* is not a collection of a lip and a ring.
   */
   if (outfitPieces.length > 0) {
-    const boxes = outfitPieces.map((piece) => piece.box);
+    /*
+      THE OUTLINE IS BUILT FROM THE PASSING PIECES ONLY — his ruling of
+      2026-10-30 (#2856, point 4): *"The whole-Outfit outline must never be
+      built from a failed piece."*
+
+      ⚠ **A PIECE THAT FAILS STILL KEEPS ITS OWN RECTANGLE AND ITS OWN ROW
+      HERE, and that is deliberately NOT the whole of his ruling.** Point 3
+      says a failed piece gets no row at all; that is #2845's defect 2 and sits
+      beside his other three checks (a shared box, its own place, a real
+      feature), none of which this panel can answer yet. Taking one of the four
+      and dropping rows on it would hide pieces for one reason while the other
+      three still drew theirs — so what moves here is exactly what the relay's
+      finding asked for: **the WHOLE-outfit outline is protected**, and the
+      failing piece is lit only when it is itself the subject.
+
+      ⚠ **AND WHEN NO PIECE PASSES, THE ROW DRAWS NO WHOLE RECTANGLE AT ALL**
+      rather than inventing one: `whole` is simply absent, which is the branch
+      every other row on the panel takes, and the picture falls back to one
+      rectangle per piece — the panel as it was before this card. A row with
+      nothing to outline must not outline the wrong thing.
+    */
+    const outlined = outfitPieces.filter((piece) => piece.coversFace !== true);
+    /* The thumbnail still needs a window even when nothing may be outlined, and
+       the honest window is the one this row has always had — every piece. It is
+       the only value in this block that is ever taken from a failing piece, and
+       no rectangle is drawn from it. */
+    const boxes = (outlined.length > 0 ? outlined : outfitPieces).map((piece) => piece.box);
     const union: PanelBox = {
       x: Math.min(...boxes.map((box) => box.x)),
       y: Math.min(...boxes.map((box) => box.y)),
@@ -2226,12 +2272,23 @@ export function facePanel(input: {
         child row, which is his *"with the individual pieces inside it"*.
 
         Largest-first paint order (`FaceRegions`'s own smallest-wins rule) puts
-        this rectangle UNDERNEATH every piece by construction, because a union
-        can never be smaller than what it unions — so a point over a piece
-        still belongs to that piece and nothing had to be told about z-order.
+        this rectangle UNDERNEATH every piece it was built from, because a
+        union can never be smaller than what it unions — so a point over such a
+        piece still belongs to that piece and nothing had to be told about
+        z-order.
+
+        ⚠ **THAT SENTENCE READ *"underneath every piece"* UNTIL #2856's CHECK 1
+        LANDED, AND IT IS NARROWED RATHER THAN LEFT STANDING.** A piece left
+        OUT of the union is not bounded by it, so a failing piece bigger than
+        the passing ones paints first and the whole rectangle sits on top of
+        the part of it they overlap. That is the right way round and not a
+        regression: a garment whose shape lies over the face is exactly the one
+        that must not swallow the points inside the outfit's own outline, and
+        it is still reachable on every pixel of itself the outline does not
+        cover, plus its own child row in the panel.
       */
       regions: [
-        {
+        ...(outlined.length > 0 ? [{
           box: union,
           /* NAMED NOTHING, which on this panel means *it covers what the row
              says it does* — the row says Outfit and this is the outfit. A name
@@ -2245,7 +2302,7 @@ export function facePanel(input: {
              is every piece. A scope would say the opposite of what it is. */
           scopable: false,
           whole: true,
-        },
+        }] : []),
         ...outfitPieces.map(foundChildRegion),
       ],
       instances: outfitPieces.map(foundChild),
