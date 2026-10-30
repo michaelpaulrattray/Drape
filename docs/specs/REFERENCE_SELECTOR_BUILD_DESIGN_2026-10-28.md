@@ -656,6 +656,15 @@ reads this document and the mock verdict first):
      of a hair piece takes the hair inside the rectangle with it. That is §6
      working as written; **changing it is a change to the likeness fence and
      is HIS, not a builder's.**
+     ⚠ **BOTH FIGURES ABOVE WERE TAKEN ON THE COURT'S DEDUPLICATED MASKS, AND
+     #2873 IS WHAT MAKES THEM TRUE OF THE PRODUCT — read that card's note on
+     3a-2 below before quoting either.** They were never wrong about the
+     pipeline they describe; the pipeline simply did not exist until the court's
+     own near-duplicate step was ported. On the shipped road, measured
+     2026-10-31 on a real raw grid: **6 of 9 garment-level, which is this
+     slice's own "after" figure exactly**, and **the hair stands at 0.653
+     rather than 0.503** — still the one real cost, still below the 0.75 bar,
+     still his decision and not a builder's.
    - **(3a-2) THE ENTRANCE — NOT BUILT.** The service that reads the
      attachment's bytes, gates on `CASTING_REFERENCE_SELECTOR_SCOPE`, and
      calls split → clean → face-detect, then cut → name on a tap. ⚠ **The two
@@ -668,10 +677,24 @@ reads this document and the mock verdict first):
    - ⚠ **One thing 3a-1 did NOT measure, declared rather than implied:** the
      clean-up was measured on the court's **deduplicated** pieces, because
      that is what the court saved. A live 32-point grid returns the same
-     garment from many points, and the arbitration's tie rule collapses
-     duplicates by itself (measured: 18 pieces → 13, 8 → 5) — but *on a raw
+     garment from many points, and ~~the arbitration's tie rule collapses
+     duplicates by itself (measured: 18 pieces → 13, 8 → 5)~~ — but *on a raw
      grid* that is reasoning, not a reading. **3a-2's first act is one real
      split on his own account, and the figure to watch is the piece count.**
+     ⚠ **IT WAS BOUGHT (3a-2) AND THE STRUCK CLAUSE WAS WRONG IN THE WORST
+     DIRECTION — #2873, closed 2026-10-31.** The contest does not collapse
+     duplicates, it **CARVES** them: every contested pixel goes to exactly one
+     winner, so thirty-two near-identical masks become thirty-two slivers of one
+     another. Measured on a real raw grid: **26 / 26 / 28 pieces, and 2 of the 9
+     things garment-level** — pointing at the middle of a tank top lit 20% of it
+     and a sweater 21%. **The cause is that the court's own near-duplicate step
+     (`court.mjs:67`) never left the harness**, so every figure here was taken on
+     a set the shipped road did not produce. The step is ported with its
+     threshold measured rather than inherited
+     (`SPLIT_SAME_THING_IOU` = 0.5, the court used 0.85): the shipped road
+     now gives **11 / 6 / 8 pieces and 6 of 9**, and the per-thing hover numbers
+     are 0.978 tank top, 0.991 jacket, 0.994 scarf, 0.981 sweater, 0.954 belt,
+     0.986 sneaker, 0.653 hair.
    **(3b) The surface:** the picture opens large, *"Reading your picture…"*,
    the spotlight hover (tap-to-light on touch), tap → cut → chip with the
    cut's own name, tap again to let go, fail-open to words — behind the flag,

@@ -22,6 +22,7 @@ import {
   SPLIT_FACE_COVER_SHARE,
   SPLIT_HOLE_SHARE,
   SPLIT_MAIN_BODY_SHARE,
+  SPLIT_SAME_THING_IOU,
   cleanSplit,
 } from "./referenceSplitCleanup";
 
@@ -161,20 +162,34 @@ describe("his split clean-up", () => {
     });
 
     it("keeps a tie in the larger piece rather than dropping it from both", () => {
-      /* Two identical 10x10 squares, one of them with a 10x4 tail so it is the
-         larger piece. The shared 10x10 is a depth tie everywhere. */
+      /* ⚠ THIS FIXTURE WAS RE-SHAPED WHEN THE NEAR-DUPLICATE RULE LANDED
+         (#2873), and the old one is kept as that rule's arm two blocks down.
+         It used to be a 10x10 square beside the same square with a 10x4 tail —
+         IoU 100/140 = 0.714, which is over {@link SPLIT_SAME_THING_IOU}, so the
+         new rule now drops the small one as a duplicate and the CONTEST never
+         sees it. The tie rule is unchanged and still needed; what changed is
+         that this fixture stopped reaching it.
+
+         So the tail is a DETACHED 15x15 block instead: 100/325 = 0.308 is under
+         the bar, both pieces arrive at the contest, and the shared 10x10 is
+         still a depth tie everywhere — the block sits in the corner of the
+         larger piece's bounding box, where the box border is an edge exactly as
+         it is for the small piece's own box. The 15x15 is 225 px, so the 100-px
+         block is 44% of the largest component and rule 1 keeps both. */
       const small = rect(blank(), 10, 10, 10, 10);
       const larger = rect(blank(), 10, 10, 10, 10);
-      rect(larger, 10, 20, 10, 4);
+      rect(larger, 30, 30, 15, 15);
+      expect(live(larger)).toBe(325);
 
       const cleaned = cleanSplit([small, larger]);
 
+      expect(cleaned.duplicatesDropped).toBe(0);
       expect(cleaned.contestedPixels).toBe(100);
       /* The small one is emptied by the tie rule, so it leaves the set and says
          why — the pixels are not lost, they are the larger piece's. */
       expect(cleaned.dropped).toEqual([{ at: 0, reason: "lost-to-neighbours" }]);
       expect(cleaned.pieces).toHaveLength(1);
-      expect(live(cleaned.pieces[0]!)).toBe(140);
+      expect(live(cleaned.pieces[0]!)).toBe(325);
     });
 
     it("counts nothing contested when the pieces do not touch", () => {
@@ -186,6 +201,161 @@ describe("his split clean-up", () => {
       expect(cleaned.contestedPixels).toBe(0);
       expect(cleaned.reassignedPixels).toBe(0);
       expect(cleaned.pieces.map(live)).toEqual([100, 100]);
+    });
+  });
+
+  describe("the same thing answered twice — the court's step, ported (#2873)", () => {
+    it("drops the near-duplicate and keeps the FULLER answer", () => {
+      /* A 20x20 square and the same square one pixel to the right: the
+         intersection is 19x20 = 380 and the union 21x20 = 420, so IoU is 0.905.
+         The larger of the two survives — here they are equal in area, so the
+         arm that matters is that exactly ONE does and the count is exact. */
+      const a = rect(blank(), 5, 5, 20, 20);
+      const b = rect(blank(), 6, 5, 20, 20);
+
+      const cleaned = cleanSplit([a, b]);
+
+      expect(cleaned.duplicatesDropped).toBe(1);
+      expect(cleaned.pieces).toHaveLength(1);
+      expect(live(cleaned.pieces[0]!)).toBe(400);
+      /* Nothing was contested, because the duplicate left before the contest —
+         which is the whole mechanism #2873 measured: left in, two near-identical
+         masks are not collapsed by the contest, they are carved into slivers of
+         each other. */
+      expect(cleaned.contestedPixels).toBe(0);
+      expect(cleaned.dropped).toEqual([{ at: 1, reason: "the-same-thing-twice" }]);
+    });
+
+    it("drops the SMALLER of a pair and says which arrived", () => {
+      /* THE OLD TIE FIXTURE, which this rule now catches first: a 10x10 square
+         beside the same square with a 10x4 tail. IoU 100/140 = 0.714, over the
+         bar, so the 100-px piece is the 140-px piece seen short. */
+      const small = rect(blank(), 10, 10, 10, 10);
+      const larger = rect(blank(), 10, 10, 10, 10);
+      rect(larger, 10, 20, 10, 4);
+
+      const cleaned = cleanSplit([small, larger]);
+
+      expect(cleaned.duplicatesDropped).toBe(1);
+      expect(cleaned.dropped).toEqual([{ at: 0, reason: "the-same-thing-twice" }]);
+      expect(cleaned.pieces).toHaveLength(1);
+      expect(live(cleaned.pieces[0]!)).toBe(140);
+    });
+
+    it("keeps two pieces that overlap UNDER the bar", () => {
+      /* 20x20 at (5,5) and 20x20 at (15,5): intersection 10x20 = 200, union 600,
+         IoU 0.333. Both are things; the contest settles the overlap. This is the
+         negative control — a rule that dropped here would be eating garments,
+         which is the measured failure at a threshold of 0.30. */
+      const a = rect(blank(), 5, 5, 20, 20);
+      const b = rect(blank(), 15, 5, 20, 20);
+
+      const cleaned = cleanSplit([a, b]);
+
+      expect(cleaned.duplicatesDropped).toBe(0);
+      expect(cleaned.pieces).toHaveLength(2);
+      expect(cleaned.contestedPixels).toBe(200);
+    });
+
+    it("⚠ decides on the REAL IoU, on a pair neither prune can answer — 0.481 keeps, 0.538 drops", () => {
+      /* ⚠ THIS PAIR OF ARMS EXISTS BECAUSE A SABOTAGE SURVIVED WITHOUT IT, and
+         the hole it found is the one worth naming: breaking the union to
+         `union = intersection` — which makes every overlapping pair read as IoU
+         1.0 — left all of this block GREEN. Every arm above is decided by one of
+         the two PRUNES before `iouOf` is ever called, so nothing held the IoU
+         itself. "Keeps two pieces that overlap under the bar" was being
+         satisfied by a sibling.
+
+         Both squares are 20x20, so the area-ratio bound (1.0) cannot refuse, and
+         the boxes overlap by 260 and 280 px against a 400-px piece, so the
+         box-overlap bound cannot refuse either. What is left is the true IoU,
+         and the two offsets sit either side of the bar:
+
+           offset 7 → intersection 13x20 = 260, union 540, IoU 0.481 → two things
+           offset 6 → intersection 14x20 = 280, union 520, IoU 0.538 → one thing
+
+         So these also pin the bar to a real number rather than to a constant
+         read back from the module. */
+      const keep = cleanSplit([rect(blank(), 5, 5, 20, 20), rect(blank(), 12, 5, 20, 20)]);
+      expect(keep.duplicatesDropped).toBe(0);
+      expect(keep.pieces).toHaveLength(2);
+
+      const drop = cleanSplit([rect(blank(), 5, 5, 20, 20), rect(blank(), 11, 5, 20, 20)]);
+      expect(drop.duplicatesDropped).toBe(1);
+      expect(drop.pieces).toHaveLength(1);
+    });
+
+    it("⚠ the two prunes are exact — a pair that passes both and is NOT a duplicate survives", () => {
+      /* THE ARM BEHIND "THE PRUNES ARE BOUNDS, NOT HEURISTICS". Two interleaved
+         combs over the same 20x20 patch: even columns and odd columns.
+
+           · equal areas, so the area-ratio bound (min/max = 1.0) cannot refuse;
+           · near-identical bounding boxes, so the box-overlap bound cannot
+             refuse either (360 px of overlap against a 200-px piece);
+           · and the true intersection is ZERO.
+
+         A reader that trusted either bound as an answer would call these one
+         thing and delete half the picture. Both must survive, untouched. */
+      const even = blank();
+      const odd = blank();
+      for (let x = 0; x < 20; x += 1) {
+        rect(x % 2 === 0 ? even : odd, 5 + x, 5, 1, 20);
+      }
+      expect(live(even)).toBe(200);
+      expect(live(odd)).toBe(200);
+
+      const cleaned = cleanSplit([even, odd]);
+
+      expect(cleaned.duplicatesDropped).toBe(0);
+      expect(cleaned.contestedPixels).toBe(0);
+      expect(cleaned.pieces.map(live)).toEqual([200, 200]);
+    });
+
+    it("keeps the survivors in ARRIVAL order, not in area order", () => {
+      /* The hit-test map reads a piece's position in this array as its id, so a
+         rule that sorted by area would re-label every piece on the picture. A
+         small piece arrives first, a large one second, and a duplicate of the
+         large one third. */
+      const small = rect(blank(), 2, 2, 8, 8);
+      const large = rect(blank(), 30, 30, 20, 20);
+      const twin = rect(blank(), 31, 30, 20, 20);
+
+      const cleaned = cleanSplit([small, large, twin]);
+
+      expect(cleaned.duplicatesDropped).toBe(1);
+      expect(cleaned.pieces.map(live)).toEqual([64, 400]);
+    });
+
+    it("⚠ leaves the pieces it returns DISJOINT, which is why this rule cannot run last", () => {
+      /* The module's placement argument rests on this: the arbitration gives
+         every contested pixel to exactly one winner, so no pair of surviving
+         pieces can have an IoU above zero and a near-duplicate rule placed after
+         it could never fire. Three overlapping pieces, none of them duplicates. */
+      const a = rect(blank(), 2, 2, 24, 24);
+      const b = rect(blank(), 20, 2, 24, 24);
+      const c = rect(blank(), 2, 20, 24, 24);
+
+      const cleaned = cleanSplit([a, b, c]);
+
+      expect(cleaned.pieces.length).toBeGreaterThan(1);
+      let shared = 0;
+      for (let first = 0; first < cleaned.pieces.length; first += 1) {
+        for (let second = first + 1; second < cleaned.pieces.length; second += 1) {
+          for (let p = 0; p < W * H; p += 1) {
+            if (cleaned.pieces[first]!.data[p]! > 127 && cleaned.pieces[second]!.data[p]! > 127) shared += 1;
+          }
+        }
+      }
+      expect(shared).toBe(0);
+    });
+
+    it("is the measured bar and sits between the two failures", () => {
+      /* Below 0.336 a garment reads as a duplicate of the person wearing it (the
+         tank top's IoU with the whole-person piece); above 0.588 real duplicates
+         survive (the lowest true duplicate on the worn photograph). */
+      expect(SPLIT_SAME_THING_IOU).toBe(0.5);
+      expect(SPLIT_SAME_THING_IOU).toBeGreaterThan(0.336);
+      expect(SPLIT_SAME_THING_IOU).toBeLessThan(0.588);
     });
   });
 

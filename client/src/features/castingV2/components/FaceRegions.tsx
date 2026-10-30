@@ -309,14 +309,41 @@ export function FaceRegions({
           Unscoped selections are untouched: her lips, her hair, and a pair
           tapped from the panel's own row all still light everything they mean.
         */
+        /*
+          A COLLECTION ROW'S OWN RECTANGLE OUTRANKS ITS PIECES WHILE THE ROW IS
+          THE SUBJECT — his word, 2026-10-30 (#2845): *"also outfit should be
+          selectablke as a whole"*.
+
+          The Outfit row's `slots` has always carried every piece, so hovering
+          or selecting the row marks all of them — and the picture answered by
+          lighting five separate rectangles, which he read, correctly, as the
+          panel working piece by piece. The row means ONE thing, so the
+          photograph shows one rectangle: the row's own extent, with the pieces
+          still drawn inside it and still able to be the subject themselves.
+
+          This is the same law as the clause below it, in the other direction.
+          That one stops the picture claiming MORE than the ask says (both eyes
+          lit on a one-eye ask); this stops it claiming more PARTS than the ask
+          says (five garments lit on one outfit ask). Neither changes what the
+          edit means — `slots` is untouched.
+
+          A row with no whole rectangle — which is every row but Outfit today —
+          takes the branch it always took, so nothing else on the panel moves.
+        */
+        const whole = row.regions.find((one) => one.whole) ?? null;
+        const rowIsSubject = whole !== null && selection.isHovered(whole.slot);
         const active = open?.scope !== undefined
           ? open.scope === region.slot
-          : row.slots.some((slot) => selection.isSelected(slot));
+          : row.slots.some((slot) => selection.isSelected(slot))
+            && (whole === null || region.whole);
         /* Lit for the instance these pixels ARE, not for its row: hovering the
            left eye's child row in the panel must light the left eye and not
            both (fable-452). A whole-row hover still lights both, because it
            hovers both slots. */
-        const lit = selection.isHovered(region.slot);
+        /* While the collection row is the subject only its own rectangle is
+           lit; otherwise a rectangle lights for the instance these pixels ARE,
+           exactly as it always has. */
+        const lit = rowIsSubject ? region.whole : selection.isHovered(region.slot);
         return (
           <button
             key={`${row.slots.join(" ")}:${at}`}

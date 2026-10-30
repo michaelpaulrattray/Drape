@@ -1755,14 +1755,26 @@ export async function cutDiscovered(input: {
         const verdict = judgeCut({ mask, box, fillFloor: FILL_MEASURED_NOT_REFUSED });
         if (!verdict.use) {
           log.warn(
-            { name: feature.name, askedAbout: box, answered: bounds, fill: verdict.fill, why: verdict.why },
+            {
+              name: feature.name, askedAbout: box, answered: bounds, fill: verdict.fill, why: verdict.why,
+              /* #2841, on the refused side too: a later bar would have to tell
+                 a fringe from a shattering, and the refused cuts are where it
+                 would have to do it. */
+              pieces: verdict.pieces, largestPieceShare: verdict.largestPieceShare,
+            },
             "the cut had nothing of the rectangle it was asked about in it — no row",
           );
           return { index, region: null, broke: false };
         }
         log.debug(
-          { name: feature.name, fill: verdict.fill, claimed: verdict.claimed },
-          "the cut is kept, and this is how much of its rectangle it filled",
+          {
+            name: feature.name, fill: verdict.fill, claimed: verdict.claimed,
+            /* #2841: the fill above cannot see fragmentation, so these two ride
+               beside it on every kept cut. They refuse nothing — they are the
+               population a bar would need before anybody writes one. */
+            pieces: verdict.pieces, largestPieceShare: verdict.largestPieceShare,
+          },
+          "the cut is kept, and this is how much of its rectangle it filled — and how many pieces it came in",
         );
         return {
           index,
