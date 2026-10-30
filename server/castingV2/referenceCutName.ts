@@ -45,7 +45,15 @@ const log = createModuleLogger("castingV2/referenceCutName");
  * THE GREY EVERYTHING-ELSE BECOMES.
  *
  * Mid grey, so neither a dark nor a light garment is the only thing with
- * contrast against it. The court's own backdrop.
+ * contrast against it. ~~The court's own backdrop.~~
+ *
+ * ⚠ **IT IS NOT THE COURT'S BACKDROP — read at the harness, 2026-10-31 (#2875,
+ * found by #2873's class sweep).** `relay-14spot/name.mjs`'s `cutFor` paints
+ * `150, 150, 150`. Nothing here is CHANGED on that reading, because the
+ * difference between two mid greys is not a thing to guess at on a text
+ * provider's behalf — the measurement is #2875's, and it has two other
+ * differences to settle in the same act. What is corrected is the sentence,
+ * which told a reader this value carried the court's authority.
  */
 export const CUT_NAME_BACKDROP = { r: 128, g: 128, b: 128 };
 
@@ -68,10 +76,24 @@ export const CUT_NAME_TIMEOUT_MS = 16_000;
  * a mask laid over a photograph would be sending the whole photograph. Only the
  * cut's own pixels survive the composite.
  *
- * ⚠ **The frame is NOT cropped to the cut, and that is faithfulness rather than
+ * ⚠ ~~**The frame is NOT cropped to the cut, and that is faithfulness rather than
  * laziness.** The court's measurement was taken on the piece in its own frame;
  * cropping would change the scale cues the reader sees, and cropping is
- * unmeasured. A slice that wants to crop measures it first.
+ * unmeasured. A slice that wants to crop measures it first.~~
+ *
+ * ⚠ **THE FRAME IS STILL NOT CROPPED, AND THE SENTENCE ABOVE HAD THE COURT
+ * BACKWARDS — read at the harness, 2026-10-31 (#2875, found by #2873's class
+ * sweep).** `relay-14spot/name.mjs`'s `cutFor` crops to the mask's bounding box
+ * padded by `max(w, h) * 0.08 + 4` px and enlarges the result to a 384-px longer
+ * side when it is under, so **the 8-of-8 naming figure was measured on a tight
+ * crop** — and it is the UNCROPPED frame that is unmeasured. The reasoning is
+ * sound and runs the other way round: cropping does change the scale cues, and
+ * the whole-frame road is the one changing them against the measurement.
+ * `boundForJudge` shrinks only above a 2576-px side, so a flat-lay goes to the
+ * reader at full size with a belt in a field of grey. **Nothing is changed here
+ * on that reading** — which road names better is a measurement and it is #2875's,
+ * with the pad, the floor and the grey settled in one act. What is corrected is
+ * the claim about the court.
  */
 export async function pieceOnGrey(input: {
   frame: Buffer;
