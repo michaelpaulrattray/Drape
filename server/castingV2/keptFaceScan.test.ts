@@ -477,7 +477,7 @@ describe("the rows the reading found that nobody catalogued", () => {
     /* The grouping's two facts, defaulted to what a row written before #2566
        slice 2 restores as — a hostless `anatomy`, which is today's panel. An
        arm about the round trip passes its own. */
-    over: { kind?: FeatureKind; on?: string } = {},
+    over: { kind?: FeatureKind; on?: string; coversFace?: boolean } = {},
   ) => ({
     slot: slot as FeatureSlot,
     noun,
@@ -486,6 +486,7 @@ describe("the rows the reading found that nobody catalogued", () => {
     on: over.on ?? "",
     box: box(instance * 100),
     maskUrl: dataUrl,
+    coversFace: over.coversFace ?? false,
   });
 
   it("keeps them beside the catalogue's rows, in ONE manifest and ONE transaction", async () => {
@@ -537,6 +538,74 @@ describe("the rows the reading found that nobody catalogued", () => {
     expect(served!.discovered![0]!.maskUrl.startsWith("data:image/png;base64,")).toBe(true);
     /* And the catalogue rows are untouched beside them. */
     expect(Array.from(served!.slots.keys())).toEqual(["hair"]);
+  });
+
+  it("carries whether a shape lies over the face across the keep, both ways", async () => {
+    /*
+      HIS CHECK 1 SURVIVES THE KEEP (#2856) — and it has to, for the reason the
+      kind and the host do one arm up. `CASTING_SCAN_TABLE_SCOPE` stands at
+      `all`, so the first look is kept and every later look is served from the
+      row: a keep that dropped this would put a face-covering garment outside
+      the whole-Outfit outline on the first look and back inside it on the
+      second, which is the different-panel-same-frame defect this file exists
+      against.
+
+      ⚠ **It is a PIXEL measurement and cannot be retaken here.** The masks it
+      was read from are gone by the time anything serves this row, so there is
+      no recomputing it — the stored answer is the only answer.
+    */
+    const it_ = bench();
+    await keepScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      scan: {
+        ...shape(["hair"] as FeatureSlot[]),
+        discovered: [
+          foundRow("discovered:wrap#1", "wrap", 1, { kind: "clothing", coversFace: true }),
+          foundRow("discovered:belt#2", "belt", 2, { kind: "clothing", coversFace: false }),
+        ],
+      },
+      dependencies: it_.dependencies,
+    });
+
+    const served = await serveKeptScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      dependencies: it_.dependencies,
+    });
+
+    expect(served!.discovered!.map((one) => [one.noun, one.coversFace])).toEqual([
+      ["wrap", true],
+      ["belt", false],
+    ]);
+  });
+
+  it("reads a row written before the check as NOT covering, which is today's panel", async () => {
+    /*
+      ⚠ THE ARM THAT MAKES THE FIELD FREE, and it is the same sentence the
+      kind and the host carry: a row already in the table has no `coversFace`
+      at all. `=== true` is the only test a JSON column cannot satisfy by
+      accident, and the answer it gives is the one that changes nothing —
+      inside the outline, where every outfit piece was before his check.
+    */
+    const it_ = bench();
+    await keepScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      scan: {
+        ...shape(["hair"] as FeatureSlot[]),
+        discovered: [foundRow("discovered:jacket#1", "jacket", 1, { kind: "clothing" })],
+      },
+      dependencies: it_.dependencies,
+    });
+    /* The stored row is edited to the shape the table already holds — the key
+       absent entirely, not `false` — because those are different bytes and only
+       one of them is what a pre-#2856 row looks like. */
+    delete (it_.rows[0]!.geometry.discovered[0] as { coversFace?: boolean }).coversFace;
+    expect("coversFace" in it_.rows[0]!.geometry.discovered[0]!).toBe(false);
+
+    const served = await serveKeptScan({
+      userId: 1, candidateId: 41, variantId: null, frameKey: "faces/v1.png",
+      dependencies: it_.dependencies,
+    });
+    expect(served!.discovered![0]!.coversFace).toBe(false);
   });
 
   /*

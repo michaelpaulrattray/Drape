@@ -204,6 +204,33 @@ export type CutVerdict = {
   /** Claimed pixels inside the asked rectangle. */
   readonly insideBox: number;
   readonly why: CutRefusal;
+  /**
+   * HOW MANY SEPARATE PIECES THE CUT CAME BACK IN — MEASURED, REFUSING
+   * NOTHING (#2841).
+   *
+   * ⚠ **The fill number cannot see this at all, which is the finding.** A cut
+   * of a leather jacket's collar came back as **29 disconnected scraps** whose
+   * largest piece was 43.5% of it — the collar band across the back of the neck
+   * simply missing — and `judgeCut` called it `used`, because 29 scraps adding
+   * up to 24.6% of a rectangle are indistinguishable from one clean shape at
+   * 24.6%. The customer gets a few specks of a collar where they asked for the
+   * collar. Measured 2026-10-30 on a real cut, `output/_14court/kinds/
+   * ref-hanger-cut-collar.jpg`, looked at rather than described.
+   *
+   * ⚠ **AND NOTHING REFUSES ON EITHER NUMBER, DELIBERATELY — the card's own
+   * recommendation and #2831's lesson.** A legitimately scattered subject
+   * exists: a lace-up panel, a fringe, a chain, freckles. #2831 measured what
+   * happens when a bar is invented without a population — a correct tail at
+   * 17% beside a wrong sword cut at 22% — so the honest order is to grow the
+   * population first and decide after. These two numbers go in the log beside
+   * the fill, on every judgement, for free, and they decide nothing.
+   *
+   * `pieces` is `0` exactly when nothing was claimed; `largestPieceShare` is
+   * `null` then, and is otherwise the biggest piece over every claimed pixel —
+   * so **1 is one clean shape** and a small number is a shattered one.
+   */
+  readonly pieces: number;
+  readonly largestPieceShare: number | null;
 };
 
 type Box = { x: number; y: number; width: number; height: number };
@@ -236,6 +263,78 @@ function claimedPixels(mask: Mask, box: Box): { claimed: number; insideBox: numb
 }
 
 /**
+ * HOW MANY SEPARATE PIECES A MASK IS IN, AND HOW BIG ITS LARGEST ONE IS
+ * (#2841) — measured, never refused on. See {@link CutVerdict.pieces}.
+ *
+ * **Four connectivity, for `closeHoles`'s own stated reason**: eight walks
+ * diagonal noise through a one-pixel gap, so two scraps touching at a corner
+ * would count as one shape where the eye sees two. The two readers therefore
+ * agree about what "connected" means, which is the only way their numbers can
+ * be read side by side in one log line.
+ *
+ * The typed stack with its own cursor is `closeHoles`'s idiom rather than a new
+ * one: a full-frame garment mask runs to ~865k pixels and this is the same hot
+ * loop. Nothing is mutated — the visited array is this function's own.
+ */
+export function piecesOf(mask: Mask): { count: number; largest: number; claimed: number } {
+  const { width, height, data } = mask;
+  const size = width * height;
+  const seen = new Uint8Array(size);
+  const stack = new Int32Array(size);
+  let count = 0;
+  let largest = 0;
+  let claimed = 0;
+  for (let start = 0; start < size; start += 1) {
+    if (seen[start] || !CLAIMED(data[start])) continue;
+    count += 1;
+    let top = 0;
+    seen[start] = 1;
+    stack[top] = start;
+    top += 1;
+    let pixels = 0;
+    while (top > 0) {
+      top -= 1;
+      const p = stack[top]!;
+      pixels += 1;
+      const x = p % width;
+      /*
+        THE FOUR NEIGHBOURS, WRITTEN OUT RATHER THAN THROUGH A CLOSURE, AND THE
+        NUMBER IS WHY — this is the only place in this file that trades its
+        shape for speed, so it says what it bought.
+
+        Measured warm, 20 runs, on a 1024×1536 mask carrying a million claimed
+        pixels — the full-frame garment cut `closeHoles` names: a `push` closure
+        declared inside the loop costs **175.5 ms** a cut and this costs
+        **5.4 ms**. A face scan makes 21–27 cuts, so the closure would have put
+        about **four seconds** on every face read, for a measurement that
+        deliberately refuses nothing. Re-measured after reverting and
+        re-applying, both ways, because a 32× reading is the kind that is a
+        cold JIT rather than a fact.
+      */
+      if (x > 0) {
+        const q = p - 1;
+        if (!seen[q] && CLAIMED(data[q])) { seen[q] = 1; stack[top] = q; top += 1; }
+      }
+      if (x < width - 1) {
+        const q = p + 1;
+        if (!seen[q] && CLAIMED(data[q])) { seen[q] = 1; stack[top] = q; top += 1; }
+      }
+      if (p >= width) {
+        const q = p - width;
+        if (!seen[q] && CLAIMED(data[q])) { seen[q] = 1; stack[top] = q; top += 1; }
+      }
+      if (p + width < size) {
+        const q = p + width;
+        if (!seen[q] && CLAIMED(data[q])) { seen[q] = 1; stack[top] = q; top += 1; }
+      }
+    }
+    claimed += pixels;
+    if (pixels > largest) largest = pixels;
+  }
+  return { count, largest, claimed };
+}
+
+/**
  * JUDGE ONE CUT — the refusal half, on the RAW mask.
  *
  * Four refusals, in the order they can be answered most cheaply. **The first
@@ -252,7 +351,8 @@ export function judgeCut(input: { mask: Mask; box: Box; fillFloor: number | null
   const { mask, box, fillFloor } = input;
   const { claimed, insideBox } = claimedPixels(mask, box);
   if (claimed === 0) {
-    return { use: false, fill: null, claimed, insideBox, why: "no-pixels" };
+    /* Nothing to break into pieces, and nothing to walk for it. */
+    return { use: false, fill: null, claimed, insideBox, why: "no-pixels", pieces: 0, largestPieceShare: null };
   }
   const area = box.width * box.height;
   if (area <= 0) {
@@ -260,7 +360,7 @@ export function judgeCut(input: { mask: Mask; box: Box; fillFloor: number | null
        divided by zero, and refused rather than waved through: a caller handing
        this an empty rectangle has a defect of its own, and passing it would
        hide that defect behind a drawn row. */
-    return { use: false, fill: null, claimed, insideBox, why: "no-box-area" };
+    return { use: false, fill: null, claimed, insideBox, why: "no-box-area", pieces: 0, largestPieceShare: null };
   }
   const fill = insideBox / area;
   if (insideBox === 0) {
@@ -281,12 +381,26 @@ export function judgeCut(input: { mask: Mask; box: Box; fillFloor: number | null
       read `below-fill-floor` before and reads `no-overlap` now, which is the
       better diagnosis of the same refusal.
     */
-    return { use: false, fill, claimed, insideBox, why: "no-overlap" };
+    return { use: false, fill, claimed, insideBox, why: "no-overlap", pieces: 0, largestPieceShare: null };
   }
+  /*
+    THE FRAGMENTATION READING, TAKEN AFTER THE THREE CHEAP REFUSALS AND BEFORE
+    THE ONE NUMBER (#2841).
+
+    After them, so a mask with nothing in it and one that missed its rectangle
+    entirely pay for no walk at all — both are already answered and neither has
+    a shape worth describing. BEFORE the fill bar, so a cut REFUSED on fill
+    still carries its two numbers into the log: the population this is being
+    grown for is every cut the road makes, and the refused ones are exactly
+    where a later bar would have to be able to tell a fringe from a shattering.
+  */
+  const broken = piecesOf(mask);
+  const pieces = broken.count;
+  const largestPieceShare = broken.claimed === 0 ? null : broken.largest / broken.claimed;
   if (fillFloor !== null && fill < fillFloor) {
-    return { use: false, fill, claimed, insideBox, why: "below-fill-floor" };
+    return { use: false, fill, claimed, insideBox, why: "below-fill-floor", pieces, largestPieceShare };
   }
-  return { use: true, fill, claimed, insideBox, why: "used" };
+  return { use: true, fill, claimed, insideBox, why: "used", pieces, largestPieceShare };
 }
 
 /**
@@ -305,12 +419,43 @@ export function judgeCut(input: { mask: Mask; box: Box; fillFloor: number | null
  *
  * The caller's mask is never mutated: the fill lands in a copy.
  */
-export function closeHoles(mask: Mask): {
+export function closeHoles(
+  mask: Mask,
+  options?: {
+    /**
+     * ⚠ **FILL ONLY THE HOLES THIS SMALL — added for #14 slice 3a, additively.**
+     *
+     * His split clean-up fills *"holes under 2% of the piece"* and leaves a
+     * bigger one alone (`referenceSplitCleanup.ts`), which is this function's
+     * own distinction — *"one big hole and forty specks are different defects"*
+     * — turned into a decision instead of a report. **Absent, every hole is
+     * filled exactly as before**, so the take road and the panel road are
+     * untouched by a byte.
+     *
+     * The caller computes the share, because 2% of WHAT is the caller's
+     * question: the split asks 2% of the piece, and nothing here knows what a
+     * piece is.
+     */
+    maxHolePixels: number;
+  },
+): {
   mask: Mask;
+  /** Pixels in every hole FOUND, whether or not it was filled. */
   holePixels: number;
+  /** Holes FOUND, whether or not they were filled. */
   holeCount: number;
+  /** The largest hole FOUND, whether or not it was filled. */
   largestHole: number;
+  /** Pixels actually filled — equal to `holePixels` when no ceiling was given. */
+  filledPixels: number;
+  /** Holes actually filled — equal to `holeCount` when no ceiling was given. */
+  filledCount: number;
 } {
+  /* ⚠ The three counts above describe what was FOUND and keep the meaning
+     every existing caller reads them with; what a ceiling changes is only
+     which of them were FILLED, which is why the fill is reported separately
+     rather than by narrowing a number somebody already depends on. */
+  const ceiling = options?.maxHolePixels ?? Number.POSITIVE_INFINITY;
   const { width, height, data } = mask;
   const size = width * height;
   const outside = new Uint8Array(size);
@@ -343,13 +488,24 @@ export function closeHoles(mask: Mask): {
     push(p + width);
   }
   /* What is left is background the outside never reached — a hole. Walked once
-     more so each hole's own size is known, and filled on the way through. */
+     more so each hole's own size is known.
+
+     ⚠ THE FILL HAPPENS AFTER THE WALK, NOT DURING IT, AND THAT IS #14 SLICE
+     3A'S ONE CHANGE HERE. It used to write `filled[q] = 255` as it popped each
+     pixel — correct while every hole was filled unconditionally, and unable to
+     honour a ceiling, because a hole's size is not known until its walk ENDS.
+     So each hole's members are collected first and written only once the size
+     verdict is in. With no ceiling the verdict is always "fill", which is why
+     no existing caller can see a difference. */
   const filled = Buffer.from(data);
   const seen = new Uint8Array(size);
   const walk = new Int32Array(size);
+  const members = new Int32Array(size);
   let holePixels = 0;
   let holeCount = 0;
   let largestHole = 0;
+  let filledPixels = 0;
+  let filledCount = 0;
   const enclosed = (p: number): boolean => !outside[p] && !CLAIMED(data[p]);
   for (let start = 0; start < size; start += 1) {
     if (seen[start] || !enclosed(start)) continue;
@@ -362,8 +518,8 @@ export function closeHoles(mask: Mask): {
     while (cursor > 0) {
       cursor -= 1;
       const q = walk[cursor]!;
+      members[hole] = q;
       hole += 1;
-      filled[q] = 255;
       const x = q % width;
       const neighbours = [
         x > 0 ? q - 1 : -1,
@@ -381,8 +537,19 @@ export function closeHoles(mask: Mask): {
     }
     holePixels += hole;
     if (hole > largestHole) largestHole = hole;
+    if (hole > ceiling) continue;
+    for (let at = 0; at < hole; at += 1) filled[members[at]!] = 255;
+    filledPixels += hole;
+    filledCount += 1;
   }
-  return { mask: { data: filled, width, height }, holePixels, holeCount, largestHole };
+  return {
+    mask: { data: filled, width, height },
+    holePixels,
+    holeCount,
+    largestHole,
+    filledPixels,
+    filledCount,
+  };
 }
 
 /**

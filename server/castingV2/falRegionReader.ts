@@ -217,6 +217,10 @@ async function post(
 export const POINTER_DETECT_ABOUT = "pointer.detect";
 export const POINTER_BOX_ABOUT = "pointer.box";
 
+/** The spotlight's two roads, named for the census (#14 slice 3a). */
+export const REFERENCE_SPLIT_ABOUT = "reference.split";
+export const REFERENCE_POINT_ABOUT = "reference.point";
+
 /**
  * HOW A CALL IS LABELLED IN THE CALL CENSUS — decided at the CALL SITE and
  * never inferred from the body. Required, so a new road cannot forget to.
@@ -777,16 +781,201 @@ export function keepPiecesOnTheFace(
 }
 
 /**
- * THE CONNECTED PIECES OF A MASK, EACH KEPT OR DROPPED BY ITS CENTRE — the one
- * labelling both rules above read, so the ear's rule and the face's cannot
- * disagree about what a piece is. 8-neighbour.
+ * ⚠ **THE PROVIDER REFUSES MORE THAN THIS MANY MASKS IN ONE READ — MEASURED,
+ * NOT READ OFF A PAGE** (the spotlight court, 2026-10-30: one call was refused
+ * for `max_masks` above it and came back with no masks at all).
+ */
+export const SPLIT_MAX_MASKS = 32;
+
+/**
+ * SPLIT ONE PHOTOGRAPH INTO PIECES, IN A SINGLE READ — #14 slice 3a's hover road.
+ *
+ * A grid of point prompts with an EMPTY text prompt: SAM 3 answers one object
+ * per point, and `object_id` per point is what keeps them separate (the
+ * provider's own schema: *"Prompts sharing an object id refine the same
+ * object"*). The grid is 8x4 on a landscape frame and 4x8 on a portrait one, at
+ * cell centres — the court's own shape, which measured 7 of 9 things
+ * garment-level at 4.3–6.6 s and ≈0.5¢ a photograph.
+ *
+ * ⚠ **`prompt: ""` IS SENT ON PURPOSE AND IS NOT A TIDYING OPPORTUNITY.** The
+ * provider's schema gives `prompt` a DEFAULT OF `"wheel"`, so a body that omits
+ * the field does not ask "split this picture" — it asks the segmenter to go
+ * looking for a wheel. The empty string is the whole instruction that this is a
+ * point-driven read, and `server/castingV2/referenceSplitWire.test.ts` asserts
+ * it on the OUTGOING body (invariant 5) rather than near the constant.
+ *
+ * ⚠ **`include_scores` IS DELIBERATELY NOT SENT, and that is a clause-4
+ * decision rather than an omission.** The disappearing-technology law's clause 4
+ * — *read what the engine already gives you before reaching for a better one* —
+ * has its founding instance in exactly this model: `include_scores: true` bought
+ * on every call and every score discarded (#246/#475). The court sent it because
+ * the court was measuring. Nothing on this road reads a score: the hover set is
+ * decided by his geometry rules, not by the provider's confidence. So it is not
+ * bought. **If a later slice finds a use for the scores — ranking which piece
+ * lights when two overlap is the obvious candidate — it turns the field on and
+ * reads them in the same commit, never one without the other.**
+ *
+ * A failed or empty read answers with NO pieces and throws nothing: §4's
+ * fail-open property, transferred to the split verbatim — *"a failed or empty
+ * split means the picture presents with no spotlight, taps still honoured,
+ * words road untouched, nothing charged, nothing said."*
+ */
+export async function splitAtPoints(input: {
+  apiKey: string;
+  image: Buffer;
+  signal?: AbortSignal;
+}): Promise<readonly Mask[]> {
+  const { apiKey, image, signal } = input;
+  assertPicture(image, "the attached picture");
+  const sharp = (await import("sharp")).default;
+  const meta = await sharp(image).metadata();
+  const width = meta.width ?? 0;
+  const height = meta.height ?? 0;
+  if (width <= 0 || height <= 0) return [];
+  const columns = width >= height ? 8 : 4;
+  const rows = width >= height ? 4 : 8;
+  const points: { x: number; y: number; label: number; object_id: number }[] = [];
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      points.push({
+        x: Math.round(((column + 0.5) / columns) * width),
+        y: Math.round(((row + 0.5) / rows) * height),
+        label: 1,
+        object_id: points.length + 1,
+      });
+    }
+  }
+  let json: any;
+  try {
+    json = await post(
+      apiKey,
+      SAM3,
+      {
+        image_url: dataUri(image),
+        prompt: "",
+        point_prompts: points,
+        apply_mask: false,
+        output_format: "png",
+        return_multiple_masks: true,
+        max_masks: SPLIT_MAX_MASKS,
+      },
+      signal,
+      { road: REFERENCE_SPLIT_ABOUT },
+    );
+  } catch (cause) {
+    log.warn({ cause: String(cause) }, "the split could not be read — the picture presents with no spotlight");
+    return [];
+  }
+  const urls: string[] = (Array.isArray(json?.masks) ? json.masks : [])
+    .map((entry: any) => (typeof entry === "string" ? entry : entry?.url))
+    .filter((url: unknown): url is string => typeof url === "string" && url.length > 0);
+  const pieces: Mask[] = [];
+  for (const url of urls) {
+    try {
+      pieces.push(await placeInFrame(await fetchMask(url, signal), { left: 0, width }, width, height));
+    } catch (cause) {
+      /* One unreadable mask is one missing piece, never a failed split: the
+         rest of the picture still lights. */
+      log.warn({ cause: String(cause) }, "a split piece could not be read");
+    }
+  }
+  return pieces;
+}
+
+/**
+ * CUT WHATEVER IS UNDER THE FINGER — #14 slice 3a's tap road.
+ *
+ * ONE SAM 3 point prompt at the tapped spot. The court measured this at 8 of 9
+ * things garment-level, 1.1–3.8 s and ≈0.5¢ a tap — and crucially **4 of 4 on
+ * the worn photograph including the earring and the necklace**, which have no
+ * piece in the split at all. That is why a tap is honoured wherever it lands,
+ * lit or not (§3).
+ *
+ * ⚠ **A POINT RETURNS A PART AS READILY AS A WHOLE, AND THAT IS CORRECT
+ * BEHAVIOUR RATHER THAN A DEFECT TO TUNE OUT.** The court's belt tap landed on
+ * the belt's keeper and cut the keeper alone, honestly named *"leather strap"*;
+ * a second tap on the strap returned the whole belt at 0.958. So the cut is
+ * NAMED after it is taken rather than assumed, and the chip carries the cut's
+ * own name — which is what keeps §1's law-9 property at full strength.
+ *
+ * `null` when the provider answers with nothing, which the caller reads as
+ * "that tap found nothing" and never as a failure worth a refusal.
+ */
+export async function cutAtPoint(input: {
+  apiKey: string;
+  image: Buffer;
+  /** Where the finger landed, in the frame's own pixels. */
+  at: { x: number; y: number };
+  signal?: AbortSignal;
+}): Promise<Mask | null> {
+  const { apiKey, image, at, signal } = input;
+  assertPicture(image, "the attached picture");
+  const sharp = (await import("sharp")).default;
+  const meta = await sharp(image).metadata();
+  const width = meta.width ?? 0;
+  const height = meta.height ?? 0;
+  if (width <= 0 || height <= 0) return null;
+  /* A tap outside the picture is a question about a place that does not exist,
+     and clamping it would answer about a different place instead. */
+  if (at.x < 0 || at.y < 0 || at.x >= width || at.y >= height) return null;
+  let json: any;
+  try {
+    json = await post(
+      apiKey,
+      SAM3,
+      {
+        image_url: dataUri(image),
+        prompt: "",
+        point_prompts: [{ x: Math.round(at.x), y: Math.round(at.y), label: 1, object_id: 1 }],
+        apply_mask: false,
+        output_format: "png",
+      },
+      signal,
+      { road: REFERENCE_POINT_ABOUT },
+    );
+  } catch (cause) {
+    log.warn({ cause: String(cause) }, "the tap could not be cut");
+    return null;
+  }
+  const urls: string[] = (Array.isArray(json?.masks) ? json.masks : [])
+    .map((entry: any) => (typeof entry === "string" ? entry : entry?.url))
+    .filter((url: unknown): url is string => typeof url === "string" && url.length > 0);
+  const first = urls[0];
+  if (first === undefined) return null;
+  try {
+    return await placeInFrame(await fetchMask(first, signal), { left: 0, width }, width, height);
+  } catch (cause) {
+    log.warn({ cause: String(cause) }, "the tap's cut could not be read");
+    return null;
+  }
+}
+
+/**
+ * THE CONNECTED PIECES OF A MASK, EACH KEPT OR DROPPED BY A PREDICATE — the one
+ * labelling every rule here reads, so the ear's rule, the face's and the
+ * split's cannot disagree about what a piece is. 8-neighbour.
  *
  * Returns the same mask object when nothing was dropped, and `null` for `kept`
  * when nothing is left.
+ *
+ * ⚠ **EXPORTED AND ITS PREDICATE WIDENED FOR #14 SLICE 3A, ADDITIVELY.** The
+ * split's clean-up keeps *"components of at least 10% of its largest"* (his
+ * rule, `referenceSplitCleanup.ts`), which needs two facts the two facial
+ * callers above never asked for: a piece's own `pixels`, and the `largestPixels`
+ * across the pieces of this mask. Both arrive as NEW fields and a NEW second
+ * argument, so the ear and face rules — which destructure neither — cannot
+ * change behaviour by a byte. **The alternative was a second connected-
+ * components walk in the new module, which is working law 4's mirror and the
+ * shape this repository has repeatedly been bitten by**; `largestPixels` is
+ * handed over rather than recomputed so the clean-up costs ONE walk per piece
+ * and not two.
  */
-function keepPiecesWhere(
+export function keepPiecesWhere(
   mask: Mask,
-  keep: (piece: { centreX: number; centreY: number }) => boolean,
+  keep: (
+    piece: { centreX: number; centreY: number; pixels: number },
+    all: { largestPixels: number; count: number },
+  ) => boolean,
 ): { kept: Mask | null; dropped: DroppedFacePiece[] } {
   const { width, height, data } = mask;
   /* Labelled inside the mask's own bounds only: a side's answer is a few
@@ -844,7 +1033,12 @@ function keepPiecesWhere(
       pieces.push({ pixels, sumX, sumY });
     }
   }
-  const drop = pieces.map(({ pixels, sumX, sumY }) => !keep({ centreX: sumX / pixels, centreY: sumY / pixels }));
+  let largestPixels = 0;
+  for (const piece of pieces) if (piece.pixels > largestPixels) largestPixels = piece.pixels;
+  const all = { largestPixels, count: pieces.length };
+  const drop = pieces.map(
+    ({ pixels, sumX, sumY }) => !keep({ centreX: sumX / pixels, centreY: sumY / pixels, pixels }, all),
+  );
   if (!drop.some(Boolean)) return { kept: mask, dropped: [] };
   const out = Buffer.from(data);
   let left = 0;
@@ -2272,6 +2466,12 @@ export function createFalRegionReader(input: {
           boxes: boxes.length,
           atThisSide: here.length,
           fills: judged.map((one) => (one.verdict === null ? null : one.verdict.fill)),
+          /* HOW MANY SEPARATE PIECES EACH CUT CAME BACK IN, and how big its
+             biggest one was (#2841). Measured, refusing nothing — the fill
+             beside them cannot see fragmentation at all, which is how a cut in
+             29 scraps passed the judge. */
+          pieces: judged.map((one) => (one.verdict === null ? null : one.verdict.pieces)),
+          largestPieceShares: judged.map((one) => (one.verdict === null ? null : one.verdict.largestPieceShare)),
           found: kept !== null,
         },
         kept === null
