@@ -297,7 +297,61 @@ export async function discoveryCropsOf(frame: {
  *
  * # THE GROUPING PARAGRAPH IS A MEASURED ARTIFACT — DO NOT RE-WORD IT (#2566)
  *
- * It is byte-identical to the one the grouping bench ran
+ * ⚠ **THE COVERAGE CLAUSE WAS RE-WORDED ON 2026-10-30 (#2848), AND THIS RULE
+ * IS WHY IT COST A BENCH RATHER THAN AN EDIT.** It is no longer byte-identical
+ * to #2566's; the sentence below that said it was is corrected in place rather
+ * than deleted, because what it demands is still exactly right — a re-wording
+ * invalidates the evidence, so it re-measures or it does not ship.
+ *
+ * What was wrong with the measured wording, found by his own eye:
+ * ~~"'scattered' if it is many separate small bits spread over an area"~~ reads a
+ * TATTOO SLEEVE as many separate bits. A scattered marking gets no detector call
+ * and no cut (pointerCut.ts's foundRoadOf), so his round-9 and round-10 tattooed
+ * casts got **no Tattoo row at all** — his *"her tattoos were not picked up"*.
+ * The clause's own parenthesis already said *a tattoo piece is single*; it simply
+ * never reached a sleeve, because a sleeve of many motifs satisfies the scattered
+ * half's words too.
+ *
+ * ⚠ **The scattered half now tests REPETITION ("one small thing repeated over an
+ * area") rather than SPREAD, and that is the load-bearing half of the change** —
+ * it is what keeps freckles, scales and stubble out of the cutter while letting
+ * one design that covers an arm be one piece.
+ *
+ * Re-measured through this module's own discoverFeatures (imported, not
+ * re-typed) on his two tattooed casts plus #2566's own three fixtures, 6
+ * readings each per arm, today's engine the only engine, nothing else varied —
+ * drape-scratch/_2848/coverage-{before,after}.json, 60 readings, $1.86 house:
+ *
+ *   his defect          a Tattoo row in **4 of 12 before, 12 of 12 after**.
+ *                       Both sleeves cut (single AND count >= 2) 1 of 12 ->
+ *                       3 of 12 — so #2838's count half is IMPROVED AND NOT
+ *                       CLOSED, and that card stays open saying so.
+ *   freckles            **6/6 scattered in BOTH arms** on the round-10 cast.
+ *                       This is the control that matters most: freckles cut
+ *                       like an object is the defect the coverage field exists
+ *                       to prevent, and it does not widen.
+ *   wrinkles            6/6 scattered in both arms. The only non-ink marking
+ *                       called single in either arm was a mole — 6 times
+ *                       before, 6 times after, unchanged.
+ *   the #2566 win held  the connected chest/neck tattoo stayed single (6 of 7
+ *                       namings before, 9 of 9 after), so run 1's failure has
+ *                       not come back by another road.
+ *   bareness            494/494 then 460/460 bare. 0 readings lost of 60.
+ *   latency             wall median 16.6 s -> 17.2 s, inside this bench's own
+ *                       spread at 3 readings in flight.
+ *
+ * ⚠ **ONE COST IS MEASURED AND UNEXPLAINED, AND IT IS NOT CONSOLIDATION — it
+ * was checked rather than assumed.** Non-ink features named per reading fell on
+ * 4 of 5 fixtures (14.8 -> 13.0, 17.7 -> 15.5, 16.2 -> 15.8, 16.2 -> 15.7,
+ * 13.3 -> 12.2) while INK entries stayed flat at 1.00 either side — so the
+ * longer clause is not folding sleeve motifs into one row, it is naming about
+ * one fewer thing per reading. At 6 readings a fixture that is near this
+ * reading's own run-to-run spread, so it is reported as a floor rather than a
+ * finding; **a reader re-wording this clause again owes it a bigger sample.**
+ *
+ * The superseded sentence, kept because its demand is the rule:
+ *
+ * It was byte-identical to the one the grouping bench ran
  * (`scripts/_2566-grouping-discovery-disposable.mts`, receipts
  * `output/2566/grouping-discovery.{json,txt}`, twelve reads on the three
  * production fixtures, ~$0.11 house), and the bench is why each clause reads
@@ -348,8 +402,10 @@ export const DISCOVERY_SYSTEM_PROMPT = [
   "- on: if this feature sits on or is part of another feature you named, give that feature's",
   "  bare noun (a lip ring is on 'lips', an ear piercing is on 'ear'). Otherwise ''.",
   "- coverage: 'single' if it is one thing or one connected piece you could draw one tight",
-  "  outline around (a tattoo piece or a jacket is single); 'scattered' if it is many separate",
-  "  small bits spread over an area, like freckles, scales or stubble.",
+  "  outline around (a tattoo piece or a jacket is single). A marking that covers an area as",
+  "  ONE design is still single, however many motifs are in it — a tattoo sleeve down an arm,",
+  "  a back piece or a chest piece is one piece, not many. 'scattered' is for one small thing",
+  "  repeated over an area, like freckles, scales or stubble.",
   "",
   "Two rules matter more than completeness:",
   "1. Name ONLY what you can actually see in this frame. Never infer a feature from what the",

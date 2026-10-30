@@ -476,9 +476,40 @@ describe("the three grouping facts — what each named thing IS (#2566)", () => 
 
     it("distinguishes one CONNECTED piece from many scattered bits, which run 1 did not", () => {
       expect(DISCOVERY_SYSTEM_PROMPT).toContain("one thing or one connected piece you could draw one tight");
-      expect(DISCOVERY_SYSTEM_PROMPT).toContain("many separate");
-      /* The failed wording must not come back. */
+      /* TWO failed wordings must stay gone now, not one: run 1's, and the
+         sleeve-blind one this clause replaced (#2848 — "many separate small
+         bits spread over an area" read a tattoo sleeve as many bits). */
       expect(DISCOVERY_SYSTEM_PROMPT).not.toContain("spread across an area");
+      expect(DISCOVERY_SYSTEM_PROMPT).not.toContain("many separate");
+    });
+
+    /*
+      ⚠ THIS ARM GUARDS THE #2848 MEASUREMENT, and it replaced an arm that held
+      the wording it corrects. The clause before it sent a tattoo sleeve to
+      WORDS: a sleeve made of many motifs answered `scattered`, and
+      `pointerCut.ts`'s `foundRoadOf` gives a scattered marking no detector
+      call and no cut, so his round-9 and round-10 casts got no Tattoo row at
+      all — his own "her tattoos were not picked up".
+
+      Measured through the product's own `discoverFeatures` on his two
+      tattooed casts, 6 readings each per arm, today's engine, nothing else
+      varied: a Tattoo row in **4 of 12 before, 12 of 12 after**; both sleeves
+      cut (single AND count >= 2) 1 of 12 -> 3 of 12.
+
+      The controls are why the clause reads as it does, and the scattered side
+      keeps REPETITION as its test for exactly this reason: **freckles stayed
+      6/6 scattered and wrinkles 6/6 scattered across both arms**, so the
+      freckles-cut-like-an-object defect does not widen; the only non-ink
+      marking called `single` was a mole, 6 times in BOTH arms. Bareness held
+      at 494/494 then 460/460.
+    */
+    it("says a marking covering an area is ONE piece — the words that took a sleeve from 4 of 12 to 12 of 12", () => {
+      expect(DISCOVERY_SYSTEM_PROMPT).toContain("ONE design is still single, however many motifs are in it");
+      expect(DISCOVERY_SYSTEM_PROMPT).toContain("a tattoo sleeve down an arm");
+      /* The scattered side must keep REPETITION as its test — that is what
+         holds freckles, scales and stubble out of the cutter. */
+      expect(DISCOVERY_SYSTEM_PROMPT).toContain("'scattered' is for one small thing");
+      expect(DISCOVERY_SYSTEM_PROMPT).toContain("repeated over an area, like freckles, scales or stubble");
     });
 
     it("makes the provider enforce the two closed facts, and leaves `on` open on purpose", () => {

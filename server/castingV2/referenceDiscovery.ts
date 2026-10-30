@@ -35,8 +35,14 @@
  * # ⚠ THE MEASURED CLAUSES ARE COPIED, NOT PARAPHRASED
  *
  * `faceDiscovery.ts`'s prompt carries a ⚠ forbidding re-wording: its grouping
- * paragraph is byte-identical to the one #2566's bench ran, and *"a paraphrase
- * of this clause invalidates the bench"*. Those clauses govern BARENESS, KIND
+ * paragraph is byte-identical to the measured one, and *"a paraphrase of this
+ * clause invalidates the bench"*. ⚠ **THE BENCH THAT WORDING ANSWERS TO IS
+ * #2848's AS OF 2026-10-30, NOT #2566's** — the coverage clause was re-worded
+ * there because it read a tattoo sleeve as many scattered bits, and it was
+ * re-measured rather than edited. **This file moved in the same commit, which
+ * is the whole point of the guard below**: the clause is stated in THREE places
+ * (there, and twice here), and the guard is what made a partial fix impossible
+ * rather than merely discouraged. Those clauses govern BARENESS, KIND
  * and COVERAGE, which this road needs unchanged — a name here becomes a
  * `regionInBox` neighbour and a detector prompt exactly as it does there.
  *
@@ -46,6 +52,11 @@
  * touched by this build: it is frozen by a ruling, so copying from it is safe
  * in a way copying from a live artifact would not be — and the guard is what
  * stops the copy going quietly stale if the freeze is ever lifted.
+ *
+ * ⚠ **THE FREEZE WAS LIFTED ON 2026-10-30 AND THE SENTENCE ABOVE IS WHAT
+ * HAPPENED, SO IT IS KEPT RATHER THAN SOFTENED.** #2848 re-worded the coverage
+ * clause; this copy did not go stale, because the guard reddened and the
+ * re-wording had to land in all three statements or in none.
  *
  * # IT FAILS OPEN TO WORDS, SILENTLY, COSTING NOTHING
  *
@@ -163,8 +174,10 @@ export const REFERENCE_DISCOVERY_SHARED_CLAUSES: readonly string[] = [
   "use pointing at it. No description, no colour, no material, no position, no brackets, no",
   "commas, no 'with' or 'on' clauses. Write 'hair', not 'dark hair in a high bun'. Write",
   "- coverage: 'single' if it is one thing or one connected piece you could draw one tight",
-  "  outline around (a tattoo piece or a jacket is single); 'scattered' if it is many separate",
-  "  small bits spread over an area, like freckles, scales or stubble.",
+  "  outline around (a tattoo piece or a jacket is single). A marking that covers an area as",
+  "  ONE design is still single, however many motifs are in it — a tattoo sleeve down an arm,",
+  "  a back piece or a chest piece is one piece, not many. 'scattered' is for one small thing",
+  "  repeated over an area, like freckles, scales or stubble.",
 ];
 
 /**
@@ -209,8 +222,10 @@ export const REFERENCE_DISCOVERY_SYSTEM_PROMPT = [
   "- on: if this thing sits on or is part of another thing you named, give that thing's bare",
   "  noun (a lip ring is on 'lips', a pocket is on 'jacket'). Otherwise ''.",
   "- coverage: 'single' if it is one thing or one connected piece you could draw one tight",
-  "  outline around (a tattoo piece or a jacket is single); 'scattered' if it is many separate",
-  "  small bits spread over an area, like freckles, scales or stubble.",
+  "  outline around (a tattoo piece or a jacket is single). A marking that covers an area as",
+  "  ONE design is still single, however many motifs are in it — a tattoo sleeve down an arm,",
+  "  a back piece or a chest piece is one piece, not many. 'scattered' is for one small thing",
+  "  repeated over an area, like freckles, scales or stubble.",
   "",
   "Two rules matter more than completeness:",
   "1. Name ONLY what you can actually see in this picture. Never infer a thing from what the",
