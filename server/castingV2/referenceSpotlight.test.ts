@@ -250,6 +250,29 @@ describe("tapping one", () => {
     expect(sent.filter((one) => one.endpoint === SAM3)).toHaveLength(0);
   });
 
+  /* ⚠ THIS ARM EXISTS BECAUSE A SABOTAGE FOUND IT MISSING. The open road's
+     noun had an arm and the tap road's did not — paraphrasing the tap's noun
+     left every suite green, because the two roads ask the detector
+     separately and only one of them was being read. */
+  it("asks the detector for the same face noun on the tap road", async () => {
+    reply = async (endpoint) => {
+      if (endpoint === DETECT) return { ok: true, json: { objects: [] } };
+      return { ok: true, json: { masks: [await maskUri((x, y) => y > 40)] } };
+    };
+
+    await tapSpotlight({
+      apiKey: KEY,
+      frame: await picture(),
+      at: { x: 10, y: 50 },
+      reader: reader(),
+      engine: namer("jacket"),
+      about,
+    });
+
+    const detect = sent.find((one) => one.endpoint === DETECT);
+    expect(detect?.body.prompt).toBe(TAKE_FACE_NOUN);
+  });
+
   it("reports a tap that found nothing as exactly that", async () => {
     reply = async (endpoint) =>
       endpoint === DETECT ? { ok: true, json: { objects: [] } } : { ok: true, json: { masks: [] } };
