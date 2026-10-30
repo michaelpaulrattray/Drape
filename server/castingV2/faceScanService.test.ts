@@ -1059,6 +1059,126 @@ describe("the reading this face has already paid for", () => {
 });
 
 /*
+  THE MISSING-EYES LAW, ON THE ROAD IT DID NOT COVER (#2833, his eye round 9).
+
+  His panel on a cast in a harness top with two tattoo sleeves was settled and
+  held every catalogue row and not one found row: no Outfit, no Tattoo, not even
+  the collar. Two readings of the same picture on the same build both drew an
+  Outfit and a Tattoo. The discovery road fails open by design, and a reading
+  whose discovery or calls failed LOOKED clean, so it was kept, and a kept
+  reading is the end of the asking for that frame.
+
+  Driven through the real `scannedFace`, with the table's writer caught by the
+  mock above, so each arm reads what was actually WRITTEN and what the memory
+  actually holds, not a flag near them.
+*/
+describe("a reading that lost its found rows is served and not kept", () => {
+  const armTable = () => {
+    process.env.CASTING_SCAN_TABLE_SCOPE = "all";
+    process.env.CASTING_V2_SCOPE = "all";
+    process.env.CASTING_FACE_SCAN_SCOPE = "all";
+  };
+  const JACKET = { x: 100, y: 200, width: 300, height: 400 };
+
+  /** The counting reader, plus a pointer road whose detect answers as told. */
+  function pointing(detect: (name: string) => Promise<Array<typeof JACKET>>) {
+    const base = countingReader() as any;
+    base.pointer = async ({ name }: { name: string }) => detect(name);
+    base.regionInBox = async ({ box }: { box: typeof JACKET }) => maskOf(box);
+    return base as RegionReader;
+  }
+  const jacketOnly = (): FaceDiscovery => ({
+    ok: true,
+    features: [{ ...discoveredFeature("jacket"), kind: "clothing" }],
+    cannotSee: [],
+    unusable: [],
+    crops: ["head", "full"],
+  });
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  beforeEach(() => {
+    keptCalls.served.length = 0;
+    keptCalls.kept.length = 0;
+    keptAnswer = null;
+    armTable();
+  });
+
+  it("a discovery that came back { ok: false } is served and NOT kept — the next look asks again", async () => {
+    const reader = pointing(async () => [JACKET]);
+    const { deps } = await dependencies(reader);
+    const lost = await scannedFace({
+      ...FACE,
+      dependencies: { ...deps, discover: async () => ({ ok: false, why: "only part of the reading came back" }) },
+    });
+    await settle();
+
+    /* Served exactly as before: the catalogue, and no found row. */
+    expect(lost.slots.size, "the catalogue rows still reach the panel").toBeGreaterThan(0);
+    expect(lost.discovered).toEqual([]);
+    /* And neither written down nor held. */
+    expect(keptCalls.kept, "not written to the table").toHaveLength(0);
+    expect(scannedFaceIfReady(FACE), "and not held in memory either").toBeNull();
+    expect(faceScanCacheStats().damaged).toBe(1);
+
+    /* THE NEXT LOOK ASKS AGAIN, and this time the reading answers. */
+    const again = await scannedFace({ ...FACE, dependencies: { ...deps, discover: async () => jacketOnly() } });
+    await settle();
+    expect(again.discovered.map((one) => one.noun), "the second look finds the jacket").toEqual(["jacket"]);
+    expect(keptCalls.kept, "and THAT reading is kept").toHaveLength(1);
+  });
+
+  it("a detect that THREW is served and NOT kept", async () => {
+    const reader = pointing(async () => {
+      throw new MaskError("fal-ai/moondream3-preview/detect: 429 concurrent_requests_limit", { retryable: true });
+    });
+    const { deps } = await dependencies(reader);
+    const lost = await scannedFace({ ...FACE, dependencies: { ...deps, discover: async () => jacketOnly() } });
+    await settle();
+
+    expect(lost.discovered).toEqual([]);
+    /* Not a catalogue failure, so it never enters `failed` — that list is
+       catalogue questions, and the panel reads it. */
+    expect(lost.failed.map((one) => one.question)).not.toContain("jacket");
+    expect(keptCalls.kept, "not written to the table").toHaveLength(0);
+    expect(scannedFaceIfReady(FACE)).toBeNull();
+  });
+
+  it("CONTROL — a reading whose found rows all landed IS kept", async () => {
+    const reader = pointing(async () => [JACKET]);
+    const { deps } = await dependencies(reader);
+    const found = await scannedFace({ ...FACE, dependencies: { ...deps, discover: async () => jacketOnly() } });
+    await settle();
+
+    expect(found.discovered.map((one) => one.noun)).toEqual(["jacket"]);
+    expect(keptCalls.kept, "written once").toHaveLength(1);
+    expect(scannedFaceIfReady(FACE), "and held").not.toBeNull();
+    expect(faceScanCacheStats().damaged).toBe(0);
+  });
+
+  it("CONTROL — the detector finding NOTHING is an answer, and that reading IS kept", async () => {
+    /* `declined`, not `failed`: the reading named a jacket and the detector
+       looked and saw none. Re-asking would buy the same nothing. */
+    const reader = pointing(async () => []);
+    const { deps } = await dependencies(reader);
+    const declined = await scannedFace({ ...FACE, dependencies: { ...deps, discover: async () => jacketOnly() } });
+    await settle();
+
+    expect(declined.discovered).toEqual([]);
+    expect(keptCalls.kept, "kept: nothing was lost, the answer was no").toHaveLength(1);
+    expect(faceScanCacheStats().damaged).toBe(0);
+  });
+
+  it("CONTROL — no discovery at all (the flag off for this account) is kept, exactly as before", async () => {
+    const { deps } = await dependencies(countingReader());
+    await scannedFace({ ...FACE, dependencies: { ...deps, discover: null } });
+    await settle();
+
+    expect(keptCalls.kept).toHaveLength(1);
+    expect(faceScanCacheStats().damaged).toBe(0);
+  });
+});
+
+/*
   WHETHER A DISCOVERY IS BOUGHT AT ALL (#2566).
 
   ⚠ These arms exist because their absence survived sabotage, and the reason is
@@ -1254,10 +1374,16 @@ describe("what a discovery's names become", () => {
 
     expect(reading.discovered).toEqual([]);
     expect(reading.slots.size).toBeGreaterThan(0);
-    /* And the pointer road's failure is NOT recorded as a failed region: the
-       `failed` list is what decides whether a reading is damaged and therefore
-       not kept, so a detector's bad minute would otherwise condemn the whole
-       catalogue reading and re-buy it on the next look. */
+    /* And the pointer road's failure is NOT recorded as a failed region:
+       `failed` is a list of catalogue QUESTIONS, which the panel reads.
+       ⚠ This comment went on *"so a detector's bad minute would otherwise
+       condemn the whole catalogue reading and re-buy it on the next look"*
+       until #2833, and that re-buy is now exactly what happens, by another
+       road: a reading whose found rows were lost on weather is served and not
+       kept (`foundRowsLost`), because keeping it made the loss permanent. That
+       is the missing-eyes law's own trade, and his round-9 panel is its cost.
+       The arms are "a reading that lost its found rows is served and not
+       kept" above. */
     expect(reading.failed.map((one) => one.question)).not.toContain("jacket");
   });
 

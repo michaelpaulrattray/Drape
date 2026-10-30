@@ -82,8 +82,38 @@ const DETECT = "fal-ai/moondream3-preview/detect";
  * stated rather than implied** — no cast with more than four of one feature
  * exists in the fixture set, so what the model would offer for six eyes is not
  * known, and the day one is cast this is the first thing to re-drive.
+ *
+ * ⚠ **THAT DAY CAME ON 2026-10-30 (#2833, his eye round 9), AND IT BOUND ON THE
+ * WHOLE-FRAME READ, NOT ON A SIDE.** A cast with climbers, a drop and a hoop in
+ * each ear, asked `earring` of the whole picture: **exactly 4 answers every
+ * time, the same to the pixel, three draws** — and the same request at 8
+ * returned **7**: the cast's left lobe hoop, a tighter outline of it, and a
+ * climber at the top of the other ear. His panel showed what four means there:
+ * three answers on one ear and ONE on the other, whose lobe hoop was the fifth.
+ * The anatomy pairs on the same frame (`eyes`, `eyebrows`, `ears`, `horns`) gave
+ * the same count and the same pixels at 4 and at 8, as #2811's four cells did.
+ *
+ * **So this number is still right, and it is right PER SIDE.** It is what each
+ * half-picture of the crop road asks, and what the detector's other-ear look
+ * keeps on one side. The whole-frame read asks for both sides in one request,
+ * so it carries both sides' allowance — {@link PAIR_ROAD_MAX_MASKS}.
  */
 const PAIR_MAX_MASKS = 4;
+
+/**
+ * WHAT ONE WHOLE-FRAME READ OF A PAIR MAY COME BACK WITH — both sides'
+ * allowance, because it is one request standing in for two (#2833).
+ *
+ * Derived, not tuned: the crop road this road replaced asked each half for
+ * {@link PAIR_MAX_MASKS}, so one request for both halves at that same number
+ * gave each ear half the headroom it had before the road was built. Measured
+ * where it binds rather than assumed: on #2833's cast the read at 4 is cut off
+ * and the read at 8 returns 7, so this ceiling is above what the picture holds.
+ * It costs no request — the answers come back from the one call either way —
+ * only the extra masks' downloads. Every answer is still unioned and cut at the
+ * midline exactly as before.
+ */
+const PAIR_ROAD_MAX_MASKS = PAIR_MAX_MASKS * 2;
 
 /*
   fal keeps generated objects for seven days by default; a mask we use once and
@@ -1181,14 +1211,18 @@ export function createFalRegionReader(input: {
      * ear wearing two. What comes back is not all instances: on a feature there
      * is only one of, the extra answers are that same feature outlined again,
      * and `askRegion` drops those at the pixels rather than by noun.
+     *
+     * ⚠ **A NUMBER NOW, NOT A BOOLEAN (#2833)**: `null` asks for one, and a
+     * number is the ceiling the caller's road carries — {@link PAIR_MAX_MASKS}
+     * for one side, {@link PAIR_ROAD_MAX_MASKS} for both sides in one request.
      */
-    multiple = false,
+    maxMasks: number | null = null,
   ): Promise<readonly string[]> => {
     const address = imageUrl ? await addressIfIdentical(image, imageUrl) : null;
     const json = await post(apiKey, SAM3, {
       image_url: address ?? dataUri(image), prompt: askedAs(prompt), include_scores: true,
       output_format: "png",
-      ...(multiple ? { return_multiple_masks: true, max_masks: PAIR_MAX_MASKS } : {}),
+      ...(maxMasks !== null ? { return_multiple_masks: true, max_masks: maxMasks } : {}),
     }, theirs, "theClosedVocabularyPrompt");
     const masks: any[] = Array.isArray(json.masks) ? json.masks : [];
     return masks
@@ -1222,8 +1256,14 @@ export function createFalRegionReader(input: {
      * reading from the other. The memo below is deliberately not keyed on this:
      * the askers that set it never ask the shared prompt, and the guard there
      * says so.
+     *
+     * `"pair"` is `"all"` asked of BOTH SIDES AT ONCE (#2833) — the whole-frame
+     * pair read, which carries both sides' allowance
+     * ({@link PAIR_ROAD_MAX_MASKS}) and unions every answer the way `"all"`
+     * does. `"all"` itself stays for `region`'s several-road (both tusks and the
+     * row between them), which is one region and one side's allowance.
      */
-    multiple: false | "all" | "separate" = false,
+    multiple: false | "all" | "separate" | "pair" = false,
   ): Promise<Mask | null> => {
     /*
       ⚠ THE SHARED `face` READ MAY NEVER ASK FOR SEVERAL INSTANCES — measured,
@@ -1263,9 +1303,13 @@ export function createFalRegionReader(input: {
         urls = await asked;
       }
     } else {
-      /* The wire field is a boolean — both roads send the same request and
-         differ only in which answers they keep. */
-      urls = await askRegionUrls(image, prompt, imageUrl, theirs, multiple !== false);
+      /* `"all"` and `"separate"` send the same request and differ only in which
+         answers they keep. `"pair"` is the one road that asks for two sides in
+         one request, so it is the one that carries two sides' ceiling (#2833). */
+      urls = await askRegionUrls(
+        image, prompt, imageUrl, theirs,
+        multiple === false ? null : multiple === "pair" ? PAIR_ROAD_MAX_MASKS : PAIR_MAX_MASKS,
+      );
     }
     if (urls.length === 0) return null;
     if (keep === "first") return fetchMask(urls[0], theirs);
@@ -1573,7 +1617,10 @@ export function createFalRegionReader(input: {
       way: one read, then one more only if a side is missing.
     */
     if (pairInOneRead) {
-      const whole = await askRegion(image, name, "all", imageUrl, callSignal, "all");
+      /* `"pair"`: both sides in one request, so both sides' allowance — at
+         one side's, an ear wearing three pieces lost one to the other ear's
+         answers (#2833, `PAIR_ROAD_MAX_MASKS`). */
+      const whole = await askRegion(image, name, "all", imageUrl, callSignal, "pair");
       /* No masks at all is the crop road's own both-halves-empty answer, at one
          read instead of two — `absentIsAnswer` and the empty-anatomy re-ask
          above decide what it means, exactly as they do today. */
