@@ -1,7 +1,7 @@
 {
-  "edition": 779,
-  "updatedAt": "2026-10-29T23:06:53.130Z",
-  "shift": "Tonight the crew measured something about the face panel that bears directly on the rounds you have been doing this week.\n\nWhen the studio finds a feature on your character, it cuts out a small picture of that feature, and a check decides whether the cut is good enough to keep. If the check says no, there is no row — the feature just is not listed. That check was added last week and was set against one known-bad example. Nobody had ever tested it against thin things that are worn: chains, cords, a headband, a collar.\n\nIt gets it wrong in both directions, and we have the pictures.\n\nOn the fashion-photo character the studio cut the long curved tail correctly — traced the whole sweep of it — and then threw the cut away. The tail would simply not be listed, with nothing said. On the armoured character it was asked for the chest armour, cut the sword he is holding instead, and kept that one. So a right answer was discarded and a wrong one was drawn as a row.\n\nThe reason is geometry rather than a bad model. The check asks how much of its own rectangle a cut fills, and anything worn around something — a necklace, a choker, a headband, a bracelet — is a thin loop whose rectangle is the whole thing it encircles. We swept it: such a band has to be about seven per cent of its own width before it is thick enough to keep its row. No real chain is that thick. On top of that, asking the exact same question of the exact same picture twice on different days moves the answer by more than the margin the check is deciding on, so the same feature can keep its row one day and lose it the next.\n\nWhy this matters to you now: three of your rounds this week were about rows that were missing or wrong. When a row you expected is not there, it is now worth knowing that this check may be what lost it, rather than the reader failing to see the thing.\n\nNothing was changed tonight, deliberately. You are mid-round on this exact panel, and moving the bar between rounds would make your next look unreadable against the last — and the same check sits on a road a paid edit later paints on. It is written up with every number and left for the relay to decide, as card 2831. The recommendation on it is to stop letting this measurement refuse a feature while keeping it as a number we record, because the two plain refusals either side of it — nothing was cut, and the cut is not where it was asked for — do not need tuning and are not affected.\n\nIt cost five cents of our own money. Nothing of yours was spent, and no setting was moved.\n\nOne other tidy-up: a job about seven lines of wording that still say \"cast\" was sitting in the queue looking like ordinary work, when what it actually needs is someone to write the new wording. It now says so, so nobody picks it up expecting to be able to finish it.",
+  "edition": 780,
+  "updatedAt": "2026-10-30T00:47:45.799158Z",
+  "shift": "Two things tonight, and the first one needs you.\n\nThe road you said BUILD IT to on Wednesday — attach a photo of a jacket, say \"wear this\", and the cast comes back wearing it — went live on your account yesterday afternoon and nobody ever asked you to try it. Every piece of it is built and switched on for you alone. The only thing left on that job is your own jacket test, so it is on your desk now as a question rather than sitting on the board looking like work still to do. That was the actual fault: the job was finished, said nothing about needing you, and was about to be picked up again by the next session as if it were unbuilt.\n\nThe second thing is about the panel on the right of a cast, and it is us correcting our own notes rather than anything you can see. When the studio cuts out a small picture of a feature — the hair, an earring — it will only keep that picture for features it has properly measured first, and it writes the feature down in words for everything else. The note inside our own code said hair was the only one measured. Four are: hair, eyes, horns and earrings. The other three were measured months ago and nobody went back to correct the sentence.\n\nIt matters because that sentence is the first thing anyone building the next piece of the editing work reads, and it would have had them design around a limit that has not existed for months — in particular it would have had them believe an earring can never keep its picture, when it can. Corrected, and the correction is now worked out from the measurements themselves rather than typed in, so it cannot go stale again: if a fifth feature is ever measured, the sentence has to move with it or our checks go red. Glasses and nose studs genuinely cannot keep a picture yet, and a garment has no place on that panel at all — both of those are written down now as real work rather than assumed done.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-29T21:21:57.188Z",
+      "readAt": "2026-10-30T00:49:23.958Z",
       "items": [
         {
           "issueNumber": 30,
@@ -302,6 +302,33 @@
     }
   },
   "needsYou": [
+    {
+      "id": "reference-take-jacket-test-2736",
+      "title": "Your jacket test — the photo road is live on your account and waiting on you",
+      "productImpact": "This is the road you said BUILD IT to. You open Refine on a cast, attach a photo of a garment — on a model, on a hanger, a product shot — and type \"wear this jacket\". The cast comes back wearing that jacket, still looking like themselves, with the rest of their outfit untouched.\n\nIt is all built and it has been switched on for your account alone since yesterday afternoon. Nothing else is owed on it. The last step is one real edit by you, and nobody had put that in front of you — so the job has been sitting on the board for a day looking like unfinished work, which is why it is here now.\n\nNobody but you can see it. It costs an ordinary Refine, 100 credits, and no more than that.",
+      "workedExample": "Pick a cast you know well, open Refine, attach a photograph of a jacket you like and type \"wear this jacket\". Two things to look at: did the jacket arrive as that jacket rather than a coat of roughly the same colour, and — if the photo has a person in it — did any part of that person come along with it. Then say \"put them in this whole outfit\" on a photo with a full look in it, and see whether it takes the lot.",
+      "options": [
+        {
+          "key": "works",
+          "label": "It works — open it up to everyone",
+          "consequence": "I widen it past your account and then retire the setting, so it is simply how Refine works."
+        },
+        {
+          "key": "mostly",
+          "label": "Close, but something is off — I will say what",
+          "consequence": "I fix what you name on your account first and bring it back to you before anyone else sees it."
+        },
+        {
+          "key": "hold",
+          "label": "Leave it on my account for now",
+          "consequence": "Nothing changes and nothing is re-asked. It stays yours until you say otherwise."
+        }
+      ],
+      "recommendation": "Try it on one cast. There is nothing to decide beforehand and no setting to choose — the only thing anybody needs from you is whether the jacket you pointed at is the jacket you got.",
+      "state": "open",
+      "filedAt": "2026-10-30T00:47:45.799158Z",
+      "issueNumber": 2736
+    },
     {
       "id": "face-reader-eye-2566",
       "title": "Your eye on the face reader — your four corrections are in",
@@ -11662,7 +11689,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-29T21:21:57.187Z",
+    "readAt": "2026-10-30T00:49:23.957Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11768,7 +11795,11 @@
       {
         "issueNumber": 2736,
         "title": "N3: take anything from a reference picture — attach a photo, say what to take (\"wear this jacket\"), read from the picture, never a list (his word 2026-10-28)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — your own jacket test: attach a jacket photo in Refine, say \"wear this\", and tell us how it went. Live on your account."
+        }
       },
       {
         "issueNumber": 2752,
