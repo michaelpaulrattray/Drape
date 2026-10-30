@@ -34,6 +34,7 @@
  * road is untouched. A provider's bad minute must never make a tap look broken.
  */
 import { isBareNoun } from "./faceDiscovery";
+import { boundForJudge } from "./judgeFrame";
 import type { Mask } from "./maskedComposite";
 import type { TextEngine } from "../providers/types";
 import { createModuleLogger } from "../logging/logger";
@@ -117,15 +118,43 @@ export async function nameTheCut(input: {
     log.warn({ cause: String(cause) }, "the cut could not be put on grey");
     return null;
   }
+  /*
+    ⚠ BOUNDED BEFORE IT IS POSTED (#1413's class, and the guard that caught
+    this one is `readerFrameBound.test.ts`).
+
+    A customer's attachment is accepted at up to 8 MB by the attach door, and
+    this piece keeps the attachment's own dimensions on purpose — the frame is
+    deliberately NOT cropped to the cut, because the court's measurement was
+    taken on the piece in its own frame. So without the bound, naming one tap
+    posts a multi-megabyte photograph of a person to a text provider, once per
+    tap. `boundForJudge` never enlarges and never throws, so a small picture
+    goes as it is.
+  */
+  const bound = await boundForJudge(piece);
   try {
     const answer = await input.engine.complete({
       system: CUT_NAME_PROMPT,
       user: "What is this piece?",
-      images: [piece],
+      images: [bound.image],
       about: "reference.cutName",
       timeoutMs: CUT_NAME_TIMEOUT_MS,
       retries: 0,
     });
+    /*
+      ⚠ A REPLY CUT OFF AT THE CEILING IS NOT A SHORTER NAME (#1272's class).
+
+      This read's answer is prose rather than JSON, which makes the failure
+      QUIETER here than anywhere else that signal is read: a truncated name
+      does not fail a parse, it comes back as `leather jack` — a plausible bare
+      noun that would pass `isBareNoun`, reach the chip, and tell the customer
+      their jacket is something else. So the flag is read before the text is,
+      and a cut-off reply shows NO name, which is the honest answer and costs
+      nothing.
+    */
+    if (answer?.truncated === true) {
+      log.warn({}, "the cut's name came back cut off at the ceiling — no name is shown");
+      return null;
+    }
     const raw = typeof answer?.text === "string" ? answer.text : "";
     /* One line, no quotes, no trailing stop — the provider obeys the "name
        only" instruction loosely and this is the whole of the tidying. The

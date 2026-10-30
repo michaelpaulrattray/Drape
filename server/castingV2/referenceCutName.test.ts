@@ -10,6 +10,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
+import { JUDGE_FRAME_LONG_EDGE } from "./judgeFrame";
 import type { Mask } from "./maskedComposite";
 import {
   CUT_NAME_BACKDROP,
@@ -126,6 +127,53 @@ describe("naming the cut", () => {
     } as unknown as TextEngine;
 
     await expect(nameTheCut({ frame: await frame(), mask: square(), engine })).resolves.toBeNull();
+  });
+
+  it("shows NO name when the reply was cut off at the ceiling — and its negative control", async () => {
+    /* ⚠ THE DANGEROUS CASE, and it is quieter here than anywhere else that
+       signal is read: a cut-off name is not a failed parse, it is a SHORTER
+       NAME. `leather jack` is a perfectly good bare noun and it is the wrong
+       garment. */
+    const cut = { text: "leather jack", truncated: true } as any;
+    const truncated = {
+      complete: vi.fn(async () => cut),
+    } as unknown as TextEngine;
+
+    await expect(nameTheCut({ frame: await frame(), mask: square(), engine: truncated })).resolves.toBeNull();
+
+    /* THE CONTROL: the same reply without the flag is still read, so the arm
+       above is measuring `truncated` and not the text's shape. */
+    const whole = {
+      complete: vi.fn(async () => ({ text: "leather jack" }) as any),
+    } as unknown as TextEngine;
+
+    await expect(nameTheCut({ frame: await frame(), mask: square(), engine: whole })).resolves.toBe(
+      "leather jack",
+    );
+  });
+
+  it("BOUNDS the frame before posting it — asserted on the bytes that left", async () => {
+    /* The derived half of `readerFrameBound.test.ts` only proves this module
+       imports the bound; this proves it is APPLIED. A customer's attachment is
+       accepted at up to 8 MB and this piece keeps the attachment's own
+       dimensions, so the unbounded case is a real multi-megabyte post per tap. */
+    const sharp = (await import("sharp")).default;
+    const wide = 2800;
+    const tall = 120;
+    const big = await sharp({
+      create: { width: wide, height: tall, channels: 3, background: { r: 200, g: 20, b: 20 } },
+    })
+      .png()
+      .toBuffer();
+    const mask = { data: Buffer.alloc(wide * tall, 255), width: wide, height: tall };
+    const { engine, asked } = engineSaying("hat");
+
+    await nameTheCut({ frame: big, mask, engine });
+
+    expect(asked).toHaveLength(1);
+    const posted = await sharp(asked[0]!.images![0]!.bytes).metadata();
+    expect(posted.width).toBeLessThanOrEqual(JUDGE_FRAME_LONG_EDGE);
+    expect(posted.width).toBe(JUDGE_FRAME_LONG_EDGE);
   });
 
   it("buys nothing when the cut cannot be put on grey", async () => {
