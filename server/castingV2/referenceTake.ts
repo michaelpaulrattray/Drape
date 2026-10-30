@@ -25,7 +25,13 @@
  *   3. the mask       `regionInBox`, ONE box per call — #2532 measured that
  *                     several boxes do not combine, they switch which object
  *                     comes back, so the biggest box is chosen here and asked
- *                     alone.
+ *                     alone. ⚠ **AND THE ONES NOT ASKED ABOUT ARE NOW
+ *                     RECORDED (#2842)** — a noun naming a thing made of
+ *                     several parts gets one part cut (`laces`: nine boxes,
+ *                     measured on a product shot). Nothing moves on it yet;
+ *                     `TakenThing.spread` and one log line are what make the
+ *                     per-noun choice measurable from real use rather than
+ *                     from a court fixture.
  *   4. the judgement  `cleanCut` (#2565 slice 2) — judge the RAW cut against
  *                     the fill floor, then clean the one being kept.
  *   5. the person     every detected face box zeroed in the mask, then
@@ -70,12 +76,14 @@ import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 
 import { CUT_FILL_FLOOR, cleanCut, type CutVerdict } from "./cutQuality";
+import { biggestOf, spreadOf } from "./referenceBoxes";
 import { cutOutPixels } from "./inkReferenceCrop";
 import { createModuleLogger } from "../logging/logger";
 import { createStorageCleanupManifestIn, storageCleanupManifestHeldUntil } from "../db/storageCleanup";
 import { segmenterAccountRefused } from "./readerDown";
 import { storagePut } from "../storage";
 import { withTransaction } from "../db/connection";
+import type { BoxSpread } from "./referenceBoxes";
 import type { CastPronouns } from "./castPronouns";
 import type { Mask } from "./maskedComposite";
 import type { PointerBox, RegionReader } from "./maskedRefine";
@@ -128,6 +136,24 @@ export type TakenThing = {
   readonly verdict: CutVerdict;
   /** How many face boxes were subtracted. Evidence, never a gate. */
   readonly facesRemoved: number;
+  /**
+   * HOW MANY PARTS THE DETECTOR RETURNED FOR THEIR NOUN, AND HOW THEY SIT —
+   * #2842. Evidence, never a gate, exactly as `facesRemoved` is.
+   *
+   * The card was filed on the reading road and this is its sibling in the same
+   * class, found by working law 7's sweep: the same `biggestOf` over the same
+   * detector answer, one file away. ⚠ **It is the half a customer can reach** —
+   * the reading road has no entrance yet, and this one is `users:1` on his own
+   * account, so *"wear these laces"* cuts one lace's speck today.
+   *
+   * ⚠ **Nothing about the cut moves on it and that is deliberate**: step 3 of
+   * the header is #2532's measurement that several boxes handed to the segmenter
+   * switch which object comes back rather than combining, so a union here is a
+   * DIFFERENT question and not the sum of the one already asked. This records
+   * the spread from REAL use, which is a better population than any court
+   * fixture, and the per-noun choice is made once that spread exists.
+   */
+  readonly spread: BoxSpread;
 };
 
 export type TakeResult =
@@ -143,11 +169,6 @@ export type CutThingFromPictureInput = {
   /** For the log alone — never part of any question asked of a provider. */
   readonly about: { userId: number; candidatePublicId: string };
 };
-
-/** The biggest box the detector drew. One box per call — see the header. */
-function biggestOf(boxes: readonly PointerBox[]): PointerBox | null {
-  return [...boxes].sort((a, b) => b.width * b.height - a.width * a.height)[0] ?? null;
-}
 
 /**
  * EVERY FACE OUT OF THE MASK, in the mask's own bytes.
@@ -273,7 +294,27 @@ export async function cutThingFromPicture(input: CutThingFromPictureInput): Prom
       return { ok: false, why: "not-found", verdict: null };
     }
     const box = biggestOf(boxes);
-    if (box === null) return { ok: false, why: "not-found", verdict: null };
+    const spread = spreadOf(boxes);
+    if (box === null || spread === null) return { ok: false, why: "not-found", verdict: null };
+    if (spread.parts > 1) {
+      /* SEVERAL PARTS FOR ONE NOUN — #2842, recorded before a mask is bought.
+         Here rather than beside the success line because a refused cut is
+         exactly as interesting to the spread as a kept one: a noun whose parts
+         are scattered is the one whose single-box cut is most likely to be
+         refused, and that correlation is unreadable if the fact only survives
+         a success. */
+      log.info(
+        {
+          ...input.about,
+          noun: input.noun,
+          parts: spread.parts,
+          kept: box.width * box.height,
+          union: spread.union.width * spread.union.height,
+          fill: Number(spread.fill.toFixed(3)),
+        },
+        "[referenceTake] that noun came back as several parts and the biggest one is being cut — #2842, recorded not resolved",
+      );
+    }
     const mask = await regionInBox.call(input.reader, { image: flat, name: input.noun, box });
     if (mask === null) {
       log.info(
@@ -353,6 +394,7 @@ export async function cutThingFromPicture(input: CutThingFromPictureInput): Prom
         noun: input.noun,
         verdict: judged.verdict,
         facesRemoved: faces.length,
+        spread,
       },
     };
   } catch (error) {

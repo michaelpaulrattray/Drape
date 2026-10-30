@@ -173,6 +173,55 @@ describe("cutThingFromPicture", () => {
     expect(r.askedBoxes).toEqual([big]);
   });
 
+  /**
+   * ⚠ THE PARTS NOT ASKED ABOUT ARE RECORDED — #2842, and the two halves of
+   * this arm are the whole point: the choice has NOT changed and the discarded
+   * answer is no longer lost.
+   *
+   * The card's defect on the sibling road: `laces` returned nine boxes and the
+   * marker was a 57x66 speck of one lace. Here the same shape cuts one part.
+   * Nothing moves on it yet (#2532 measured that several boxes handed to the
+   * segmenter switch which object comes back rather than combining), so what
+   * this proves is that the spread survives the take — on the road a customer
+   * can actually reach today.
+   */
+  it("⚠ records how many parts came back, their union and its fill — #2842", async () => {
+    const big = { x: 10, y: 10, width: 100, height: 100 };
+    const r = reader({
+      boxes: [{ x: 0, y: 0, width: 5, height: 5 }, big, { x: 2, y: 2, width: 9, height: 9 }],
+      mask: rect(blank(), big),
+    });
+    const result = await cutThingFromPicture({
+      bytes: await photo(), noun: "jacket", reader: r, about: ABOUT,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    /* THE CHOICE IS UNCHANGED: the biggest box is still the one cut. */
+    expect(r.askedBoxes).toEqual([big]);
+    /* AND THE DISCARDED TWO ARE NO LONGER LOST. */
+    expect(result.thing.spread.parts).toBe(3);
+    expect(result.thing.spread.union).toEqual({ x: 0, y: 0, width: 110, height: 110 });
+    /* 10,000 + 25 + 81 kept pixels, minus the overlaps the sweep counts once,
+       over a 12,100 union — so a tight cluster reads as one. */
+    expect(result.thing.spread.fill).toBeGreaterThan(0.8);
+    expect(result.thing.spread.fill).toBeLessThanOrEqual(1);
+  });
+
+  it("⚠ a noun that came back as ONE thing records one part, completely full", async () => {
+    /* The ordinary case, asserted so the recording cannot quietly describe
+       every take as several parts. */
+    const box = { x: 20, y: 20, width: 60, height: 60 };
+    const r = reader({ boxes: [box], mask: rect(blank(), box) });
+    const result = await cutThingFromPicture({
+      bytes: await photo(), noun: "jacket", reader: r, about: ABOUT,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.thing.spread.parts).toBe(1);
+    expect(result.thing.spread.union).toEqual(box);
+    expect(result.thing.spread.fill).toBe(1);
+  });
+
   it("refuses when the segmenter returns no mask for that rectangle", async () => {
     const r = reader({ boxes: [{ x: 0, y: 0, width: 50, height: 50 }], mask: null });
     const result = await cutThingFromPicture({
