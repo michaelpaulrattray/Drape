@@ -1660,3 +1660,9 @@
   verdict: KEEP
   why: "the other half of the same derived view, and its guard's POSITIVE CONTROL (#2544 slice 1): before any refusal arm is believed, the licence is shown to genuinely stop the garment half firing, over the whole half rather than a sample. Without it every scenery arm would pass against a licence that was never applied at all"
   argued: "#2544 slice 1"
+
+- symbol: readAndMarkReference
+  file: server/castingV2/referenceDiscovery.ts
+  verdict: KEEP
+  why: "the reference reading's ENTRANCE, built dark with no caller yet on purpose (#14 slice 2). The sweep is right that nothing imports it: the surface that calls it is slice 3 and the tap's cut is slice 4, so this slice ships the answer before anything draws it. It is KEEP and not HELD because HELD claims a symbol is awaiting deletion with a named blocker, and this one is awaiting a CALLER — the opposite direction; a HELD row here would also read REWIRED the moment slice 3 lands, turning a correct build into a table fault. The two halves it composes (`readReferencePicture`, `markReferenceThings`) are exported for their own suite and are reachable from here, which is why only the entrance is listed. ⚠ If slice 3 is ever abandoned rather than built, this row is the thing that should become HELD with that abandonment as its blocker — an entrance with no road is the `entrance-before-the-road` shape and it is exactly what this register exists to keep visible"
+  argued: "#14, docs/specs/REFERENCE_SELECTOR_BUILD_DESIGN_2026-10-28.md section 9 slice order"

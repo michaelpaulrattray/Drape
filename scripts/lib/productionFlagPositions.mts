@@ -383,6 +383,23 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "garment half additionally rides CASTING_OUTFIT_EDIT_SCOPE and never "
       + "widens it.",
   },
+  CASTING_REFERENCE_SELECTOR_SCOPE: {
+    position: "off",
+    why:
+      "built dark 2026-10-30 (#14 slice 2, the reference reading), shipped at "
+      + "`off` and ABSENT from the service -- the design's section 9 says dark "
+      + "at birth. It buys what nothing else on this road buys: a text reading of "
+      + "an attached picture plus one detector rectangle per name it brings "
+      + "back. While it is off an attach is byte-identical to today -- no text "
+      + "call, no detect, no money, and the words road untouched. What it "
+      + "produces is a bounded list of named, boxed markers in memory and "
+      + "nothing else: no cut, no casting_reference_crops row, no stored byte, "
+      + "and no customer-visible surface, because the surface is slice 3 and the "
+      + "tap's cut is slice 4. So `users:1` on his account buys a reading "
+      + "nobody can see yet, which is why it stays off until slice 3 draws it. "
+      + "It is a child of CASTING_REFERENCE_ATTACH_SCOPE in the boot chain and "
+      + "can never reach past the door that keeps the picture it reads.",
+  },
   CASTING_FACE_SCAN_SCOPE: {
     position: "all",
     why:
