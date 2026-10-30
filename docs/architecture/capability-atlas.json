@@ -179,9 +179,12 @@
           "server/castingV2/diagnosticCapture.test.ts",
           "server/castingV2/faceScan.test.ts",
           "server/castingV2/readerOutageRefusal.test.ts",
+          "server/castingV2/referenceSplitCleanup.test.ts",
           "server/castingV2/refineRefusals.test.ts"
         ],
         "sites": [
+          "server/castingV2/referenceSplitCleanup.ts:337",
+          "server/castingV2/referenceSplitCleanup.ts:386",
           "server/castingV2/refineDelta.ts:946",
           "server/castingV2/refineInterpreter.ts:1039",
           "server/castingV2/refineDelta.ts:946"
