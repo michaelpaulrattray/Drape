@@ -26,7 +26,7 @@ import { throughCensus } from "./callCensus";
 import { throughFalGate } from "./falConcurrency";
 import { classifyFalHttp, falHeaders } from "../providers/falTransport";
 import { REGION_CARDS, REGION_CARD_ENTRIES, type AskedAs, type RegionCard } from "./regionCards";
-import { judgeCut } from "./cutQuality";
+import { FILL_MEASURED_NOT_REFUSED, judgeCut } from "./cutQuality";
 import { MaskError, overlapWith, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { PointerBox, RegionReader, SideRegions } from "./maskedRefine";
@@ -511,10 +511,14 @@ function assertPicture(image: Buffer, question: string): void {
  * a hundred faces is far more than any one process works on before the axis is
  * cheap again.
  */
-const AXIS_BY_FACE = new Map<string, Promise<number | null>>();
+/* The face's whole SPAN is held, not only its axis (#2844): the face rule
+   judges a feature by the face's extent, and a keyed hit that held the axis
+   alone would have bought a second face read to find the box the first read
+   already measured. Same mask, same approximation, declared above. */
+const AXIS_BY_FACE = new Map<string, Promise<FaceSpan | null>>();
 const AXIS_FACES_KEPT = 100;
 
-function rememberAxis(key: string, axis: Promise<number | null>): void {
+function rememberAxis(key: string, axis: Promise<FaceSpan | null>): void {
   AXIS_BY_FACE.set(key, axis);
   while (AXIS_BY_FACE.size > AXIS_FACES_KEPT) {
     const oldest = AXIS_BY_FACE.keys().next().value;
@@ -542,6 +546,18 @@ const SEVERAL = new Set(
     .filter((definition) => definition.several !== undefined)
     .map((definition) => definition.question ?? definition.display)
     .filter((region): region is string => typeof region === "string" && region.length > 0),
+);
+
+/**
+ * THE PAIRS THAT ARE PART OF THE FACE, judged by the face's extent (#2844) —
+ * read off the catalogue's own `group`, never a list here, the way
+ * {@link BILATERAL} reads `frame`. Today that is `eyes`, `eyebrows` and `ear`;
+ * an earring (accessories) and horns (hair) are not, by the catalogue's word.
+ */
+const FACE_FEATURES = new Set(
+  catalogueSlots()
+    .filter((definition) => definition.frame === "ownSide" && definition.question !== null && definition.group === "face")
+    .map((definition) => definition.question as string),
 );
 
 /** The noun ONE SIDE of a bilateral region is asked by. Exported since #2802
@@ -572,22 +588,35 @@ function centroidX(mask: Mask): number | null {
  * is the same mask: the axis the frame is cut on and the sides an ear sits at
  * cannot disagree about where the face is.
  */
-type FaceSpan = { axis: number; left: number; right: number };
+type FaceSpan = {
+  axis: number; left: number; right: number;
+  /* And the face DOWN (#2844) — the same mask's top, bottom and middle row,
+     read in the same pass, so the face's height costs no request either. */
+  top: number; bottom: number; middle: number;
+};
 
 function spanOf(mask: Mask): FaceSpan | null {
   const axis = centroidX(mask);
   if (axis === null) return null;
   let left = mask.width;
   let right = -1;
+  let top = mask.height;
+  let bottom = -1;
+  let rows = 0;
+  let pixels = 0;
   for (let y = 0; y < mask.height; y += 1) {
     const row = y * mask.width;
     for (let x = 0; x < mask.width; x += 1) {
       if (mask.data[row + x] === 0) continue;
       if (x < left) left = x;
       if (x > right) right = x;
+      if (y < top) top = y;
+      if (y > bottom) bottom = y;
+      rows += y;
+      pixels += 1;
     }
   }
-  return { axis, left, right };
+  return { axis, left, right, top, bottom, middle: rows / pixels };
 }
 
 /** One connected piece of a side's answer that was not kept, for the log. */
@@ -662,6 +691,103 @@ export function keepPiecesAtTheSide(
   side: "imageLeft" | "imageRight",
   face: { midline: number; left: number; right: number },
 ): { kept: Mask | null; dropped: DroppedPiece[] } {
+  const { kept, dropped } = keepPiecesWhere(mask, (piece) => atTheSide(piece.centreX, side, face));
+  return { kept, dropped: dropped.map(({ pixels, centreX }) => ({ pixels, centreX })) };
+}
+
+/** One connected piece of an answer that was not kept, with where it sat down
+ *  as well as across — the face rule judges both. */
+export type DroppedFacePiece = { pixels: number; centreX: number; centreY: number };
+
+/**
+ * IS A THING CENTRED HERE ON THE FACE (#2844) — no farther outside the face
+ * read's extent, on either axis, than that axis's middle is inside it.
+ *
+ * Read across, that is {@link atTheSide}'s own construction turned outward: a
+ * piece beyond the face's edge is still the face's when it is no farther past
+ * that edge than the edge is from the face's middle. Read down, the same
+ * sentence with the face's top, bottom and middle row. A tie is kept, for
+ * `atTheSide`'s reason. Both bounds come off the one face read, so nothing here
+ * is tuned: the face is its own measure.
+ */
+function onTheFace(
+  centreX: number,
+  centreY: number,
+  face: { midline: number; left: number; right: number; top: number; bottom: number; middle: number },
+): boolean {
+  const across = centreX < face.left
+    ? face.left - centreX <= face.midline - face.left
+    : centreX > face.right
+      ? centreX - face.right <= face.right - face.midline
+      : true;
+  const down = centreY < face.top
+    ? face.top - centreY <= face.middle - face.top
+    : centreY > face.bottom
+      ? centreY - face.bottom <= face.bottom - face.middle
+      : true;
+  return across && down;
+}
+
+/**
+ * ONLY THE PIECES OF A FACE FEATURE THAT ARE ON THE FACE — an eye, a brow or
+ * an ear lying away from it is not that feature (#2844, his eye round 10:
+ * *"her left eye box is jacked up and not cropped"*).
+ *
+ * # What his panel showed, and what the segmenter actually answered
+ *
+ * A cast with a tattoo sleeve on each arm, and on the cast's LEFT arm, at the
+ * elbow, **a tattooed woman's face with eyes**. Asked `eyes` of the whole frame
+ * at 1024 wide, SAM 3 answered two masks: both real eyes as one shape
+ * (5,571px), and **the tattoo's eye** (606px, x916–947 y1187–1210). The pair
+ * road unions every answer and cuts at the midline, so the cast's left eye
+ * came back as the real eye AND the tattoo's — x558–947 y438–1210, which is
+ * his panel's rectangle to the pixel once scaled. **The crop road, which every
+ * paid refine takes, kept it too**: on the image-right half `eye` answered the
+ * real eye, a looser outline of it, and the tattoo's eye (430px), and #2818's
+ * `"separate"` rule keeps an extra that touches nothing — so a refine that
+ * touches the left eye would paint on the arm. `eyebrow` on the same half
+ * answered the tattoo's brow (220px) beside the real one, kept the same way.
+ *
+ * # The rule, measured where the real pieces and the false ones sit
+ *
+ * {@link onTheFace}, applied to every connected piece of one side's answer.
+ * On this frame the face read is x351–727 y317–754, its middle row y557:
+ *
+ *     the tattoo's eye    y1199, past the chin by 445 against 197 allowed
+ *     the tattoo's brow   y1180, past the chin by 426 against 197 allowed
+ *     the cast's right ear x306, past the face's edge by 45 against 155 —
+ *                         SAM 3's face read does not hold that ear at all
+ *
+ * so "inside the face read's box" is NOT the rule: it would take a real ear
+ * off, and the positive controls in the PR (three-quarter and side views, a
+ * creature's eyes and ears) are where the margin is read.
+ *
+ * ⚠ **What it cannot judge, declared**: a lookalike ON the face (a tattooed eye
+ * on a cheek) is on the face, and this rule keeps it. A face read that came
+ * back as a fragment shrinks the box it judges by — the same fall-open
+ * `keepPiecesAtTheSide` declares. And it is read for the catalogue's own FACE
+ * pairs only ({@link FACE_FEATURES}): an earring may hang below the chin and a
+ * horn grows above the brow, so neither is judged by the face's extent.
+ */
+export function keepPiecesOnTheFace(
+  mask: Mask,
+  face: { midline: number; left: number; right: number; top: number; bottom: number; middle: number },
+): { kept: Mask | null; dropped: DroppedFacePiece[] } {
+  return keepPiecesWhere(mask, (piece) => onTheFace(piece.centreX, piece.centreY, face));
+}
+
+/**
+ * THE CONNECTED PIECES OF A MASK, EACH KEPT OR DROPPED BY ITS CENTRE — the one
+ * labelling both rules above read, so the ear's rule and the face's cannot
+ * disagree about what a piece is. 8-neighbour.
+ *
+ * Returns the same mask object when nothing was dropped, and `null` for `kept`
+ * when nothing is left.
+ */
+function keepPiecesWhere(
+  mask: Mask,
+  keep: (piece: { centreX: number; centreY: number }) => boolean,
+): { kept: Mask | null; dropped: DroppedFacePiece[] } {
   const { width, height, data } = mask;
   /* Labelled inside the mask's own bounds only: a side's answer is a few
      small pieces on a frame of millions of pixels, and a label buffer the size
@@ -684,7 +810,7 @@ export function keepPiecesAtTheSide(
   const boxWidth = x1 - x0 + 1;
   const boxHeight = y1 - y0 + 1;
   const label = new Uint32Array(boxWidth * boxHeight);
-  const pieces: { pixels: number; sumX: number }[] = [];
+  const pieces: { pixels: number; sumX: number; sumY: number }[] = [];
   const stack: number[] = [];
   for (let by = 0; by < boxHeight; by += 1) {
     for (let bx = 0; bx < boxWidth; bx += 1) {
@@ -693,6 +819,7 @@ export function keepPiecesAtTheSide(
       const id = pieces.length + 1;
       let pixels = 0;
       let sumX = 0;
+      let sumY = 0;
       label[at] = id;
       stack.push(at);
       while (stack.length > 0) {
@@ -701,6 +828,7 @@ export function keepPiecesAtTheSide(
         const py = (p - px) / boxWidth;
         pixels += 1;
         sumX += px + x0;
+        sumY += py + y0;
         for (let dy = -1; dy <= 1; dy += 1) {
           for (let dx = -1; dx <= 1; dx += 1) {
             const nx = px + dx;
@@ -713,10 +841,10 @@ export function keepPiecesAtTheSide(
           }
         }
       }
-      pieces.push({ pixels, sumX });
+      pieces.push({ pixels, sumX, sumY });
     }
   }
-  const drop = pieces.map(({ pixels, sumX }) => !atTheSide(sumX / pixels, side, face));
+  const drop = pieces.map(({ pixels, sumX, sumY }) => !keep({ centreX: sumX / pixels, centreY: sumY / pixels }));
   if (!drop.some(Boolean)) return { kept: mask, dropped: [] };
   const out = Buffer.from(data);
   let left = 0;
@@ -730,7 +858,9 @@ export function keepPiecesAtTheSide(
   }
   const dropped = pieces
     .filter((_, at) => drop[at])
-    .map(({ pixels, sumX }) => ({ pixels, centreX: Math.round(sumX / pixels) }));
+    .map(({ pixels, sumX, sumY }) => ({
+      pixels, centreX: Math.round(sumX / pixels), centreY: Math.round(sumY / pixels),
+    }));
   return { kept: left === 0 ? null : { data: out, width, height }, dropped };
 }
 
@@ -1421,8 +1551,14 @@ export function createFalRegionReader(input: {
     return asked;
   };
 
-  const axes = new Map<Buffer, Promise<number | null>>();
-  const axisOf = (image: Buffer, imageUrl?: string, axisKey?: string): Promise<number | null> => {
+  const axes = new Map<Buffer, Promise<FaceSpan | null>>();
+  const axisOf = (image: Buffer, imageUrl?: string, axisKey?: string): Promise<number | null> =>
+    spanFor(image, imageUrl, axisKey).then((span) => span?.axis ?? null);
+
+  /** The face across AND down, by the same memo the axis is read through —
+   *  so the face rule (#2844) judges by the very read the midline came from,
+   *  keyed or not, and never buys one of its own. */
+  const spanFor = (image: Buffer, imageUrl?: string, axisKey?: string): Promise<FaceSpan | null> => {
     /*
       AND ONCE PER FACE, when the caller says whose face it is (fable-603 §3).
 
@@ -1441,7 +1577,7 @@ export function createFalRegionReader(input: {
     if (shared) return shared;
     const held = axes.get(image);
     if (held) return held;
-    const asked = faceOf(image, imageUrl).then((span) => span?.axis ?? null);
+    const asked = faceOf(image, imageUrl);
     axes.set(image, asked);
     if (axisKey !== undefined) rememberAxis(axisKey, asked);
     /* A failed read is not remembered: the next pair asks again rather than
@@ -1482,7 +1618,17 @@ export function createFalRegionReader(input: {
   } | null> => {
     const halves = await readHalves(image, name, imageUrl, axisKey, callSignal);
     if (halves === null) return null;
-    if (!onTheEars) return halves.split;
+    /*
+      A FACE FEATURE IS ON THE FACE (#2844) — applied to BOTH roads, because
+      both kept the tattoo's eye on his round-10 cast: the pair road by the
+      union, the crop road by `"separate"`. See `keepPiecesOnTheFace` for the
+      measurement. Every paid refine reads a pair through here (`regionSides`),
+      and so does the panel, so the two cannot disagree about which eye is hers.
+    */
+    const split = FACE_FEATURES.has(name)
+      ? await offTheFaceDropped(image, name, imageUrl, axisKey, halves.split, halves.midline)
+      : halves.split;
+    if (!onTheEars) return split;
     /*
       AN EAR IS AT THE SIDE OF THE FACE (#2781) — applied to BOTH roads,
       because both take a thing on the midline into a side: the pair road cuts
@@ -1494,14 +1640,14 @@ export function createFalRegionReader(input: {
       to judge by and the answer is today's.
     */
     const span = await faceOf(image, imageUrl);
-    if (span === null) return halves.split;
+    if (span === null) return split;
     const face = { midline: halves.midline, left: span.left, right: span.right };
-    const left = halves.split.atImageLeft === null
+    const left = split.atImageLeft === null
       ? { kept: null, dropped: [] }
-      : keepPiecesAtTheSide(halves.split.atImageLeft, "imageLeft", face);
-    const right = halves.split.atImageRight === null
+      : keepPiecesAtTheSide(split.atImageLeft, "imageLeft", face);
+    const right = split.atImageRight === null
       ? { kept: null, dropped: [] }
-      : keepPiecesAtTheSide(halves.split.atImageRight, "imageRight", face);
+      : keepPiecesAtTheSide(split.atImageRight, "imageRight", face);
     if (left.dropped.length > 0 || right.dropped.length > 0) {
       /* Numbers only — where the dropped pieces were and how big. Never a
          word of the reading. */
@@ -1514,6 +1660,42 @@ export function createFalRegionReader(input: {
           droppedAtImageRight: right.dropped,
         },
         "[falRegionReader] an ear-worn pair answered something nearer the middle of the face — not that side's",
+      );
+    }
+    return { atImageLeft: left.kept, atImageRight: right.kept };
+  };
+
+  /**
+   * ONE SIDE'S ANSWER, OR BOTH, WITH EVERY PIECE OFF THE FACE DROPPED — the
+   * face rule's one call site, read by `bilateralHalves` (both roads) and by
+   * `sideByCrop` (the half-answered heal), so the heal cannot bring back the
+   * piece the first reading dropped (#2844).
+   *
+   * The face is the read the midline came from (`spanFor`, keyed or not), so
+   * it costs no request. With no face there is nothing to judge by and the
+   * answer is today's.
+   */
+  const offTheFaceDropped = async (
+    image: Buffer, name: string, imageUrl: string | undefined, axisKey: string | undefined,
+    split: { atImageLeft: Mask | null; atImageRight: Mask | null },
+    midline: number,
+  ): Promise<{ atImageLeft: Mask | null; atImageRight: Mask | null }> => {
+    const span = await spanFor(image, imageUrl, axisKey);
+    if (span === null) return split;
+    const face = { ...span, midline };
+    const left = split.atImageLeft === null ? { kept: null, dropped: [] } : keepPiecesOnTheFace(split.atImageLeft, face);
+    const right = split.atImageRight === null ? { kept: null, dropped: [] } : keepPiecesOnTheFace(split.atImageRight, face);
+    if (left.dropped.length > 0 || right.dropped.length > 0) {
+      /* Numbers only — where the dropped pieces were and how big, and the
+         face they were judged against. Never a word of the reading. */
+      log.info(
+        {
+          name,
+          face: { left: face.left, right: face.right, top: face.top, bottom: face.bottom, midline },
+          droppedAtImageLeft: left.dropped,
+          droppedAtImageRight: right.dropped,
+        },
+        "[falRegionReader] a face feature's answer held a piece away from the face — not that feature",
       );
     }
     return { atImageLeft: left.kept, atImageRight: right.kept };
@@ -2043,9 +2225,18 @@ export function createFalRegionReader(input: {
      * are the ones whose centre is where THIS side's ear is — {@link atTheSide},
      * the very rule the segmenter's own pieces are judged by, so the found
      * side's earring and a septum ring are never this side's. Each is cut
-     * inside its rectangle, refused under #2795's fill floor exactly as the
-     * pointer road refuses a cut, and what is left is judged once more by
-     * {@link keepPiecesAtTheSide}. `null` when nothing is left.
+     * inside its rectangle and judged exactly as the pointer road judges a cut,
+     * and what is left is judged once more by {@link keepPiecesAtTheSide}.
+     * `null` when nothing is left.
+     *
+     * ⚠ **THE FILL IS MEASURED AND LOGGED HERE, NEVER REFUSED ON — #2831.**
+     * This road took #2795's fill floor until 2026-10-30, and a thin hoop is
+     * exactly the shape that floor refuses: a ring's bounding box is the whole
+     * thing it encircles, so a band must be 7% of its own span to clear 20%.
+     * **On a card about an earring that has no picture, a bar that refuses
+     * earrings for being thin was the wrong instrument** (the measurement is on
+     * #2831, the reasoning in `cutQuality.ts`'s header). What refuses is the two
+     * yes/no facts: no pixels, and no overlap with the rectangle that asked.
      *
      * The face read is the one the midline came from (`faceOf`), so it costs no
      * request; with no face there is no side to judge by and the answer is
@@ -2066,7 +2257,7 @@ export function createFalRegionReader(input: {
         .slice(0, PAIR_MAX_MASKS);
       const judged = await Promise.all(here.map(async (box) => {
         const mask = await cutInBox(image, name, box, imageUrl, undefined);
-        return { box, mask, verdict: mask === null ? null : judgeCut({ mask, box }) };
+        return { box, mask, verdict: mask === null ? null : judgeCut({ mask, box, fillFloor: FILL_MEASURED_NOT_REFUSED }) };
       }));
       const used = judged.filter((one) => one.verdict?.use === true).map((one) => one.mask as Mask);
       const kept = used.length === 0
@@ -2140,9 +2331,20 @@ export function createFalRegionReader(input: {
       /* `left` is HER left, which is the image's right — `regionSides`' own
          mapping, read the same way. */
       const imageSide = side === "left" ? "imageRight" : "imageLeft";
-      const half = await readOneCrop(
+      const read = await readOneCrop(
         image, singularOf(name), cut.crops[imageSide], cut.width, cut.height, undefined,
       );
+      if (read === null) return null;
+      /* A FACE FEATURE IS ON THE FACE (#2844) — the heal judged as the first
+         reading was, or it would bring back the very piece that reading
+         dropped and leave the side looking healed. */
+      const half = FACE_FEATURES.has(name)
+        ? (await offTheFaceDropped(
+          image, name, imageUrl, axisKey,
+          imageSide === "imageLeft" ? { atImageLeft: read, atImageRight: null } : { atImageLeft: null, atImageRight: read },
+          cut.midline,
+        ))[imageSide === "imageLeft" ? "atImageLeft" : "atImageRight"]
+        : read;
       if (half === null) return null;
       if (onTheEars !== true) return half;
       /* AN EAR IS AT THE SIDE OF THE FACE (#2781) — applied here too, so the

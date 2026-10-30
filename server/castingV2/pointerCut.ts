@@ -67,32 +67,47 @@
  *
  * # WHAT IT REFUSES, AND WHAT IT DELIBERATELY DOES NOT JUDGE
  *
- * Three refusals, and the one threshold among them was measured rather than
- * picked:
+ * **TWO refusals, and neither of them is a number** — see the ⚠ below, where
+ * the third one and its measurement are struck:
  *
  *   **a mask with no pixels** — there is nothing to draw and nothing to point
  *   at, so there is no row;
  *   **a mask that does not overlap the rectangle that asked for it** — the
  *   segmenter answered about something else. A yes/no about two rectangles,
- *   with no tolerance to tune;
- *   **a mask that fills less than a fifth of that rectangle** — the "only the
- *   straps" answer, a coherent fragment of the thing returned silently in
- *   place of the thing. `cutQuality.ts` carries the measurement and the ⚠
- *   below carries what it replaced.
+ *   with no tolerance to tune, and checked twice over: `overlaps` here on the
+ *   boxes, and `judgeCut`'s own `no-overlap` on the pixels.
+ *
+ * ⚠ **AND THE THIRD REFUSAL IS GONE — #2831, the relay's decision of
+ * 2026-10-30: THE FACE PANEL STOPS REFUSING ON FILL.** This list read
+ * ~~*"**a mask that fills less than a fifth of that rectangle** — the 'only
+ * the straps' answer"*~~ for one day, and the day after it shipped the bar was
+ * measured on two more pictures: a **correct** cut of a long curved tail — the
+ * whole sweep of it, looked at — fills **17.00%**, so it was thrown away and
+ * that feature would simply not be listed; and a cut of **the sword in the
+ * character's hand**, asked for as *"the armour plating on the chest"*, passed
+ * at **21.64%** and would have been drawn as a row called armour. **A right
+ * answer scored lower than a wrong one, so the measure does not order
+ * correctness** — the one thing a refusal has to do. Anything worn *around*
+ * something makes it worse by geometry: a ring's bounding box is the whole
+ * thing it encircles, so a band must be 7% of its own span to clear 20%.
+ * **The fill is still measured and logged on every judgement** — that is how
+ * these two were found — and it decides nothing here. The floor is a
+ * per-caller argument now and the take road (`referenceTake.ts`) keeps it,
+ * where a refused cut costs nothing and an unseen partial cut costs a paid
+ * render; here every row's cut is outlined on hover, so a wrong cut is visible
+ * and **a missing row is not** (#2800, #2810, #2817).
  *
  * ⚠ **BROKENNESS IS JUDGED HERE NOW, AND THE SENTENCE THAT SAID IT WAS NOT IS
  * STRUCK — 2026-10-29, #2565 slice 2.** ~~*"this road has no clean-and-refuse
  * pipeline to call and does not invent one: an area threshold here would be a
- * number nobody measured"*~~ — **the number is measured and this road is its
- * first caller.** `cutQuality.ts`'s `judgeCut` refuses a cut filling less than
- * a fifth of the rectangle it was asked about; correct cuts measured 42.3–73.5%
- * and the known-bad 8.3%, with 5.1× of room between them, and a correct nose
- * stud and hoop earring clear it comfortably (49.6% and 67.1%), which was the
- * falsification arm. The population and the two things §4's own sentence gets
- * wrong — holes run BACKWARDS as a signal, and want closing rather than
- * refusing — are in that module's header. **It is a third refusal of exactly
- * the kind the two above already are**: local to one name, no row, every other
- * row and the whole catalogue scan untouched.
+ * number nobody measured"*~~ — the number was measured and this road was its
+ * first caller. **Kept as the record, because the ⚠ above is what happened to
+ * it:** the threshold lasted a day on this road, the population it was set on
+ * (*"correct cuts 42.3–73.5%"*) is falsified, and what the pipeline still does
+ * here is close holes and clean a cut it is keeping. The two things §4's own
+ * sentence gets wrong — holes run BACKWARDS as a signal, and want closing
+ * rather than refusing — are in that module's header and are untouched by
+ * #2831.
  *
  * ⚠ **LOOSENESS IS STILL NOT JUDGED, AND THAT HALF STAYS DECLARED.** #2532's
  * own open list ends *"the loose-region case is still unsolved"* — a shoulder
@@ -111,8 +126,9 @@
  * do it"*). So this road is LIVE for him and he has been reading its panels in
  * eye rounds 3 and 4 the same week. **A refusal added here is in front of him
  * on the next deploy, not waiting behind a flip** — which is the argument for
- * logging every fill rather than only the refusals, and for the floor being
- * one exported constant.
+ * logging every fill rather than only the refusals, and it is why the fill bar
+ * that stood here for one day was taken off by a decision rather than quietly
+ * retuned (#2831): the rows it was dropping were already in front of him.
  *
  * # It cannot take a row off the panel, and it cannot break a scan
  *
@@ -123,7 +139,7 @@
  * is the property slice 1 was held on twice and it is the one to protect.
  */
 import { boundsOf } from "./segmentCuts";
-import { judgeCut } from "./cutQuality";
+import { FILL_MEASURED_NOT_REFUSED, judgeCut } from "./cutQuality";
 import { LANDMARK_OF_ACCESSORY, accessoryEntry } from "./accessoryKinds";
 import { scanPlan } from "./faceScan";
 import { catalogueSlots, type SlotGroup } from "./referenceSlotCatalogue";
@@ -1709,32 +1725,44 @@ export async function cutDiscovered(input: {
           return { index, region: null, broke: false };
         }
         /*
-          THE QUALITY BAR — #2565 §4's, measured, and this road's own declared
-          gap now filled (see this module's header, where the sentence saying
-          there was no pipeline to call is struck).
+          THE JUDGEMENT — and on THIS road the fill is a MEASUREMENT and never
+          a refusal (#2831, the relay's decision of 2026-10-30).
 
-          A cut that fills less than a fifth of the rectangle it was asked
-          about is the "only the straps" answer: the segmenter returning a
-          coherent fragment of the thing, silently, with a plausible-looking
-          mask. It gets no row, exactly as a cut with no pixels gets no row.
+          ⚠ **IT USED TO REFUSE HERE AND THAT WAS THE DEFECT.** A cut filling
+          under a fifth of its rectangle got no row, on the reasoning that it
+          was the "only the straps" answer — a coherent fragment of the thing
+          returned silently in place of the thing. Measured on two real
+          pictures the day after it shipped: a **correct** cut of a long curved
+          tail fills **17.00%** and was thrown away with nothing said, while a
+          cut of **the sword in the character's hand**, asked for as chest
+          armour, passed at **21.64%**. Fill does not order correctness, and on
+          this road the cost of losing that coin flip is a feature of his
+          character vanishing invisibly — the thing he reported by eye three
+          times in one week (#2800, #2810, #2817). Every row's cut is outlined
+          on hover here, so a partial or wrong cut is visible before anyone
+          refines on it; a missing row is not.
 
-          ⚠ **The fill is logged on EVERY judgement, used or refused, and that
-          is deliberate rather than noisy.** The floor is a FLOOR taken on one
-          known-bad specimen, so the population it wants is the one this road
-          produces in use; logging only refusals would grow a record of what
-          the bar already catches and tell nobody where the correct cuts sit.
+          What still refuses, and both are yes/no facts: no pixels at all, and
+          no overlap with the rectangle that asked. The second is checked twice
+          over — `overlaps` above on the boxes, and `no-overlap` inside the
+          judgement on the pixels.
+
+          ⚠ **The fill is logged on EVERY judgement, which is now the whole of
+          what it is for.** The number keeps growing its population for free —
+          that is how the tail and the sword were found — and it decides
+          nothing.
         */
-        const verdict = judgeCut({ mask, box });
+        const verdict = judgeCut({ mask, box, fillFloor: FILL_MEASURED_NOT_REFUSED });
         if (!verdict.use) {
           log.warn(
             { name: feature.name, askedAbout: box, answered: bounds, fill: verdict.fill, why: verdict.why },
-            "the cut did not fill enough of the rectangle it was asked about — no row",
+            "the cut had nothing of the rectangle it was asked about in it — no row",
           );
           return { index, region: null, broke: false };
         }
         log.debug(
           { name: feature.name, fill: verdict.fill, claimed: verdict.claimed },
-          "the cut cleared the quality bar",
+          "the cut is kept, and this is how much of its rectangle it filled",
         );
         return {
           index,

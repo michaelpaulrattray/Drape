@@ -49,6 +49,14 @@
  * moves to fit this road: `CUT_FILL_FLOOR` is a floor measured on one known-bad
  * specimen and is imported, never restated.
  *
+ * ⚠ **AND SINCE #2831 THIS IS THE ONLY ROAD THAT TAKES THAT FLOOR.** The
+ * face panel — `pointerCut`'s discovery cut and `falRegionReader`'s
+ * `sideByDetector` — measures the fill and refuses on it no longer, because
+ * fill was measured ordering a CORRECT cut below a WRONG one (a 17.0% tail
+ * thrown away, a 21.64% sword kept). The floor is a per-caller argument now,
+ * required with no default, so this road states it at the call; the reasoning
+ * for the split is at that call and in `cutQuality.ts`'s header.
+ *
  * # ⚠ WHAT THE FACE SUBTRACTION DOES NOT DO, SAID RATHER THAN GLOSSED
  *
  * The court that ran on 2026-10-28 measured this exact fence and found its
@@ -120,7 +128,8 @@ export type TakeRefusal =
   | "not-found"
   /** The segmenter returned no mask for that rectangle. */
   | "no-mask"
-  /** The cut was refused by the fill floor, or had no pixels at all. */
+  /** The cut had no pixels, missed the rectangle that asked, or — on this
+   *  road, which keeps the floor — filled too little of it. */
   | "cut-refused"
   /** Nothing survived taking the person out. */
   | "nothing-left";
@@ -337,7 +346,22 @@ export async function cutThingFromPicture(input: CutThingFromPictureInput): Prom
       wearing this one's name, and one that would read in the log as a bad cut
       when what actually happened is that the fence did its job.
     */
-    const judged = await cleanCut({ mask, box });
+    /*
+      ⚠ **AND THE FLOOR IS PASSED HERE BECAUSE IT IS THIS ROAD'S AND NOT THE
+      PRODUCT'S — #2831, the relay's decision of 2026-10-30.** The face panel
+      stopped refusing on fill the same day; this road did not, and that is not
+      inconsistency. `CUT_FILL_FLOOR`'s only known-bad specimen — *"only the
+      straps"*, 8.3% — belongs to THIS road, where a refused cut costs nothing
+      (the edit rides on words) and a partial cut costs a paid render that
+      nobody will see the cut behind. On the panel a cut is outlined on hover,
+      so a wrong one is visible and a missing row is not.
+
+      Its known limit is stated rather than fixed: *"wear this necklace"* is a
+      ring-shaped cut at around 15% of its own bounding box, so it is refused
+      and that edit rides on words. That is the safe direction here, and it is
+      named on #2736.
+    */
+    const judged = await cleanCut({ mask, box, fillFloor: CUT_FILL_FLOOR });
     if (!judged.verdict.use || judged.mask === null) {
       log.info(
         {
