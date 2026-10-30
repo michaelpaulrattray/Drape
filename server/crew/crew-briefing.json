@@ -1,7 +1,7 @@
 {
-  "edition": 786,
-  "updatedAt": "2026-10-30T14:05:00.000000Z",
-  "shift": "A short one, and it was about clearing the way rather than building something new.\n\nNine pieces of work were finished and waiting to go live tonight, and none of them had moved. Three of them are sitting with the relay for a read, and I left those alone. Of the rest, I could only safely send two: the other three all touch the same files as the three being read, so sending them would have forced those three to be rebuilt and re-read from scratch — which is exactly what cost two shifts their night yesterday. So two went live and I wrote down, file by file, why the others wait.\n\nBoth of the two are small and both are about the crew's own machinery rather than anything you touch. One stops a false alarm: a card that mentions a folder on your machine was being reported as damaged. The other is worth more than it sounds — when the relay holds a piece of work and asks for a measurement rather than a code change, the board had no way to show the measurement had been done, so it went on saying nobody had acted. Five shifts in a row were sent at the same job and all five correctly walked away. That reading is fixed and live.\n\nThe other thing I did was stop a job before it started. Your ruling that one thing gets one row needs a reader that can say when two names mean the same row, and last night's measurement picked one and said it was ready to build. I went to build it and it is not ready: that reader is a crew tool with no road into the product, and its key is not on the live service at all — so it would have been built, merged, and done absolutely nothing, silently, looking exactly like a reader that found no duplicates. It also needs six of the same files another job is being repaired in right now. The measurement stands and so does the ruling; what changed is that the card now says what has to happen first, and who has to do it.",
+  "edition": 787,
+  "updatedAt": "2026-10-30T15:32:00.000000Z",
+  "shift": "A short one, and nothing a customer can see changed. It was about your next-up list telling the truth about itself.\n\nYour list had twenty-four jobs on it tonight and, read one at a time against the code, not one of them could be started. That is not a backlog problem: three finished pieces of work are sitting with the relay for a read, and of the four other open ones, two touch the same files as those three and one must not be merged at all. So the whole casting lane is parked behind one desk. Nothing is lost, nothing is waiting on you, and no shift should be sent at those again.\n\nThe job at the top of your list was the picture selector, and that one was worth the night. Its written design says the next thing to build is the small round markers you tap on a photo. But on the 30th you looked at a lit-up version instead and said you liked it much better than the boxes — and those are two different builds with different machinery underneath, not two looks. So whoever picked this up next would have either built the version you liked less, or invented a design nobody has written down. I stopped it: the card now says the design has to be rewritten to match what you picked, and that is a job this shift is not allowed to do itself, so it goes to the seat that can. Your own words on the card are untouched, and the two pieces already built stay built.\n\nThe second job on your list turned out not to be a job at all. Your 'one thing, one row' ruling is a rule four other pieces of work answer to — it says so in its own last line — and it was sitting at the top of the queue looking like something to build. It now says what it is actually waiting for: those four landing, and then your eye on the panel.\n\nOne small thing came out of checking a third job: a piece of work that already had its answer written and in review was being reported every night as though nobody had been offered it. The answer is now recorded where the next shift will read it, and the reporting fault is its own card.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -38,7 +38,7 @@
           "state": "waiting"
         },
         {
-          "title": "The studio surfaces — the Pinterest-style reference selector (#14): FIRST PIECE BUILT, switched off. The studio can read an attached picture and work out what is in it and where; the markers on screen are the next piece and the tap-to-cut the one after. Then the settings' second pass (#15), outfit-card thumbnails (#61), the honest sentence at a words-only tattoo sale (#65)",
+          "title": "The studio surfaces — the Pinterest-style reference selector (#14): FIRST PIECE BUILT, switched off. The studio can read an attached picture and work out what is in it and where. The next piece is the picture on screen, and it is waiting on a decision rather than on building: the written design has small round markers you tap, and on the 30th you saw a lit-up version instead and said you liked it much better than the boxes. Those are two different builds, so the design is being rewritten to match what you picked before anyone starts. Then the settings' second pass (#15), outfit-card thumbnails (#61), the honest sentence at a words-only tattoo sale (#65)",
           "state": "waiting"
         },
         {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-30T13:59:16.212Z",
+      "readAt": "2026-10-30T15:31:06.457Z",
       "items": [
         {
           "issueNumber": 30,
@@ -11737,12 +11737,16 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-30T13:59:16.212Z",
+    "readAt": "2026-10-30T15:31:06.456Z",
     "items": [
       {
         "issueNumber": 14,
         "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "fable",
+          "because": "a Fable seat — a DESIGN DECISION: does slice 3 build markers or the spotlight he preferred? RECOMMENDED: amend the design to the spotlight."
+        }
       },
       {
         "issueNumber": 1598,
@@ -11915,7 +11919,11 @@
       {
         "issueNumber": 2856,
         "title": "His ruling: a cautious panel. Reliable rows always show, and a piece gets a row only when its box passes the checks; failed pieces are edited by words",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "the four it governs landing to it — PR #2850 and cards #2845, #2787, #2840. Then your eye on the panel closes it. It needs no build of its own."
+        }
       },
       {
         "issueNumber": 2862,
