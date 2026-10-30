@@ -921,6 +921,79 @@ describe("a decision declared on a card nothing can see as a question gets NAMED
     }).map((d) => d.issueNumber)).toEqual([9, 50, 90]);
     expect(planUnheldDecisions({ open: [] })).toEqual([]);
   });
+
+  /**
+   * ⚠ **THE BAND'S OWN SENTENCE SAID MORE THAN IT KNEW — #2866.**
+   *
+   * It ended *"and every seat is still offered them"*, and that half was false
+   * of the FIRST card the band ever fired on. Measured over the live queue
+   * (97 open cards, 12 open pull requests, 2026-10-30): the band named #2841,
+   * `pullRequestBuildsCard(#2860, 2841)` answered `["title","branch"]`, and the
+   * seat cut skipped #2841 on that same pass.
+   *
+   * ⚠ **THE FAILURE DIRECTION IS WHAT THESE ARMS PIN.** A missing resolver
+   * means the board was NOT READ, never that nothing holds these cards — so the
+   * field goes `null` and the caller says it could not look. The arm that would
+   * matter most if it were ever lost is the negative one: without it the whole
+   * field could answer "held" to everything and read as working.
+   */
+  describe("and it no longer claims a card is on offer that a pull request already holds (#2866)", () => {
+    /* PR #2860 against #2841, at the shape `gh pr list` returned it. */
+    const board = (card: number): number | null => (card === 2841 ? 2860 : null);
+
+    it("⚠ names the pull request holding it off offer — the live specimen", () => {
+      const found = planUnheldDecisions({
+        open: [card(2841, SPECIMEN_2761)],
+        heldOffOfferBy: board,
+      });
+      expect(found[0].heldOffOfferBy).toBe(2860);
+    });
+
+    it("⚠ CONTROL — a card no pull request builds is `null`, or the field holds everything", () => {
+      const found = planUnheldDecisions({
+        open: [card(2841, SPECIMEN_2761), card(2757, SPECIMEN_2757)],
+        heldOffOfferBy: board,
+      });
+      expect(found.map((d) => [d.issueNumber, d.heldOffOfferBy])).toEqual([[2757, null], [2841, 2860]]);
+    });
+
+    it("⚠ an ABSENT resolver is the board UNREAD, and answers `null` on every row", () => {
+      /* `notBuilt`'s precedent one module over: with nothing passed the reader
+         behaves exactly as it did before this field existed, and the caller —
+         the only thing that knows the read failed — says so. A missing
+         resolver can never invent a card being on offer. */
+      const found = planUnheldDecisions({ open: [card(2841, SPECIMEN_2761)] });
+      expect(found[0].heldOffOfferBy).toBeNull();
+      /* The field EXISTS rather than being absent, so a caller reading it
+         cannot get `undefined` and print it. */
+      expect(Object.keys(found[0])).toContain("heldOffOfferBy");
+    });
+
+    it("⚠ a resolver answering 0 is kept, never read as nothing", () => {
+      /* `?? null` and not `|| null`: pull request #0 does not exist, so a
+         resolver answering it is a reader fault worth seeing on a row rather
+         than one that silently reads as "nothing holds it". */
+      const found = planUnheldDecisions({
+        open: [card(2841, SPECIMEN_2761)],
+        heldOffOfferBy: () => 0,
+      });
+      expect(found[0].heldOffOfferBy).toBe(0);
+    });
+
+    it("⚠ the resolver is asked about the CARD, never about the row's position", () => {
+      /* A reader passing an index, or the wrong card, would still light up the
+         arms above on a one-row fixture. */
+      const asked: number[] = [];
+      planUnheldDecisions({
+        open: [card(2841, SPECIMEN_2761), card(2757, SPECIMEN_2757)],
+        heldOffOfferBy: (card) => {
+          asked.push(card);
+          return null;
+        },
+      });
+      expect(asked.sort((a, b) => a - b)).toEqual([2757, 2841]);
+    });
+  });
 });
 
 /**
