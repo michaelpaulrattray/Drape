@@ -463,7 +463,23 @@ describe("the schema's own paragraph about the kept pixels", () => {
   };
 
   it("names every refusal that keeps its crop, and names no other", () => {
-    const named = [...paragraph().matchAll(/`([A-Za-z]+)`/g)]
+    /*
+      THE LIST SENTENCE, NOT THE PARAGRAPH — and this arm was written the wide
+      way first and SURVIVED ITS OWN SABOTAGE. Dropping `disputedDelivery` from
+      the list left all 33 green, because the paragraph names it a second time
+      three sentences later (the production row). A slice wide enough to hold a
+      sibling mention is a guard that cannot see the deletion it exists for;
+      the repository's own memory calls this an arm satisfied by a sibling, and
+      the cure is the same one: cut tighter, and anchor uniquely.
+    */
+    const whole = paragraph();
+    const from = whole.indexOf("answers yes for");
+    expect(from, "the list sentence is missing from the paragraph").toBeGreaterThan(-1);
+    expect(whole.indexOf("answers yes for", from + 1)).toBe(-1);
+    const list = whole.slice(from, whole.indexOf("reasons.", from));
+    expect(list.length, "the list sentence did not terminate").toBeGreaterThan(0);
+
+    const named = [...list.matchAll(/`([A-Za-z]+)`/g)]
       .map((match) => match[1]!)
       .filter((word) => (GUARD_REFUSAL_REASONS as readonly string[]).includes(word));
     expect(new Set(named)).toEqual(new Set(REFUSALS_THAT_KEEP_THEIR_CROP));
