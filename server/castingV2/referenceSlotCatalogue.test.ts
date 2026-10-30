@@ -26,10 +26,13 @@ import { inkSideSlotKey, inkSlotKey } from "./referenceSlots";
 import { REGION_CARDS } from "./regionCards";
 import { regionNameOf } from "./maskedRefine";
 import { assembleRecipe } from "./recipeAssembler";
+import { CENTRELINE_SPECIMENS, thresholdFor } from "./referenceCompleteness";
 import {
+  canKeepAPicture,
   catalogueSlots,
   facetsOfSlot,
   slotDefinition,
+  slotsThatCanKeepAPicture,
   slotSpecFor,
   FACET_SLOTS,
   SLOT_CATALOGUE,
@@ -980,5 +983,136 @@ describe("a family facet, asked about several kinds at once", () => {
        `slotsForFeature("")` would answer for no feature and the kinds beside it
        would be lost with it. */
     expect(slotsOf(["", "earring"])).toEqual(["earring@left", "earring@right"]);
+  });
+});
+
+describe("which slots can keep a picture, and the paragraph that says so", () => {
+  /*
+    WHY THIS IS A DOCBLOCK ARM AND NOT ONLY AN ASSERTION ON THE READER.
+
+    The defect it answers is a STALE SENTENCE, not wrong code. The module's
+    header said *"WHAT CAN ACTUALLY MINT A CROP TODAY: `hair`, AND NOTHING
+    ELSE"* and listed `eyes` and `earrings` among the refused, while three more
+    families had been measured since — so `referenceSlotCatalogue.ts`, the file
+    a builder opens to learn what a slot is a picture of, was telling every
+    reader that nothing but hair could ever be carried.
+
+    Asserting the derived reader alone would not have caught it: the reader is
+    new, and the code was never wrong. What rotted is the prose, so the prose is
+    what is held to the tree. Same `derive-never-mirror` exception as D-213's
+    caution arm above, and for the same reason: the fact under test IS that a
+    particular sentence agrees with a particular table.
+  */
+  const prose = (): string => readFileSync(
+    new URL("./referenceSlotCatalogue.ts", import.meta.url),
+    "utf8",
+  )
+    .replace(/^\s*\*\s?/gm, "")
+    .replace(/\s+/g, " ");
+
+  it("derives the keepable slots from the door's own two tables", () => {
+    /*
+      Asked of the real tables rather than against a list typed here: a copy of
+      the four kinds in this file is the very mirror the header's paragraph
+      already was (working law 4).
+    */
+    const byHand = catalogueSlots().filter((definition) => (
+      definition.guardKind !== null
+      && (thresholdFor(definition.guardKind) !== null
+        || CENTRELINE_SPECIMENS[definition.guardKind] !== undefined)
+    ));
+    expect(slotsThatCanKeepAPicture().map((d) => d.slot)).toEqual(byHand.map((d) => d.slot));
+
+    /* And the two kinds the stale paragraph named as REFUSED, which is the
+       specimen of the defect: both of them keep a picture today. */
+    const keepable = slotsThatCanKeepAPicture().map((d) => d.slot);
+    expect(keepable).toContain("eye@left");
+    expect(keepable).toContain("earring@right");
+    /* The negative half, so this is a bar and not a tautology: `glasses` and
+       `nose-stud` are in the catalogue, are named by #2565's own §3, and have
+       no family — a reading of either as keepable means a family arrived and
+       the header did not move. */
+    expect(keepable).not.toContain("glasses");
+    expect(keepable).not.toContain("nose-stud");
+  });
+
+  it("holds the header's four kind names equal to the tables", () => {
+    const kinds = new Set(
+      catalogueSlots()
+        .filter(canKeepAPicture)
+        .map((definition) => definition.guardKind as string),
+    );
+    /* The heading is the sentence a reader actually reads first, so it is the
+       one held: every keepable kind is named in it, in backticks. */
+    const heading = prose().slice(prose().indexOf("# WHAT CAN ACTUALLY KEEP A PICTURE TODAY"));
+    for (const kind of kinds) {
+      expect(heading.slice(0, 200)).toContain(`\`${kind}\``);
+    }
+    /* And nothing is named there that cannot keep one — the direction the old
+       paragraph failed in was the other way, but a heading listing a kind that
+       has lost its bar would be the same defect mirrored. */
+    const named = [...(heading.slice(0, 200).matchAll(/`([a-z ]+)`/g))].map((m) => m[1]!);
+    expect(named.length).toBeGreaterThan(0);
+    for (const name of named) expect(kinds).toContain(name);
+    expect(new Set(named)).toEqual(kinds);
+  });
+
+  it("holds both of the header's numbers equal to the tables", () => {
+    const keepable = slotsThatCanKeepAPicture().length;
+    const all = catalogueSlots().length;
+    const kinds = new Set(
+      catalogueSlots().filter(canKeepAPicture).map((d) => d.guardKind as string),
+    ).size;
+    /*
+      Read back out of the paragraph, which is what makes a fifth family unable
+      to land without this line moving. Written as the sentence says it rather
+      than as a regex over any two numbers, so a paragraph that keeps the digits
+      and loses the claim still fails.
+    */
+    expect(prose()).toContain(
+      `Four kinds have one, which is ${keepable} of this catalogue's ${all} slots`,
+    );
+    expect(kinds).toBe(4);
+  });
+
+  it("can fail — the parse is proven able to miss", () => {
+    /*
+      THE CONTROL. Every arm above is a `toContain` on prose, which is the shape
+      that passes for the wrong reason when a path moves or a strip rule eats
+      the text. So: the same reader, pointed at a sentence the file does not
+      hold, must come back empty.
+    */
+    expect(prose()).not.toContain("Five kinds have one");
+    /*
+      ⚠ THE OBVIOUS ARM HERE IS WRONG AND THIS CONTROL IS WHAT PROVED IT. The
+      first draft asserted the file no longer contains "`hair`, AND NOTHING
+      ELSE" and went RED — because the corrected header QUOTES the stale
+      sentence in the ⚠ note that records it, which is this repository's own
+      rule (a superseded sentence is struck, never deleted). So the thing that
+      must be gone is the HEADING, not the words: a heading is what a reader
+      skims and what the arms above anchor on.
+    */
+    expect(prose()).not.toContain("# WHAT CAN ACTUALLY MINT A CROP TODAY");
+    expect(prose()).toContain("`hair`, AND NOTHING ELSE");
+    /* And the stripper is proven to be doing its job rather than returning the
+       raw file: comment furniture is gone, so a `*` run cannot survive. */
+    expect(prose()).not.toContain(" * ");
+    expect(prose()).toContain("WHAT CAN ACTUALLY KEEP A PICTURE TODAY");
+  });
+
+  it("says in its own header that the open lane needs no family", () => {
+    /*
+      The half that matters most to #2565's slice 2 and the half a reader is
+      likeliest to miss: the count above is the CLOSED catalogue's. `referenceMint`
+      asserts the ceiling control for `slot.openKind` and for nothing else, so
+      an open kind keeps its picture with no specimen at all. Held here because
+      a later tidy of the header would otherwise drop it as a digression.
+    */
+    expect(prose()).toContain("AND THE OPEN LANE KEEPS A PICTURE WITH NO FAMILY AT ALL");
+    expect(prose()).toContain("`ceilingIsTheBar`");
+    /* At the other file's bytes, so this is not a claim about the mint taken
+       from a sentence in this one. */
+    const mint = readFileSync(new URL("./referenceMint.ts", import.meta.url), "utf8");
+    expect(mint).toContain("...(slot.openKind ? { ceilingIsTheBar: true as const } : {}),");
   });
 });

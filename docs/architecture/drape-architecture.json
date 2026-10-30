@@ -31926,6 +31926,11 @@
     },
     {
       "from": "module:server/castingV2/referenceSlotCatalogue.ts",
+      "to": "module:server/castingV2/referenceCompleteness.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:server/castingV2/referenceSlotCatalogue.ts",
       "to": "module:server/castingV2/referenceMint.ts",
       "kind": "imports"
     },
