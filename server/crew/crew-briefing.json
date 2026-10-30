@@ -1,7 +1,7 @@
 {
-  "edition": 782,
-  "updatedAt": "2026-10-30T03:20:00.000000Z",
-  "shift": "One job tonight, and it was one that had been stuck twice. Nothing here needs you to do anything.\n\nThere is a part of the studio being built where you attach a photograph, tap something in it — your jacket, that haircut, those earrings — and the studio takes that exact thing from your picture instead of making you describe it in words. Before building the part you can see, we had to check that the reading underneath actually works on the kinds of photographs people really attach.\n\nHalf that check was done last week, on a photo of a person wearing clothes. The other half — a garment on a hanger, and a flat catalogue-style product shot — had been stuck since the 28th, because we had no such photographs and the tool we used to make test pictures had stopped working. It had blocked this same check twice. You unstuck it yesterday when you said to use fal for pictures, so tonight it ran.\n\nIt works. On a leather jacket hanging on a rail it found twelve things and drew a box round every one — the jacket, the collar, the zip, a pocket, the hanger, the scarf beside it. On a flat-lay of a sweater, a belt and a trainer it found seven and boxed all seven. Asked for something that was not in the picture, it correctly said there was nothing there. And the cut-outs it makes are clean: I looked at every one.\n\nOne number is worth having. A photograph with nobody in it costs us one expensive read instead of two, because the studio works out for itself that there is no face worth looking at twice. That had only ever been assumed; it is now measured on real photographs, and it is a large part of why attaching a picture stays cheap.\n\nThree problems came out of it and each is written up:\n\nA cut-out can come back as twenty-nine separate scraps instead of one clean shape, and our quality check passes it — it only measures how much of the box is filled and never notices the thing is in pieces. A real example: we asked for a jacket collar and got the two lapel points and a scrap, with the collar itself missing, and the check said use it.\n\nA thing made of several parts gets marked on just one part. Asked for the shoelaces, the studio found nine separate pieces of lacing and kept the single biggest one — a speck about the size of a fingernail. Tap it and you would get the speck, not the laces.\n\nAnd a problem we already knew about turns out to be everywhere, not a one-off: two different words for the same object come back with the identical box. We had seen it once on jewellery; it happened on both new photographs too, and every time it is the word for the PART that lands on the WHOLE thing — \"zip pull\" got the whole zip, \"sole\" got the whole shoe.\n\nNothing in the product changed tonight and no setting moved. What did ship is tidying: two documents were telling the next person to run a check that is now finished, which is how work gets done twice.\n\nOne last thing, on your side of the board. Round 9 of the face-panel fixes was finished and live earlier tonight, but it was not marked as waiting for your eye — so it was not showing up in your list the way rounds 6 and 8 do. That is corrected; it will now ask you for the one look it needs.",
+  "edition": 783,
+  "updatedAt": "2026-10-30T05:04:15.377000Z",
+  "shift": "One job tonight, from your round-10 notes: you asked why you could not pick a character's outfit as a whole. You can now.\n\nHere is the part worth knowing, because it is not what it looked like. When you hovered the single \"Outfit\" row, the studio lit up four separate boxes — the shoulder guard, the straps, the medallion, the belt — each with its own little label. So it read exactly like the panel was working piece by piece. But underneath, the edit was already about the whole outfit: tapping that row has always sent one instruction covering every garment. The picture was telling you something the instruction never said.\n\nSo the fix is to the picture, not to the edit. Hover or tap Outfit now and you get one box around the whole outfit. The pieces are still there inside it — open the row and each one is its own line, and each still has its own box on the photograph when you point at it. I drove it in the real app in both the light and dark themes and checked it by eye: before, one hover lit four boxes; after, it lights one.\n\nTwo other things from that same note I deliberately did not build, and I want to be straight about why.\n\nThe creature's rag cloth being called \"Straps\", with a box stretching over its face — the repair for that is the rule that says a worn thing cannot cover a face. That is the same machinery one of my agents was mid-way through building for your other round-10 note, and it landed while I was working. Doing it twice in two places is how one of the two gets lost, so it belongs with that one.\n\nAnd the Outfit row's description reading like a run-on list of parts — I found the cause. The studio is writing one sentence per piece onto that row and they pile up. The fix is either to say nothing there, which quietly removes detail you can read today, or to have it describe the outfit properly, which is a new thing to build rather than a tidy-up. That is your call, not mine to guess.\n\nI also closed off the earring job from earlier — a character wearing two or three earrings in one ear only had one of them included in a paid edit. The fix was already live; I checked it properly at the code and at the live site rather than taking the note's word for it, including that it had the hand review it needed, and closed it with the evidence.\n\nNothing needs you right now. The outfit change is waiting on a review before it goes live, and after that it wants one look from you on a real character.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-30T03:13:39.675Z",
+      "readAt": "2026-10-30T05:03:29.306Z",
       "items": [
         {
           "issueNumber": 30,
@@ -11162,6 +11162,13 @@
       "status": "merged",
       "prNumber": 2843,
       "note": "Documents only — no product code, no setting moved. Gate green in 3.8 minutes, merged on the gate as an ordinary change."
+    },
+    {
+      "id": "outfit-whole-box-2845",
+      "title": "The outfit is one box on the picture, with its pieces inside it — your round-10 note (#2845)",
+      "status": "in-review",
+      "prNumber": 2850,
+      "note": "Held for a human review because it changes what you see on the photograph. Driven in the running app in both themes: before, hovering the one Outfit row lit four separate boxes and drew no outfit box; after, it lights one. Pictures stayed off the public repo."
     }
   ],
   "problems": [
@@ -11710,7 +11717,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-30T03:13:39.675Z",
+    "readAt": "2026-10-30T05:03:29.305Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11857,6 +11864,21 @@
           "state": "blocked",
           "because": "YOU — the fix is live. One look at a fresh panel: both ears should box every earring, and a reading that lost its rows is asked again. Then this closes."
         }
+      },
+      {
+        "issueNumber": 2844,
+        "title": "N3 face reader, his eye round 10: the Left eye's outline reaches a face tattooed on the arm (a paid refine paints on it), sleeves have no row, and a Collarbone row",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2845,
+        "title": "N3 face reader, his eye round 10: the outfit can't be picked as a whole, and a creature's rag cloth is called Straps with a box over its face",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2846,
+        "title": "Court: are the face reader's three engines (naming, boxing, cutting) still the right ones, measured on his ten eye rounds",
+        "urgent": false
       }
     ]
   }
