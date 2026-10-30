@@ -456,36 +456,48 @@ describe("cutDiscovered — the two calls, and what is asked on each", () => {
   });
 
   /*
-    ⚠ THE THIRD REFUSAL — #2565 §4's quality bar, and this arm exists because
-    invariant 7 asks for a test that the control BLOCKS rather than one that it
-    is present. The two arms under it are the pair that keeps the bar honest:
-    a legitimately small thing is kept, and the bar's own number is what
-    decides, so a floor moved by somebody reddens all three.
+    ⚠ **THE THIRD REFUSAL IS GONE AND THIS ARM IS ITS INVERSE — #2831, the
+    relay's decision of 2026-10-30: THE FACE PANEL STOPS REFUSING ON FILL.**
 
-    The specimen is the shape the court measured: asked about a whole garment,
-    the segmenter returns a coherent fragment of it — "only the straps" — with
-    a plausible-looking mask. 60x600 inside a 600x600 rectangle is 10% fill,
-    which is the real known-bad's 8.2% to within a point.
+    ~~*"drops a cut that fills almost none of the rectangle it was asked
+    about"*~~ stood here for one day. The day after it shipped, the bar was
+    measured on two more real pictures (`output/_2565-thin/ledger.json`): a
+    **correct** cut of a long curved tail fills **17.00%** and was thrown away
+    with nothing said, while a cut of **the sword in the character's hand**,
+    asked for as *"the armour plating on the chest"*, passed at **21.64%**.
+    A right answer scored below a wrong one, so fill does not order
+    correctness — and on this road the cost of refusing is a feature of his
+    character vanishing invisibly, which is what he reported by eye three times
+    in one week (#2800, #2810, #2817).
+
+    So the specimen below — the court's own "only the straps" shape, 60x600
+    inside a 600x600 rectangle, 10% fill — now KEEPS its row, and its fill is
+    logged. That is deliberately the honest cost of the decision: this road
+    would rather draw a partial cut, which is outlined on hover and can be seen,
+    than drop a correct one silently. **The road that owns that specimen —
+    `referenceTake`, where a cut is never shown and a partial one costs a paid
+    render — still refuses it, and `cutQuality.test.ts` holds the split.**
   */
-  it("drops a cut that fills almost none of the rectangle it was asked about", async () => {
+  it("keeps a cut that fills almost none of its rectangle, and no longer drops it", async () => {
     const reader = readerWith({
       detects: { jacket: [{ x: 60, y: 0, width: 600, height: 576 }] },
       cuts: () => maskAt({ x: 300, y: 0, width: 60, height: 576 }),
     });
     const out = await cutDiscovered({ frame: FRAME, features: [feature("jacket")], reader });
-    expect(out.regions).toEqual([]);
-    /* Not silently lost: the name is still on the record as asked-and-uncut,
-       which is what keeps the call census honest about a call that was bought
-       and produced no row. */
-    expect(out.named.map((one) => one.noun)).toEqual(["jacket"]);
+    expect(out.regions).toHaveLength(1);
+    expect(out.regions[0]!.noun).toBe("jacket");
+    /* And it is a row rather than an asked-and-uncut name. */
+    expect(out.named).toEqual([]);
   });
 
-  it("keeps a SMALL thing that fills its own small rectangle — the falsification arm", async () => {
-    /* The bar must not refuse a septum ring for being small. A real SAM cut of
-       a thin wire hoop fills 50.1% of its box (measured on the court's own
-       masks), and a compact nose stud 67.1–76.1%; both are far above the floor.
-       This arm is the one that would say so if a fill bar were the wrong
-       instrument for small worn things. */
+  it("keeps a SMALL thing that fills its own small rectangle", async () => {
+    /* This was the fill bar's falsification arm — a septum ring must not be
+       refused for being small — and it PASSED while the bar was wrong, which is
+       #2831's sharper lesson: a fill bar refuses a thin LONG thing, not a small
+       one, so the arm was looking the wrong way. It is kept because the row
+       itself still matters: a real SAM cut of a thin wire hoop fills 50.1% of
+       its box and a compact nose stud 67.1–76.1%, and a small worn thing having
+       its own row is what #2781 and #2789 are about. */
     const reader = readerWith({
       detects: { "septum ring": [{ x: 100, y: 100, width: 20, height: 12 }] },
       cuts: () => maskAt({ x: 102, y: 102, width: 14, height: 8 }),
@@ -1580,16 +1592,22 @@ describe("one ring, two names — the rectangle says what a thin cut's pixels ca
     this block's own comment records that the measured things on his crop were
     the *rectangles* (17x12 and 20x11), and the pixel pattern is a stand-in.
 
-    The end-to-end arm goes through `cutDiscovered`, which since this slice
-    judges a cut against #2565 §4's quality bar — and a 19% fill sits under the
-    20% floor, so the wireframe was refused and the second name fell through to
-    `named` instead of joining the first's place. **The fixture's pixels were
-    the unrealistic half, not the bar**: driven over the court's real masks
+    The end-to-end arm goes through `cutDiscovered`, which for one day judged a
+    cut against #2565 §4's quality bar — and a 19% fill sat under the 20% floor,
+    so the wireframe was refused and the second name fell through to `named`
+    instead of joining the first's place. **The fixture's pixels were the
+    unrealistic half, not the bar**: driven over the court's real masks
     (`scripts/_2565-cut-quality-cell-disposable.mts`), a REAL SAM cut of a thin
     wire hoop earring — the same shape class as a septum ring, a mostly-empty
-    bounding box — fills **50.1%**, two and a half times the floor, while the
-    known-bad strap sliver reads 8.2% and is refused. A segmenter does not
-    return one-pixel wireframes.
+    bounding box — fills **50.1%**. A segmenter does not return one-pixel
+    wireframes.
+
+    ⚠ **AND THE FLOOR CAME OFF THIS ROAD THE NEXT DAY (#2831), SO THE FIXTURE
+    IS NO LONGER WHAT KEEPS THIS ARM GREEN — IT IS KEPT ANYWAY.** The reason it
+    was changed outlives the bar that forced it: the mask a segmenter really
+    returns is the thing this end-to-end arm should be driven on, and a
+    one-pixel wireframe was a stand-in for rectangles. Reverting it would make
+    the arm's subject less real, not more.
 
     So this arm alone gets a ring whose wire is two pixels rather than one (72
     pixels, 36% fill). **`body` and `edge` are untouched**, so every
@@ -2315,9 +2333,10 @@ describe("the first creature — one pair of tusks, and a body part lying on oth
 
   /* The brow ridge's cut on the founder's picture (reading r4): the insides of
      both ears, apart — 0.911 of its own pixels on the catalogue's ear and horn
-     cuts. Big enough to clear the fill floor (a third of the box), so the arms
-     below are about place and nothing else. Each ear's cut is larger than the
-     piece on it, so neither is that cut's "same place" (#2757's fold). */
+     cuts. It fills a third of its box, which mattered while this road had a
+     fill floor and does not since #2831; the arms below are about place and
+     nothing else either way. Each ear's cut is larger than the piece on it, so
+     neither is that cut's "same place" (#2757's fold). */
   const browBox = { x: 100, y: 100, width: 300, height: 60 };
   const earPieces = litMask([{ x: 100, y: 105, width: 60, height: 50 }, { x: 330, y: 105, width: 60, height: 50 }]);
   const leftEar = { x: 90, y: 100, width: 80, height: 70 };
