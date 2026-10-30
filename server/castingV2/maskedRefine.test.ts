@@ -20,7 +20,6 @@ import {
   hangsBelowAnchor,
   anyFacetMovesAnEdge,
   confusableNeighboursOf,
-  wornObjectsSittingOn,
   fringeTableNames,
   harvestRefinement,
   hasFringeAtEdge,
@@ -1183,7 +1182,6 @@ describe("a worn object on a region this edit named is not that region's to repa
         .toContain(site);
       expect(confusableNeighboursOf(site), `"${site}" must name the "${worn}" worn on it`)
         .toContain(worn);
-      expect(wornObjectsSittingOn(site), `"${site}" is where "${worn}" sits`).toContain(worn);
     }
   });
 

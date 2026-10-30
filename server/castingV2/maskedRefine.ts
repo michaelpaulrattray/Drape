@@ -886,7 +886,8 @@ export function neighbourTableNames(): string[] {
 }
 
 /**
- * WORN OBJECTS THAT SIT ON THIS REGION — `WORN_ON_SITE`, asked the other way.
+ * IS THIS A WORN OBJECT SITTING ON ONE OF THESE REGIONS? — `WORN_ON_SITE`,
+ * asked the way the territory rule needs it.
  *
  * An ear edit was never asked to repaint the earrings on it, and "the named
  * region owns its own master extent" would hand them over, because a segmenter
@@ -896,12 +897,12 @@ export function neighbourTableNames(): string[] {
  * It is one-directional on purpose, and the reverse is the thing that must not
  * happen: an EARRING edit still owns the metal, or "change her earrings" would
  * deliver nothing at all.
+ *
+ * Deliberately NOT exported. It is driven through `harvestRefinement` by the
+ * arms that assert the delivered pixels, which is the only reading of it that
+ * can tell the fix from the declaration alone; an exported twin would be a
+ * second reader of `WORN_ON_SITE` with no production caller.
  */
-export function wornObjectsSittingOn(region: string): readonly string[] {
-  return WORN_ON_SITE.filter((pair) => pair.site === region).map((pair) => pair.worn);
-}
-
-/** True when `worn` is an object that sits on one of `hosts`. */
 function isWornOnAnyOf(worn: string, hosts: ReadonlySet<string>): boolean {
   return WORN_ON_SITE.some((pair) => pair.worn === worn && hosts.has(pair.site));
 }
