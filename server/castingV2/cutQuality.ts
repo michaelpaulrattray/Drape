@@ -419,12 +419,43 @@ export function judgeCut(input: { mask: Mask; box: Box; fillFloor: number | null
  *
  * The caller's mask is never mutated: the fill lands in a copy.
  */
-export function closeHoles(mask: Mask): {
+export function closeHoles(
+  mask: Mask,
+  options?: {
+    /**
+     * ⚠ **FILL ONLY THE HOLES THIS SMALL — added for #14 slice 3a, additively.**
+     *
+     * His split clean-up fills *"holes under 2% of the piece"* and leaves a
+     * bigger one alone (`referenceSplitCleanup.ts`), which is this function's
+     * own distinction — *"one big hole and forty specks are different defects"*
+     * — turned into a decision instead of a report. **Absent, every hole is
+     * filled exactly as before**, so the take road and the panel road are
+     * untouched by a byte.
+     *
+     * The caller computes the share, because 2% of WHAT is the caller's
+     * question: the split asks 2% of the piece, and nothing here knows what a
+     * piece is.
+     */
+    maxHolePixels: number;
+  },
+): {
   mask: Mask;
+  /** Pixels in every hole FOUND, whether or not it was filled. */
   holePixels: number;
+  /** Holes FOUND, whether or not they were filled. */
   holeCount: number;
+  /** The largest hole FOUND, whether or not it was filled. */
   largestHole: number;
+  /** Pixels actually filled — equal to `holePixels` when no ceiling was given. */
+  filledPixels: number;
+  /** Holes actually filled — equal to `holeCount` when no ceiling was given. */
+  filledCount: number;
 } {
+  /* ⚠ The three counts above describe what was FOUND and keep the meaning
+     every existing caller reads them with; what a ceiling changes is only
+     which of them were FILLED, which is why the fill is reported separately
+     rather than by narrowing a number somebody already depends on. */
+  const ceiling = options?.maxHolePixels ?? Number.POSITIVE_INFINITY;
   const { width, height, data } = mask;
   const size = width * height;
   const outside = new Uint8Array(size);
@@ -457,13 +488,24 @@ export function closeHoles(mask: Mask): {
     push(p + width);
   }
   /* What is left is background the outside never reached — a hole. Walked once
-     more so each hole's own size is known, and filled on the way through. */
+     more so each hole's own size is known.
+
+     ⚠ THE FILL HAPPENS AFTER THE WALK, NOT DURING IT, AND THAT IS #14 SLICE
+     3A'S ONE CHANGE HERE. It used to write `filled[q] = 255` as it popped each
+     pixel — correct while every hole was filled unconditionally, and unable to
+     honour a ceiling, because a hole's size is not known until its walk ENDS.
+     So each hole's members are collected first and written only once the size
+     verdict is in. With no ceiling the verdict is always "fill", which is why
+     no existing caller can see a difference. */
   const filled = Buffer.from(data);
   const seen = new Uint8Array(size);
   const walk = new Int32Array(size);
+  const members = new Int32Array(size);
   let holePixels = 0;
   let holeCount = 0;
   let largestHole = 0;
+  let filledPixels = 0;
+  let filledCount = 0;
   const enclosed = (p: number): boolean => !outside[p] && !CLAIMED(data[p]);
   for (let start = 0; start < size; start += 1) {
     if (seen[start] || !enclosed(start)) continue;
@@ -476,8 +518,8 @@ export function closeHoles(mask: Mask): {
     while (cursor > 0) {
       cursor -= 1;
       const q = walk[cursor]!;
+      members[hole] = q;
       hole += 1;
-      filled[q] = 255;
       const x = q % width;
       const neighbours = [
         x > 0 ? q - 1 : -1,
@@ -495,8 +537,19 @@ export function closeHoles(mask: Mask): {
     }
     holePixels += hole;
     if (hole > largestHole) largestHole = hole;
+    if (hole > ceiling) continue;
+    for (let at = 0; at < hole; at += 1) filled[members[at]!] = 255;
+    filledPixels += hole;
+    filledCount += 1;
   }
-  return { mask: { data: filled, width, height }, holePixels, holeCount, largestHole };
+  return {
+    mask: { data: filled, width, height },
+    holePixels,
+    holeCount,
+    largestHole,
+    filledPixels,
+    filledCount,
+  };
 }
 
 /**

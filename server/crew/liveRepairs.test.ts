@@ -238,7 +238,117 @@ describe("his page names the same repairs the seat cut does (#1984)", () => {
     const headDates = await headDatesThroughReader(PRS, new Set(PRS.map((p) => p.number)));
     const item = queueItem(PRS.find((p) => p.number === 1946)!);
     const hand = liveHandReading(item, facts, headDates);
-    expect(hand).toEqual({ handVerdict: "finding", note: "held — second, same head", flaggedAt: "2026-10-08T02:10:00Z" });
+    expect(hand).toEqual({
+      handVerdict: "finding",
+      note: "held — second, same head",
+      flaggedAt: "2026-10-08T02:10:00Z",
+      /* ⚠ THE SEAT'S REPLY IS AT 03:00Z AND THE NEWEST FINDING AT 02:10Z, so a
+         shift has answered this one and the relay has not replied (#2855). It
+         is still HELD — `handVerdict` above says so — and what this changes is
+         the row's word and the order a seat is handed its work in. */
+      answered: true,
+    });
+  });
+
+  it("a repair is ANSWERED when a shift replied after the newest finding — and still held (#2855)", async () => {
+    /*
+      A repair is not always a commit. When the relay asks for a re-measurement
+      rather than for code (PR #2852, the live instance), the answer lands in a
+      comment and the head never moves — so every reader called it *repair owed*
+      over work that was done.
+
+      ⚠ **THE HOLD DOES NOT MOVE AND THIS ARM SAYS SO ON EVERY ROW.** A shift
+      clearing its own hold by writing a header is the one thing this must not
+      make possible.
+    */
+    const facts = await factsThroughReader(COMMENTS);
+    const headDates = await headDatesThroughReader(PRS, new Set(PRS.map((p) => p.number)));
+    const read = (number: number) =>
+      liveHandReading(queueItem(PRS.find((p) => p.number === number)!), facts, headDates);
+
+    /* Every held pull request in this fixture carries a seat's reply after its
+       finding, which is what the card measured on the real board. */
+    for (const number of [1960, 1974, 1924, 1946]) {
+      expect(read(number), `PR #${number}`).toMatchObject({ handVerdict: "finding", answered: true });
+    }
+
+    /* ⚠ THE NEGATIVE CONTROL. #2003 is a pass and then the relay changing its
+       mind — a finding with NO reply after it — so it is owed, and this arm is
+       what stops `answered` being a field that is simply always true. */
+    expect(read(2003)).toMatchObject({ handVerdict: "finding", answered: false });
+
+    /* And a pull request nobody is holding reports `false` rather than nothing:
+       #2001's repair was PUSHED, so its finding is stale and it is not held. */
+    expect(read(2001)).toMatchObject({ answered: false });
+    expect(read(2001).handVerdict).not.toBe("finding");
+  });
+
+  it("⚠ an answer OLDER than the newest finding answers nothing — on BOTH roads (#2855)", async () => {
+    /*
+      ⚠ THIS ARM EXISTS BECAUSE A SABOTAGE SURVIVED. Replacing the clock
+      comparison with *does an answer exist at all* left every arm above green:
+      they all drive the head-dated road, where the comparison lives in
+      `liveHandReading`, and the FALLBACK road — a pull request whose head could
+      not be read — goes through `shiftAnsweredFindingFor` and had no arm at
+      all. Both are driven here, on the same facts.
+
+      The relay reading an answer and still refusing is the real case: the
+      answer is then older than the refusal it answers, and the row is owed.
+    */
+    const facts = await factsThroughReader([
+      { pr: 4001, login: OWNER, at: "2026-10-08T01:00:00Z", body: FINDING("first") },
+      { pr: 4001, login: OWNER, at: "2026-10-08T02:00:00Z", body: REPLY },
+      { pr: 4001, login: OWNER, at: "2026-10-08T03:00:00Z", body: FINDING("read your answer; still no") },
+    ]);
+    const item = {
+      ...queueItem(PRS[0]!), number: 4001, createdAt: "2026-10-08T00:00:00Z", updatedAt: "2026-10-08T03:00:00Z",
+    };
+    /* THE HEAD-DATED ROAD. */
+    expect(liveHandReading(item, facts, new Map([[4001, "2026-10-08T00:30:00Z"]])))
+      .toMatchObject({ handVerdict: "finding", answered: false });
+    /* THE FALLBACK ROAD — no head date, so `shiftAnsweredFindingFor` answers. */
+    expect(liveHandReading(item, facts)).toMatchObject({ handVerdict: "finding", answered: false });
+
+    /* And the positive half on both, or the arm proves only that the field can
+       be false: one more answer, after the second finding. */
+    const answered = await factsThroughReader([
+      { pr: 4001, login: OWNER, at: "2026-10-08T01:00:00Z", body: FINDING("first") },
+      { pr: 4001, login: OWNER, at: "2026-10-08T02:00:00Z", body: REPLY },
+      { pr: 4001, login: OWNER, at: "2026-10-08T03:00:00Z", body: FINDING("read your answer; still no") },
+      { pr: 4001, login: OWNER, at: "2026-10-08T04:00:00Z", body: PUSHED },
+    ]);
+    const later = { ...item, updatedAt: "2026-10-08T04:00:00Z" };
+    expect(liveHandReading(later, answered, new Map([[4001, "2026-10-08T00:30:00Z"]])))
+      .toMatchObject({ handVerdict: "finding", answered: true });
+
+    /*
+      ⚠ **AND THE FALLBACK ROAD CANNOT SEE IT, WHICH IS #1984's MEASURED LIMIT
+      AND NOT A DEFECT THIS CARD INTRODUCES.** Without a head date the finding
+      is dated against the pull request's OWN clock, and an answer moves that
+      clock — so the row falls to `stale` and `answered` is `false` because the
+      stage is no longer `finding`. That is exactly the reading `liveDesk` added
+      head dates to avoid (it saw 5 of 9 held pull requests on the real board
+      for this reason), and it is pinned here so a later hand reads the limit
+      rather than rediscovering it.
+    */
+    expect(liveHandReading(later, answered)).toMatchObject({ handVerdict: "stale", answered: false });
+  });
+
+  it("CONTROL — an answer by another account moves nothing (#2855)", async () => {
+    /*
+      Every seat posts as his account, so the author gate is not a formality
+      here: it is what keeps an outsider's comment from moving a word on his
+      page. #2004's finding is already refused for the same reason.
+    */
+    const outsider = await factsThroughReader([
+      { pr: 3001, login: OWNER, at: "2026-10-08T01:00:00Z", body: FINDING("held") },
+      { pr: 3001, login: "someone-else", at: "2026-10-08T02:00:00Z", body: REPLY },
+    ]);
+    const item = {
+      ...queueItem(PRS[0]!), number: 3001, createdAt: "2026-10-08T00:00:00Z", updatedAt: "2026-10-08T02:00:00Z",
+    };
+    const hand = liveHandReading(item, outsider, new Map([[3001, "2026-10-08T00:30:00Z"]]));
+    expect(hand).toMatchObject({ handVerdict: "finding", answered: false });
   });
 });
 

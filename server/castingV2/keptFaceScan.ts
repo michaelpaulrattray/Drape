@@ -77,6 +77,10 @@ export type KeptDiscoveredRow = {
   on: string;
   box: PanelBox;
   maskUrl: string;
+  /** Whether this shape lies over the face's own cuts — see
+   *  `StoredDiscoveredSlot.coversFace`, which carries why a row written before
+   *  the check restores as *not covering* and therefore as today's panel. */
+  coversFace: boolean;
 };
 
 /** The shape this module keeps and restores — the panel's own reading. */
@@ -251,6 +255,7 @@ export async function keepScan(input: {
             on: one.on,
             box: one.box,
             maskKey: one.key,
+            coversFace: one.coversFace,
           })),
         }
         : {}),
@@ -408,6 +413,15 @@ export async function serveKeptScan(input: {
         on: typeof row.on === "string" ? row.on : "",
         box: row.box,
         maskUrl: `data:image/png;base64,${stencil.bytes.toString("base64")}`,
+        /*
+          ⚠ **READ AS A BOOLEAN AND NEVER AS TRUTHINESS, for the sibling
+          fields' reason one clause up**: the column is JSON, so this is
+          whatever was written there, and `=== true` is the only test that
+          cannot be satisfied by a string somebody stored. Anything else —
+          absent, null, a word — is *not covering*, which is the panel this
+          product drew before his check existed.
+        */
+        coversFace: row.coversFace === true,
       });
     }
 

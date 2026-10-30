@@ -95,6 +95,7 @@ import {
   handVerdictFreshness,
   isHandFinding,
   isHandVerdict,
+  isShiftAnswer,
   type HandVerdictFreshness,
 } from "./handVerdict";
 
@@ -117,6 +118,9 @@ export type CrewCardBuildState =
     readonly stage: "gate" | "review" | "passed" | "finding" | "draft";
     /** Only ever set on `finding`; the relay's own words for the hold (#1705). */
     readonly findingNote?: string | null;
+    /** Only ever set on `finding`; a shift has answered it and the relay has
+     *  not yet replied (#2855). Still held, in every reader that decides. */
+    readonly findingAnswered?: boolean;
   }
   /**
    * ⚠ **EVERY LIVE CLAIM, NEWEST FIRST, AND NEVER ONE NAME (#2775).** This was
@@ -245,6 +249,27 @@ export interface CrewBuildPullRequest {
    * the failure to avoid is a board that says nothing is owed when something is.
    */
   readonly handFindingNote?: string | null;
+  /**
+   * HAS A SHIFT ALREADY ANSWERED THIS FINDING — `true` when a comment under one
+   * of the standing orders' answer headers is NEWER than the newest fresh
+   * finding (#2855).
+   *
+   * ⚠ **IT CHANGES THE ROW'S WORD AND NOTHING ELSE.** The pull request is still
+   * held, `prStage` still answers `finding`, and the merge tool has never heard
+   * of this field — a shift cannot clear its own hold by writing a header, and
+   * the way it cannot is that no decision reads this.
+   *
+   * It exists because a repair is not always a commit. When the relay asks for a
+   * re-measurement rather than for code (PR #2852, the live instance), the
+   * answer lands in a comment and **the head never moves** — so the only signal
+   * either reader had said *nobody has acted*, which is the direction that hides
+   * work. Absent means the old sentence, which is the honest default.
+   *
+   * ⚠ **DATA HERE, NOT A READING**, the same shape and reason as the two fields
+   * above: the answer lives in a COMMENT, so the caller holding the listing
+   * establishes it through {@link shiftAnsweredFindingFor}.
+   */
+  readonly handFindingAnswered?: boolean;
 }
 
 /** A PR carrying either waits for the relay's hand verdict before it can merge. */
@@ -329,6 +354,16 @@ export type CrewCardCommentFact =
   | { readonly kind: "release"; readonly card: number; readonly at: string }
   | { readonly kind: "refusal"; readonly card: number; readonly at: string }
   | { readonly kind: "verdict"; readonly card: number; readonly at: string }
+  /**
+   * ⚠ **A SHIFT SAID IT ANSWERED THE FINDING (#2855)** — like `verdict` and
+   * `finding`, this names a PULL REQUEST rather than a card, and
+   * `crewCardBuildState` ignores it for the same reason.
+   *
+   * It is deliberately NOT a verdict and NOT a finding: `handVerdictForPullRequest`
+   * never looks at it, so the stage, the hold and the merge decision are all
+   * byte-identical whether or not one exists.
+   */
+  | { readonly kind: "answer"; readonly card: number; readonly at: string }
   /**
    * ⚠ **THE RELAY READ IT AND SOMETHING IS WRONG (#1673)** — like `verdict`,
    * this names a PULL REQUEST rather than a card, and `crewCardBuildState`
@@ -872,6 +907,19 @@ export function crewCardCommentFact(comment: CrewCardComment): CrewCardCommentFa
     }
     return null;
   }
+  /* ⚠ A SHIFT'S ANSWER (#2855) — read AFTER the two hand markers and never
+     before them, so a comment that is somehow both is the relay's. Author-gated
+     exactly as they are, which here is not a formality: every seat posts as his
+     account, so the gate is what keeps an outsider's comment from moving a word
+     on his page. It decides nothing; see the kind's own note. */
+  if (isShiftAnswer(body)) {
+    const author = comment.authorLogin;
+    const owner = comment.ownerLogin;
+    if (typeof author === "string" && typeof owner === "string" && owner !== "" && author === owner) {
+      return { kind: "answer", card, at: createdAt };
+    }
+    return null;
+  }
   /* One pass over the body's BLOCK-OPENING lines, decoration stripped — the
      single population all three matchers read, so none of them can quietly
      disagree about what a line is. Precedence is unchanged: refusal, then
@@ -943,6 +991,40 @@ export function handFindingNoteForPullRequest(input: {
     .filter((fact) => (fact.kind === "verdict" || fact.kind === "finding") && fact.card === input.pullRequest)
     .sort((a, b) => b.at.localeCompare(a.at))[0];
   return newest?.kind === "finding" ? newest.note : null;
+}
+
+/**
+ * HAS A SHIFT ANSWERED THE FINDING THAT HOLDS THIS PULL REQUEST (#2855)?
+ *
+ * `true` only when the pull request is HELD and a shift's answer is newer than
+ * the newest fresh finding on it. A finding posted after an answer — the relay
+ * reading the answer and still refusing — puts it straight back to owed, with
+ * no edit anywhere.
+ *
+ * ⚠ **IT DERIVES FROM `handVerdictForPullRequest` RATHER THAN RE-RESOLVING THE
+ * NEWEST COMMENT**, for its two siblings' reason: two readers answering *which
+ * hand comment counts* is working law 4's exact shape.
+ *
+ * ⚠ **AND IT CHANGES NO DECISION ANYWHERE.** The stage is still `finding`, the
+ * pull request is still held, and the merge tool never reads this. What it
+ * changes is one word on a row and the ORDER a seat is handed its work in —
+ * which is the whole of what the card asked for, and deliberately all of it.
+ */
+export function shiftAnsweredFindingFor(input: {
+  readonly pullRequest: number;
+  readonly updatedAt: string | null | undefined;
+  readonly facts: readonly CrewCardCommentFact[];
+}): boolean {
+  if (handVerdictForPullRequest(input) !== "finding") return false;
+  const mine = input.facts.filter((fact) => fact.card === input.pullRequest);
+  const newestFinding = mine
+    .filter((fact) => fact.kind === "verdict" || fact.kind === "finding")
+    .sort((a, b) => b.at.localeCompare(a.at))[0];
+  if (newestFinding === undefined || newestFinding.kind !== "finding") return false;
+  const newestAnswer = mine
+    .filter((fact) => fact.kind === "answer")
+    .sort((a, b) => b.at.localeCompare(a.at))[0];
+  return newestAnswer !== undefined && newestAnswer.at > newestFinding.at;
 }
 
 /**
@@ -1163,7 +1245,12 @@ export function crewCardBuildState(input: {
        would let a reassurance written on an older finding survive a repair and
        sit under a `passed` row (#1705). */
     return stage === "finding"
-      ? { kind: "pull-request", pullRequest: pr.number, stage, findingNote: pr.handFindingNote ?? null }
+      ? {
+        kind: "pull-request", pullRequest: pr.number, stage,
+        findingNote: pr.handFindingNote ?? null,
+        /* Rides only on `finding`, for the note's own reason one line up. */
+        findingAnswered: pr.handFindingAnswered === true,
+      }
       : { kind: "pull-request", pullRequest: pr.number, stage };
   }
   const mine = facts
@@ -1277,6 +1364,26 @@ export function crewCardBuildPhrase(state: CrewCardBuildState, nowMs: number): s
         */
         case "finding": {
           const note = state.findingNote ?? null;
+          /*
+            ⚠ **A REPAIR IS NOT ALWAYS A COMMIT (#2855).** The relay's finding on
+            PR #2852 asked for a re-measurement and said so in its own last line;
+            a shift ran it — 72 readings, $2.00 — and answered under the standing
+            orders' header. The head never moved, so this row went on saying
+            *repair owed* over a repair that was delivered and sitting in a
+            comment, which is the direction that HIDES work.
+
+            ⚠ **IT IS STILL HELD and this word does not say otherwise.** The
+            relay has not replied; what changed is who the row is waiting on.
+            Nothing here can clear a hold — the stage above is still `finding`
+            and the merge tool has never heard of this field.
+
+            The relay's own note still wins when there is one: a header saying
+            *held for merge order, not a defect* is a fact about the hold, where
+            this is a fact about who is next.
+          */
+          if (note === null && state.findingAnswered === true) {
+            return `answered — waiting on the relay — PR #${state.pullRequest}`;
+          }
           if (note === null) {
             return `held on the relay's finding — repair owed — PR #${state.pullRequest}`;
           }
