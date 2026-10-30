@@ -632,6 +632,46 @@ reads this document and the mock verdict first):
    the flag's catalogue entry, which describes the slice-2 reading as what
    the flag buys. **Slice 2's reading road is left dark and untouched here;
    its retirement is its own card the moment 3a lands** (§4's amendment).
+
+   ⚠ **3a IS CUT IN TWO, AND THE SEAM IS THE FLAG GATE — 2026-10-31,
+   `foreman-20261031-0418`.** The four roads above are built and the thing
+   that ties them to the flag is not, so the honest line between them is
+   *roads* and *entrance*:
+
+   - **(3a-1) THE FOUR ROADS — BUILT.** `splitAtPoints` and `cutAtPoint`
+     (`falRegionReader.ts`, both through the module's existing `post` so they
+     inherit the census and the one fal gate — **no fifth concurrency path**,
+     `assertFalBudget` untouched); `cleanSplit` (`referenceSplitCleanup.ts`,
+     his three rules plus §6's face rule); `nameTheCut`
+     (`referenceCutName.ts`, the court's prompt copied not paraphrased, its
+     own `reference.cutName` read purpose). ⚠ **His owed clean-up is
+     DISCHARGED and the measurement is on the card**: replayed against the
+     court's own saved split masks, the jacket's leak onto the scarf falls
+     **25,449 px (30.8% of the scarf) → 29 px**, and the measurement caught a
+     real ordering defect — the whole-person piece winning every contested
+     pixel and taking the tank top from 0.992 to **0.358** — which is why §6's
+     drop now runs BEFORE the arbitration and inside the same function.
+     ⚠ **One cost is stated rather than buried: the HAIR's hover region
+     shrinks, 0.935 → 0.503**, because a rectangular face box subtracted out
+     of a hair piece takes the hair inside the rectangle with it. That is §6
+     working as written; **changing it is a change to the likeness fence and
+     is HIS, not a builder's.**
+   - **(3a-2) THE ENTRANCE — NOT BUILT.** The service that reads the
+     attachment's bytes, gates on `CASTING_REFERENCE_SELECTOR_SCOPE`, and
+     calls split → clean → face-detect, then cut → name on a tap. ⚠ **The two
+     owed sentence corrections belong HERE and were deliberately NOT made in
+     3a-1**: until something calls these roads the flag buys exactly what it
+     bought before, so correcting them on 3a-1 would have made this document
+     describe a purchase the code had not made. **3a-1 is road with no
+     entrance and says so** — nothing reaches it at runtime, so nothing a
+     customer or his account can do changes by a byte.
+   - ⚠ **One thing 3a-1 did NOT measure, declared rather than implied:** the
+     clean-up was measured on the court's **deduplicated** pieces, because
+     that is what the court saved. A live 32-point grid returns the same
+     garment from many points, and the arbitration's tie rule collapses
+     duplicates by itself (measured: 18 pieces → 13, 8 → 5) — but *on a raw
+     grid* that is reasoning, not a reading. **3a-2's first act is one real
+     split on his own account, and the figure to watch is the piece count.**
    **(3b) The surface:** the picture opens large, *"Reading your picture…"*,
    the spotlight hover (tap-to-light on touch), tap → cut → chip with the
    cut's own name, tap again to let go, fail-open to words — behind the flag,
