@@ -2280,6 +2280,19 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth"]);
     expect(rowNames(panel, "body")).toEqual(["Collarbone"]);
   });
+  it("sends a body part DIRECTLY below the face to Body, where only the down axis can decide", () => {
+    /* The arm the first one cannot be: a collarbone sits under the chin, so it
+       is well within the face's span ACROSS (centre x 50, the face's own
+       midline) and outside it only DOWN. Without this, a rule that had quietly
+       lost its vertical half would still pass every arm above, because a box on
+       the helper's default diagonal is outside the face on both axes at once. */
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right", "teeth", "lips"],
+      found: [{ noun: "collarbone", kind: "anatomy", on: "", x: 10, y: 170 }],
+    });
+    expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth"]);
+    expect(rowNames(panel, "body")).toEqual(["Collarbone"]);
+  });
 
   it("draws his round-9 pair of Shoulders under Body rather than twice under Face", () => {
     const panel = panelOf({
