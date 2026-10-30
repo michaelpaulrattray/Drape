@@ -72,6 +72,32 @@ const ADDED_SUBJECTS = ["horns", "wardrobe"];
 const ADDED_FACETS = ["horns", "wardrobe"];
 
 /**
+ * NEIGHBOUR PAIRS ADDED SINCE THE PIN — a worn object and the body part it
+ * sits on, in both directions (#2834, 2026-10-30).
+ *
+ * Declared rather than folded into the golden, for the reason this whole file
+ * states: the pin exists to catch a SILENT flip, and rewriting it to agree
+ * with the code is the habit it refuses. So the pinned values stand untouched,
+ * these additions are named here, and an addition nobody declared still
+ * reddens.
+ *
+ * His question is the provenance: *"if she has ears + earrings and they are
+ * both basically full crops of her ears how does that work"*. Neither named
+ * the other, so an edit to one could repaint the other — measured at 96 of 96
+ * pixels of a climber earring on an "ears" edit. The pairs are held equal to
+ * `WORN_ON_SITE` in `maskedRefine.test.ts`, so this list cannot be the only
+ * place they live.
+ */
+const ADDED_NEIGHBOURS: Record<string, readonly string[]> = {
+  ear: ["earring"],
+  earring: ["ear"],
+  eyes: ["glasses"],
+  glasses: ["eyes"],
+  nose: ["nose stud"],
+  "nose stud": ["nose"],
+};
+
+/**
  * WHAT HAS CHANGED VALUE SINCE THE PIN — the third thing, declared the same way.
  *
  * The header's question is *did the contents MOVE, or did they CHANGE?*, and
@@ -299,10 +325,22 @@ describe("the region tables", () => {
       Object.keys(pin.FRINGE_AT_EDGE).map((region) => [region, hasFringeAtEdge(region)]));
     expect(fringe).toEqual(pin.FRINGE_AT_EDGE);
 
+    /* The pinned regions, with every DECLARED addition taken back out — so a
+       value that drifts still reddens and the golden is never rewritten. */
     const neighbours = Object.fromEntries(
       Object.keys(pin.CONFUSABLE_NEIGHBOURS)
-        .map((region) => [region, [...confusableNeighboursOf(region)]]));
+        .map((region) => [region, [...confusableNeighboursOf(region)]
+          .filter((name) => !(ADDED_NEIGHBOURS[region] ?? []).includes(name))]));
     expect(neighbours).toEqual(pin.CONFUSABLE_NEIGHBOURS);
+
+    /* And every addition is present in the LIVE table, so this check cannot
+       pass by a declared pair being absent from both sides. */
+    for (const [region, added] of Object.entries(ADDED_NEIGHBOURS)) {
+      for (const name of added) {
+        expect([...confusableNeighboursOf(region)], `"${region}" still names "${name}"`)
+          .toContain(name);
+      }
+    }
   });
 
   it("cover every region the tables declare — a pin over a subset is not a pin", () => {

@@ -93,15 +93,27 @@ export const REGION_CARDS = {
   },
   eyes: {
     fringe: { at: true, why: "lashes reach well past the lid the segmenter draws" },
-    neighbours: { with: ["hair", "eyebrows"], why: "a fringe falls across the eyes" },
+    neighbours: {
+      with: ["hair", "eyebrows", "glasses"],
+      why: "a fringe falls across the eyes, and glasses sit on them — an eye edit was never "
+        + "asked to redraw the frames",
+    },
   },
   earring: {
     fringe: { at: true, why: "hooks and fine chains are thinner than a confidence frontier" },
-    neighbours: { with: ["hair"], why: "the lobe sits under her hair" },
+    neighbours: {
+      with: ["hair", "ear"],
+      why: "the lobe sits under her hair, and a climber's cut runs up the whole helix — so an "
+        + "earring edit must not redraw the ear it hangs on",
+    },
   },
   glasses: {
     fringe: { at: true, why: "a wire temple arm is a couple of pixels wide" },
-    neighbours: { with: ["hair"], why: "the arms run into it at the temples" },
+    neighbours: {
+      with: ["hair", "eyes"],
+      why: "the arms run into her hair at the temples, and the lenses sit OVER her eyes — a "
+        + "glasses edit was never asked to redraw the eyes behind them",
+    },
   },
   "face skin": {
     fringe: {
@@ -135,7 +147,11 @@ export const REGION_CARDS = {
   },
   nose: {
     fringe: { at: false, why: "a contour against the face, with nothing finer at its boundary" },
-    neighbours: { with: [], why: "nothing that moves borders it" },
+    neighbours: {
+      with: ["nose stud"],
+      why: "nothing that MOVES borders a nose, but a stud is worn on one — and a nose edit was "
+        + "never asked to take the piercing out",
+    },
   },
   ear: {
     fringe: {
@@ -143,11 +159,19 @@ export const REGION_CARDS = {
       why: "hair may fall across it, but that fringe is the HAIR's, harvested when hair is "
         + "the question",
     },
-    neighbours: { with: ["hair"], why: "hair falls over the ear" },
+    neighbours: {
+      with: ["hair", "earring"],
+      why: "hair falls over the ear, and an earring sits ON it — an ear edit was never asked "
+        + "to redraw the metal",
+    },
   },
   "nose stud": {
     fringe: { at: false, why: "a bead — solid, and larger than the boundary's error" },
-    neighbours: { with: [], why: "small, and its anchor is named" },
+    neighbours: {
+      with: ["nose"],
+      why: "small, and its anchor is named — but a stud's cut can take in the nostril around "
+        + "it, and that skin is the nose's",
+    },
   },
   /*
     HORNS — a cutting region since the founder ruled features carry by crop

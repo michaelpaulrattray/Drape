@@ -177,6 +177,33 @@ export const LANDMARK_OF_ACCESSORY: {
  * the gate already states for a missing reader: it may only ever add a free
  * question, never block someone the old path served.
  */
+/**
+ * WHICH BODY PART EACH WORN OBJECT SITS ON — derived from the table above,
+ * never a second list.
+ *
+ * # Why the territory rule needs this and the neighbour list cannot carry it
+ *
+ * `CONFUSABLE_NEIGHBOURS` answers *"which regions can be mistaken for this one
+ * at its boundary"*, and a symmetric answer is the right one there: an ear and
+ * an earring are each other's confusion. But the territory rule also has to
+ * decide who OWNS the pixels the two share, and that question is not symmetric.
+ * An earring sits on an ear: the metal is the earring's, and the skin around it
+ * is the ear's. Without a direction, "the named region owns its own master
+ * extent" hands the metal to any ear edit, because a segmenter asked for an ear
+ * returns a blob with the earring inside it.
+ *
+ * Measured before this existed (#2834): an "ears" edit delivered onto **96 of
+ * 96** pixels of a climber earring lying inside the ear's outline. Naming the
+ * two as neighbours did not move that number at all — it only rescued the 36
+ * pixels of a drop that hung BELOW the ear. The declaration was necessary and
+ * was not sufficient, and this is the half that was missing.
+ *
+ * `site.question` is already the anatomy word the segmenter is asked for the
+ * place itself, so the pairs are read off it rather than authored again.
+ */
+export const WORN_ON_SITE: ReadonlyArray<{ readonly worn: string; readonly site: string }> =
+  LANDMARK_OF_ACCESSORY.map((entry) => ({ worn: entry.region, site: entry.site.question }));
+
 export const EYEWEAR_REGION: string | null =
   LANDMARK_OF_ACCESSORY.find((entry) => entry.landmark === "eye")?.region ?? null;
 

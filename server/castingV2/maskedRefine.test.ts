@@ -20,6 +20,7 @@ import {
   hangsBelowAnchor,
   anyFacetMovesAnEdge,
   confusableNeighboursOf,
+  wornObjectsSittingOn,
   fringeTableNames,
   harvestRefinement,
   hasFringeAtEdge,
@@ -35,6 +36,7 @@ import {
   type RegionReader,
 } from "./maskedRefine";
 import { coverage } from "./maskGeometry";
+import { WORN_ON_SITE } from "./accessoryKinds";
 import { falConcurrencyLimit, throughFalGate } from "./falConcurrency";
 import { allFacets, facetOfSubject } from "./refineFacets";
 import { hasRegion } from "./zoneScope";
@@ -1093,6 +1095,185 @@ describe("territory it was never asked about is given back to her master", () =>
       for (let x = 10; x < 26; x += 1) if (delivered.data[y * W + x]! > 0) armOverHair += 1;
     }
     expect(armOverHair, "the arms reach the temples they were painted on").toBeGreaterThan(0);
+  });
+});
+/**
+ * A WORN OBJECT ON A BODY PART IS NOT THAT BODY PART'S TO REPAINT (#2834).
+ *
+ * # His question, and the sentence it has to be true of
+ *
+ * *"so then my question is if she has ears + earrings and they are both
+ * basically full crops of her ears how does that work"* (2026-10-30, on round
+ * 9). The answer the product owes: **"make her ears pointed" keeps every
+ * earring exactly as it was**, and "remove her earrings" still clears the skin
+ * they uncovered.
+ *
+ * # Why the neighbour declaration alone was not the fix, measured
+ *
+ * `ear` and `earring` did not name each other, so the obvious repair was to add
+ * the pair. Driven on this fixture, that repair moved almost nothing — because
+ * `owned` claims each NAMED region's whole master extent, and a segmenter asked
+ * for an ear answers with a blob the earring is INSIDE. The rule protected the
+ * earring and then handed it straight back as the ear's own ground:
+ *
+ *     an "ears" edit, delivered onto the earring
+ *     tree as it stood                climber 96/96 px · drop 36/60 px
+ *     with the pair declared only     climber 96/96 px · drop  0/60 px
+ *     with the owned ground narrowed  climber  0/96 px · drop  0/60 px
+ *
+ * **The declaration rescued only the part that hung BELOW the ear's outline**,
+ * and his case is the climber that runs up inside it. That is why
+ * `WORN_ON_SITE` exists and why these arms assert the pixels rather than the
+ * declaration: a test that only read `confusableNeighboursOf` would have gone
+ * green on a fix that changed 36 pixels out of 132.
+ *
+ * # The asymmetry is deliberate and is the other half of the finding
+ *
+ * An EARRING edit still owns the metal, so it is not narrowed — narrowing both
+ * ends would make "change her earrings" deliver nothing at all. The reverse
+ * harm (an earring edit whose over-wide cut swallowed the ear) is therefore
+ * NOT closed by this guard and cannot be: that cut IS the edit's own territory,
+ * so there is nothing left for the rule to subtract. Measured on the same tree
+ * — the ear is protected by name, `surrenderedCoverage` is 0, and 360 of 360
+ * helix pixels are still delivered. It is #2833's over-wide cut, and it is
+ * read there rather than pretending a declaration reached it.
+ */
+describe("a worn object on a region this edit named is not that region's to repaint", () => {
+  const SKIN: [number, number, number] = [205, 165, 150];
+  const METAL: [number, number, number] = [230, 200, 60];
+  const BG: [number, number, number] = [30, 30, 34];
+
+  type Box = { x0: number; y0: number; x1: number; y1: number };
+  /* Her ear, a climber earring running up the helix INSIDE its outline (his
+     round-9 case), and a drop hanging BELOW it. */
+  const EAR: Box = { x0: 20, y0: 16, x1: 40, y1: 44 };
+  const CLIMBER: Box = { x0: 24, y0: 30, x1: 32, y1: 42 };
+  const DROP: Box = { x0: 26, y0: 44, x1: 32, y1: 54 };
+  const EARTOP: Box = { x0: 22, y0: 18, x1: 38, y1: 28 };
+  const LOBE: Box = { x0: 26, y0: 36, x1: 34, y1: 44 };
+
+  const inB = (b: Box, x: number, y: number) => x >= b.x0 && x < b.x1 && y >= b.y0 && y < b.y1;
+  const areaOf = (b: Box) => (b.x1 - b.x0) * (b.y1 - b.y0);
+  const countIn = (mask: Mask, b: Box): number => {
+    let n = 0;
+    for (let y = b.y0; y < b.y1; y += 1) {
+      for (let x = b.x0; x < b.x1; x += 1) if (mask.data[y * W + x]! > 0) n += 1;
+    }
+    return n;
+  };
+  const withBox = (mask: Mask, b: Box): Mask => {
+    for (let y = b.y0; y < b.y1; y += 1) {
+      for (let x = b.x0; x < b.x1; x += 1) mask.data[y * W + x] = 255;
+    }
+    return mask;
+  };
+
+  it("declares the pair in BOTH directions for every worn object, from the table that places it", () => {
+    /*
+      LAW 4, at the one place a second list would be worst. The pairs are
+      authored in `regionCards.ts` so each carries its own `why`, and they are
+      held here against `WORN_ON_SITE`, which is derived from the same
+      `site.question` the segmenter is asked for the place itself. A new
+      accessory kind cannot land without its pair, and a pair cannot be
+      authored on one side only — which is exactly how this defect existed.
+    */
+    expect(WORN_ON_SITE.length, "the accessory table still declares its sites").toBeGreaterThan(0);
+    for (const { worn, site } of WORN_ON_SITE) {
+      expect(confusableNeighboursOf(worn), `"${worn}" must name the "${site}" it sits on`)
+        .toContain(site);
+      expect(confusableNeighboursOf(site), `"${site}" must name the "${worn}" worn on it`)
+        .toContain(worn);
+      expect(wornObjectsSittingOn(site), `"${site}" is where "${worn}" sits`).toContain(worn);
+    }
+  });
+
+  it("an ear edit keeps the earrings on it — inside its outline and hanging below", async () => {
+    const master = await png((x, y) => {
+      if (inB(CLIMBER, x, y) || inB(DROP, x, y)) return METAL;
+      if (inB(EAR, x, y)) return SKIN;
+      return BG;
+    });
+    /*
+      The painter did what was asked — reshaded the top of the ear into a point
+      — AND flattened the metal to skin, which is the earring destroyed by an
+      edit that never named it.
+    */
+    const painted = await png((x, y) => {
+      if (inB(EARTOP, x, y)) return [225, 150, 135];
+      if (inB(EAR, x, y)) return SKIN;
+      if (inB(DROP, x, y)) return SKIN;
+      return BG;
+    });
+    const earReader: RegionReader = {
+      region: async ({ name }) => {
+        if (name === "ear") return box(EAR.x0, EAR.y0, EAR.x1, EAR.y1);
+        if (name === "earring") {
+          return withBox(box(CLIMBER.x0, CLIMBER.y0, CLIMBER.x1, CLIMBER.y1), DROP);
+        }
+        if (name === "hair") return box(0, 0, 6, H);
+        return box(EAR.x0, EAR.y0, EAR.x1, EAR.y1);
+      },
+      subject: async () => box(8, 4, 56, 60),
+      landmark: async () => [{ x: 0.3, y: 0.45 }, { x: 0.7, y: 0.45 }],
+    };
+    const result = await harvestRefinement({
+      master: { bytes: master, contentType: "image/png" },
+      painted: { bytes: painted, contentType: "image/png" },
+      facets: [facetOfSubject("ears")],
+      reader: earReader,
+      userId: 1,
+      described: "pointed ears",
+      explain: true,
+    });
+    const delivered = result.explain!.delivered;
+    /* The climber is the arm that matters: it lies wholly inside the ear's own
+       master extent, so only the owned-ground narrowing can save it. */
+    expect(countIn(delivered, CLIMBER), "the earring inside her ear's outline is untouched")
+      .toBe(0);
+    expect(countIn(delivered, DROP), "and so is the part hanging below it").toBe(0);
+    /* AND THE EDIT STILL HAPPENS. Protecting everything is the other way to
+       fail this card, and it is the failure a one-sided arm cannot see. */
+    expect(countIn(delivered, EARTOP), "the pointed ear she asked for still arrives")
+      .toBe(areaOf(EARTOP));
+  });
+
+  it("CONTROL — removing the earrings still clears the lobe they uncovered", async () => {
+    /*
+      The exemption that must survive, and the reason the narrowing happens
+      after the union rather than when `owned` is filled: a removal NAMES its
+      object, so `earring` is never protected here and never reaches the loop.
+      Without this arm the fix above is indistinguishable from "the composite
+      puts them back" — the defect this whole rule sits downstream of.
+    */
+    const master = await png((x, y) => {
+      if (inB(LOBE, x, y)) return METAL;
+      if (inB(EAR, x, y)) return SKIN;
+      return BG;
+    });
+    const painted = await png((x, y) => (inB(EAR, x, y) ? SKIN : BG));
+    const goneReader: RegionReader = {
+      region: async ({ name }) => {
+        if (name === "ear") return box(EAR.x0, EAR.y0, EAR.x1, EAR.y1);
+        if (name === "earring") return box(LOBE.x0, LOBE.y0, LOBE.x1, LOBE.y1);
+        if (name === "hair") return box(0, 0, 6, H);
+        return box(LOBE.x0, LOBE.y0, LOBE.x1, LOBE.y1);
+      },
+      subject: async () => box(8, 4, 56, 60),
+      landmark: async () => [{ x: 0.45, y: 0.62 }, { x: 0.55, y: 0.62 }],
+    };
+    const result = await harvestRefinement({
+      master: { bytes: master, contentType: "image/png" },
+      painted: { bytes: painted, contentType: "image/png" },
+      facets: [facetOfSubject("statedAccessories")],
+      reader: goneReader,
+      userId: 1,
+      described: "earrings",
+      departed: ["earrings"],
+      explain: true,
+    });
+    const delivered = result.explain!.delivered;
+    expect(countIn(delivered, LOBE), "the bare lobe is delivered, or the metal comes back")
+      .toBe(areaOf(LOBE));
   });
 });
 

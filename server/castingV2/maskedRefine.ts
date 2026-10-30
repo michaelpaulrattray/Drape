@@ -80,7 +80,7 @@ import { castingV2EnabledForUser, parseCastingV2Scope } from "./castingV2Scope";
 import type { Facet } from "./refineFacets";
 import { FACET_CARD_ENTRIES, facetTableOf } from "./facetCards";
 import { regionTableOf } from "./regionCards";
-import { LANDMARK_OF_ACCESSORY, accessoryEntry } from "./accessoryKinds";
+import { LANDMARK_OF_ACCESSORY, WORN_ON_SITE, accessoryEntry } from "./accessoryKinds";
 
 const log = createModuleLogger("castingV2/maskedRefine");
 
@@ -883,6 +883,27 @@ export function confusableNeighboursOf(region: string): readonly string[] {
 /** Regions declared in the neighbour table — for the reverse-direction test. */
 export function neighbourTableNames(): string[] {
   return Object.keys(CONFUSABLE_NEIGHBOURS).sort();
+}
+
+/**
+ * WORN OBJECTS THAT SIT ON THIS REGION — `WORN_ON_SITE`, asked the other way.
+ *
+ * An ear edit was never asked to repaint the earrings on it, and "the named
+ * region owns its own master extent" would hand them over, because a segmenter
+ * asked for an ear answers with a blob the metal is inside. So a worn object on
+ * a named region is taken OUT of that region's owned ground.
+ *
+ * It is one-directional on purpose, and the reverse is the thing that must not
+ * happen: an EARRING edit still owns the metal, or "change her earrings" would
+ * deliver nothing at all.
+ */
+export function wornObjectsSittingOn(region: string): readonly string[] {
+  return WORN_ON_SITE.filter((pair) => pair.site === region).map((pair) => pair.worn);
+}
+
+/** True when `worn` is an object that sits on one of `hosts`. */
+function isWornOnAnyOf(worn: string, hosts: ReadonlySet<string>): boolean {
+  return WORN_ON_SITE.some((pair) => pair.worn === worn && hosts.has(pair.site));
 }
 
 /**
@@ -1845,11 +1866,36 @@ export async function harvestRefinement(input: MaskedRefineInput): Promise<Maske
   let gated = ungoverned;
   let protectedTerritory: Mask | null = null;
   if (protectedNames.size > 0) {
-    const ownedGround = unionMasks(
+    let ownedGround = unionMasks(
       ...owned,
       ...perRegion.map((region) => region.vacancy),
       ...perRegion.map((region) => region.vacated),
     );
+    /*
+      AND A WORN OBJECT ON A NAMED REGION IS NOT THAT REGION'S TO REPAINT.
+
+      `owned` claims each named region's whole master extent, which is right
+      for the region's own material and wrong for anything sitting ON it: a
+      segmenter asked for an ear answers with a blob the earring is inside, so
+      an ear edit would own the metal and the rule above would hand it straight
+      back. Measured on #2834 before this loop existed — an "ears" edit
+      delivered onto 96 of 96 pixels of a climber earring, and declaring the
+      two as neighbours moved that number not at all. The fixture and the full
+      before/after table are in `maskedRefine.test.ts`.
+
+      Narrowing happens HERE, after the union, rather than when `owned` is
+      filled: the three exemptions that must survive — a removal's reveal, a
+      shrink's vacancy, an addition's destination corridor — are pushed as their
+      own masks, and subtracting from the union would take them with it. A
+      removal or a change NAMES its object, so it is never in `protectedNames`
+      and never reaches this loop.
+    */
+    for (const name of Array.from(protectedNames)) {
+      if (!isWornOnAnyOf(name, namedRegions)) continue;
+      const worn = await regionOf("master", name, true).catch(() => null);
+      if (worn === null || coverage(worn) === 0) continue;
+      ownedGround = subtractMask(ownedGround, worn);
+    }
     /* The neighbours' territories, together. Each read already tolerates its
        own failure below, and warming keeps that: a rejection here is settled,
        and the loop's own `.catch(() => null)` still turns it into "protect
