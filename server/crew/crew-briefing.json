@@ -1,7 +1,7 @@
 {
-  "edition": 790,
-  "updatedAt": "2026-10-30T21:20:00.000000Z",
-  "shift": "The lit-up picture has its way in now — and the one measurement you asked for came back saying the lit-up picture is not ready.\n\nLast night the studio learned how to split an attached photo into pieces, tidy them, cut what is under your finger and name it. Tonight it got the door that ties all of that to the switch, so there is finally something real behind the setting instead of machinery with nothing calling it. That is written, checked and waiting on a review — it adds two rate limits, and anything near money waits for a human read by rule. The setting is still off and nothing a customer can see has changed.\n\nThen I bought the test the plan said to buy. The plan had written down one open question: when the studio splits a photo for real, how many pieces does it actually end up with? Nobody had checked, because the earlier test had tidied its own results before saving them. So I ran it for real on your three test pictures, twice, at two different sizes so size could not be the excuse.\n\nIt ends up with about 27 pieces. The earlier test had between 8 and 18. On the photo of a coat on a hanger — which has two things in it — it found 27. The reason is one line in the earlier test's own scratch script: it quietly merged near-duplicate pieces before it saved anything, and that step never made it into the studio. So the good results we have been quoting for this feature were measured on a tidier set of pieces than the studio actually produces.\n\nThat matters because it is the difference between hovering a jacket and hovering a scrap of a jacket. The screen cannot be built on top of 27 scraps, so I have filed it as its own job rather than quietly inventing a rule tonight — the fix means choosing how aggressively to merge, and that is a number that should be measured, not guessed. The measuring costs nothing: the earlier test's results are still on disk.\n\nI also found and fixed something that was costing two thirds of the wait. When the studio split a photo it was downloading the 32 resulting pieces one after another — 33 seconds of the 48. Fetching them together takes one second. So the whole split went from about 48 seconds to about 16. The remaining 15 is the outside service's own time, and it is running about two and a half times slower tonight than when we first measured it, which is theirs rather than ours.\n\nOne honest note on my own work: the tests caught a mistake before you could. A tap on somebody's face was coming back as a thin ring around the face, which would then have been given a name and shown to you as if it were a thing you had picked. Fixed, and guarded.",
+  "edition": 791,
+  "updatedAt": "2026-10-30T22:40:00.000000Z",
+  "shift": "The lit-up picture now lights the garment instead of a scrap of it — and the test that found the problem had itself been measured on the wrong thing.\n\nLast night's test said that splitting a real photo leaves about 27 pieces, so hovering a jacket would light a sleeve or a patch of wall. That is fixed. Point at the middle of a thing now and here is how much of it lights up, before and after: a tank top 20% → 98%, a sweater 21% → 98%, a belt 55% → 95%, a leather jacket 67% → 99%, a scarf 79% → 99%, a sneaker 82% → 99%. Six of the nine things on your three test pictures now light as themselves, where two did before. The picture goes from 26 pieces to 11.\n\nWhat was wrong is worth a sentence because it is not what last night's note guessed. The studio was not keeping duplicate copies of the jacket; it was cutting the jacket into as many slivers as it had copies. Thirty-two near-identical answers to the same question went in, and each one walked away with a strip of the garment. That is why pointing at a tank top lit a fifth of it.\n\nThe merging rule now in the studio is a measured number, not a guessed one, and it is pinned from both sides. Merge too eagerly and a garment gets mistaken for the person wearing it — at one setting the tank top disappeared from the picture entirely. Merge too shyly and the duplicates survive, which is where we were. There is a wide band in the middle where the answer does not change at all, and the setting sits in the middle of that band. Then I asked the whole question again at the full size of the original photographs rather than the shrunk copies, because a number that is only right at one size is the same mistake one step along. It holds.\n\nOne correction to my own card: it said the measuring would cost nothing because the old test's results were saved. They were not — the old test tidied its results before saving them, so the untidied ones never existed on disk. That is the very mistake the card was about, one layer down. Buying them again cost about one and a half cents, and this time they are saved, so nobody pays for them again.\n\nFinally, I went looking for the same mistake elsewhere, since once is a pattern until proven otherwise. I found it: when you tap a thing and the studio names it for the chip, the naming is done by showing a reader the whole photograph with everything but your piece painted grey. The test we quoted — which named things right eight times out of eight — showed the reader a tight close-up of the piece instead. Two comments in the code claimed that test had approved the way we do it. They had it backwards, and they are corrected. Which way actually names better is a measurement, and it is filed as its own job.\n\nThe setting for all of this is still off and nothing you can see has changed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-30T15:31:06.457Z",
+      "readAt": "2026-10-30T22:35:00.976Z",
       "items": [
         {
           "issueNumber": 30,
@@ -199,6 +199,12 @@
         {
           "issueNumber": 2858,
           "title": "N3 slice 2: which things may keep a saved picture - the fixed list, or the customer's own words (a design decision, parent #2565)",
+          "kind": "rung",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 2868,
+          "title": "The face panel's pieces light up spotlight-style, like the picker (his word 2026-10-30)",
           "kind": "rung",
           "rung": "N3"
         },
@@ -7768,6 +7774,13 @@
   ],
   "pipeline": [
     {
+      "id": "spotlight-hover-dedupe-2873",
+      "title": "The lit-up picture lights the garment, not a sliver of it (#2873)",
+      "status": "merged",
+      "prNumber": 2876,
+      "note": "Merged on the gate alone — triage read the diff and applied no label, so no human read was owed. Six of nine things light as themselves against two before; the picture goes 26 pieces to 11."
+    },
+    {
       "id": "selector-entrance-14",
       "title": "The lit-up picture gets its way in, and the one test the plan asked for came back (#14)",
       "status": "in-review",
@@ -11186,7 +11199,7 @@
     {
       "id": "outfit-whole-box-2845",
       "title": "The outfit is one box on the picture, with its pieces inside it — your round-10 note (#2845)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2850,
       "note": "Held for a human review because it changes what you see on the photograph. Driven in the running app in both themes: before, hovering the one Outfit row lit four separate boxes and drew no outfit box; after, it lights one. Pictures stayed off the public repo."
     },
@@ -11207,11 +11220,18 @@
   ],
   "problems": [
     {
-      "id": "spotlight-hover-set-too-busy-2873",
+      "id": "cut-named-from-whole-frame-2875",
       "severity": "warning",
       "state": "open",
-      "title": "The lit-up picture would light scraps, not garments — #2873",
-      "detail": "Splitting a real photo leaves about 27 pieces where the test we quoted had 8 to 18, so hovering would light a sleeve or a patch of wall rather than the jacket. Nobody can hit it — the setting is off — but the screen cannot be built until it is fixed. The cause is a merge step that stayed in the old test's scratch script. Settling it costs nothing at the outside service, because that test's results are still on disk."
+      "title": "The studio names a tapped piece from the whole photograph, not from a close-up of the piece (#2875)",
+      "detail": "When you tap something in an attached photo, the chip's name comes from showing a reader the whole picture with everything but your piece painted grey. The test we quote — which named things right eight times out of eight — showed the reader a tight close-up instead. On a flat-lay that is the difference between a belt filling the frame and a belt lost in a field of grey. Nobody can hit it, because the setting is off. Which way names better is a measurement and it is cheap: the pieces are on disk, so only the reading costs anything."
+    },
+    {
+      "id": "spotlight-hover-set-too-busy-2873",
+      "severity": "warning",
+      "state": "resolved",
+      "title": "Fixed — the lit-up picture lights the garment now, not a scrap of it (#2873)",
+      "detail": "Point at the middle of a thing and it lights up almost entirely: a tank top went from 20% to 98%, a sweater from 21% to 98%. Six of the nine things on your test pictures light as themselves, where two did. One thing on this row was wrong and is worth recording: it said the fix would cost nothing to measure because the old test's results were on disk. They were not — the old test tidied its results before saving them. Buying them again cost about one and a half cents, and they are saved now."
     },
     {
       "id": "correct-picture-thrown-away-2837",
@@ -11758,16 +11778,12 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-30T15:31:06.456Z",
+    "readAt": "2026-10-30T22:35:00.976Z",
     "items": [
       {
         "issueNumber": 14,
         "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
-        "urgent": false,
-        "held": {
-          "state": "fable",
-          "because": "a Fable seat — a DESIGN DECISION: does slice 3 build markers or the spotlight he preferred? RECOMMENDED: amend the design to the spotlight."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 1598,
