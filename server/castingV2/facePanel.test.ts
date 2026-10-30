@@ -1809,7 +1809,7 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     const panel = panelOf({
       found: [
         { noun: "jacket", kind: "clothing" },
-        { noun: "scar", kind: "mark", on: "cheek" },
+        { noun: "scar", kind: "marking", on: "cheek" },
       ],
     });
     /*
@@ -1818,10 +1818,15 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       which rows do. A second `true` anywhere here would silently start
       suppressing some other row's rectangles.
     */
-    const whole = panel.groups
-      .flatMap((group) => group.rows.flatMap((row) => row.regions.map((one) => ({ group: group.group, one }))))
-      .filter((each) => each.one.whole);
-    expect(whole.map((each) => each.group)).toEqual(["outfit"]);
+    const all = panel.groups
+      .flatMap((group) => group.rows.flatMap((row) => row.regions.map((one) => ({ group: group.group, one }))));
+    /* ⚠ THE ARM BELOW IS VACUOUS WITHOUT THIS ONE, so it is pinned rather than
+       assumed: the scar must actually draw a rectangle somewhere else on the
+       panel, or "the outfit is the only whole" is true of a panel that has no
+       other rectangle to be wrong about. Measured: outfit 2 regions, open/Scar
+       1. */
+    expect(all.filter((each) => each.group !== "outfit").length).toBeGreaterThan(0);
+    expect(all.filter((each) => each.one.whole).map((each) => each.group)).toEqual(["outfit"]);
   });
 
   /*
