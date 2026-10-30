@@ -10,10 +10,13 @@
  * So each rule gets both arms: the row it must refuse, and the closest legal
  * row to it, which must pass.
  */
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import {
   GUARD_REFUSAL_REASONS,
+  REFUSALS_THAT_KEEP_THEIR_CROP,
   refusalKeepsItsCrop,
 } from "../castingV2/referenceCompleteness";
 import {
@@ -413,5 +416,103 @@ describe("what a refused crop may say about itself", () => {
       noun: "skin",
       refusal: { reason: "noSpecimen", kind: "face skin" },
     }))).toBe("surfaceWasNeverCut");
+  });
+});
+
+describe("the schema's own paragraph about the kept pixels", () => {
+  /*
+    WHY A DOCBLOCK ARM, AND WHY HERE.
+
+    `drizzle/schema.ts` said the write helper keeps those two keys on
+    `noSpecimen` ALONE. It never has: the rule below is `refusalKeepsItsCrop`,
+    and four reasons answer yes to it. The sentence was true when `noSpecimen`
+    was the only one and did not move when `disputedDelivery` and
+    `brokenOutline` joined.
+
+    It is not a harmless stale line, which is why it is held rather than just
+    fixed. Production holds exactly ONE row in that column group and its reason
+    is `disputedDelivery` — so the schema told anyone reading it that the live
+    row breaches the write helper's own shape rule. #2565 §3 sends the builder
+    of kept items to that very paragraph to learn the store's shape.
+
+    The arm lives beside the enforcement it describes rather than beside the
+    schema, because `assertReferenceRowShape` is what the sentence is ABOUT and
+    this suite already imports the table it must agree with. Same
+    derive-never-mirror exception the catalogue's header arm takes: the fact
+    under test IS that a particular sentence agrees with a particular table.
+  */
+  const ANCHOR = "AND IT IS NOT `noSpecimen` ALONE";
+
+  const schemaProse = (): string => readFileSync(
+    new URL("../../drizzle/schema.ts", import.meta.url),
+    "utf8",
+  )
+    .replace(/^\s*\*\s?/gm, "")
+    .replace(/\s+/g, " ");
+
+  /* The paragraph, sliced out by its own heading. A whole-file `toContain`
+     would pass on any other docblock in a 5,000-line schema that happened to
+     name the same reason, so the anchor is asserted UNIQUE before it is used
+     to cut. */
+  const paragraph = (): string => {
+    const prose = schemaProse();
+    const at = prose.indexOf(ANCHOR);
+    expect(at, "the paragraph's anchor is missing from drizzle/schema.ts").toBeGreaterThan(-1);
+    expect(prose.indexOf(ANCHOR, at + 1), "the anchor is not unique, so the slice is ambiguous").toBe(-1);
+    return prose.slice(at, prose.indexOf("The write helper enforces the shape MySQL cannot", at));
+  };
+
+  it("names every refusal that keeps its crop, and names no other", () => {
+    const named = [...paragraph().matchAll(/`([A-Za-z]+)`/g)]
+      .map((match) => match[1]!)
+      .filter((word) => (GUARD_REFUSAL_REASONS as readonly string[]).includes(word));
+    expect(new Set(named)).toEqual(new Set(REFUSALS_THAT_KEEP_THEIR_CROP));
+    /* The negative half, so this is a bar rather than a tautology: a reason
+       that does NOT keep its crop must not be sitting in the list. */
+    for (const name of named) expect(refusalKeepsItsCrop(name as never)).toBe(true);
+  });
+
+  it("holds both of the paragraph's numbers equal to the table", () => {
+    /* Written as words, which is how the paragraph reads; the map is derived
+       from the counts rather than the counts from the map. */
+    const WORDS = [
+      "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+      "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen",
+    ];
+    const keeping = WORDS[REFUSALS_THAT_KEEP_THEIR_CROP.length];
+    const all = WORDS[GUARD_REFUSAL_REASONS.length];
+    expect(keeping, "more refusal reasons than this arm can spell").toBeDefined();
+    expect(all, "more refusal reasons than this arm can spell").toBeDefined();
+    expect(paragraph().toLowerCase()).toContain(`**${keeping}** of its **${all}** reasons`);
+  });
+
+  it("is still describing a rule the write helper actually applies", () => {
+    /*
+      The RULE SENTENCE, sliced — not the whole file, and that distinction is
+      the arm's own first bug: the paragraph QUOTES the stale sentence in order
+      to correct it, so a file-wide `not.toContain` fails on the correction
+      itself. Quoting is never declaring (the shift orders' own rule about the
+      quiet-night marker, in a second place).
+    */
+    const prose = schemaProse();
+    const at = prose.indexOf("The write helper enforces the shape MySQL cannot");
+    expect(at, "the rule sentence is missing").toBeGreaterThan(-1);
+    expect(prose.indexOf("The write helper enforces the shape MySQL cannot", at + 1)).toBe(-1);
+    const rule = prose.slice(at, at + 220);
+    expect(rule).not.toContain("keys only on `noSpecimen`");
+    expect(rule).toContain("keys only on a reason in `REFUSALS_THAT_KEEP_THEIR_CROP`");
+    /* And if somebody ever re-narrows the helper to one reason, this says so
+       rather than letting the prose go wrong in the other direction. */
+    expect(REFUSALS_THAT_KEEP_THEIR_CROP.length).toBeGreaterThan(1);
+  });
+
+  it("holds the refusedReason column's own count too", () => {
+    const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven",
+      "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen"];
+    const prose = schemaProse();
+    const at = prose.indexOf("One of `referenceCompleteness.ts`'s");
+    expect(at, "the refusedReason column's sentence is missing").toBeGreaterThan(-1);
+    expect(prose.slice(at, at + 90))
+      .toContain(`'s ${WORDS[GUARD_REFUSAL_REASONS.length]} reasons`);
   });
 });
