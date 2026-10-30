@@ -183,8 +183,18 @@ function stubFal(shape: Shape): Wire {
     }
     if (width !== WIDTH) wire.halfFrameAsks += 1;
 
-    /* The face is always one mask: it is the midline and the head box. */
-    if (prompt === "face") return reply({ masks: [{ url: await blob(width, height, 0.5) }] });
+    /* The face is always one mask: it is the midline and the head box.
+       ⚠ For the two FOREHEAD shapes it reaches up to the forehead, as a real
+       face read does (#2844): the face rule judges a pair's pieces by the
+       face's extent, and a face band that stopped below the forehead would
+       drop the forehead eye for a reason that is not this suite's subject.
+       Same width and centre, so the midline does not move. */
+    if (prompt === "face") {
+      if (shape === "midlinePiece" || shape === "midlineOnly") {
+        return reply({ masks: [{ url: await rect(width, height, [0.25, 0.75], [0.05, 2 / 3]) }] });
+      }
+      return reply({ masks: [{ url: await blob(width, height, 0.5) }] });
+    }
 
     if (PAIR_QUESTIONS.has(prompt) && width === WIDTH) {
       if (shape === "none") return reply({ masks: [] });
