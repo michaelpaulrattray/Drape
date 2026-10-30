@@ -302,6 +302,9 @@ describe("the road is dark until a caller asks for it", () => {
     */
     const { wire } = await readPair({ pairInOneRead: false, shape: "spanning" });
     expect(wire.multipleAsked, "both halves, by the singular noun").toEqual(["eye", "eye"]);
+    /* CONTROL for #2833: one side's allowance per half, unchanged. Only the
+       whole-frame read, which asks for both sides at once, carries two. */
+    expect(wire.maxMasks, "each half is one side's allowance").toEqual([4, 4]);
   });
 });
 
@@ -311,7 +314,10 @@ describe("one request for both sides", () => {
     expect(wire.halfFrameAsks, "no half frame is cut or asked about").toBe(0);
     expect(wire.sam3ByPrompt.get("eyes"), "the pair asked exactly once").toBe(1);
     expect(wire.multipleAsked, "and the setting rides that one request only").toEqual(["eyes"]);
-    expect(wire.maxMasks).toEqual([4]);
+    /* BOTH SIDES' ALLOWANCE, because it is one request for both (#2833): the
+       crop road asks each half for 4, and this read stands in for both halves.
+       It read [4] until his round-9 cast, where 4 left one ear's hoop out. */
+    expect(wire.maxMasks).toEqual([8]);
     /* The midline is still bought, and still once: it is shared across every
        pair and the build row, so this road saves the SECOND side read and
        nothing else. */
@@ -602,5 +608,91 @@ describe("what a whole scan draws on this road", () => {
     expect(total(wire.sam3ByPrompt)).toBe(FACE_SCAN_FAL_CALLS.sam3.pairInOneRead.fewest);
     expect(wire.halfFrameAsks, "and no half frame is cut on the whole scan").toBe(0);
     expect(wire.birefnet, "the cutout is untouched").toBe(FACE_SCAN_FAL_CALLS.cutouts);
+  });
+});
+
+/*
+  ⚠ ONE REQUEST FOR BOTH EARS CARRIES BOTH EARS' ALLOWANCE (#2833, his eye
+  round 9).
+
+  His cast wore a climber, a drop and a hoop in each ear. Asked `earring` of the
+  whole picture at `max_masks: 4`, the provider answered exactly four — the same
+  to the pixel on three draws — and at 8 it answered seven. His panel showed
+  what four meant: three answers on the cast's left ear and ONE on the right,
+  whose lobe hoop ranked fifth and was never drawn.
+
+  The provider here honours `max_masks` the way the real one does — it offers
+  what it holds, best first, up to the number asked — so these arms read what
+  the CEILING does, not a fake that ignores it.
+*/
+describe("one request for both ears carries both ears' allowance", () => {
+  /* Three pieces on the image's right half (the cast's left ear), two on the
+     left half, each its own small rectangle well clear of the midline, in the
+     order the provider ranks them: the right ear's lobe hoop is FIFTH. */
+  const PIECES: Array<{ xs: [number, number]; ys: [number, number] }> = [
+    { xs: [0.80, 0.84], ys: [0.20, 0.26] },
+    { xs: [0.80, 0.84], ys: [0.30, 0.36] },
+    { xs: [0.80, 0.84], ys: [0.40, 0.46] },
+    { xs: [0.16, 0.20], ys: [0.20, 0.26] },
+    { xs: [0.16, 0.20], ys: [0.40, 0.46] },
+  ];
+  const HOOP = PIECES[4]!;
+
+  function stubPieces() {
+    const asked: number[] = [];
+    vi.stubGlobal("fetch", async (url: unknown, init?: { body?: unknown }) => {
+      const address = String(url);
+      const reply = (json: unknown) => new Response(JSON.stringify(json), {
+        status: 200, headers: { "content-type": "application/json" },
+      });
+      if (!address.startsWith("https://fal.run/")) return new Response("not served by this fake", { status: 404 });
+      if (address.slice("https://fal.run/".length) !== SAM3) return reply({});
+      const body = JSON.parse(String(init?.body ?? "{}"));
+      const image = Buffer.from(String(body.image_url).split(",")[1], "base64");
+      const meta = await sharp(image).metadata();
+      const width = meta.width ?? 0;
+      const height = meta.height ?? 0;
+      if (body.prompt === "face") return reply({ masks: [{ url: await blob(width, height, 0.5) }] });
+      if (width !== WIDTH) return reply({ masks: [] });
+      const ceiling = body.return_multiple_masks === true ? Number(body.max_masks) : 1;
+      asked.push(ceiling);
+      const offered = await Promise.all(PIECES.map(async (piece) => ({ url: await rect(width, height, piece.xs, piece.ys) })));
+      return reply({ masks: offered.slice(0, ceiling) });
+    });
+    return asked;
+  }
+
+  /** Does this side's mask hold the middle of that piece? */
+  const holds = (mask: { data: Buffer; width: number } | null, piece: (typeof PIECES)[number]): boolean => {
+    if (mask === null) return false;
+    const x = Math.floor(WIDTH * (piece.xs[0] + piece.xs[1]) / 2);
+    const y = Math.floor(HEIGHT * (piece.ys[0] + piece.ys[1]) / 2);
+    return mask.data[y * mask.width + x]! > 0;
+  };
+
+  it("keeps the fifth piece: the right ear's hoop is drawn, and every piece lands on its own ear", async () => {
+    const asked = stubPieces();
+    const reader = createFalRegionReader({ apiKey: "test-key", pairInOneRead: true });
+    const sides = await reader.regionSides?.({ image: await frame(), name: "earring", absentIsAnswer: true });
+
+    expect(asked, "one request for both ears, with both ears' allowance").toEqual([8]);
+    /* `right` is HER right, which is the image's LEFT half. */
+    expect(holds(sides!.right, PIECES[3]!), "the right ear's climber").toBe(true);
+    expect(holds(sides!.right, HOOP), "AND the right ear's lobe hoop, the fifth answer").toBe(true);
+    for (const piece of PIECES.slice(0, 3)) {
+      expect(holds(sides!.left, piece), "every piece on the left ear").toBe(true);
+      expect(holds(sides!.right, piece), "and none of them handed to the right").toBe(false);
+    }
+  });
+
+  it("CONTROL — the provider here really does cut off at the number asked", async () => {
+    /* Without this arm the one above could pass against a fake that ignores
+       `max_masks`, and prove nothing about the ceiling. */
+    stubPieces();
+    const asOne = await fetch(`https://fal.run/${SAM3}`, {
+      method: "POST",
+      body: JSON.stringify({ image_url: `data:image/png;base64,${(await frame()).toString("base64")}`, prompt: "earring", return_multiple_masks: true, max_masks: 4 }),
+    });
+    expect(((await asOne.json()) as { masks: unknown[] }).masks).toHaveLength(4);
   });
 });
