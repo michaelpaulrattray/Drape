@@ -27,6 +27,7 @@ import {
   crewCardBuildViews,
   handFindingNoteForPullRequest,
   repairFlaggedAtForPullRequest,
+  shiftAnsweredFindingFor,
   handVerdictForPullRequest,
   notBuiltCards,
   type CrewBuildPullRequest,
@@ -628,6 +629,10 @@ export type LiveHandReading = {
   readonly handVerdict: HandVerdictFreshness;
   readonly note: string | null;
   readonly flaggedAt: string | null;
+  /** A shift has answered the finding and the relay has not replied (#2855).
+   *  `false` for every pull request that is not held. It changes the row's WORD
+   *  and no decision — the hold is the relay's to clear. */
+  readonly answered: boolean;
 };
 
 export function liveHandReading(
@@ -642,6 +647,7 @@ export function liveHandReading(
       handVerdict: handVerdictForPullRequest(input),
       note: handFindingNoteForPullRequest(input),
       flaggedAt: repairFlaggedAtForPullRequest(input),
+      answered: shiftAnsweredFindingFor(input),
     };
   }
   const exact = exactHandReading({
@@ -650,13 +656,24 @@ export function liveHandReading(
     headCommittedAt,
     facts,
   });
-  if (exact.handVerdict !== "finding") return { handVerdict: exact.handVerdict, note: null, flaggedAt: null };
+  if (exact.handVerdict !== "finding") {
+    return { handVerdict: exact.handVerdict, note: null, flaggedAt: null, answered: false };
+  }
   /* The finding the reader held it on — its words travel with its clock. */
   const finding = facts.find((fact) => fact.kind === "finding" && fact.card === item.number && fact.at === exact.flaggedAt);
+  /* ⚠ AGAINST `exact.flaggedAt` AND NEVER AGAINST THE PULL REQUEST'S CLOCK
+     (#2855): on this road the head commit dates the finding, and an answer is
+     an answer only when it came AFTER the newest fresh one. A later finding —
+     the relay reading the answer and still refusing — puts the row back to
+     *repair owed* with no edit anywhere. */
+  const newestAnswer = facts
+    .filter((fact) => fact.kind === "answer" && fact.card === item.number)
+    .sort((a, b) => b.at.localeCompare(a.at))[0];
   return {
     handVerdict: "finding",
     note: finding?.kind === "finding" ? finding.note : null,
     flaggedAt: exact.flaggedAt,
+    answered: exact.flaggedAt !== null && newestAnswer !== undefined && newestAnswer.at > exact.flaggedAt,
   };
 }
 
@@ -770,6 +787,11 @@ function liveBuildBoard(
          request that is not held, and for a header that says nothing beyond
          "held", in which case the row reads exactly as it did before. */
       handFindingNote: hand.note,
+      /* ⚠ WHO THE ROW IS WAITING ON (#2855). A repair the relay asked for is not
+         always a commit — a re-measurement answers in a comment and moves no
+         head — so without this the row says *repair owed* over work that is
+         done and on the record. It is still held either way. */
+      handFindingAnswered: hand.answered,
     };
   });
   const parsed = Date.parse(reading.readAt);
