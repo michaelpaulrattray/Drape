@@ -1,7 +1,7 @@
 {
-  "edition": 780,
-  "updatedAt": "2026-10-30T00:47:45.799158Z",
-  "shift": "Two things tonight, and the first one needs you.\n\nThe road you said BUILD IT to on Wednesday — attach a photo of a jacket, say \"wear this\", and the cast comes back wearing it — went live on your account yesterday afternoon and nobody ever asked you to try it. Every piece of it is built and switched on for you alone. The only thing left on that job is your own jacket test, so it is on your desk now as a question rather than sitting on the board looking like work still to do. That was the actual fault: the job was finished, said nothing about needing you, and was about to be picked up again by the next session as if it were unbuilt.\n\nThe second thing is about the panel on the right of a cast, and it is us correcting our own notes rather than anything you can see. When the studio cuts out a small picture of a feature — the hair, an earring — it will only keep that picture for features it has properly measured first, and it writes the feature down in words for everything else. The note inside our own code said hair was the only one measured. Four are: hair, eyes, horns and earrings. The other three were measured months ago and nobody went back to correct the sentence.\n\nIt matters because that sentence is the first thing anyone building the next piece of the editing work reads, and it would have had them design around a limit that has not existed for months — in particular it would have had them believe an earring can never keep its picture, when it can. Corrected, and the correction is now worked out from the measurements themselves rather than typed in, so it cannot go stale again: if a fifth feature is ever measured, the sentence has to move with it or our checks go red. Glasses and nose studs genuinely cannot keep a picture yet, and a garment has no place on that panel at all — both of those are written down now as real work rather than assumed done.",
+  "edition": 781,
+  "updatedAt": "2026-10-30T02:05:00.000000Z",
+  "shift": "One job tonight, and it found something worth your attention — though nothing here needs you to do anything.\n\nThere is a feature in the studio that is meant to keep your characters steady. When you change one thing about a character, it saves a small picture of each thing you have already chosen — the tattoo, the earring, the hairstyle — so those things come back looking exactly the same on every later edit instead of drifting.\n\nThe studio has only ever tried to save one such picture, back on the 17th, on your cyberpunk character with the platinum hair. Nobody had ever opened it. Three sessions in a row had quoted the number beside it and left the picture itself alone, so I opened it.\n\nThe picture is perfect. It is a clean cut of the whole hairstyle — the bun, the fringe, the loose strands — and the studio threw it away. Its own checker had looked at the finished render and decided the platinum hair was not there. It plainly is: I put that render beside the two before it and the hair is right in all three, and the studio's OWN description of that same picture, written in the same minute, says the hair reads as platinum blonde. Two readers, one picture, opposite answers — and the wrong one won.\n\nThe part that matters most: you had not asked about the hair. You asked for vampire fangs. The hair had been set three edits earlier and had not been touched since. So a feature you were happy with got marked as missing, and the picture that would have kept it steady was binned.\n\nIt is written up as its own job with the evidence. Nothing is changed yet, on purpose — that check is live on your account while you are in the middle of looking at the feature panel, and moving it under you would make your next look unreadable against your last.\n\nAlso shipped, and waiting on a review: our own schema was telling anyone who opened it that this exact row should not exist. It said pictures are only ever kept for one kind of refusal; there are four. That is the paragraph anyone building this feature reads first, and it is now held to the real list by a test, so it cannot quietly go wrong again.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-30T00:49:23.958Z",
+      "readAt": "2026-10-30T01:51:50.943Z",
       "items": [
         {
           "issueNumber": 30,
@@ -11145,12 +11145,26 @@
     {
       "id": "reference-selector-read-14",
       "title": "An attached picture is read for everything takeable in it, and each one located — switched off, and nothing on screen yet (#14, first of four pieces)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2826,
       "note": "Gate green in 4.1 minutes. Held for a human review because it touches the file where every switch is armed."
+    },
+    {
+      "id": "schema-kept-pixels-2565",
+      "title": "Our schema stops saying that only one kind of refusal keeps a picture — there are four, and the only one the live site holds is one of the other three (#2565)",
+      "status": "in-review",
+      "prNumber": 2836,
+      "note": "Gate green in 4.1 minutes. Held for a human review because any change under the database folder counts as a money path, whatever it touches — here it is comment text and a test, no column moved."
     }
   ],
   "problems": [
+    {
+      "id": "correct-picture-thrown-away-2837",
+      "severity": "warning",
+      "state": "open",
+      "title": "The studio throws away a correct saved picture of a feature you did not even change (#2837)",
+      "detail": "Live on your account only, and nothing is changed yet.\n\nWhen you refine a character, the studio is meant to save a small picture of each thing you have chosen, so those things stay identical on later edits. It has only ever tried to save one — your platinum-haired character, on the 17th — and it threw that one away.\n\nThe saved picture is correct: a clean cut of the whole hairstyle. What went wrong is the check afterwards. The studio's checker looked at the finished render and said the platinum hair was not there. It was there, in that render and the two before it, and the studio's own written description of the same picture says so in the same minute.\n\nAnd it was not even the thing you were editing. You had asked for vampire fangs; the hair was three edits old. So a feature you were happy with was marked missing and its picture binned.\n\nThis is one case — the only one there is — and it sits on exactly the road the \"keep what you chose\" work depends on. Not fixed tonight on purpose: that check is live on your account while you are mid-way through looking at the feature panel."
+    },
     {
       "id": "cut-floor-drops-correct-feature-2831",
       "severity": "warning",
@@ -11689,7 +11703,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-30T00:49:23.957Z",
+    "readAt": "2026-10-30T01:51:50.942Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11827,6 +11841,11 @@
           "state": "blocked",
           "because": "YOU - the fix is live. One look at a fresh creature panel: both tusks under Teeth, and one Nose row instead of Nose plus Snout. Then this closes."
         }
+      },
+      {
+        "issueNumber": 2833,
+        "title": "N3 face reader, his eye round 9: no Outfit or tattoo rows on a harness top and two sleeves, and one ear's box holds one earring of several",
+        "urgent": false
       }
     ]
   }
