@@ -1,7 +1,7 @@
 {
-  "edition": 783,
-  "updatedAt": "2026-10-30T05:04:15.377000Z",
-  "shift": "One job tonight, from your round-10 notes: you asked why you could not pick a character's outfit as a whole. You can now.\n\nHere is the part worth knowing, because it is not what it looked like. When you hovered the single \"Outfit\" row, the studio lit up four separate boxes — the shoulder guard, the straps, the medallion, the belt — each with its own little label. So it read exactly like the panel was working piece by piece. But underneath, the edit was already about the whole outfit: tapping that row has always sent one instruction covering every garment. The picture was telling you something the instruction never said.\n\nSo the fix is to the picture, not to the edit. Hover or tap Outfit now and you get one box around the whole outfit. The pieces are still there inside it — open the row and each one is its own line, and each still has its own box on the photograph when you point at it. I drove it in the real app in both the light and dark themes and checked it by eye: before, one hover lit four boxes; after, it lights one.\n\nTwo other things from that same note I deliberately did not build, and I want to be straight about why.\n\nThe creature's rag cloth being called \"Straps\", with a box stretching over its face — the repair for that is the rule that says a worn thing cannot cover a face. That is the same machinery one of my agents was mid-way through building for your other round-10 note, and it landed while I was working. Doing it twice in two places is how one of the two gets lost, so it belongs with that one.\n\nAnd the Outfit row's description reading like a run-on list of parts — I found the cause. The studio is writing one sentence per piece onto that row and they pile up. The fix is either to say nothing there, which quietly removes detail you can read today, or to have it describe the outfit properly, which is a new thing to build rather than a tidy-up. That is your call, not mine to guess.\n\nI also closed off the earring job from earlier — a character wearing two or three earrings in one ear only had one of them included in a paid edit. The fix was already live; I checked it properly at the code and at the live site rather than taking the note's word for it, including that it had the hand review it needed, and closed it with the evidence.\n\nNothing needs you right now. The outfit change is waiting on a review before it goes live, and after that it wants one look from you on a real character.",
+  "edition": 785,
+  "updatedAt": "2026-10-30T08:02:00.000000Z",
+  "shift": "Your round-10 note had four things in it. Three are built. Tonight is the fourth, and it is the one you put first: her tattoos were not picked up.\n\nBoth full sleeves on that character got no row at all. You could not pick either one — even though the studio had looked at the picture and described them perfectly well, as large black ink sleeves covering both arms with floral and portrait designs. It saw them, wrote them down, and then threw them away.\n\nThe cause was one sentence, and it was not the analyzer you asked about. When the studio reads a character it decides, for each thing it finds, whether that thing is one piece worth drawing an outline around, or lots of little bits like freckles. Little bits only get described in words and never get a row, because there is nothing sensible to outline. A full sleeve made of many separate flowers and faces fits the description of lots of little bits — so a sleeve kept being filed as freckles.\n\nThat sentence now asks a better question: is this one small thing repeated over an area, or one design that happens to cover an area? Freckles, scales and stubble are the first. A sleeve, a back piece, a chest piece are the second.\n\nI measured it rather than assumed it, because that sentence is one the studio is not allowed to reword without re-running the measurement behind it. Sixty real readings of your own round-9 and round-10 characters, on the current engine, with nothing else changed: a tattoo row appeared in four readings out of twelve before, and twelve out of twelve after. Freckles stayed filed as freckles in every reading on both sides, which was the thing most worth checking — freckles being cut out like an object is the exact fault that sentence exists to prevent.\n\nTwo honest limits. The sleeves still often come back counted as one rather than two, so you will usually get one row covering one arm rather than a row for each; that is a separate fault we already knew about, and it is now the one in front. And the readings named about one fewer thing each on average, which I checked and cannot explain — it is written down beside the sentence so that whoever touches it next starts with a bigger sample rather than my six readings.\n\nOne thing it also settles for you. Your question about whether we are using the best image analyzer came back last night as keep all three, with one caveat: the newer naming engine's single clear advantage was that it found these sleeves. The current engine finds them now too, so that advantage is gone and only speed is left. Nothing was swapped and your look at the box pictures still decides that one.\n\nThe same repair also reaches a tattoo in a photograph you attach, not only one on a character, because the sentence is written in three places in the studio and all three had to move together. It cost about two dollars of our money and none of your credits. It is waiting on a review before it goes live.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-30T05:03:29.306Z",
+      "readAt": "2026-10-30T08:00:43.246Z",
       "items": [
         {
           "issueNumber": 30,
@@ -11169,6 +11169,20 @@
       "status": "in-review",
       "prNumber": 2850,
       "note": "Held for a human review because it changes what you see on the photograph. Driven in the running app in both themes: before, hovering the one Outfit row lit four separate boxes and drew no outfit box; after, it lights one. Pictures stayed off the public repo."
+    },
+    {
+      "id": "body-part-section-2840",
+      "title": "A shoulder and a collarbone stop being listed as parts of a face, and get their own Body heading (#2840)",
+      "status": "in-review",
+      "prNumber": 2851,
+      "note": "Server only, but a customer sees it, so it is held for a human review rather than merged on the gate. Rendered in the real app in both themes, before and after, with the before arm reproducing the fault."
+    },
+    {
+      "id": "sleeve-coverage-2848",
+      "title": "A tattoo sleeve is one piece of ink, so it gets a row you can pick (#2848)",
+      "status": "in-review",
+      "prNumber": 2852,
+      "note": "Server only, but a customer sees the result, so it is held for a human review rather than merged on the gate. The evidence is a 60-reading measurement rather than a frame: nothing about the panel's drawing changed, only how often the reading produces a row."
     }
   ],
   "problems": [
@@ -11717,7 +11731,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-30T05:03:29.305Z",
+    "readAt": "2026-10-30T08:00:43.245Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11878,7 +11892,11 @@
       {
         "issueNumber": 2846,
         "title": "Court: are the face reader's three engines (naming, boxing, cutting) still the right ones, measured on his ten eye rounds",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — the court is done. RECOMMENDED: change nothing, all three readers stay. Your eye on the box frames closes it; they are on your machine, not here."
+        }
       }
     ]
   }

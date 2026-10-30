@@ -26,7 +26,7 @@ import { throughCensus } from "./callCensus";
 import { throughFalGate } from "./falConcurrency";
 import { classifyFalHttp, falHeaders } from "../providers/falTransport";
 import { REGION_CARDS, REGION_CARD_ENTRIES, type AskedAs, type RegionCard } from "./regionCards";
-import { judgeCut } from "./cutQuality";
+import { FILL_MEASURED_NOT_REFUSED, judgeCut } from "./cutQuality";
 import { onTheFace } from "./faceExtent";
 import { MaskError, overlapWith, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
@@ -2198,9 +2198,18 @@ export function createFalRegionReader(input: {
      * are the ones whose centre is where THIS side's ear is — {@link atTheSide},
      * the very rule the segmenter's own pieces are judged by, so the found
      * side's earring and a septum ring are never this side's. Each is cut
-     * inside its rectangle, refused under #2795's fill floor exactly as the
-     * pointer road refuses a cut, and what is left is judged once more by
-     * {@link keepPiecesAtTheSide}. `null` when nothing is left.
+     * inside its rectangle and judged exactly as the pointer road judges a cut,
+     * and what is left is judged once more by {@link keepPiecesAtTheSide}.
+     * `null` when nothing is left.
+     *
+     * ⚠ **THE FILL IS MEASURED AND LOGGED HERE, NEVER REFUSED ON — #2831.**
+     * This road took #2795's fill floor until 2026-10-30, and a thin hoop is
+     * exactly the shape that floor refuses: a ring's bounding box is the whole
+     * thing it encircles, so a band must be 7% of its own span to clear 20%.
+     * **On a card about an earring that has no picture, a bar that refuses
+     * earrings for being thin was the wrong instrument** (the measurement is on
+     * #2831, the reasoning in `cutQuality.ts`'s header). What refuses is the two
+     * yes/no facts: no pixels, and no overlap with the rectangle that asked.
      *
      * The face read is the one the midline came from (`faceOf`), so it costs no
      * request; with no face there is no side to judge by and the answer is
@@ -2221,7 +2230,7 @@ export function createFalRegionReader(input: {
         .slice(0, PAIR_MAX_MASKS);
       const judged = await Promise.all(here.map(async (box) => {
         const mask = await cutInBox(image, name, box, imageUrl, undefined);
-        return { box, mask, verdict: mask === null ? null : judgeCut({ mask, box }) };
+        return { box, mask, verdict: mask === null ? null : judgeCut({ mask, box, fillFloor: FILL_MEASURED_NOT_REFUSED }) };
       }));
       const used = judged.filter((one) => one.verdict?.use === true).map((one) => one.mask as Mask);
       const kept = used.length === 0

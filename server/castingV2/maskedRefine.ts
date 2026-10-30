@@ -472,7 +472,10 @@ export type RegionReader = {
    *
    * For a pair whose segmenter answer held one side and not the other: the
    * detector is asked for the noun, only a rectangle where THIS side's ear is
-   * is cut, and the cut is refused under the pointer road's fill floor. The
+   * is cut, and the cut is judged exactly as the pointer road judges one —
+   * refused for having no pixels or for missing the rectangle that asked, with
+   * **how much of that rectangle it filled measured and logged and never
+   * refused on** (#2831; a thin hoop is the shape a fill bar refuses). The
    * face scan asks it, after its own second look has also come back
    * one-sided, and only of a pair worn on the ears — a refine never does.
    *

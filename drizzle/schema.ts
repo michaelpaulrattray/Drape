@@ -3120,13 +3120,38 @@ export const castingReferenceLibrary = mysqlTable("casting_reference_library", {
    * wrong-boundary class. `guardKind` cannot carry it: that one records what was
    * read when a crop was MINTED, and a refusal minted nothing.
    *
+   * ⚠ **AND IT IS NOT `noSpecimen` ALONE — FOUR REASONS KEEP THEIR CROP, AND
+   * PRODUCTION'S ONLY ROW IS ONE OF THE OTHER THREE** (read at the code and at
+   * the rows, 2026-10-30, #2565). The sentence below said *"keys only on
+   * `noSpecimen`"* and the write helper has never enforced that: it asks
+   * `refusalKeepsItsCrop`, which is derived from `GUARD_REFUSALS[*].keepsCrop`
+   * and answers yes for **`noSpecimen`, `disputedDelivery`, `notScorableByArea`
+   * and `brokenOutline`** — **four** of its **eleven** reasons. It was true when
+   * `noSpecimen` was the only one; `disputedDelivery` joined at fable-220 §3 and
+   * `brokenOutline` at fable-228, and neither came back to this paragraph.
+   *
+   * **What it cost is the reason the correction is here rather than in a
+   * comment**: the one row production holds in this column group is
+   * `disputedDelivery`, so a builder who opens the schema to learn the store's
+   * shape — which is what §3 of #2565 sends them here to do — reads the live row
+   * as a breach of the write helper's own rule. It is not one. The reasons that
+   * keep their pixels do it for two different purposes and the group holds both:
+   * `noSpecimen` keeps them to PRODUCE a specimen the kind has not got, and
+   * `disputedDelivery` keeps them to SETTLE an argument between the painter and
+   * the render's own reader. `server/db/castingV2ReferenceLibrary.test.ts` reads
+   * the names and both numbers back out of this paragraph, so a fifth reason
+   * cannot be given `keepsCrop` without the sentence moving with it.
+   *
    * The write helper enforces the shape MySQL cannot: both keys or neither,
-   * keys only on `noSpecimen`, never beside a `storageKey`, `carry` role only.
+   * keys only on a reason in `REFUSALS_THAT_KEEP_THEIR_CROP`, never beside a
+   * `storageKey`, `carry` role only.
    */
   refusedContentKey: varchar("refusedContentKey", { length: 512 }),
   refusedMaskKey: varchar("refusedMaskKey", { length: 512 }),
-  /** One of `referenceCompleteness.ts`'s five reasons. Text rather than an enum
-   *  so a new reason is a deploy and not a database ceremony. */
+  /** One of `referenceCompleteness.ts`'s eleven reasons (`GUARD_REFUSAL_REASONS`
+   *  is the list; this said FIVE until 2026-10-30 and six had been added since).
+   *  Text rather than an enum so a new reason is a deploy and not a database
+   *  ceremony. */
   refusedReason: varchar("refusedReason", { length: 32 }),
   refusedKind: varchar("refusedKind", { length: 48 }),
   /** Basis points of the region, like {@link guardCoverage}. Absent when the
