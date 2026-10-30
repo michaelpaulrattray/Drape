@@ -312,6 +312,7 @@ import { boundsOf } from "./segmentCuts";
 import { invisibleRemovalNote, readSiteVisibility } from "./invisibleRemoval";
 import { departureFloorFor } from "./bornWornDetector";
 import { createFalRegionReader } from "./falRegionReader";
+import { pointerBoxerFor } from "./pointerBoxer";
 import { createFalMaskedEditEngine } from "../providers/falImages";
 import { ProviderQueue } from "../providers/providerQueue";
 import { falAllowanceOf } from "./falBudget";
@@ -1005,6 +1006,19 @@ function defaultMaskedEditEngine() {
 function defaultRegionReader(): RegionReader {
   const apiKey = process.env.FAL_KEY;
   return apiKey ? createFalRegionReader({ apiKey }) : refusingRegionReader;
+}
+
+/**
+ * THE TAKE'S READER, for THIS account (#2863). The take is the refine's one
+ * `pointer` asker, so it alone is handed the boxer when
+ * `CASTING_POINTER_ENGINE_SCOPE` names the account; every other region read
+ * here keeps {@link defaultRegionReader} untouched. Off, the two are the same.
+ */
+function takeRegionReader(userId: number): RegionReader {
+  const apiKey = process.env.FAL_KEY;
+  if (!apiKey) return refusingRegionReader;
+  const boxer = pointerBoxerFor(userId);
+  return boxer === undefined ? createFalRegionReader({ apiKey }) : createFalRegionReader({ apiKey, boxer });
 }
 
 /**
@@ -6059,7 +6073,7 @@ async function refineCandidateCounted(
       const taken = await (dependencies.cutThing ?? cutThingFromPicture)({
         bytes: attached.bytes,
         noun: theirNoun,
-        reader: dependencies.regions ?? defaultRegionReader(),
+        reader: dependencies.regions ?? takeRegionReader(input.userId),
         about: { userId: input.userId, candidatePublicId: input.candidatePublicId },
       });
       if (!taken.ok) {
