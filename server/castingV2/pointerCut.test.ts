@@ -2499,3 +2499,165 @@ describe("a body part cut as the whole face is not a part of it (#2810, his eye 
     expect(rows.filter((slot) => unDrawn.includes(slot))).toEqual([]);
   });
 });
+
+/**
+ * A BOX BEYOND THE READING'S COUNT (#2838 road 2) — his two tattoo sleeves.
+ *
+ * ⚠ **EVERY ARM HERE OFFERS A CATALOGUE, AND THAT IS WHY THEY HAD TO BE
+ * WRITTEN RATHER THAN FOUND.** An extra box is kept only where it lands on
+ * nothing the scan already holds, so with no scan in hand the cap stands — and
+ * every pre-existing fixture on this road passes no catalogue. All 146 of them
+ * stayed green through this change WITHOUT exercising one line of it, which is
+ * the inert-guard shape exactly: a suite that cannot fail cannot vouch.
+ *
+ * The geometry is his, not invented. The boxes are the ones the boxing court's
+ * recorded `detect` answers hold for round 9, on the 1024x1536 frame production
+ * reads, and the frame here is that size for the same reason.
+ */
+describe("the boxes beyond the count — his second sleeve, and the third eye that must not come back", () => {
+  const BIG = { bytes: Buffer.from("his frame"), width: 1024, height: 1536 };
+  const bigMask = (box: PointerBox): Mask => maskAt(box, BIG);
+  const cutOf = (slot: string, group: CatalogueCut["group"], question: string, box: PointerBox): CatalogueCut => (
+    { slot: slot as never, group, question, box, mask: bigMask(box) }
+  );
+
+  /* The scan's own cuts on a cast like his: everything the catalogue draws is up
+     at the head, and nothing it drew is anywhere near an arm. */
+  const headScan = [
+    /* The hair stops above the forehead, as it does on his cast — a hair cut
+       drawn down over the brow makes every face find `lying` on it, which the
+       first shape of these arms discovered by refusing the third eye itself. */
+    cutOf("hair", "hair", "hair", { x: 197, y: 30, width: 619, height: 270 }),
+    cutOf("eye@left", "face", "eyes", { x: 420, y: 430, width: 60, height: 30 }),
+    cutOf("eye@right", "face", "eyes", { x: 570, y: 430, width: 60, height: 30 }),
+    cutOf("lips", "face", "lips", { x: 480, y: 560, width: 90, height: 40 }),
+  ];
+
+  /* His round 9, read off `relay-2846/boxing-r9.json`: the reading names
+     `tattoo` ONCE on `arm` and the detector boxes BOTH arms. */
+  const leftSleeve = { x: 0, y: 890, width: 196, height: 645 };
+  const rightSleeve = { x: 872, y: 843, width: 152, height: 690 };
+  const sleeveName = feature("tattoo", 1, {
+    kind: "marking",
+    on: "arm",
+    about: "a sleeve of dragon and floral motifs",
+    coverage: "single",
+  });
+
+  it("HIS DEFECT — one `tattoo`, two sleeves boxed, and BOTH become rows", async () => {
+    const reader = readerWith({
+      detects: { tattoo: [leftSleeve, rightSleeve] },
+      cuts: (box) => bigMask(box),
+    });
+    const out = await cutDiscovered({
+      frame: BIG,
+      features: [sleeveName],
+      reader,
+      catalogue: async () => headScan,
+    });
+
+    /* Both rectangles were asked about — the second on its own call, as the cap
+       itself requires (one box per call, never an array). */
+    expect(reader.asked.boxes.map((one) => one.box)).toEqual([leftSleeve, rightSleeve]);
+    expect(out.regions.map((one) => one.noun)).toEqual(["tattoo", "tattoo"]);
+    expect(out.regions.map((one) => one.instance)).toEqual([1, 2]);
+    expect(out.regions.map((one) => one.slot)).toEqual([
+      `${DISCOVERED_SLOT_PREFIX}tattoo#1`,
+      `${DISCOVERED_SLOT_PREFIX}tattoo#2`,
+    ]);
+    /* The second row is the OTHER arm and not a second outline of the first —
+       two rows over one sleeve would be his complaint wearing a disguise. */
+    expect(out.regions[0]!.box).toMatchObject(leftSleeve);
+    expect(out.regions[1]!.box).toMatchObject(rightSleeve);
+  });
+
+  /*
+    ⚠ THE ARM THE CAP EXISTS FOR, AND IT IS THE ONE THAT MUST NOT GO GREEN BY
+    ACCIDENT. #2532's three-eyed cast: the detector returns THREE rectangles for
+    `third eye`, and two of them are the ordinary eyes. Road 2 asks about them —
+    and each cut IS an eye's own pixels, so each is the Eyes row and gets no
+    `third eye` row. One row out, not three.
+  */
+  it("THE THIRD EYE — the two extra rectangles are the ordinary eyes, so they fold and get no row", async () => {
+    const third = { x: 490, y: 330, width: 50, height: 30 };
+    const leftEye = headScan[1]!.box;
+    const rightEye = headScan[2]!.box;
+    const reader = readerWith({
+      detects: { "third eye": [third, leftEye, rightEye] },
+      cuts: (box) => bigMask(box),
+    });
+    const out = await cutDiscovered({
+      frame: BIG,
+      features: [feature("third eye", 1, { on: "forehead", about: "a central eye above the two normal eyes" })],
+      reader,
+      catalogue: async () => headScan,
+    });
+
+    expect(reader.asked.boxes).toHaveLength(3);
+    /* ONE row, and it is the forehead eye. */
+    expect(out.regions.map((one) => one.noun)).toEqual(["third eye"]);
+    expect(out.regions[0]!.box).toMatchObject(third);
+  });
+
+  /*
+    ⚠ **FAIL-CLOSED: WITH NO SCAN IN HAND NOTHING BEYOND THE COUNT IS EVEN
+    BOUGHT.** Asserted on the ASK and not on the answer, which is this suite's
+    whole discipline (invariant 5): a shape that cut the extra and then threw
+    the row away would pass an assertion about rows while spending the money.
+  */
+  it("CONTROL — with no catalogue to judge against, the count is the cap and the extra is never asked", async () => {
+    const reader = readerWith({
+      detects: { tattoo: [leftSleeve, rightSleeve] },
+      cuts: (box) => bigMask(box),
+    });
+    const out = await cutDiscovered({ frame: BIG, features: [sleeveName], reader });
+
+    expect(reader.asked.boxes.map((one) => one.box)).toEqual([leftSleeve]);
+    expect(out.regions).toHaveLength(1);
+  });
+
+  /*
+    ⚠ **THE ARM FOR THE ONE LINE THE REST OF THIS BLOCK CANNOT SEE: AN EXTRA
+    THAT FOLDS MUST NOT SET `held`.**
+
+    #2801's rule is *"a name the catalogue drew part of keeps its other cuts"* —
+    the second tusk beside the tusk that IS Teeth. It was measured on COUNTED
+    cuts, and the catalogue drawing an ordinary eye under an extra rectangle of
+    `third eye` is not the catalogue drawing part of the third eye. So an extra's
+    fold is recorded and sets nothing.
+
+    Driven on the shape where the difference is a WRONG ROW rather than a
+    counter: the counted rectangle's cut lands on the hair, so it is a body part
+    lying mostly on another place and gets no row (#2801); the two extras are the
+    ordinary eyes and fold. With the guard the cast gets NO third-eye row, which
+    is right — nothing of a third eye was ever cut. Without it the fold sets
+    `held`, #2801's rule then keeps the lying cut, and a picture of the HAIR is
+    drawn on his panel as a third eye.
+
+    ⚠ This arm was written because a first attempt at proving the guard
+    SURVIVED SABOTAGE GREEN: it asserted on the detector's call list with a
+    counted cut that landed, so `mine.length === 0` was never true and the
+    branch it meant to drive was unreachable from it.
+  */
+  it("an extra that folds into a catalogue row does not thereby keep this name's lying cut", async () => {
+    const onTheHair = { x: 300, y: 100, width: 40, height: 40 };
+    const leftEye = headScan[1]!.box;
+    const rightEye = headScan[2]!.box;
+    const reader = readerWith({
+      detects: { "third eye": [onTheHair, leftEye, rightEye] },
+      cuts: (box) => bigMask(box),
+    });
+    const out = await cutDiscovered({
+      frame: BIG,
+      features: [feature("third eye", 1, { on: "forehead", about: "a central eye above the two normal eyes" })],
+      reader,
+      catalogue: async () => headScan,
+    });
+
+    /* All three asked; nothing drawn. The hair is not a third eye and neither
+       eye is one either. */
+    expect(reader.asked.boxes).toHaveLength(3);
+    expect(out.regions).toEqual([]);
+  });
+
+});

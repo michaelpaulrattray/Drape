@@ -164,9 +164,18 @@ export type ReferenceMarker = {
  * DROPPED FIELDS, which is the fact that makes the omission a defect rather
  * than a tidiness note.** On a cast, `pointerCut.ts` reads `coverage ===
  * "scattered"` to send a thing to WORDS with no cut at all (`foundRoadOf`), and
- * reads `count` to decide how many of the detector's rectangles become rows
- * (`boxes.slice(0, Math.max(1, feature.count))`) — so the cast road cuts one
- * region per instance where this road keeps one fragment of one.
+ * reads `count` to decide how many of the detector's rectangles become this
+ * name's instances — so the cast road cuts one region per instance where this
+ * road keeps one fragment of one.
+ *
+ * ⚠ **This paragraph quoted `boxes.slice(0, Math.max(1, feature.count))` as the
+ * whole of that decision until #2838 road 2, and it no longer is**: a rectangle
+ * PAST the count is now cut too, and kept only where it lands on nothing the
+ * scan already holds — his cast has a tattoo sleeve on each arm and the reading
+ * counts one. The sentence above is corrected rather than re-quoted, because a
+ * citation of somebody else's line is the thing that goes stale when that line
+ * moves and nothing fails. **Read the cap at `pointerCut.ts`, which carries its
+ * own measurement and road 2's.**
  */
 export type MarkerSpread = {
   /** How many rectangles the detector returned, their union, and its fill. */
