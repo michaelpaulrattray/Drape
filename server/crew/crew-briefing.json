@@ -1,7 +1,7 @@
 {
-  "edition": 784,
-  "updatedAt": "2026-10-30T06:50:26.543000Z",
-  "shift": "One job tonight, and it came from two of your notes at once. On the round-9 character you flagged two rows both called Shoulders. On the round-10 one you asked why a Collarbone was showing up. Both were sitting under Face. A collarbone is not on a face, and neither is a shoulder.\n\nThey now sit under their own heading, Body, which appears between Hair and Outfit. Face is left holding the face: eyes, brows, nose, lips, ears. I drove it in the real app in both the light and dark themes and checked it by eye — before, Face listed Eyes, Brows, Nose, Lips, Ears, Shoulders, Shoulders, Collarbone; after, those last three are under Body and Face holds only the face.\n\nThe part worth knowing is that the Body heading already existed in the studio and had simply never had anything to put in it, so it never appeared. There was no new screen to design and nothing to decide about how it should look. What was missing was the one rule that decides which heading a found body part belongs under, and that rule had been written down months ago as waiting for exactly this: a real character where the studio found a body part that is nowhere near the face. Your last two looks gave it two.\n\nHow it decides is the bit that matters for creatures. It does not work from a list of face words, because that is the rigid thing you have told us to stop doing. It measures where the face actually is on that particular picture, using the face parts the studio itself just cut out of it. So a creature whose only facial feature the studio could find is its horns is measured by its horns, which is the right answer for that creature and is one no list could give. And if the studio could not cut any face parts at all, nothing moves — the panel behaves exactly as it does today rather than guessing.\n\nOne thing I deliberately did not build, and I want to be straight about it. Two rows both called Shoulders are still two rows — they have moved to Body together, but they have not become one row with a left and a right under it the way Ears does. That is a different fault with a different cause, and one of the two may not even be a shoulder but a piece of the top. Folding them is a new decision rather than a tidy-up, so it stays open on the same note.\n\nI also kept the frames off the public code site, as that note asks, so there is nothing to look at on this page. They are pictures of a character on a public repository, and the shoulders in them are placed by hand rather than read off a real scan — they prove the headings are right, not that any particular character reads that way. Your next real look at a character is the honest test of that.\n\nNothing needs you right now. The change is waiting on a review before it goes live.",
+  "edition": 785,
+  "updatedAt": "2026-10-30T08:02:00.000000Z",
+  "shift": "Your round-10 note had four things in it. Three are built. Tonight is the fourth, and it is the one you put first: her tattoos were not picked up.\n\nBoth full sleeves on that character got no row at all. You could not pick either one — even though the studio had looked at the picture and described them perfectly well, as large black ink sleeves covering both arms with floral and portrait designs. It saw them, wrote them down, and then threw them away.\n\nThe cause was one sentence, and it was not the analyzer you asked about. When the studio reads a character it decides, for each thing it finds, whether that thing is one piece worth drawing an outline around, or lots of little bits like freckles. Little bits only get described in words and never get a row, because there is nothing sensible to outline. A full sleeve made of many separate flowers and faces fits the description of lots of little bits — so a sleeve kept being filed as freckles.\n\nThat sentence now asks a better question: is this one small thing repeated over an area, or one design that happens to cover an area? Freckles, scales and stubble are the first. A sleeve, a back piece, a chest piece are the second.\n\nI measured it rather than assumed it, because that sentence is one the studio is not allowed to reword without re-running the measurement behind it. Sixty real readings of your own round-9 and round-10 characters, on the current engine, with nothing else changed: a tattoo row appeared in four readings out of twelve before, and twelve out of twelve after. Freckles stayed filed as freckles in every reading on both sides, which was the thing most worth checking — freckles being cut out like an object is the exact fault that sentence exists to prevent.\n\nTwo honest limits. The sleeves still often come back counted as one rather than two, so you will usually get one row covering one arm rather than a row for each; that is a separate fault we already knew about, and it is now the one in front. And the readings named about one fewer thing each on average, which I checked and cannot explain — it is written down beside the sentence so that whoever touches it next starts with a bigger sample rather than my six readings.\n\nOne thing it also settles for you. Your question about whether we are using the best image analyzer came back last night as keep all three, with one caveat: the newer naming engine's single clear advantage was that it found these sleeves. The current engine finds them now too, so that advantage is gone and only speed is left. Nothing was swapped and your look at the box pictures still decides that one.\n\nThe same repair also reaches a tattoo in a photograph you attach, not only one on a character, because the sentence is written in three places in the studio and all three had to move together. It cost about two dollars of our money and none of your credits. It is waiting on a review before it goes live.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-30T05:03:29.306Z",
+      "readAt": "2026-10-30T08:00:43.246Z",
       "items": [
         {
           "issueNumber": 30,
@@ -11176,6 +11176,13 @@
       "status": "in-review",
       "prNumber": 2851,
       "note": "Server only, but a customer sees it, so it is held for a human review rather than merged on the gate. Rendered in the real app in both themes, before and after, with the before arm reproducing the fault."
+    },
+    {
+      "id": "sleeve-coverage-2848",
+      "title": "A tattoo sleeve is one piece of ink, so it gets a row you can pick (#2848)",
+      "status": "in-review",
+      "prNumber": 2852,
+      "note": "Server only, but a customer sees the result, so it is held for a human review rather than merged on the gate. The evidence is a 60-reading measurement rather than a frame: nothing about the panel's drawing changed, only how often the reading produces a row."
     }
   ],
   "problems": [
@@ -11724,7 +11731,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-30T05:03:29.305Z",
+    "readAt": "2026-10-30T08:00:43.245Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11885,7 +11892,11 @@
       {
         "issueNumber": 2846,
         "title": "Court: are the face reader's three engines (naming, boxing, cutting) still the right ones, measured on his ten eye rounds",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — the court is done. RECOMMENDED: change nothing, all three readers stay. Your eye on the box frames closes it; they are on your machine, not here."
+        }
       }
     ]
   }
