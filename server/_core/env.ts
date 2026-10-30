@@ -60,10 +60,12 @@ import {
   validateCastingInkStudioEnvironment,
   validateCastingHairReferenceEnvironment,
   validateCastingReferenceTakeEnvironment,
+  validateCastingReferenceSelectorEnvironment,
   validateCastingReferenceAttachEnvironment,
   CASTING_HAIR_REFERENCE_SCOPE_ENV,
   CASTING_REFERENCE_ATTACH_SCOPE_ENV,
   CASTING_REFERENCE_TAKE_SCOPE_ENV,
+  CASTING_REFERENCE_SELECTOR_SCOPE_ENV,
   validateCastingInkReferenceEnvironment,
   CASTING_INK_REFERENCE_SCOPE_ENV,
   validateCastingRetryEnvironment,
@@ -591,6 +593,18 @@ export function validateEnv(): void {
   */
   validateCastingReferenceTakeEnvironment({
     scope: process.env[CASTING_REFERENCE_TAKE_SCOPE_ENV],
+    attachScope: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
+  });
+  /*
+    READING AN ATTACHED PICTURE FOR TAKEABLE THINGS (#14 slice 2). The same
+    parent as the take and for the same reason: the reading's whole input is an
+    attachment, so armed without the attach door it would open onto an ask with
+    nothing to read. No cleanup-worker clause of its own — this slice writes no
+    bytes at all, so there is nothing for the worker to delete; slice 4's mint
+    is where that check earns its place.
+  */
+  validateCastingReferenceSelectorEnvironment({
+    scope: process.env[CASTING_REFERENCE_SELECTOR_SCOPE_ENV],
     attachScope: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
   });
   /*
