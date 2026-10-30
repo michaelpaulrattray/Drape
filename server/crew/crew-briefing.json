@@ -1,7 +1,7 @@
 {
-  "edition": 785,
-  "updatedAt": "2026-10-30T08:02:00.000000Z",
-  "shift": "Your round-10 note had four things in it. Three are built. Tonight is the fourth, and it is the one you put first: her tattoos were not picked up.\n\nBoth full sleeves on that character got no row at all. You could not pick either one — even though the studio had looked at the picture and described them perfectly well, as large black ink sleeves covering both arms with floral and portrait designs. It saw them, wrote them down, and then threw them away.\n\nThe cause was one sentence, and it was not the analyzer you asked about. When the studio reads a character it decides, for each thing it finds, whether that thing is one piece worth drawing an outline around, or lots of little bits like freckles. Little bits only get described in words and never get a row, because there is nothing sensible to outline. A full sleeve made of many separate flowers and faces fits the description of lots of little bits — so a sleeve kept being filed as freckles.\n\nThat sentence now asks a better question: is this one small thing repeated over an area, or one design that happens to cover an area? Freckles, scales and stubble are the first. A sleeve, a back piece, a chest piece are the second.\n\nI measured it rather than assumed it, because that sentence is one the studio is not allowed to reword without re-running the measurement behind it. Sixty real readings of your own round-9 and round-10 characters, on the current engine, with nothing else changed: a tattoo row appeared in four readings out of twelve before, and twelve out of twelve after. Freckles stayed filed as freckles in every reading on both sides, which was the thing most worth checking — freckles being cut out like an object is the exact fault that sentence exists to prevent.\n\nTwo honest limits. The sleeves still often come back counted as one rather than two, so you will usually get one row covering one arm rather than a row for each; that is a separate fault we already knew about, and it is now the one in front. And the readings named about one fewer thing each on average, which I checked and cannot explain — it is written down beside the sentence so that whoever touches it next starts with a bigger sample rather than my six readings.\n\nOne thing it also settles for you. Your question about whether we are using the best image analyzer came back last night as keep all three, with one caveat: the newer naming engine's single clear advantage was that it found these sleeves. The current engine finds them now too, so that advantage is gone and only speed is left. Nothing was swapped and your look at the box pictures still decides that one.\n\nThe same repair also reaches a tattoo in a photograph you attach, not only one on a character, because the sentence is written in three places in the studio and all three had to move together. It cost about two dollars of our money and none of your credits. It is waiting on a review before it goes live.",
+  "edition": 786,
+  "updatedAt": "2026-10-30T14:05:00.000000Z",
+  "shift": "A short one, and it was about clearing the way rather than building something new.\n\nNine pieces of work were finished and waiting to go live tonight, and none of them had moved. Three of them are sitting with the relay for a read, and I left those alone. Of the rest, I could only safely send two: the other three all touch the same files as the three being read, so sending them would have forced those three to be rebuilt and re-read from scratch — which is exactly what cost two shifts their night yesterday. So two went live and I wrote down, file by file, why the others wait.\n\nBoth of the two are small and both are about the crew's own machinery rather than anything you touch. One stops a false alarm: a card that mentions a folder on your machine was being reported as damaged. The other is worth more than it sounds — when the relay holds a piece of work and asks for a measurement rather than a code change, the board had no way to show the measurement had been done, so it went on saying nobody had acted. Five shifts in a row were sent at the same job and all five correctly walked away. That reading is fixed and live.\n\nThe other thing I did was stop a job before it started. Your ruling that one thing gets one row needs a reader that can say when two names mean the same row, and last night's measurement picked one and said it was ready to build. I went to build it and it is not ready: that reader is a crew tool with no road into the product, and its key is not on the live service at all — so it would have been built, merged, and done absolutely nothing, silently, looking exactly like a reader that found no duplicates. It also needs six of the same files another job is being repaired in right now. The measurement stands and so does the ruling; what changed is that the card now says what has to happen first, and who has to do it.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-30T08:00:43.246Z",
+      "readAt": "2026-10-30T13:59:16.212Z",
       "items": [
         {
           "issueNumber": 30,
@@ -194,6 +194,12 @@
           "issueNumber": 2551,
           "title": "N3: the ink-form demand table has no reachable writer — zero rows in both worlds, all time (ghost audit, found at slice 2)",
           "kind": "design-unbuilt",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 2858,
+          "title": "N3 slice 2: which things may keep a saved picture - the fixed list, or the customer's own words (a design decision, parent #2565)",
+          "kind": "rung",
           "rung": "N3"
         },
         {
@@ -11152,7 +11158,7 @@
     {
       "id": "schema-kept-pixels-2565",
       "title": "Our schema stops saying that only one kind of refusal keeps a picture — there are four, and the only one the live site holds is one of the other three (#2565)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2836,
       "note": "Gate green in 4.1 minutes. Held for a human review because any change under the database folder counts as a money path, whatever it touches — here it is comment text and a test, no column moved."
     },
@@ -11182,7 +11188,7 @@
       "title": "A tattoo sleeve is one piece of ink, so it gets a row you can pick (#2848)",
       "status": "in-review",
       "prNumber": 2852,
-      "note": "Server only, but a customer sees the result, so it is held for a human review rather than merged on the gate. The evidence is a 60-reading measurement rather than a frame: nothing about the panel's drawing changed, only how often the reading produces a row."
+      "note": "⚠ STUCK, and not on the review. Another piece of work landed on the same file, so this one can no longer be merged until somebody re-merges it — and while it is in that state nothing can even re-run its checks. That is the relay's hand, not a shift's: five shifts in a row have now been sent at it and all five were right to leave it alone, because re-merging it here would quietly clear the hold the relay put on it.\n\nNothing is lost and nothing is waiting on you. The work itself is finished and measured."
     }
   ],
   "problems": [
@@ -11196,9 +11202,9 @@
     {
       "id": "cut-floor-drops-correct-feature-2831",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The face panel can drop a feature that is really there, and keep one that is not (#2831)",
-      "detail": "Live on your account only.\n\nA check decides whether the cut-out picture of a feature is good enough to keep. Measured tonight on two characters: it threw away a correct cut of a long curved tail, so that tail would not be listed at all, and it kept a cut of a sword that had been asked for as chest armour.\n\nThe cause is that the check asks how much of its own rectangle a cut fills, and anything thin — a chain, a cord, a tail — fills very little of its rectangle however right the cut is. Measured: a band worn around something must be about seven per cent of its own width before it passes.\n\nNothing was changed, because you are mid-round on this panel and moving the bar between rounds would make your next look unreadable against the last. The numbers and the recommendation are on card 2831, for the relay."
+      "detail": "RESOLVED — card #2831 closed 2026-10-30T10:25:37Z, read at the card rather than at a merge note.\n\nA check decides whether the cut-out picture of a feature is good enough to keep, and it was throwing away a correct cut of a long curved tail while keeping a cut of a sword asked for as chest armour. Anything thin — a chain, a cord, a tail — fills very little of its own rectangle however right the cut is.\n\nNothing on this row needs you."
     },
     {
       "id": "stranded-pr-unreachable-2814",
@@ -11731,7 +11737,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-30T08:00:43.245Z",
+    "readAt": "2026-10-30T13:59:16.212Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11800,7 +11806,11 @@
       {
         "issueNumber": 2565,
         "title": "N3: Refine keeps what the customer chose — every edit from the original, one current description, and a saved picture of each chosen thing (his word 2026-10-16)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2858 — a design decision (which kinds may keep a picture), and #2856 — box checks, which step-aside needs. Both open. Build #2856 first."
+        }
       },
       {
         "issueNumber": 2566,
@@ -11882,7 +11892,11 @@
       {
         "issueNumber": 2844,
         "title": "N3 face reader, his eye round 10: the Left eye's outline reaches a face tattooed on the arm (a paid refine paints on it), sleeves have no row, and a Collarbone row",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2848 (sleeves get no Tattoo row, PR #2852) and #2840 (Collarbone under Face, PR #2851) — defect 1 shipped in #2849."
+        }
       },
       {
         "issueNumber": 2845,
@@ -11897,6 +11911,25 @@
           "state": "blocked",
           "because": "YOU — the court is done. RECOMMENDED: change nothing, all three readers stay. Your eye on the box frames closes it; they are on your machine, not here."
         }
+      },
+      {
+        "issueNumber": 2856,
+        "title": "His ruling: a cautious panel. Reliable rows always show, and a piece gets a row only when its box passes the checks; failed pieces are edited by words",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2862,
+        "title": "His ruling: one thing, one row, one plain name. No duplicate names, no splitting a thing into compartments (hair is one row)",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "the relay — add TYPESAFE_API_KEY to the Drape service, then build after PR #2864 merges (the wiring needs six of its files)."
+        }
+      },
+      {
+        "issueNumber": 2863,
+        "title": "His ruling: the face panel's box step moves to Gemini 4 Argon with Qwen3-VL as fallback, behind a new flag on his account first",
+        "urgent": false
       }
     ]
   }
