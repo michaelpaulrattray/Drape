@@ -30,6 +30,7 @@ import {
   cutDiscovered,
   discoveredSlotOf,
   hostedNames,
+  isPlainAnatomy,
   normalisedName,
   offListFeatures,
   placeNames,
@@ -247,6 +248,34 @@ describe("normalisedName — the fold, and what it deliberately does not do", ()
        covered, by #2781's repair, and has its own arm above. */
     for (const planned of scanPlan()) {
       expect(coveredByCatalogue(planned.question), planned.question).toBe(true);
+    }
+  });
+});
+
+/*
+  THE ORDINARY BODY IS NOT A FEATURE (#2840, his word of 2026-10-30) — the
+  predicate driven directly, because the panel arms reach it only through a
+  projection and a projection can be right for another reason.
+*/
+describe("isPlainAnatomy — the body every person has, never a feature this cast has", () => {
+  it("is true for his two specimens however the reading spelled them", () => {
+    for (const noun of ["collarbone", "Collarbones", "collar-bone", "shoulders", "Shoulder"]) {
+      expect(isPlainAnatomy({ noun, kind: "anatomy" }), noun).toBe(true);
+    }
+  });
+
+  it("is false for a real feature, and never matches part of a name", () => {
+    for (const noun of ["tail", "wings", "third eye", "neck hardware", "neck implant", "nose horn", "shoulder plate"]) {
+      expect(isPlainAnatomy({ noun, kind: "anatomy" }), noun).toBe(false);
+    }
+  });
+
+  it("reads the kind: the same word filed as a mark, a worn thing or a garment is the reading's answer", () => {
+    /* POSITIVE CONTROL first, on the same word, so the three falses below are
+       the kind and not the noun. */
+    expect(isPlainAnatomy({ noun: "neck", kind: "anatomy" })).toBe(true);
+    for (const kind of ["marking", "accessory", "clothing"] as const) {
+      expect(isPlainAnatomy({ noun: "neck", kind }), kind).toBe(false);
     }
   });
 });
