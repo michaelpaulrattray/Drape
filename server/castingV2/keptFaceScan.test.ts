@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { FACE_CUT_RULES_VERSION } from "../db/castingV2FaceScans";
 import type { FeatureKind } from "./faceDiscovery";
 
 import { keepScan, serveKeptScan, type KeptScanShape } from "./keptFaceScan";
@@ -300,13 +301,127 @@ describe("what a kept scan serves", () => {
     it_.rows.push({
       publicId: "written-before-the-field",
       frameKey: face.frameKey,
-      geometry: { slots: [], words: [["skin", ["a warm even tan"]]], sides: "", asked: 12, found: 0, empty: [] },
+      /* `rules` current, because `scanned` is this arm's subject and nothing
+         else (#2890) — a row below the cut-rules version is condemned one line
+         later, and a fixture without it would make this control pass for the
+         wrong reason, or rather fail for one. */
+      geometry: {
+        slots: [], words: [["skin", ["a warm even tan"]]], sides: "", asked: 12, found: 0, empty: [],
+        rules: FACE_CUT_RULES_VERSION,
+      },
       stencilBytes: 0,
     });
 
     const served = await serveKeptScan({ ...face, dependencies: it_.dependencies });
     expect(served).not.toBeNull();
     expect(served?.asked).toBe(12);
+  });
+
+  /*
+    A READING TAKEN UNDER OLDER CUT RULES IS TAKEN AGAIN (#2890).
+
+    The measured instance: seven of the 86 kept readings on production were
+    serving an eye cut below the middle of the frame — one of them a 392×772 box
+    called *Left eye*, running from the eye down to a tattooed face on the cast's
+    arm — and every one of the seven was written before the rule that drops that
+    piece was authored. All seven were still alive, still on their original frame
+    and therefore still SERVED, two of them on signed casts: the repair had
+    shipped and could not reach a single face already read.
+
+    The three arms are the condemnation, the control that a CURRENT row serves
+    (without which the refusal would be a constant and prove nothing), and the
+    one that matters most — that the condemnation is read as a NUMBER and not as
+    truthiness, since a `0` written by anything would otherwise read as present.
+  */
+  const rulesRow = (rules: number | undefined) => ({
+    publicId: `rules-${rules ?? "absent"}`,
+    frameKey: face.frameKey,
+    geometry: {
+      slots: [], words: [["skin", ["a warm even tan"]]], sides: "", asked: 12, found: 0, empty: [],
+      ...(rules === undefined ? {} : { rules }),
+    },
+    stencilBytes: 0,
+  });
+
+  it("⚠ CONDEMNS a reading with NO cut-rules version — it was taken before they were versioned", async () => {
+    const it_ = bench();
+    it_.rows.push(rulesRow(undefined));
+
+    expect(await serveKeptScan({ ...face, dependencies: it_.dependencies })).toBeNull();
+  });
+
+  it("CONTROL — a reading AT the current cut-rules version serves", async () => {
+    /* The negative control for the arm above. Without it the condemnation could
+       be refusing every row for some other reason entirely, which is how a
+       guard comes to be celebrated for rejecting everything. */
+    const it_ = bench();
+    it_.rows.push(rulesRow(FACE_CUT_RULES_VERSION));
+
+    const served = await serveKeptScan({ ...face, dependencies: it_.dependencies });
+    expect(served).not.toBeNull();
+    expect(served?.asked).toBe(12);
+  });
+
+  it("⚠ condemns a version BELOW the current one, read as a number rather than as present-or-absent", async () => {
+    /*
+      The column is JSON, so the value is whatever was written. `0` is the trap:
+      a check asking whether the field is there at all would serve a row that
+      says in so many words that it met version zero of the rules.
+    */
+    const it_ = bench();
+    it_.rows.push(rulesRow(0));
+
+    expect(await serveKeptScan({ ...face, dependencies: it_.dependencies })).toBeNull();
+  });
+
+  it("writes the current cut-rules version on every scan it keeps", async () => {
+    /*
+      ASSERTED ON THE ROW THAT GOES TO THE DATABASE, not on a constant beside it
+      (invariant 5's shape): the field is what makes a reading taken today
+      distinguishable from one taken under older rules, so a scan that filed it
+      absent would condemn itself the moment it was next looked at — and would
+      do so silently, re-buying every face for ever.
+    */
+    const it_ = bench();
+    await keepScan({ ...face, scan: shape(["eye@left"] as FeatureSlot[]), dependencies: it_.dependencies });
+
+    expect(it_.rows.at(-1)?.geometry.rules).toBe(FACE_CUT_RULES_VERSION);
+  });
+
+  it("leaves the CARRIED-ONLY road exactly where it was — refused with a version or without one", async () => {
+    /*
+      THE ONE ROAD THIS CHANGE MUST NOT MOVE (#2890).
+
+      A carried-only row has never been scanned, so it has no cut rules to be
+      stale against and no reading to take again. It is refused by
+      `scanned === false` one line ABOVE the version check, and it must stay
+      refused whichever way the version reads — otherwise a render's geometry
+      could reach the panel as a reading the moment the version was bumped,
+      which is the trap that field was added to close.
+
+      ⚠ **The ORDER of the two refusals is for the LOG and not for the answer,
+      and that is said rather than pinned**: both roads return null, so a later
+      edit that swapped them would change which sentence a diagnosis starts
+      from and nothing a customer can see. An arm reading the log to prove it
+      would be driving a message, not a behaviour.
+    */
+    const it_ = bench();
+    const carried = (rules: number | undefined) => ({
+      publicId: `carried-only-${rules ?? "absent"}`,
+      frameKey: face.frameKey,
+      geometry: {
+        slots: [], words: [], sides: "", asked: 0, found: 0, empty: [], scanned: false,
+        ...(rules === undefined ? {} : { rules }),
+        carried: [{ slot: "hair", box: box(5) }],
+      },
+      stencilBytes: 0,
+    });
+
+    it_.rows.push(carried(undefined));
+    expect(await serveKeptScan({ ...face, dependencies: it_.dependencies })).toBeNull();
+
+    it_.rows.push(carried(FACE_CUT_RULES_VERSION));
+    expect(await serveKeptScan({ ...face, dependencies: it_.dependencies })).toBeNull();
   });
 
   /*
@@ -320,11 +435,16 @@ describe("what a kept scan serves", () => {
     narrowing still refuses an unknown word rather than having been widened to
     anything at all.
   */
+  /* `rules` is current on purpose and is NOT the subject here (#2890): a row
+     below the version is condemned at the door, so a fixture that left it out
+     would return null and these two arms would pass and fail for a reason that
+     has nothing to do with `why`. The version's own arms are below. */
   const saidRow = (why: string) => ({
     publicId: `why-${why}`,
     frameKey: face.frameKey,
     geometry: {
       slots: [], words: [], sides: "", asked: 12, found: 0, empty: [],
+      rules: FACE_CUT_RULES_VERSION,
       namedNotCut: [{ noun: "star tattoo", on: "cheek", about: "a small star", kind: "marking", why }],
     },
     stencilBytes: 0,

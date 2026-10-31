@@ -18,6 +18,18 @@
  * would be working law 4 exactly — a copy that drifts from its source. So it
  * lives once, here.
  *
+ * ⚠ **CHANGING THIS RULE CHANGES WHAT A SCAN CUTS, SO IT OWES A VERSION BUMP —
+ * `FACE_CUT_RULES_VERSION` in `server/db/castingV2FaceScans.ts` (#2890).**
+ * Without it the new rule reaches every future scan and not one face that has
+ * already been read: a kept reading is served back verbatim, and until #2890
+ * the only thing that could ever invalidate one was the picture's own bytes
+ * moving. That is not theoretical — it is how seven production readings came to
+ * be serving an eye cut this very rule had already learnt to drop, two of them
+ * on signed casts, for a day after the repair shipped. **The bump is owed by
+ * hand and nothing can enforce it**: a fingerprint over this file's bytes would
+ * re-scan every face on a comment edit, which is the tax #1307 removed from the
+ * architecture map, so what guards it is this sentence and the constant's own.
+ *
  * ⚠ **This module imports NOTHING, deliberately.** `facePanel` is a pure
  * projection — *"rows in, rows out: no database, no storage, no clock"* — and
  * the reader's own home pulls `sharp`, the fal transport and the census. A
