@@ -117,6 +117,18 @@ describe("the piece on flat grey", () => {
     expect(photograph).toBe(400 * 400);
   });
 
+  it("paints the court's grey, pinned at the VALUE and not at the constant (#2875)", () => {
+    /*
+      ⚠ FOUND BY SABOTAGE, not by reading. Every other arm in this file checks
+      the backdrop against `CUT_NAME_BACKDROP` itself, so moving the constant
+      moves both sides of the assertion and nothing goes red — putting `128`
+      back survived the whole suite. The number is what the bench measured, so
+      the number is what is pinned; a later slice moving it owes a measurement
+      and will be told so here.
+    */
+    expect(CUT_NAME_BACKDROP).toEqual({ r: 150, g: 150, b: 150 });
+  });
+
   it("crops to the piece's own extent plus the measured margin (#2875)", async () => {
     const sharp = (await import("sharp")).default;
 
