@@ -42,6 +42,7 @@ import {
   captureCastingReferenceAttachEnabled,
   captureCastingReferenceSelectorEnabled,
   captureCastingConceptUploadEnabled,
+  captureCastingConceptRichLookEnabled,
   captureCastingV2Enabled,
 } from "../castingV2/castingV2Scope";
 import {
@@ -808,6 +809,9 @@ const conceptRouter = router({
       const outcome = await describeConcept({
         bytes,
         contentType: inkDesignContentType(format),
+        /* HOW it is read is captured here at the door, beside WHETHER (#2911):
+           off, and absent means off, is today's reader byte for byte. */
+        richLook: captureCastingConceptRichLookEnabled(ctx.user.id),
       });
       if (outcome.ok) return { description: outcome.description };
 
