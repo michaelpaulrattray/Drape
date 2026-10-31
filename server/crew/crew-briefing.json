@@ -1,7 +1,7 @@
 {
-  "edition": 793,
-  "updatedAt": "2026-10-31T02:00:00.000Z",
-  "shift": "Two things tonight, and the second one was not on any list.\n\nA finished piece of work was sitting unmerged again — the third night running that\nthis has been the real job. Tapping a piece in your photograph now names it from a\nclose-up of that piece instead of the whole picture greyed out. It is live.\n\nThen its own gate went red, and so did every other one. Two security problems were\npublished tonight in packages that arrive underneath our error reporting, and the\ncheck that stops known problems reaching you refuses anything carrying one. That\ncheck was right, and nothing anyone had built caused it: the last green run was\neighteen minutes before the first red one, on exactly the same file list. So the\nwhole board was blocked.\n\nThe repair our own tool recommends first does not work, and I measured that rather\nthan assuming it — no released version of the reporting library drops the affected\npackage, including the newest one. So I pinned the fixed version directly, narrowed\nto the one package that pulls it in, which I checked is genuinely the only one in\nthe whole project that does. Our production dependencies now report zero problems\nwhere they reported two. The board is moving again, and the delayed work went in\nbehind it.\n\nThe one real risk in that pin was breaking the build, because the build does load\nthat code. It is checked twice over: a clean install on the gate, and then a real\nbuild on this machine with the new version genuinely installed.\n\nNothing was spent — no credits, no provider calls, no settings moved.",
+  "edition": 794,
+  "updatedAt": "2026-10-31T03:10:00.000Z",
+  "shift": "Nothing went to the live site tonight, and the reason is worth two minutes.\n\nYour tattoo scan tonight was not a new problem. The fix for it is already written, measured and finished — it has been sitting in a finished job for a day, unable to go in. I checked tonight that it really does fix your case, not just one that looks like it: your sleeve was thrown away for being 'scattered ink', and that is exactly the sentence this fix changes. It does not matter what the reader calls the tattoo, which was the one thing that could have made it not apply.\n\nThe other thing I did was check three jobs on the board before anyone built them — and all three asked for something the code refuses for a reason somebody measured earlier. One asked us to pick the person's real face out of several; the code is built to never ask for several faces, because when it did once, it split one face into two and quietly moved every measurement taken from it. One asked us to delete machinery that six of our own measuring tools still use. One asked for your hair to be a single box — which is right, you tested it yourself — but written carelessly it looks exactly like a rule we are not allowed to break, so it needs one sentence to explain itself or it gets rejected.\n\nNone of those three would have been found until somebody had spent a night building the wrong thing. They are all written down on their own jobs now, with the line of code that disagrees, so the next shift starts where I stopped rather than where the job description started.\n\nI also wrote the full list of what can safely be deleted for the dead-code job you asked about, and found a second dead piece nobody had noticed — which was only visible because it was the thing making a third piece look alive.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-31T01:54:12.816Z",
+      "readAt": "2026-10-31T02:56:25.060Z",
       "items": [
         {
           "issueNumber": 30,
@@ -7806,7 +7806,7 @@
       "title": "The lit-up picture gets its way in, and the one test the plan asked for came back (#14)",
       "status": "in-review",
       "prNumber": 2872,
-      "note": "⚠ STUCK as of tonight, and my own merges are what did it. It was clean when this shift started; four merges later GitHub says it clashes with the main line and cannot be merged, which also means its checks cannot be re-run. I measured the clash rather than believing it: the only files clashing are the three maps of the product we generate automatically, and we have a tool that merges those by itself. So it is one command — but this one adds two rate limits, which makes it money work, and money work waits for a human read by rule. It is the relay's hand, not a shift's. Nothing is lost, the work is finished, and nothing is waiting on you."
+      "note": "⚠ STILL STUCK, and the reason has CHANGED since last night — it has now been read and approved. The review landed on this exact version and passed it. The only thing left is that it clashes with the main line, and the clash is just the maps of the product we generate automatically. The catch: fixing the clash counts as a new version, which makes the approval go stale, so it has to be done by the same hand that approves it. Nothing is wrong with the work."
     },
     {
       "id": "selector-spotlight-design-14",
@@ -11236,7 +11236,7 @@
       "title": "A tattoo sleeve is one piece of ink, so it gets a row you can pick (#2848)",
       "status": "in-review",
       "prNumber": 2852,
-      "note": "⚠ STILL STUCK, re-measured tonight rather than carried over: the clash is the generated\nmap alone and nothing else, so it is still one command. Still the relay's hand, for the\nsame stated reason — a review note sits on this work and any push would make it read as\nalready dealt with. I am the seventh shift sent here and the seventh to leave it alone.\nThe work itself is finished and measured; what it is holding up is two Tattoo rows on a\ntwo-sleeve character."
+      "note": "⚠ STILL STUCK — and tonight it cost you something real. Your scan at 02:50 was this exact problem: a character with full tattoo sleeves and no Tattoo row on the panel. The fix for it is finished, measured and sitting in this job. I checked tonight that it does fix your case — the sleeve was thrown away for being 'scattered ink', and this is the change that stops that, whatever the reader happens to call it. The measurement the review asked for was delivered twice yesterday. What is left is one command and one word, both the same hand's. Ten shifts have now been sent here and left it alone."
     },
     {
       "id": "cut-fragmentation-2841",
@@ -11827,7 +11827,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-31T01:54:12.816Z",
+    "readAt": "2026-10-31T02:56:25.060Z",
     "items": [
       {
         "issueNumber": 14,
@@ -12018,15 +12018,16 @@
       {
         "issueNumber": 2862,
         "title": "His ruling: one thing, one row, one plain name. No duplicate names, no splitting a thing into compartments (hair is one row)",
-        "urgent": false,
-        "held": {
-          "state": "blocked",
-          "because": "the relay — add TYPESAFE_API_KEY to the Drape service, then build after PR #2864 merges (the wiring needs six of its files)."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 2863,
         "title": "His ruling: the face panel's box step moves to Gemini 4 Argon with Qwen3-VL as fallback, behind a new flag on his account first",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2885,
+        "title": "N3 face reader, his eye round 11: on a version made by taking an outfit from a photo, Eyes, Brows and Ears come back empty on both sides",
         "urgent": false
       }
     ]
