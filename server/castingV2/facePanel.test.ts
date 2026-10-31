@@ -309,7 +309,7 @@ describe("what the library adds to a row", () => {
     expect(built.regions).toEqual([
       {
         box: { x: 12, y: 30, width: 200, height: 140, frame: { width: 1024, height: 1536 } },
-        name: null, spoken: null, prefill: null, slot: "hair", scopable: false,
+        name: null, spoken: null, prefill: null, slot: "hair", scopable: false, whole: false,
       },
     ]);
   });
@@ -509,7 +509,7 @@ describe("what a scan adds to a row", () => {
       maskUrl: "data:image/png;base64,nose",
       crop: { x: 400, y: 600, width: 120, height: 160, frame },
     }]);
-    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose", scopable: false }]);
+    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose", scopable: false, whole: false }]);
   });
 
   it("leaves the MINTED cutout in place where an edit made one", () => {
@@ -530,7 +530,7 @@ describe("what a scan adds to a row", () => {
     */
     expect(hair.cutouts[0]!.contentUrl).toBe("https://bucket.example/library/hair.png");
     expect(hair.cutouts[0]!.crop).toBeNull();
-    expect(hair.regions).toEqual([{ box: { x: 12, y: 30, width: 200, height: 140, frame }, name: null, spoken: null, prefill: null, slot: "hair", scopable: false }]);
+    expect(hair.regions).toEqual([{ box: { x: 12, y: 30, width: 200, height: 140, frame }, name: null, spoken: null, prefill: null, slot: "hair", scopable: false, whole: false }]);
   });
 
   it("gives a measured row its click target even when the crop came from an edit", () => {
@@ -547,7 +547,7 @@ describe("what a scan adds to a row", () => {
       .find((panelRow) => panelRow.name === "Hair")!;
 
     expect(hair.cutouts[0]!.contentUrl).toBe("https://bucket.example/library/hair.png");
-    expect(hair.regions).toEqual([{ box: { x: 900, y: 900, width: 50, height: 50, frame }, name: null, spoken: null, prefill: null, slot: "hair", scopable: false }]);
+    expect(hair.regions).toEqual([{ box: { x: 900, y: 900, width: 50, height: 50, frame }, name: null, spoken: null, prefill: null, slot: "hair", scopable: false, whole: false }]);
   });
 
   it("still refuses to invent a box for a region the scan did not find", () => {
@@ -588,11 +588,11 @@ describe("what a scan adds to a row", () => {
     expect(eyes.regions).toEqual([
       {
         box: { x: 300, y: 500, width: 60, height: 30, frame },
-        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right", scopable: true,
+        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right", scopable: true, whole: false,
       },
       {
         box: { x: 640, y: 500, width: 60, height: 30, frame },
-        name: "Left eye", spoken: "her left eye", prefill: "her left eye — ", slot: "eye@left", scopable: true,
+        name: "Left eye", spoken: "her left eye", prefill: "her left eye — ", slot: "eye@left", scopable: true, whole: false,
       },
     ]);
   });
@@ -651,7 +651,7 @@ describe("a pair whose geometry is one instance", () => {
     expect(eyes.regions).toEqual([
       {
         box: { x: 640, y: 500, width: 60, height: 30, frame },
-        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right", scopable: true,
+        name: "Right eye", spoken: "her right eye", prefill: "her right eye — ", slot: "eye@right", scopable: true, whole: false,
       },
     ]);
     expect(eyes.cutouts).toHaveLength(1);
@@ -671,7 +671,7 @@ describe("a pair whose geometry is one instance", () => {
     /* Null is not an omission: it means the row's own name is the label. */
     const nose = scanned({ nose: { x: 400, y: 600, width: 120, height: 160 } })
       .find((row) => row.name === "Nose")!;
-    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose", scopable: false }]);
+    expect(nose.regions).toEqual([{ box: { x: 400, y: 600, width: 120, height: 160, frame }, name: null, spoken: null, prefill: null, slot: "nose", scopable: false, whole: false }]);
   });
 
   it("draws no row at all when nothing can place it — not an unclickable one", () => {
@@ -1606,6 +1606,9 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     instance?: number;
     x?: number;
     y?: number;
+    /** His check 1 (#2856): measured at the pixels by the scan service and
+     *  carried, so here it is simply given. */
+    coversFace?: boolean;
   };
   type Said = {
     noun: string;
@@ -1643,6 +1646,7 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
         on: one.on ?? "",
         box: { x: one.x ?? 100 + at * 100, y: one.y ?? 200 + at * 50, width: 80, height: 60, frame },
         maskUrl: `data:image/png;base64,${one.noun}`,
+        ...(one.coversFace === undefined ? {} : { coversFace: one.coversFace }),
       })),
       namedNotCut: input.said ?? [],
     },
@@ -1726,7 +1730,7 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     expect(sectionOf(panel, "open")).toBeNull();
   });
 
-  it("lights every piece from the row, because the outfit IS the collection", () => {
+  it("draws the WHOLE outfit first, then every piece inside it", () => {
     const panel = panelOf({
       found: [
         { noun: "jacket", kind: "clothing" },
@@ -1734,10 +1738,174 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       ],
     });
     const row = sectionOf(panel, "outfit")!.rows[0]!;
+    /* UNCHANGED, and it is the half his complaint was NOT about: the edit has
+       meant the whole outfit since #2566 slice 2. */
     expect(row.slots).toEqual(["discovered:outfit", "discovered:jacket#1", "discovered:harness#1"]);
-    /* One rectangle per PIECE and not the union: a union rectangle over a
-       dressed figure is the whole figure, which points at nothing. */
-    expect(row.regions.map((one) => one.name)).toEqual(["Jacket", "Harness"]);
+    /*
+      ⚠ THIS ARM PINNED THE OPPOSITE AND IS UPDATED WITH HIS WORD RATHER THAN
+      DELETED (#2845, 2026-10-30). It read:
+
+        ~~"One rectangle per PIECE and not the union: a union rectangle over a
+          dressed figure is the whole figure, which points at nothing."~~
+        ~~expect(row.regions.map((one) => one.name)).toEqual(["Jacket", "Harness"]);~~
+
+      His words: *"why cant i select his outfit box as a whole its selecting
+      individual pieces?"* and *"also outfit should be selectablke as a whole"*.
+      The struck reasoning is true of a union drawn ALONE; what he was shown was
+      two lit rectangles and no outfit, and he read it as the panel editing
+      pieces one at a time. The pieces are still here, inside it.
+    */
+    expect(row.regions.map((one) => one.name)).toEqual([null, "Jacket", "Harness"]);
+    expect(row.regions.map((one) => one.whole)).toEqual([true, false, false]);
+    /* The whole rectangle is the ROW's, so it carries the row's own key and
+       narrows to nothing — a scope here would mean a piece. */
+    expect(row.regions[0]!.slot).toBe("discovered:outfit");
+    expect(row.regions[0]!.scopable).toBe(false);
+  });
+
+  it("gives the whole rectangle the SAME extent the row's own thumbnail is cropped to", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "jacket", kind: "clothing" },
+        { noun: "harness", kind: "accessory", on: "jacket" },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    /*
+      ONE VALUE USED TWICE, NEVER TWO MEASUREMENTS OF ONE THING (working law 4).
+      The thumbnail was already cropped to the union before this card; if the
+      rectangle were computed a second time the picture and the tile beside it
+      could drift, and the customer would see a box that does not match the
+      thing it is a picture of.
+    */
+    expect(row.regions[0]!.box).toEqual(row.cutouts[0]!.crop);
+  });
+
+  it("CONTROL — the whole rectangle encloses every piece it was built from", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "jacket", kind: "clothing" },
+        { noun: "harness", kind: "accessory", on: "jacket" },
+        { noun: "belt", kind: "clothing" },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    const whole = row.regions.find((one) => one.whole)!.box;
+    const pieces = row.regions.filter((one) => !one.whole).map((one) => one.box);
+    /* Three pieces, so this is not satisfied by a single box being its own
+       union — the shape that would pass while the arithmetic was wrong. */
+    expect(pieces.length).toBe(3);
+    for (const piece of pieces) {
+      expect(piece.x, piece.toString()).toBeGreaterThanOrEqual(whole.x);
+      expect(piece.y).toBeGreaterThanOrEqual(whole.y);
+      expect(piece.x + piece.width).toBeLessThanOrEqual(whole.x + whole.width);
+      expect(piece.y + piece.height).toBeLessThanOrEqual(whole.y + whole.height);
+    }
+    /* And it is the SMALLEST such rectangle — a union that simply returned the
+       frame would pass every bound above. */
+    expect(whole.x).toBe(Math.min(...pieces.map((one) => one.x)));
+    expect(whole.y).toBe(Math.min(...pieces.map((one) => one.y)));
+    expect(whole.x + whole.width).toBe(Math.max(...pieces.map((one) => one.x + one.width)));
+    expect(whole.y + whole.height).toBe(Math.max(...pieces.map((one) => one.y + one.height)));
+  });
+
+  it("leaves a piece whose SHAPE lies over the face out of the whole outline, and keeps its row", () => {
+    /*
+      HIS RULING, 2026-10-30 (#2856, point 4): *"The whole-Outfit outline must
+      never be built from a failed piece."* The relay's finding on PR #2850 is
+      the case — a union inherits the worst piece, so one garment reading from
+      the mouth to the waist would drag the outfit's own rectangle over the
+      face.
+
+      ⚠ **Judged at the SHAPE and never at the rectangle, which is his own
+      amendment the same hour**: *"im not worried about the box covering the
+      neck that sort of normal if its the outfit or whatever"*. The boolean
+      arrives measured at the pixels (`maskCoverage`, driven on its own).
+    */
+    const panel = panelOf({
+      found: [
+        { noun: "cloak", kind: "clothing", x: 200, y: 900 },
+        { noun: "face wrap", kind: "clothing", x: 100, y: 100, coversFace: true },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    const whole = row.regions.find((one) => one.whole)!;
+    const wrap = row.regions.find((one) => one.name === "Face wrap")!;
+    /* The outline is the cloak's extent alone — it does not reach up to the
+       wrap at y 100. */
+    expect(whole.box).toEqual({ x: 200, y: 900, width: 80, height: 60, frame });
+    expect(whole.box.y).toBeGreaterThan(wrap.box.y);
+    /* ⚠ AND THE FAILING PIECE IS STILL A ROW AND STILL A RECTANGLE. Point 3 of
+       his ruling — a failed piece gets no row at all — is #2845's defect 2 and
+       waits for the other three checks; taking one of four would hide pieces
+       for one reason while three others still drew theirs. */
+    expect(row.instances.map((one) => one.name)).toEqual(["Cloak", "Face wrap"]);
+    expect(wrap.whole).toBe(false);
+    /* And the thumbnail is the same window as the outline, still one value. */
+    expect(row.cutouts[0]!.crop).toEqual(whole.box);
+  });
+
+  it("draws NO whole rectangle at all when every piece lies over the face", () => {
+    /*
+      A row with nothing it may outline must not outline the wrong thing. The
+      picture falls back to one rectangle per piece — the panel exactly as it
+      was before this card — and the thumbnail keeps the window it always had.
+    */
+    const panel = panelOf({
+      found: [
+        { noun: "face wrap", kind: "clothing", x: 100, y: 100, coversFace: true },
+        { noun: "mask", kind: "clothing", x: 300, y: 150, coversFace: true },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    expect(row.regions.some((one) => one.whole)).toBe(false);
+    expect(row.regions.map((one) => one.name)).toEqual(["Face wrap", "Mask"]);
+    /* The row is still the whole outfit to tap — only the picture changed. */
+    expect(row.slots).toEqual(["discovered:outfit", "discovered:face-wrap#1", "discovered:mask#1"]);
+    /* The window is the union of all of them, which is what it was before. */
+    expect(row.cutouts[0]!.crop).toEqual({ x: 100, y: 100, width: 280, height: 110, frame });
+  });
+
+  it("CONTROL — a piece the scan did not measure is treated as clear, so today's panel is unchanged", () => {
+    /*
+      ⚠ THE ARM THAT MAKES THE FIELD FREE. A reading kept before the check
+      existed restores without it, and the live preview a scan serves while it
+      is still running never carries it. Both must draw what they drew
+      yesterday: inside the outline.
+    */
+    const panel = panelOf({
+      found: [
+        { noun: "jacket", kind: "clothing", x: 100, y: 100 },
+        { noun: "belt", kind: "clothing", x: 400, y: 800, coversFace: false },
+      ],
+    });
+    const row = sectionOf(panel, "outfit")!.rows[0]!;
+    const whole = row.regions.find((one) => one.whole)!;
+    expect(whole.box).toEqual({ x: 100, y: 100, width: 380, height: 760, frame });
+  });
+
+  it("CONTROL — no other row on the panel grows a whole rectangle", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "jacket", kind: "clothing" },
+        { noun: "scar", kind: "marking", on: "cheek" },
+      ],
+    });
+    /*
+      The field is `false` everywhere but the one collection row, which is what
+      lets the browser's rule be *"a row that HAS one"* rather than a list of
+      which rows do. A second `true` anywhere here would silently start
+      suppressing some other row's rectangles.
+    */
+    const all = panel.groups
+      .flatMap((group) => group.rows.flatMap((row) => row.regions.map((one) => ({ group: group.group, one }))));
+    /* ⚠ THE ARM BELOW IS VACUOUS WITHOUT THIS ONE, so it is pinned rather than
+       assumed: the scar must actually draw a rectangle somewhere else on the
+       panel, or "the outfit is the only whole" is true of a panel that has no
+       other rectangle to be wrong about. Measured: outfit 2 regions, open/Scar
+       1. */
+    expect(all.filter((each) => each.group !== "outfit").length).toBeGreaterThan(0);
+    expect(all.filter((each) => each.one.whole).map((each) => each.group)).toEqual(["outfit"]);
   });
 
   /*
@@ -2222,8 +2390,14 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     const panel = panelOf({
       catalogued: ["eye@left", "eye@right", "skin", "teeth", "lips"],
       found: [
-        { noun: "third eye", kind: "anatomy", on: "forehead" },
-        { noun: "jaw hardware", kind: "anatomy", on: "jaw" },
+        /* ON THE FACE, and said in the geometry rather than only in the noun
+           (#2840). The helper otherwise lays found boxes out on a diagonal far
+           below the drawn face rows, which since #2840 is a real answer — a
+           body part down there is a Body row. This cast's third eye is on its
+           forehead and its jaw hardware is on its jaw, so the fixture places
+           them there and the assertion below is the positive control. */
+        { noun: "third eye", kind: "anatomy", on: "forehead", x: 15, y: 0 },
+        { noun: "jaw hardware", kind: "anatomy", on: "jaw", x: 15, y: 40 },
         { noun: "neck hardware", kind: "accessory", on: "neck" },
         { noun: "scarf", kind: "clothing", on: "" },
         { noun: "shoulder armor", kind: "accessory", on: "shoulder" },
@@ -2242,9 +2416,105 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       "Scarf", "Pendant", "Strap", "Charm", "Robe",
     ]);
     expect(rowNames(panel, "accessories")).toEqual(["Neck hardware", "Shoulder armor"]);
-    /* Body parts list under Face since #2801. */
+    /* Body parts list under Face since #2801 — and since #2840 that holds
+       because they are ON the face, not because every body part lands there.
+       Neither FOUND body part fell through to Body: the only row there is the
+       catalogue's own Skin, which has always sat in that section. */
     expect(rowNames(panel, "face").slice(-2)).toEqual(["Third eye", "Jaw hardware"]);
+    expect(rowNames(panel, "body")).toEqual(["Skin"]);
     expect(sectionOf(panel, "open")).toBeNull();
+  });
+  /* ---- #2840 / #2807 part 1: a body part lists where it actually IS ---- */
+
+  /*
+    His eye, rounds 9 and 10. Round 9's panel drew TWO rows both called
+    Shoulders under FACE; round 10 drew a Collarbone there — *"no idea why
+    collarbone is showing up?"*. #2807 part 1 named the day this would be
+    built: *"a reading holding a body part the scan's face cuts do not touch
+    is the day this becomes one branch plus one frame for his eye"*.
+
+    The face these arms measure against is the one the HELPER draws:
+    catalogued slots land at x 10+10n, y 20+10n, 50×40, so four face rows span
+    x10–90, y20–90 — midline 50, middle row 55. A found box is 80×60 at
+    x 100+100n, y 200+50n unless the arm places it. Nothing here is tuned; the
+    allowances fall out of that span.
+  */
+  it("lists a found body part that is not on the face under Body, not Face", () => {
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right", "teeth", "lips"],
+      found: [{ noun: "collarbone", kind: "anatomy", on: "" }],
+    });
+    /* The face section holds the face and nothing else. */
+    expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth"]);
+    expect(rowNames(panel, "body")).toEqual(["Collarbone"]);
+  });
+  it("sends a body part DIRECTLY below the face to Body, where only the down axis can decide", () => {
+    /* The arm the first one cannot be: a collarbone sits under the chin, so it
+       is well within the face's span ACROSS (centre x 50, the face's own
+       midline) and outside it only DOWN. Without this, a rule that had quietly
+       lost its vertical half would still pass every arm above, because a box on
+       the helper's default diagonal is outside the face on both axes at once. */
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right", "teeth", "lips"],
+      found: [{ noun: "collarbone", kind: "anatomy", on: "", x: 10, y: 170 }],
+    });
+    expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth"]);
+    expect(rowNames(panel, "body")).toEqual(["Collarbone"]);
+  });
+
+  it("draws his round-9 pair of Shoulders under Body rather than twice under Face", () => {
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right", "teeth", "lips"],
+      found: [
+        { noun: "shoulders", kind: "anatomy", on: "", instance: 1 },
+        { noun: "shoulders", kind: "anatomy", on: "", instance: 2 },
+      ],
+    });
+    expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth"]);
+    /* Still two rows — this card moves them, and whether a pair folds into one
+       row is the other half of #2840 and is not decided here. */
+    expect(rowNames(panel, "body")).toEqual(["Shoulders", "Shoulders"]);
+  });
+
+  it("keeps a body part that IS on the face under Face", () => {
+    /* The positive control, and the reason the rule reads place rather than
+       the noun: a third eye is as much a body part as a collarbone. Centre
+       (50, 55) is the middle of the drawn face. */
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right", "teeth", "lips"],
+      found: [{ noun: "third eye", kind: "anatomy", on: "forehead", x: 10, y: 25 }],
+    });
+    expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth", "Third eye"]);
+    expect(sectionOf(panel, "body")).toBeNull();
+  });
+
+  it("leaves every body part under Face when the scan drew no face row to measure against", () => {
+    /* The fail-safe: a missing measurement never moves a row, so a scan with
+       nothing of the face cut behaves exactly as the panel did before #2840.
+       The catalogue puts `skin` in its BODY group, so this cast has no face
+       span at all. */
+    const panel = panelOf({
+      catalogued: ["skin"],
+      found: [{ noun: "collarbone", kind: "anatomy", on: "" }],
+    });
+    expect(rowNames(panel, "face")).toEqual(["Collarbone"]);
+    expect(rowNames(panel, "body")).toEqual(["Skin"]);
+  });
+
+  it("routes by place only for the body — a worn thing and a mark are unmoved", () => {
+    /* His #2789 placement ruling is untouched: the branch added here is inside
+       the anatomy arm, so an accessory and a marking in the very same place
+       still land where that ruling put them. */
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right", "teeth", "lips"],
+      found: [
+        { noun: "shoulder armor", kind: "accessory", on: "" },
+        { noun: "tattoo", kind: "marking", on: "" },
+      ],
+    });
+    expect(rowNames(panel, "accessories")).toEqual(["Shoulder armor"]);
+    expect(rowNames(panel, "open")).toEqual(["Tattoo"]);
+    expect(sectionOf(panel, "body")).toBeNull();
   });
 
   /*

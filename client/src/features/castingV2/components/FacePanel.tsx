@@ -113,6 +113,23 @@ export type FacePanelRegion = {
    * `PanelRegion.scopable`.
    */
   scopable: boolean;
+  /**
+   * DOES THIS RECTANGLE COVER THE WHOLE ROW, RATHER THAN ONE THING IN IT —
+   * the SERVER's answer (his word, 2026-10-30, #2845).
+   *
+   * `true` on one rectangle at most, and only on a row that IS a collection:
+   * the Outfit row's own extent, with its pieces still drawn inside it. His
+   * complaint was that hovering Outfit lit five separate rectangles, which read
+   * as the panel editing pieces one at a time — *"why cant i select his outfit
+   * box as a whole its selecting individual pieces?"* The ask had always meant
+   * all of it; only the picture disagreed.
+   *
+   * ⚠ **The browser is TOLD rather than asking the key.** Testing
+   * `slot === "discovered:outfit"` here is a second copy of a server fact and
+   * goes wrong the first time a second collection row exists — the same reason
+   * {@link FacePanelRegion.scopable} stopped being read off the `@` in a key.
+   */
+  whole: boolean;
 };
 
 export type FacePanelRow = {

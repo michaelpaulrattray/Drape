@@ -1,7 +1,7 @@
 {
-  "edition": 789,
-  "updatedAt": "2026-10-30T19:20:00.000000Z",
-  "shift": "The machinery behind the lit-up picture is built, and the one job you gave it was measured on your own test pictures.\n\nLast night's job was the decision: dots or the lit-up version. Tonight was the work behind it. When you attach a photo, the studio now knows how to split it into pieces in one go, how to tidy those pieces up, how to cut whatever is under your finger when you tap, and how to name what it actually cut. None of it is wired to a screen yet, so the studio behaves exactly as it did this morning and the selector's switch is still off.\n\nYou set one condition on this piece: that the tidy-up had to be measured on the test pictures, not just written. It was, and it cost nothing to do it — the earlier test had saved its own results to disk, so the tidy-up was re-run against the real thing with no new charges at all. The question you asked at the picture was why the jacket was lighting up part of the scarf. Answer: it was covering nearly a third of the scarf, and now it covers none of it. The jacket also matches its own true shape almost perfectly where before it was noticeably off.\n\nThe measurement earned its keep by catching a real mistake of mine before it reached you. I had the steps in the wrong order, and the result was that on a photo of a person the whole body counted as one piece and swallowed the top — hovering the picture would have lit the person and erased the clothing. On the test photo the top went from matching almost perfectly to barely a third. It is fixed, and there is now a test that fails if anyone ever puts those two steps back the wrong way round.\n\nOne thing is worse than before and it is a decision for you, not for the crew. Hovering HAIR now lights less of it. Hair frames a face, and your rule takes the face's rectangle out of every piece before anything can light up — so the hair sitting inside that rectangle goes with it, and what lights is the hair around the outside. That rule is also the thing stopping a hover from ever lighting someone's face, so the two obvious ways to get the hair back both weaken it. Nothing is being changed either way. You will see it on a real screen at the next step and can decide then, looking at it rather than at a number.\n\nI also cleared up after myself: merging this made two of the crew's other open jobs temporarily unmergeable, and both are repaired. A third was left alone on purpose, because it is waiting on a review and touching it would have quietly wiped that out.",
+  "edition": 792,
+  "updatedAt": "2026-10-31T00:20:48.059000Z",
+  "shift": "Four finished pieces of work were sitting in the queue unmerged. All four are in and live now, and two of them had been stuck on a problem that turned out not to be real.\n\nTwo were simply never merged. The work was done, every check was green, nobody needed to look at them, and they had been waiting six and thirteen hours with nothing in the way. The other two said, on GitHub, that they clashed with the main line of work and could not be merged. When I measured each clash instead of believing it, the only file clashing in every case was the map of the product that we generate automatically — and we have a tool that merges that file by itself, which GitHub does not use. So the clash was a ghost, and one command cleared each one. I checked all five stuck pieces of work that way, and all five were the same ghost.\n\nWhat the four give you:\n\nA shoulder and a collarbone stop being listed as parts of a face, and get their own Body heading. Whether they deserve a row at all is still your open question, and that has not changed.\n\nA second tattoo sleeve can be reached at all. Until tonight the panel could only ever outline one arm, because the reading said \"one tattoo\" and the studio stopped asking after one. Now a rectangle past the count is cut and kept where it lands on nothing the scan already holds — so a second sleeve survives, while the third eye's extra rectangles, which are really the ordinary eyes, still fold into Eyes. The panel will not draw two Tattoo rows until the other half of that job lands, and I have not claimed otherwise on the card.\n\nEvery cut the studio makes now records how many separate pieces it came back in. Nothing refuses on it yet, deliberately: a leather jacket's collar came back as 29 scraps and passed our own quality check, because the check could only see how much of a rectangle was filled and never whether the thing was in one piece. Now we can see it. Whether anything should be refused needs real traffic first rather than a guessed number — the last time a number like that was invented it refused a correct cut.\n\nAnd one fix to our own machinery: the end-of-shift check was telling every shift that a job was free to pick up when another piece of work was already building it.\n\nThree pieces of work are still stuck the same ghost way, and all three are the relay's to clear rather than a shift's — two touch money or sign-in, one needs a key added to the service, and one carries a review note that a push would quietly wipe. Each now carries its own measurement, so each is one command rather than an investigation.\n\nOne thing moved onto your desk: your round-10 note about picking the whole outfit. The main part of it is live, the second part has moved to another job, and the third part is a question only you can answer — whether the Outfit row's run-on description should simply say nothing. It had been sitting in the queue looking like work for a shift when everything left on it is yours.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -38,7 +38,7 @@
           "state": "waiting"
         },
         {
-          "title": "The studio surfaces — the Pinterest-style reference selector (#14): THE MACHINERY BEHIND THE LIT-UP PICTURE IS BUILT, MEASURED AND LIVE, and still switched off (shipped 2026-10-31). The studio now knows how to split an attached photo into pieces in one go, tidy them, cut whatever is under your finger on a tap, and name what it cut — nothing is wired to a screen, so nothing a customer can see has changed. Your condition was met: the tidy-up was measured on the test pictures and cost nothing to measure, and it answers the question you asked at the picture — the jacket was lighting nearly a third of the scarf and now lights none of it. The measurement also caught a real ordering mistake of mine that would have lit the whole person and erased their top; it is fixed and guarded. ONE THING IS WORSE AND IT IS YOURS TO DECIDE LATER: hovering hair lights less of it, because your face rule takes a rectangle out of every piece and hair frames a face — you see it on a real screen at the next step. Next is the entrance that ties it to the switch, then the screen itself. Then the settings' second pass (#15), outfit-card thumbnails (#61), the honest sentence at a words-only tattoo sale (#65)",
+          "title": "The studio surfaces — the Pinterest-style reference selector (#14): THE MACHINERY IS BUILT AND NOW HAS ITS WAY IN (the entrance shipped 2026-10-31, PR #2872), and the setting is still off. There is finally something real behind the switch: attach a photo and the studio can split it, tidy it, hand the shape of every piece to the screen, and on a tap cut and name what is under your finger. Nothing is wired to a screen yet, so nothing a customer can see has changed, and nothing is stored or charged. ⚠ AND THE TEST YOU ASKED FOR SAYS THE NEXT STEP IS NOT READY (#2873): splitting a real photo leaves about 27 pieces where the earlier test had 8 to 18, because that test merged near-duplicates in its own scratch script and the studio never got that step. A coat on a hanger comes back as 27 pieces. The screen cannot be built over that, so it is its own job, and the measuring that settles it costs nothing. Also fixed on the way: the split was downloading its 32 pieces one at a time — 48 seconds down to 16. Still yours to decide later, unchanged: hovering hair lights less of it, because your face rule takes a rectangle out of every piece. You see that on a real screen. Then the settings' second pass (#15), outfit-card thumbnails (#61), the honest sentence at a words-only tattoo sale (#65)",
           "state": "waiting"
         },
         {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-30T15:31:06.457Z",
+      "readAt": "2026-10-31T00:18:30.077Z",
       "items": [
         {
           "issueNumber": 30,
@@ -199,6 +199,12 @@
         {
           "issueNumber": 2858,
           "title": "N3 slice 2: which things may keep a saved picture - the fixed list, or the customer's own words (a design decision, parent #2565)",
+          "kind": "rung",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 2868,
+          "title": "The face panel's pieces light up spotlight-style, like the picker (his word 2026-10-30)",
           "kind": "rung",
           "rung": "N3"
         },
@@ -7768,6 +7774,20 @@
   ],
   "pipeline": [
     {
+      "id": "spotlight-hover-dedupe-2873",
+      "title": "The lit-up picture lights the garment, not a sliver of it (#2873)",
+      "status": "merged",
+      "prNumber": 2876,
+      "note": "Merged on the gate alone — triage read the diff and applied no label, so no human read was owed. Six of nine things light as themselves against two before; the picture goes 26 pieces to 11."
+    },
+    {
+      "id": "selector-entrance-14",
+      "title": "The lit-up picture gets its way in, and the one test the plan asked for came back (#14)",
+      "status": "in-review",
+      "prNumber": 2872,
+      "note": "⚠ STUCK as of tonight, and my own merges are what did it. It was clean when this shift started; four merges later GitHub says it clashes with the main line and cannot be merged, which also means its checks cannot be re-run. I measured the clash rather than believing it: the only files clashing are the three maps of the product we generate automatically, and we have a tool that merges those by itself. So it is one command — but this one adds two rate limits, which makes it money work, and money work waits for a human read by rule. It is the relay's hand, not a shift's. Nothing is lost, the work is finished, and nothing is waiting on you."
+    },
+    {
       "id": "selector-spotlight-design-14",
       "title": "The selector's design now says the lit-up version you picked over the boxes (#14)",
       "status": "merged",
@@ -11179,14 +11199,14 @@
     {
       "id": "outfit-whole-box-2845",
       "title": "The outfit is one box on the picture, with its pieces inside it — your round-10 note (#2845)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2850,
       "note": "Held for a human review because it changes what you see on the photograph. Driven in the running app in both themes: before, hovering the one Outfit row lit four separate boxes and drew no outfit box; after, it lights one. Pictures stayed off the public repo."
     },
     {
       "id": "body-part-section-2840",
       "title": "A shoulder and a collarbone stop being listed as parts of a face, and get their own Body heading (#2840)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2851,
       "note": "Server only, but a customer sees it, so it is held for a human review rather than merged on the gate. Rendered in the real app in both themes, before and after, with the before arm reproducing the fault."
     },
@@ -11195,10 +11215,45 @@
       "title": "A tattoo sleeve is one piece of ink, so it gets a row you can pick (#2848)",
       "status": "in-review",
       "prNumber": 2852,
-      "note": "⚠ STUCK, and not on the review. Another piece of work landed on the same file, so this one can no longer be merged until somebody re-merges it — and while it is in that state nothing can even re-run its checks. That is the relay's hand, not a shift's: five shifts in a row have now been sent at it and all five were right to leave it alone, because re-merging it here would quietly clear the hold the relay put on it.\n\nNothing is lost and nothing is waiting on you. The work itself is finished and measured."
+      "note": "⚠ STILL STUCK, and now measured rather than assumed. The clash GitHub is showing is the one map file we generate automatically, which our own tool merges by itself — so it is one command. It is the relay's hand and not a shift's, for a reason worth stating: a review note sits on this work, and any push to it, even a harmless one, makes that note read as already dealt with. Five shifts have now been sent at this and every one was right to leave it alone; what none of them had done is measure the clash, which is on the work now. Nothing is lost and nothing is waiting on you — the work itself is finished and measured. It is also the one thing standing between you and two Tattoo rows on a two-sleeve character."
+    },
+    {
+      "id": "cut-fragmentation-2841",
+      "title": "Every cut now records how many separate pieces it came back in, and nothing refuses on it yet (#2841)",
+      "status": "merged",
+      "prNumber": 2860,
+      "note": "Finished and green thirteen hours before this shift and never merged. Synced onto a main that had moved fifteen commits, re-gated on the merged tree, merged on the gate alone — server logs only, nothing a customer sees."
+    },
+    {
+      "id": "band-pr-blind-2866",
+      "title": "The end-of-shift check stops telling every shift a job is free when something is already building it (#2866)",
+      "status": "merged",
+      "prNumber": 2870,
+      "note": "Crew machinery only. Finished and green six hours before this shift and never merged; synced, re-gated and merged on the gate alone."
+    },
+    {
+      "id": "extra-box-2838",
+      "title": "A rectangle past the reading's own count is cut, and kept where it lands on nothing else — so a second sleeve can be reached (#2838)",
+      "status": "merged",
+      "prNumber": 2865,
+      "note": "Stuck eleven hours on a clash that was only the generated map; measured, one command, re-gated and merged on the gate alone. The other half of two Tattoo rows is still in #2852."
     }
   ],
   "problems": [
+    {
+      "id": "cut-named-from-whole-frame-2875",
+      "severity": "warning",
+      "state": "open",
+      "title": "The studio names a tapped piece from the whole photograph, not from a close-up of the piece (#2875)",
+      "detail": "When you tap something in an attached photo, the chip's name comes from showing a reader the whole picture with everything but your piece painted grey. The test we quote — which named things right eight times out of eight — showed the reader a tight close-up instead. On a flat-lay that is the difference between a belt filling the frame and a belt lost in a field of grey. Nobody can hit it, because the setting is off. Which way names better is a measurement and it is cheap: the pieces are on disk, so only the reading costs anything."
+    },
+    {
+      "id": "spotlight-hover-set-too-busy-2873",
+      "severity": "warning",
+      "state": "resolved",
+      "title": "Fixed — the lit-up picture lights the garment now, not a scrap of it (#2873)",
+      "detail": "Point at the middle of a thing and it lights up almost entirely: a tank top went from 20% to 98%, a sweater from 21% to 98%. Six of the nine things on your test pictures light as themselves, where two did. One thing on this row was wrong and is worth recording: it said the fix would cost nothing to measure because the old test's results were on disk. They were not — the old test tidied its results before saving them. Buying them again cost about one and a half cents, and they are saved now."
+    },
     {
       "id": "correct-picture-thrown-away-2837",
       "severity": "warning",
@@ -11436,6 +11491,13 @@
       "state": "resolved",
       "title": "A merged change that is not on the live site is now noticed, instead of nobody watching (#2748)",
       "detail": "This bit twice today, and you would not have been able to tell by looking.\n\nWhen a change is merged, Railway rebuilds and publishes the site. If that build fails, the change stays merged, stays green, stays reviewed — and simply is not live. Everything the team naturally looks at agrees that it shipped: the pull request says merged, the code is on the main branch, and the site answers healthy, because the OLD version is still running and answering.\n\nToday one change sat finished-but-not-live for 52 minutes before anyone noticed, and it was noticed by accident. A second one sat for two hours. Nobody skipped a step: the person who writes a change has finished and gone by the time it merges, and every alarm the team owns watches work that is still in progress.\n\nThe underlying cause of the failures is Railway's, not ours — their builder has failed nine of eleven attempts today and their status page reports degraded performance. What is ours is that nothing was checking whether what we merged is actually the thing running. There is a reading that would answer it exactly, which the site already publishes.\n\nBoth of today's changes are now live, so nothing is outstanding on the live site tonight — what stays open is that nobody was watching. It is written up and not yet built. It is tooling rather than something you can see, so it waits behind the current feature work. Nothing is charged wrongly and nothing is lost — the delay is the whole of the harm, and a change that is not live is simply the previous version still serving.\n\nRESOLVED 2026-10-28 — built and live (PR #2749, serving as 7fd0237b). The reader asks one question, is the commit on main the commit production is serving, and files one plain-English job on the board when it is not: about two minutes after a failed publish, and every three hours as the net for a publish that never started. It is deliberately blind to Railway's own success and failure records, which were wrong in both directions on the morning this was found, and it can never open a second job for the same thing."
+    },
+    {
+      "id": "ghost-conflict-stuck-prs-2031031",
+      "severity": "warning",
+      "state": "open",
+      "title": "Three finished pieces of work cannot be merged, and the thing blocking them is not real (#2848, #2863, #14)",
+      "detail": "This is the crew's own machinery, not the product — nothing a customer sees is affected.\n\nFive finished pieces of work were stuck tonight because GitHub said they clashed with the main line of work. In every one of the five the only file clashing was the map of the product that we generate automatically — and we have a tool that merges that file by itself, which GitHub does not use. So the clash reads as real on the page and is a ghost.\n\nTwo of the five I cleared and merged. Three are the relay's and are named on themselves with the measurement: one adds rate limits and is money work, one needs a key added to the service first, and one carries a review note that any push would wipe. Each is one command rather than an investigation.\n\nWhy it matters beyond tonight: while two pieces of work disagree about that file, nothing can even re-run their checks, so the page keeps showing the green they had before and they look fine. Shifts have been sent at these for two days and each one correctly left them alone — but none of them measured the clash, so none of them could say it was a ghost."
     }
   ],
   "acknowledgedReplyIds": [
@@ -11744,16 +11806,12 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-30T15:31:06.456Z",
+    "readAt": "2026-10-31T00:18:30.077Z",
     "items": [
       {
         "issueNumber": 14,
         "title": "The Pinterest-style reference selector — designed, unbuilt, and it fell through the flag-derived register",
-        "urgent": false,
-        "held": {
-          "state": "fable",
-          "because": "a Fable seat — a DESIGN DECISION: does slice 3 build markers or the spotlight he preferred? RECOMMENDED: amend the design to the spotlight."
-        }
+        "urgent": false
       },
       {
         "issueNumber": 1598,
@@ -11906,13 +11964,17 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "#2848 (sleeves get no Tattoo row, PR #2852) and #2840 (Collarbone under Face, PR #2851) — defect 1 shipped in #2849."
+          "because": "#2848 (sleeves, PR #2852, held for the relay), and #2856 + #2862 for the Collarbone row itself — #2840's placement half is live."
         }
       },
       {
         "issueNumber": 2845,
         "title": "N3 face reader, his eye round 10: the outfit can't be picked as a whole, and a creature's rag cloth is called Straps with a box over its face",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — defect 1 is live; your eye on the Outfit row, and your word on the run-on subtitle (say nothing, or its own card)."
+        }
       },
       {
         "issueNumber": 2846,

@@ -153,6 +153,23 @@ export type StoredDiscoveredSlot = {
    */
   kind?: string;
   on?: string;
+  /**
+   * DOES THIS SHAPE LIE OVER THE FACE'S OWN CUTS — his check 1 (#2856,
+   * 2026-10-30), kept for the two fields above's reason.
+   *
+   * It is a PIXEL measurement taken once, while the scan's masks and this
+   * shape's mask are both raw bytes in one process. A reading served from this
+   * row has neither any more, so a row that did not keep the answer would put
+   * a face-covering garment outside the whole-Outfit outline on the first look
+   * and back inside it on the second.
+   *
+   * ⚠ **Optional, and absent is today's panel exactly rather than a guess** —
+   * the same sentence the two fields above carry. A row written before this
+   * field reads as *not covering*, which is how every outfit piece was treated
+   * before the check existed: inside the outline. No migration, no backfill,
+   * and the next reading of a changed frame writes it.
+   */
+  coversFace?: boolean;
 };
 
 export type StoredScanGeometry = {
