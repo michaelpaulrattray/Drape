@@ -97,12 +97,13 @@ export const FAL_LOW_BALANCE_USD = 20;
  *   fewest 18  one per whole-frame question (7), two per pair — one per side —
  *              (5 pairs, 10), and the face asked ONCE: the midline the pairs are
  *              split on and the head the build row is cut under are one answer
- *   most   30  an anatomy question asked twice (lips, nose, hair, skin: +4);
+ *   most   31  an anatomy question asked twice (lips, nose, hair, skin: +4);
  *              an anatomy pair asked again, each half for its own picture
  *              (eyes, brows, ears: 4 each, +6); a worn pair healed once
  *              (horns, earrings: 3 each, +2); worn whole-frame questions are
  *              never asked twice (glasses, facial hair); and TEETH are never
- *              asked twice either (#2525)
+ *              asked twice either (#2525); and the face read refused against
+ *              the head box, asked again of the head crop alone (+1, #2895)
  *
  * The cutout is never asked twice and never by a re-ask; neither is the
  * describer.
@@ -148,8 +149,10 @@ export const FAL_LOW_BALANCE_USD = 20;
  * already one request, and what changed there is which question it asks, not
  * how many. ⚠ **`fewest` does not move on either road**, because the floor is
  * the every-question-answered-first-time path and never held a second look.
- * Both figures are re-derived by the same drive and the same three policies
- * (`server/faceScanSpend.test.ts`), and **the measured band below still does
+ * Both figures are re-derived by the same drive and EVERY answer policy
+ * (`server/faceScanSpend.test.ts`) — the count is deliberately not written
+ * here, because it has already drifted once: this clause said *"the same three
+ * policies"* until #2895 added a fourth. **The measured band below still does
  * not move by arithmetic** — it is a bought reading, and it is now three reads
  * behind the code on the crop road rather than two.
  *
@@ -176,11 +179,49 @@ export const FAL_LOW_BALANCE_USD = 20;
  * scan**. ⚠ **A ceiling that falls while the average rises is exactly the shape
  * a single number hides**, which is why both are written here.
  * ⚠ **`fewest` does not move on either road**, for the reason above it.
+ *
+ * ⚠ **AND BOTH CEILINGS WENT UP BY ONE ON 2026-10-31 (#2895), WHICH IS THE
+ * FIRST TIME EITHER HAS MOVED THAT WAY — AND BOTH HAD BEEN LOW FOR TWO DAYS
+ * WITH NOTHING ANYWHERE GOING RED.** They read 30 and 25. #2887 gave the face
+ * read a reference it cannot move — the rectangle the discovery's head crop is
+ * cut from (`discoveryHeadBoxOf`, the top half of the frame, geometry rather
+ * than a reading) — so a face read with no piece inside it is not the cast's
+ * face and **the head crop is asked alone**: one more segmenter read, about
+ * half a cent, on the refused frames only. On the founder's round-10 and
+ * round-11 casts that read was a face TATTOOED ON AN ARM.
+ *
+ * ⚠ **The reason nothing reddened is worth more than the number: the drive
+ * built its reader with NO HEAD BOX** —
+ * `createFalRegionReader({ apiKey, pairInOneRead })` — so the re-ask could not
+ * fire in a drive whose reader was never told where the head is. **The ceiling
+ * priced a reader the scan no longer builds**, which is the shape to look for
+ * the next time a figure here fails to move: a derivation is only as current as
+ * the object it drives. The drive now builds the box from `discoveryHeadBoxOf`
+ * itself rather than copying it, and a FOURTH answer policy lands the face off
+ * the head — so a change that removes this read reddens instead of quietly
+ * over-pricing every scan.
+ *
+ * ⚠ **`fewest` does not move on either road, and this time that is PROVEN
+ * rather than reasoned**: the floor is the every-question-answered-first-time
+ * path and a face on the head is believed as it came, so both floor arms now
+ * assert the face was asked ONCE. Without that control a fake whose "correct"
+ * face had drifted off the head would raise every figure by one and read as a
+ * re-derivation — and the answer this replaced was centred HALF A PIXEL inside
+ * the box. ⚠ **The measured band still does not move by arithmetic**: it is a
+ * bought reading, and it is now four reads behind the code on the crop road.
+ *
+ * ⚠ **AND ONE COST A SCAN REACHES IS PRICED NOWHERE HERE — #2903, filed rather
+ * than folded in.** A worn pair that comes back half-answered buys the
+ * other-ear look (#2800): one `moondream3-preview/detect` call on the whole
+ * frame, about 0.16¢. This constant has no term for it — it prices SAM 3 reads,
+ * one cutout and one describer — so every figure below is a SAM 3 figure and
+ * not the whole of what a scan costs. Found by the #2895 drive's own endpoint
+ * control, which now names that endpoint instead of being silent about it.
  */
 export const FACE_SCAN_FAL_CALLS = {
   sam3: {
     fewest: 18,
-    most: 30,
+    most: 31,
     /**
      * WHAT THE SAME DRIVE COUNTS WITH `ENABLE_CASTING_PAIR_ONE_READ` ON — a road that
      * is BUILT AND OFF, so these are not what production does (#2191).
@@ -188,16 +229,20 @@ export const FACE_SCAN_FAL_CALLS = {
      * A bilateral region costs two reads above, one per half-frame. On this
      * road one whole-frame read answers both sides and `splitAtMidline` cuts
      * them apart, so the five pairs cost five reads instead of ten:
-     * **13 instead of 18 at the floor, and 25 instead of 30 at the ceiling.**
+     * **13 instead of 18 at the floor, and 26 instead of 31 at the ceiling.**
+     * ⚠ Both ceilings took the refused face read's +1 on 2026-10-31 (#2895),
+     * so the GAP between the roads is untouched by it: that read is one
+     * request about the head crop on either road.
      * ⚠ The ceiling gap narrowed from 8 to 5 on 2026-10-30 (#2817) and NOT
      * because this road got dearer: the crop road's own ceiling came down to
      * meet it. See the `most` block above for which second looks each road now
      * buys — a ceiling that falls while an average rises is the shape a single
      * number hides.
      *
-     * Both are DERIVED by the same drive and the same three policies as the two
+     * Both are DERIVED by the same drive and the same answer policies as the two
      * figures above (`server/faceScanSpend.test.ts`, which is why they live in
-     * that suite and not beside the road's behaviour arms) — each policy given
+     * that suite and not beside the road's behaviour arms; this clause said
+     * *"three policies"* until #2895 made it four) — each policy given
      * a pair answer that takes the same number of LOOKS as its half-frame one,
      * so the two ceilings differ in reads per look and in nothing else.
      *
@@ -226,7 +271,7 @@ export const FACE_SCAN_FAL_CALLS = {
      */
     pairInOneRead: {
       fewest: 13,
-      most: 25,
+      most: 26,
       /**
        * AND THE ROAD WAS DRIVEN AT REAL fal THROUGH THE REAL `scanFace`, on the
        * same three casts #2532 arm 1 priced it on — a human, the elder alien,
