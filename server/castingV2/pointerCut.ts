@@ -589,6 +589,43 @@ export function pointerFeatures(
 }
 
 /**
+ * THE NAMES THAT TOOK THE CATALOGUE ROAD — the reading's own bare nouns the
+ * scan is already buying a question for (#2793).
+ *
+ * The fourth quarter of {@link foundRoadOf}, and the only one nothing reported.
+ * `pointerFeatures` answers *what is asked about*, `wordsOnlyFeatures` answers
+ * *what travels as prose*, and these are the names handed to the catalogue on
+ * the understanding that its own question will draw them.
+ *
+ * ⚠ **IT EXISTS BECAUSE THE LOSS DIRECTION IS UNREADABLE AFTER THE FACT, which
+ * is #2793's whole subject.** `coveredByCatalogue` is a spelling test, so a
+ * covered name never reaches the pointer road — and if that catalogue question
+ * comes back EMPTY on this frame, the thing has no road at all and no row.
+ * Measured over all 86 kept readings on production the day this landed: every
+ * one of them has at least one empty catalogue question (`glasses` 86 of 86,
+ * `facial hair` 82, `horns` 75, `earring` 44, `eyebrows` 27), so the
+ * opportunity is not rare. What could not be measured is the PAIRING — whether
+ * the reading had actually named the thing the question missed — because these
+ * nouns were kept nowhere: not in the kept scan row (`offListFeatures` drops
+ * them before anything is stored), not in the discovery read's log line (which
+ * carries a count, `named`), and not here.
+ *
+ * ⚠ **A count would not have answered it and the sibling fields in the summary
+ * log say so in their own words**: `unusableNames` and `cannotSeeNames` were
+ * added to the discovery's line for exactly this reason — *"those two lists are
+ * kept nowhere else … so without the nouns here that road is unreadable after
+ * the fact"*. This is the same sentence, one road over.
+ *
+ * Nouns only, as every list on that line is. The `about` prose never travels.
+ */
+export function catalogueRoadFeatures(
+  features: readonly DiscoveredFeature[],
+): readonly DiscoveredFeature[] {
+  const places = placeNames(features);
+  return features.filter((feature) => foundRoadOf(feature, places) === "catalogue");
+}
+
+/**
  * THE NAMES THAT TRAVEL AS WORDS BECAUSE NOTHING WILL BE CUT FOR THEM.
  *
  * The `scattered` and `makeup` halves — known before any call is made. The
@@ -2622,6 +2659,17 @@ export async function cutDiscovered(input: {
          the pixels that decided it rather than looking like a lost one. */
       samePlace: settled.samePlace,
       onGarment: settled.onGarment,
+      /*
+        THE FOURTH ROAD'S NOUNS (#2793) — what the reading named and handed to
+        the catalogue, which until now was the one road that reported nothing.
+
+        It is here and not a count for `unusableNames`' stated reason: paired
+        against the kept row's own `empty` list, it says whether a question that
+        came back empty had been named by the reading, which is the difference
+        between a thing that is not there and a thing with no road at all. A
+        count cannot tell those apart, and nothing else keeps these nouns.
+      */
+      catalogueNouns: catalogueRoadFeatures(input.features).map((feature) => feature.name),
     },
     "pointer road",
   );
