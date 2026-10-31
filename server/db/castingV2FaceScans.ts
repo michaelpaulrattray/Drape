@@ -596,8 +596,10 @@ export async function keepCarriedGeometry(input: {
  * cents of house money and nothing a customer sees; a condemned CARRIED box has
  * no road back, because it is measured at the RENDER and not on demand — so the
  * box would simply be gone until the next render. Whether a missing box beats a
- * possibly-stale one is a question about what the customer sees, and it is filed
- * as its own card rather than answered inside this one.
+ * possibly-stale one is a question about what the customer sees, and it is
+ * **#2894** rather than something answered inside a cleanup — which is the
+ * fidelity law's declared shortcut: the lesser path is named out loud and the
+ * real answer is on the board.
  */
 export async function readCarriedGeometry(input: {
   userId: number;
