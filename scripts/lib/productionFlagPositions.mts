@@ -386,7 +386,13 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
   CASTING_REFERENCE_SELECTOR_SCOPE: {
     position: "off",
     why:
-      "built dark 2026-10-30 (#14 slice 2, the reference reading), shipped at "
+      "set back to off 2026-10-31 on his word, after his eye on the live picker (#2902: "
+      + "the grid split lit floor, half pants and one shoe) and the relay's recommendation to "
+      + "drop the picker for the words-only take road; his answer, verbatim: \"1) yes\". "
+      + "Before that: set to users:1 on the service by the relay 2026-10-31, after #2899 (slice 3b, "
+      + "the spotlight surface) merged, on his standing word that his own account is "
+      + "never asked; read back by name, parent CASTING_REFERENCE_ATTACH_SCOPE=users:1. "
+      + "Built dark 2026-10-30 (#14 slice 2, the reference reading), shipped at "
       + "`off` and ABSENT from the service -- the design's section 9 says dark "
       + "at birth. ** WHAT IT BUYS CHANGED ON 2026-10-31 (slice 3a-2, the "
       + "spotlight's entrance) AND THE OLD SENTENCE IS CORRECTED RATHER THAN "
@@ -821,9 +827,9 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "casting-only check to admit. This row's POSITION does not move: all, on his reply #202",
   },
   CASTING_CONCEPT_RICH_LOOK_SCOPE: {
-    position: "off",
+    position: "users:1",
     why:
-      "built dark 2026-10-31 (#2911, his bench and his pick: the concept reader moves to "
+      "set to users:1 on the service by the relay 2026-10-31 after #2919 (his picked bench rules) merged, on his standing word that his own account is never asked; read back by name, parent CASTING_CONCEPT_UPLOAD_SCOPE=all. Before that: built dark 2026-10-31 (#2911, his bench and his pick: the concept reader moves to "
       + "Gemini 4 Argon and a rich look with the face and the hair left free), shipped at `off` "
       + "and ABSENT from the service. Off is today's reader byte for byte, proven at the HTTP "
       + "body by conceptReaderWire.test.ts against hashes taken on the tree before the flag "
