@@ -68,7 +68,14 @@ import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
 import { captureCastingFaceDiscoveryEnabled, captureCastingScanTableEnabled } from "./castingV2Scope";
-import { discoverFeatures, discoveryCropsOf, type FaceDiscovery, type FeatureKind } from "./faceDiscovery";
+import { pointerBoxerFor } from "./pointerBoxer";
+import {
+  discoverFeatures,
+  discoveryCropsOf,
+  discoveryHeadBoxOf,
+  type FaceDiscovery,
+  type FeatureKind,
+} from "./faceDiscovery";
 import { keepScan, serveKeptScan, type KeptScanShape } from "./keptFaceScan";
 import { coversAFaceCut } from "./maskCoverage";
 import { slotDefinition } from "./referenceSlotCatalogue";
@@ -485,9 +492,33 @@ export function pairInOneReadEnabled(): boolean {
   return process.env[PAIR_ONE_READ_ENV] === "true";
 }
 
-function defaultRegionReader(): RegionReader | null {
+/**
+ * The scan's reader, for THIS account and THIS frame: `userId` decides only who
+ * draws the box round a found name (`CASTING_POINTER_ENGINE_SCOPE`, #2863), and
+ * the frame's size decides where its head is (#2885).
+ *
+ * ⚠ **THE HEAD BOX IS HANDED IN FOR EVERY SCAN, NOT ONLY WHERE THE DISCOVERY
+ * RUNS.** It is the rectangle the discovery's head crop is cut from
+ * (`discoveryHeadBoxOf`), and that rectangle is geometry — the top half of the
+ * frame, decided by its size — so it exists whether or not the discovery's
+ * paid text read is bought for this account. A face read that lands on a
+ * tattooed arm is wrong for every customer, and the box costs nothing to know.
+ * A frame too small to cut a head crop gets no box, and so today's reader.
+ */
+function defaultRegionReader(
+  userId: number,
+  frame: { width: number; height: number },
+): RegionReader | null {
   const apiKey = process.env.FAL_KEY;
-  return apiKey ? createFalRegionReader({ apiKey, pairInOneRead: pairInOneReadEnabled() }) : null;
+  if (!apiKey) return null;
+  const boxer = pointerBoxerFor(userId);
+  const head = discoveryHeadBoxOf(frame);
+  return createFalRegionReader({
+    apiKey,
+    pairInOneRead: pairInOneReadEnabled(),
+    ...(boxer === undefined ? {} : { boxer }),
+    ...(head === null ? {} : { headBox: { frame: { width: frame.width, height: frame.height }, box: head } }),
+  });
 }
 
 /**
@@ -806,8 +837,19 @@ export async function scannedFace(input: {
     const { value, census } = await withCallCensus(async () => {
     const readBytes = input.dependencies?.readBytes ?? storageReadBytes;
     const publicUrl = input.dependencies?.publicUrl ?? storagePublicUrl;
+    if (input.dependencies?.reader === null) {
+      /* No transport, no reading — see below. Refused before the frame is
+         read, as it always was, when the caller said so outright. */
+      throw new Error("the region reader is not configured (FAL_KEY)");
+    }
+
+    const frame = await readBytes(input.imageKey);
+    const metadata = await sharp(frame.bytes).metadata();
+    if (!metadata.width || !metadata.height) throw new Error("the frame has no readable size");
+    /* Built AFTER the frame is measured, because the reader is handed where
+       this frame's head is (#2885, `defaultRegionReader`). */
     const reader = input.dependencies?.reader === undefined
-      ? defaultRegionReader()
+      ? defaultRegionReader(input.userId, { width: metadata.width, height: metadata.height })
       : input.dependencies.reader;
     if (reader === null) {
       /* No transport, no reading. It refuses rather than returning an empty
@@ -815,10 +857,6 @@ export async function scannedFace(input: {
          payload and the panel would show the second while meaning the first. */
       throw new Error("the region reader is not configured (FAL_KEY)");
     }
-
-    const frame = await readBytes(input.imageKey);
-    const metadata = await sharp(frame.bytes).metadata();
-    if (!metadata.width || !metadata.height) throw new Error("the frame has no readable size");
     const url = publicUrl(input.imageKey);
     /*
       THE DISCOVERY, BESIDE THE QUESTIONS AND NEVER IN FRONT OF THEM (#2566).

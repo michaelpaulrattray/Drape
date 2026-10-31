@@ -1726,15 +1726,31 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       ],
     });
     const row = sectionOf(panel, "outfit")!.rows[0]!;
-    expect(row.instances.map((one) => one.name)).toEqual(["Coat", "Strap", "Buckle", "Rope"]);
+    /*
+      ⚠ UPDATED WITH HIS WORD RATHER THAN DELETED (#2862, 2026-10-31). This read
+      ~~`toEqual(["Coat", "Strap", "Buckle", "Rope"])`~~ on the instances: every
+      worn thing on the coat was a piece row. His answer on drawstrings —
+      *"on your question about drawstrings yes"*, garments only — makes the
+      coat the one piece, and the walk this arm is about is now proven where
+      the outfit still carries them: the row's own `slots`.
+    */
+    expect(row.instances.map((one) => one.name)).toEqual(["Coat"]);
+    expect(row.slots).toEqual([
+      "discovered:outfit", "discovered:coat#1", "discovered:strap#1", "discovered:buckle#1", "discovered:rope#1",
+    ]);
     expect(sectionOf(panel, "open")).toBeNull();
+    expect(sectionOf(panel, "accessories")).toBeNull();
   });
 
   it("draws the WHOLE outfit first, then every piece inside it", () => {
+    /* The harness is CLOTHING here, a garment he names as one (#2862: *"a
+       hoodie, top, harness, jacket"*). It read `kind: "accessory"` until his
+       word on trims, and a worn thing on a garment is no longer a piece row —
+       so the arm's subject, the whole-then-pieces order, needs two garments. */
     const panel = panelOf({
       found: [
         { noun: "jacket", kind: "clothing" },
-        { noun: "harness", kind: "accessory", on: "jacket" },
+        { noun: "harness", kind: "clothing", on: "jacket" },
       ],
     });
     const row = sectionOf(panel, "outfit")!.rows[0]!;
@@ -1782,10 +1798,12 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
   });
 
   it("CONTROL — the whole rectangle encloses every piece it was built from", () => {
+    /* Three GARMENTS (#2862): a piece row is a garment's now, so a worn thing
+       here would no longer be one of the three pieces this arm counts. */
     const panel = panelOf({
       found: [
         { noun: "jacket", kind: "clothing" },
-        { noun: "harness", kind: "accessory", on: "jacket" },
+        { noun: "harness", kind: "clothing", on: "jacket" },
         { noun: "belt", kind: "clothing" },
       ],
     });
@@ -2241,9 +2259,12 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       said: [{ noun: "strap", on: "robe", about: "frayed webbing", kind: "accessory", why: "uncut" }],
     });
     const row = sectionOf(panel, "outfit")!.rows[0]!;
-    /* A piece of the one Outfit row, with its own picture — never a child of
-       the strap nobody could draw. */
-    expect(row.instances.map((one) => one.name)).toEqual(["Robe", "Charm"]);
+    /* Part of the one Outfit row — never a child of the strap nobody could
+       draw. ⚠ It read ~~`["Robe", "Charm"]`~~, a piece with its own picture,
+       until his word on trims (#2862): it is IN the outfit, by its slot, and
+       draws no row of its own. */
+    expect(row.instances.map((one) => one.name)).toEqual(["Robe"]);
+    expect(row.slots).toContain("discovered:charm#1");
     expect(sectionOf(panel, "accessories")).toBeNull();
   });
 
@@ -2412,9 +2433,13 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
        it; two worn things that are not on the robe, as accessories (his ruling,
        #2789); and two things that are this character's own body. */
     const outfit = sectionOf(panel, "outfit")!.rows[0]!;
-    expect(outfit.instances.map((one) => one.name)).toEqual([
-      "Scarf", "Pendant", "Strap", "Charm", "Robe",
-    ]);
+    /* ⚠ It read ~~`["Scarf", "Pendant", "Strap", "Charm", "Robe"]`~~ until his
+       word on trims (#2862): the two garments are the pieces, and the three
+       worn things hanging off the robe are still IN the outfit, by its slots. */
+    expect(outfit.instances.map((one) => one.name)).toEqual(["Scarf", "Robe"]);
+    for (const lodger of ["discovered:pendant#1", "discovered:strap#1", "discovered:charm#1"]) {
+      expect(outfit.slots, lodger).toContain(lodger);
+    }
     expect(rowNames(panel, "accessories")).toEqual(["Neck hardware", "Shoulder armor"]);
     /* Body parts list under Face since #2801 — and since #2840 that holds
        because they are ON the face, not because every body part lands there.
@@ -2707,7 +2732,12 @@ describe("body hardware never reaches the Outfit through what it sits on", () =>
       { noun: "collar", kind: "clothing", on: "" },
       { noun: "pin", kind: "accessory", on: "collar" },
     ]);
-    expect(section(built, "outfit")!.rows[0]!.instances.map((one) => one.name)).toEqual(["Collar", "Pin"]);
+    /* ⚠ It read ~~`["Collar", "Pin"]`~~ until #2862: the pin is in the outfit
+       by its slot and draws no piece row (his word on trims). */
+    const outfit = section(built, "outfit")!.rows[0]!;
+    expect(outfit.instances.map((one) => one.name)).toEqual(["Collar"]);
+    expect(outfit.slots).toContain("discovered:pin#1");
+    expect(section(built, "accessories")).toBeNull();
   });
 
   it("⚠ jaw hardware sitting on the collar keeps its own row", () => {
@@ -2725,7 +2755,13 @@ describe("body hardware never reaches the Outfit through what it sits on", () =>
       { noun: "strap", kind: "accessory", on: "jacket" },
       { noun: "neck implant", kind: "anatomy", on: "strap" },
     ]);
-    expect(section(built, "outfit")!.rows[0]!.instances.map((one) => one.name)).toEqual(["Jacket", "Strap"]);
+    /* ⚠ It read ~~`["Jacket", "Strap"]`~~ until #2862 (garments only). The
+       arm's subject is now read where the outfit carries its members: the strap
+       is in the row's slots and the implant is not. */
+    const outfit = section(built, "outfit")!.rows[0]!;
+    expect(outfit.instances.map((one) => one.name)).toEqual(["Jacket"]);
+    expect(outfit.slots).toContain("discovered:strap#1");
+    expect(outfit.slots).not.toContain("discovered:neck-implant#1");
     expect(section(built, "face")!.rows.map((row) => row.name)).toEqual(["Neck implant"]);
   });
 
@@ -2810,8 +2846,12 @@ describe("his first creature — tusks, a strap's hardware, and where a body par
       ],
       said: [{ noun: "harness", on: "chest", about: "a leather strap", kind: "clothing", why: "uncut" }],
     });
-    expect(built.groups.find((one) => one.group === "outfit")!.rows[0]!.instances.map((one) => one.name))
-      .toEqual(["Scarf", "Buckle", "Ring"]);
+    /* ⚠ It read ~~`["Scarf", "Buckle", "Ring"]`~~ until his word on trims
+       (#2862): the buckle and the ring are in the outfit by its slots, and the
+       scarf is the one piece row. */
+    const outfit = built.groups.find((one) => one.group === "outfit")!.rows[0]!;
+    expect(outfit.instances.map((one) => one.name)).toEqual(["Scarf"]);
+    expect(outfit.slots).toEqual(["discovered:outfit", "discovered:scarf#1", "discovered:buckle#1", "discovered:ring#1"]);
     expect(names(built, "accessories")).toEqual([]);
   });
 
@@ -2831,5 +2871,254 @@ describe("his first creature — tusks, a strap's hardware, and where a body par
     });
     expect(names(built, "face")).toEqual(["Neck implant"]);
     expect(built.groups.find((one) => one.group === "outfit")).toBeUndefined();
+  });
+});
+
+/**
+ * ONE THING, ONE ROW — his ruling on #2862, and the two facts his eye added on
+ * round 11, the first round on the new box engine (2026-10-31).
+ *
+ * Hair, verbatim: *"why is the hair compartmantizilied? even if i make an edit
+ * to her right bun by selecting it (i tested this) it edits her whole hair
+ * anyway. Should hair just be one whole box?"* The chain: *"it thought the
+ * chain which is apart of her outfit was a necklace"*. Trims, answering the
+ * relay's recommendation of garments only: *"on your question about
+ * drawstrings yes"*.
+ *
+ * ⚠ Every rule here has a CONTROL beside it that says what must NOT move,
+ * because the hair rule reads in a diff exactly like a breach of the
+ * two-instance rule (#2565 §6), and a rule that folds too much is the same
+ * failure as one that folds too little, pointed the other way.
+ */
+describe("one thing, one row — hair holds no parts, and only a garment is a piece of the outfit (#2862)", () => {
+  const frame = { width: 1000, height: 1500 };
+  type Found = { noun: string; kind: FeatureKind; on?: string; instance?: number; x?: number; y?: number };
+  const panelOf = (input: {
+    found?: readonly Found[];
+    catalogued?: readonly string[];
+    said?: readonly NamedNotCut[];
+    absent?: readonly string[];
+  }) => facePanel({
+    rows: [],
+    pronouns: SHE,
+    contentUrl: (key) => `https://bucket.example/${key}`,
+    maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+    discovering: true,
+    scan: {
+      frameUrl: "https://bucket.example/casting/master.jpg",
+      slots: new Map((input.catalogued ?? []).map((slot, at) => [slot as FeatureSlot, {
+        box: { x: 10 + at * 10, y: 20 + at * 10, width: 50, height: 40, frame },
+        maskUrl: `data:image/png;base64,${slot}`,
+      }])),
+      ...(input.absent === undefined ? {} : { absent: new Set(input.absent as FeatureSlot[]) }),
+      discovered: (input.found ?? []).map((one, at) => ({
+        slot: `discovered:${one.noun.replace(/[^a-z0-9]+/g, "-")}#${one.instance ?? 1}` as FeatureSlot,
+        noun: one.noun,
+        instance: one.instance ?? 1,
+        kind: one.kind,
+        on: one.on ?? "",
+        box: { x: one.x ?? 100 + at * 100, y: one.y ?? 200 + at * 50, width: 80, height: 60, frame },
+        maskUrl: `data:image/png;base64,${one.noun}`,
+      })),
+      namedNotCut: input.said ?? [],
+    },
+  });
+  const sectionOf = (panel: FacePanel, group: string) =>
+    panel.groups.find((one) => one.group === group) ?? null;
+  const rowNames = (panel: FacePanel, group: string) =>
+    (sectionOf(panel, group)?.rows ?? []).map((row) => row.name);
+  const everyName = (panel: FacePanel) => panel.groups.flatMap((group) => group.rows.flatMap((row) => [
+    row.name,
+    ...row.instances.map((one) => one.name),
+    ...row.regions.map((one) => one.name).filter((name): name is string => name !== null),
+  ]));
+  /* His round-10 reading of her hair, as the pointer road kept it
+     (`relay-r10eye/reading-a1.json`): two buns, both `anatomy` `on: hair`. */
+  const HER_BUNS: readonly Found[] = [
+    { noun: "buns", kind: "anatomy", on: "hair", instance: 1, x: 605, y: 35 },
+    { noun: "buns", kind: "anatomy", on: "hair", instance: 2, x: 203, y: 29 },
+  ];
+
+  /* ---- rule 1: hair is ONE row and ONE outline ---- */
+
+  it("hair is ONE row and ONE outline — her buns and her fringe draw no child and no rectangle", () => {
+    const panel = panelOf({
+      catalogued: ["hair"],
+      found: [...HER_BUNS, { noun: "fringe", kind: "anatomy", on: "hair", x: 380, y: 160 }],
+    });
+    expect(panel.groups.map((one) => one.group)).toEqual(["hair"]);
+    const hair = sectionOf(panel, "hair")!.rows[0]!;
+    expect(hair.name).toBe("Hair");
+    expect(hair.instances).toEqual([]);
+    /* The one outline is the scan's own cut of the hair — the catalogue slot's
+       rectangle, unnamed, and nothing beside it. */
+    expect(hair.regions.map((one) => [one.slot, one.name])).toEqual([["hair", null]]);
+    /* Tapping it is still an ask about the hair and nothing narrower. */
+    expect(hair.slots).toEqual(["hair"]);
+    expect(everyName(panel).filter((name) => /bun|fringe/i.test(name))).toEqual([]);
+  });
+
+  it("the noun wandering between his scans changes nothing on the panel — fringe on one, bangs on the next", () => {
+    const fringe = panelOf({ catalogued: ["hair"], found: [{ noun: "fringe", kind: "anatomy", on: "hair" }] });
+    const bangs = panelOf({ catalogued: ["hair"], found: [{ noun: "bangs", kind: "anatomy", on: "hair" }] });
+    expect(bangs.groups).toEqual(fringe.groups);
+    /* Not vacuous: the reading DID find a part on each scan, and the row is there. */
+    expect(rowNames(fringe, "hair")).toEqual(["Hair"]);
+  });
+
+  it("when the scan cut no hair but the reading cut its parts, the ONE row gets ONE outline — never deleted, never bald", () => {
+    const panel = panelOf({ found: HER_BUNS, absent: ["hair"] });
+    const hair = sectionOf(panel, "hair")!.rows[0]!;
+    expect(hair.instances).toEqual([]);
+    /* The union of the two buns' boxes: x 203..685, y 29..95. */
+    expect(hair.regions.map((one) => one.box)).toEqual([{ x: 203, y: 29, width: 482, height: 66, frame }]);
+    expect(hair.regions[0]!.slot).toBe("hair");
+    /* A window on the frame, no stencil — the Outfit row's own shape. */
+    expect(hair.cutouts).toEqual([{
+      contentUrl: "https://bucket.example/casting/master.jpg",
+      maskUrl: null,
+      crop: { x: 203, y: 29, width: 482, height: 66, frame },
+    }]);
+    /* The scan said it found no hair; a row outlining two buns may not say
+       *bald* over them. */
+    expect(hair.absent).toBeNull();
+  });
+
+  it("CONTROL — with no hair cut and no parts, a bald read still says bald", () => {
+    /* The arm above is only evidence if `absent` would otherwise have been set
+       on this very fixture. */
+    const panel = panelOf({ absent: ["hair"] });
+    expect(sectionOf(panel, "hair")!.rows[0]!.absent).toBe("bald");
+  });
+
+  it("facial hair holds no parts either — the one sibling the sweep took in", () => {
+    const panel = panelOf({
+      catalogued: ["facial-hair"],
+      found: [{ noun: "goatee", kind: "anatomy", on: "facial hair" }],
+    });
+    const beard = sectionOf(panel, "hair")!.rows.find((row) => row.name === "Facial hair")!;
+    expect(beard.instances).toEqual([]);
+    expect(beard.regions.map((one) => one.slot)).toEqual(["facial-hair"]);
+  });
+
+  it("CONTROL — the horns share the Hair heading and still take a found child: a pair is the two-instance rule's own population", () => {
+    const panel = panelOf({
+      catalogued: ["horns@left", "horns@right"],
+      found: [{ noun: "ridges", kind: "anatomy", on: "horns" }],
+    });
+    const horns = sectionOf(panel, "hair")!.rows.find((row) => row.name === "Horns")!;
+    expect(horns.instances.map((one) => one.name)).toEqual(["Left horn", "Right horn", "Ridges"]);
+    expect(horns.regions.map((one) => one.name)).toContain("Ridges");
+  });
+
+  it("CONTROL — the two-instance rule is untouched beside her buns: two earrings, two piercings, two dimples still list as two", () => {
+    const panel = panelOf({
+      catalogued: ["hair", "lips", "earring@left", "earring@right", "ear@left", "ear@right"],
+      found: [
+        ...HER_BUNS,
+        { noun: "dimple", kind: "anatomy", on: "lips", instance: 1, x: 400, y: 700 },
+        { noun: "dimple", kind: "anatomy", on: "lips", instance: 2, x: 500, y: 700 },
+        { noun: "piercing", kind: "accessory", on: "lips", instance: 1, x: 420, y: 720 },
+        { noun: "piercing", kind: "accessory", on: "lips", instance: 2, x: 520, y: 720 },
+        { noun: "hoop earring", kind: "accessory", on: "ear", instance: 1, x: 250, y: 500 },
+        { noun: "hoop earring", kind: "accessory", on: "ear", instance: 2, x: 700, y: 500 },
+      ],
+    });
+    /* The hair rule held on this very panel — so the arms below are not passing
+       because nothing folded at all. */
+    expect(sectionOf(panel, "hair")!.rows[0]!.instances).toEqual([]);
+    /* Two dimples on Lips: two children, two cuts, never a union. */
+    const lips = sectionOf(panel, "face")!.rows.find((row) => row.name === "Lips")!;
+    expect(lips.instances.map((one) => one.slot)).toEqual(["discovered:dimple#1", "discovered:dimple#2"]);
+    /* The catalogue's pair: one row, its two sides as two children and two
+       rectangles. */
+    const earrings = sectionOf(panel, "accessories")!.rows.find((row) => row.name === "Earrings")!;
+    expect(earrings.instances.map((one) => one.name)).toEqual(["Left earring", "Right earring"]);
+    expect(earrings.regions).toHaveLength(2);
+    /* And two of one found worn noun are two rows each, never one. */
+    expect(rowNames(panel, "accessories")).toEqual(["Earrings", "Piercing", "Piercing", "Hoop earring", "Hoop earring"]);
+  });
+
+  /* ---- rules 2 and 3: a thing on a garment is in the Outfit; only garments are pieces ---- */
+
+  it("his round-11 chain on her harness is inside the Outfit, and has no row anywhere", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "harness", kind: "clothing", on: "" },
+        { noun: "chain", kind: "accessory", on: "harness" },
+      ],
+    });
+    expect(panel.groups.map((one) => one.group)).toEqual(["outfit"]);
+    const outfit = sectionOf(panel, "outfit")!.rows[0]!;
+    expect(outfit.instances.map((one) => one.name)).toEqual(["Harness"]);
+    expect(outfit.regions.map((one) => one.name)).toEqual([null, "Harness"]);
+    /* IN the outfit: tapping Outfit is an ask about all of it, chain and all. */
+    expect(outfit.slots).toEqual(["discovered:outfit", "discovered:harness#1", "discovered:chain#1"]);
+    expect(everyName(panel)).not.toContain("Chain");
+  });
+
+  it("trims get no row — drawstrings, a zip, a buckle and studs ride inside the Outfit; the garments are the pieces", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "hoodie", kind: "clothing" },
+        { noun: "drawstrings", kind: "accessory", on: "hoodie" },
+        { noun: "zip", kind: "accessory", on: "hoodie" },
+        { noun: "belt", kind: "clothing" },
+        { noun: "buckle", kind: "accessory", on: "belt" },
+        { noun: "studs", kind: "accessory", on: "belt" },
+      ],
+    });
+    const outfit = sectionOf(panel, "outfit")!.rows[0]!;
+    expect(outfit.instances.map((one) => one.name)).toEqual(["Hoodie", "Belt"]);
+    expect(outfit.regions.filter((one) => !one.whole).map((one) => one.name)).toEqual(["Hoodie", "Belt"]);
+    expect(outfit.slots).toHaveLength(7);
+    expect(sectionOf(panel, "accessories")).toBeNull();
+  });
+
+  it("the outline and the thumbnail are the garments' — a chain hanging past the harness does not stretch them", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "harness", kind: "clothing", x: 100, y: 200 },
+        { noun: "chain", kind: "accessory", on: "harness", x: 600, y: 900 },
+      ],
+    });
+    const outfit = sectionOf(panel, "outfit")!.rows[0]!;
+    const harness = { x: 100, y: 200, width: 80, height: 60, frame };
+    expect(outfit.regions.find((one) => one.whole)!.box).toEqual(harness);
+    expect(outfit.cutouts[0]!.crop).toEqual(harness);
+  });
+
+  it("no garment cut, no Outfit row — a buckle on a harness nothing could cut is never outlined as the outfit", () => {
+    const panel = panelOf({
+      found: [{ noun: "buckle", kind: "accessory", on: "harness" }],
+      said: [{ noun: "harness", on: "", about: "black leather straps", kind: "clothing", why: "uncut" }],
+    });
+    expect(sectionOf(panel, "outfit")).toBeNull();
+    /* And it is not thrown into Accessories instead: it is the outfit's, and it
+       is changed by words. */
+    expect(sectionOf(panel, "accessories")).toBeNull();
+    expect(panel.groups).toEqual([]);
+  });
+
+  it("CONTROL — the line is the reading's kind, never the noun: a drawstring the reading calls clothing is still a piece (declared)", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "hoodie", kind: "clothing" },
+        { noun: "drawstrings", kind: "clothing", on: "hoodie" },
+      ],
+    });
+    expect(sectionOf(panel, "outfit")!.rows[0]!.instances.map((one) => one.name)).toEqual(["Hoodie", "Drawstrings"]);
+  });
+
+  it("CONTROL — a worn thing on a worn thing is untouched: a chain on her choker is still its child in Accessories", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "choker", kind: "accessory", on: "neck" },
+        { noun: "chain", kind: "accessory", on: "choker" },
+      ],
+    });
+    const choker = sectionOf(panel, "accessories")!.rows.find((row) => row.name === "Choker")!;
+    expect(choker.instances.map((one) => one.name)).toEqual(["Chain"]);
+    expect(sectionOf(panel, "outfit")).toBeNull();
   });
 });

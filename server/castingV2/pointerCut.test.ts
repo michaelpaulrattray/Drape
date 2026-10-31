@@ -39,9 +39,11 @@ import {
   wordsOnlyFeatures,
   besideItsHost,
   besideItsFoundHost,
+  hostsOfMerged,
   type CatalogueCut,
   type DiscoveredRegion,
 } from "./pointerCut";
+import { facePanel } from "./facePanel";
 import { catalogueSlots } from "./referenceSlotCatalogue";
 import { scanPlan } from "./faceScan";
 import type { DiscoveredFeature } from "./faceDiscovery";
@@ -1045,6 +1047,99 @@ describe("the place rules — one row per place on the picture, never per spelli
     expect(out.onGarment).toEqual([]);
   });
 
+  /* ---- a host that joined another's place takes its lodgers with it (#2862) ---- */
+
+  /*
+    His round 11: *"it thought the chain which is apart of her outfit was a
+    necklace"*. The shape driven here is the card's own example of two names
+    for one garment — `harness` and `top` on a halter top with built-in straps
+    — with a chain the reading said sits on `harness`. The chain lies on
+    neither garment's pixels (a thin strand below the hem), so the garment rule
+    cannot rescue it: only the merge can say where it sits.
+
+    ⚠ This is NOT confirmed to be the road round 11 took — that reading is on
+    production and was not read for this card. It is a road by which a thing
+    on a garment loses its garment, and it is closed on this shape.
+  */
+  const halterTop = [{ x: 100, y: 100, width: 200, height: 160 }];
+  const halterStraps = [{ x: 100, y: 100, width: 200, height: 150 }];
+  const strand = [{ x: 180, y: 300, width: 6, height: 60 }];
+
+  it("a chain on a harness that joined the top's place now sits on the top", () => {
+    const out = settleByPlace([
+      region("harness", "clothing", halterStraps),
+      region("top", "clothing", halterTop),
+      region("chain", "accessory", strand, { on: "harness" }),
+    ]);
+    expect(out.samePlace).toEqual([{ noun: "harness", into: "top" }]);
+    expect(out.regions.map((one) => [one.noun, one.on])).toEqual([["top", ""], ["chain", "top"]]);
+    expect(out.onMerged).toEqual([{ noun: "chain", from: "harness", onto: "top" }]);
+    /* And the picture did not do it: the chain is on no garment's pixels. */
+    expect(out.onGarment).toEqual([]);
+  });
+
+  it("and through the panel, that chain is inside the Outfit rather than a row of its own", () => {
+    const out = settleByPlace([
+      region("harness", "clothing", halterStraps),
+      region("top", "clothing", halterTop),
+      region("chain", "accessory", strand, { on: "harness" }),
+    ]);
+    const panel = facePanel({
+      rows: [],
+      pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
+      contentUrl: (key) => key,
+      maskUrl: (key) => key,
+      discovering: true,
+      scan: {
+        frameUrl: "https://bucket.example/frame.png",
+        slots: new Map(),
+        discovered: out.regions.map((one) => ({
+          slot: one.slot, noun: one.noun, instance: one.instance, kind: one.kind, on: one.on,
+          box: one.box, maskUrl: `data:image/png;base64,${one.noun}`,
+        })),
+      },
+    });
+    expect(panel.groups.map((one) => one.group)).toEqual(["outfit"]);
+    const outfit = panel.groups[0]!.rows[0]!;
+    expect(outfit.instances.map((one) => one.name)).toEqual(["Top"]);
+    expect(outfit.slots).toContain(discoveredSlotOf("chain", 1));
+  });
+
+  it("STILL AS WRITTEN — an `on` naming a noun another instance of which still stands is left alone", () => {
+    /* `strap#1` joined the harness; `strap#2` is a strap of its own across the
+       chest, so `on: strap` may mean that one, and guessing is the defect. */
+    const out = settleByPlace([
+      region("harness", "clothing", halterTop),
+      region("strap", "clothing", halterStraps, { instance: 1 }),
+      region("strap", "clothing", [{ x: 400, y: 100, width: 30, height: 200 }], { instance: 2 }),
+      region("buckle", "accessory", [{ x: 500, y: 400, width: 10, height: 10 }], { on: "strap" }),
+    ]);
+    expect(out.samePlace).toEqual([{ noun: "strap", into: "harness" }]);
+    expect(out.regions.find((one) => one.noun === "buckle")?.on).toBe("strap");
+    expect(out.onMerged).toEqual([]);
+  });
+
+  it("NEVER ONTO ITSELF — a thing whose host joined it keeps the host the reading gave", () => {
+    /* `top on=harness`, and the harness joined the top: that says nothing about
+       where the top sits, so it is not re-pointed onto its own noun. */
+    const out = settleByPlace([
+      region("harness", "clothing", halterStraps),
+      region("top", "clothing", halterTop, { on: "harness" }),
+    ]);
+    expect(out.regions.map((one) => [one.noun, one.on])).toEqual([["top", "harness"]]);
+    expect(out.onMerged).toEqual([]);
+  });
+
+  it("hostsOfMerged leaves a hostless thing hostless and an unmerged host as written", () => {
+    const repoint = hostsOfMerged([{ noun: "harness", into: "top" }], ["top", "chain"]);
+    expect(repoint("", "chain")).toBe("");
+    expect(repoint("neck", "chain")).toBe("neck");
+    /* Compared in the comparison spelling, so the reading's own capital or a
+       hyphen reaches it. */
+    expect(repoint("Harness", "chain")).toBe("top");
+    expect(repoint("harness", "chain")).toBe("top");
+  });
+
   /* ---- his round-1 ⚠: anatomy is never folded into anything ---- */
 
   it("⚠ body hardware is NEVER joined to a garment, however many pixels they share", () => {
@@ -1147,6 +1242,29 @@ describe("the place rules — one row per place on the picture, never per spelli
       reader,
     });
     expect(out.regions.map((one) => [one.noun, one.kind])).toEqual([["jacket", "clothing"]]);
+  });
+
+  it("through cutDiscovered: the words of rivets on a harness that joined the top travel on to the top (#2862)", async () => {
+    /* The words with no picture name hosts too, and they are re-pointed by the
+       same answer as the rows — or a scattered trim's words would lose the
+       Outfit row its garment is drawn as. */
+    const reader = readerWith({
+      detects: {
+        top: [{ x: 100, y: 100, width: 200, height: 160 }],
+        harness: [{ x: 100, y: 100, width: 200, height: 150 }],
+      },
+    });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [
+        feature("top", 1, { kind: "clothing" }),
+        feature("harness", 1, { kind: "clothing" }),
+        feature("rivets", 1, { kind: "accessory", on: "harness", coverage: "scattered", about: "small studs" }),
+      ],
+      reader,
+    });
+    expect(out.regions.map((one) => one.noun)).toEqual(["top"]);
+    expect(out.named.map((one) => [one.noun, one.on, one.why])).toEqual([["rivets", "top", "scattered"]]);
   });
 });
 

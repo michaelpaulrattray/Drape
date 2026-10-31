@@ -1361,6 +1361,111 @@ export function validateCastingReferenceSelectorEnvironment(input: {
   return child;
 }
 
+/* ------------------------ the pointer-engine sub-flag (#2863) ---------------- */
+
+/**
+ * WHICH ENGINE DRAWS THE BOX ROUND A NAMED THING — `CASTING_POINTER_ENGINE_SCOPE`
+ * (#2863, his ruling of 2026-10-30 on #2846 part 5's blind marks: *"yes"*).
+ *
+ * The pointer road asks a detector for a rectangle round a bare noun, and every
+ * road that asks it goes through `RegionReader.pointer`: the face panel's found
+ * rows (`pointerCut.ts`), the other-ear look (`sideByDetector`), the take
+ * (`referenceTake.ts`) and the reference picker's scan (`referenceDiscovery.ts`,
+ * widened onto this flag by his word on the card: *"i assume that means whatever
+ * the reference picker uses will switch also"*). On, the box comes from Gemini 4
+ * Argon in ONE request per picture carrying every name, with Qwen3-VL behind it
+ * and today's detector behind both (`pointerBoxer.ts`).
+ *
+ * # Why a switch, given he said yes
+ *
+ * It spends on a different account (OpenRouter rather than fal), at a measured
+ * 0.51¢ a scan against today's 0.16¢, and it changes what the panel outlines.
+ * His yes was to the engine on his eye's evidence; the switch is so his eye on
+ * his own next panel round closes it before anybody else is moved.
+ *
+ * # Its parent is the CHAIN ROOT, because its consumers have two different ones
+ *
+ * The face scan hangs from `CASTING_FACE_SCAN_SCOPE` and the reference roads
+ * from `CASTING_REFERENCE_ATTACH_SCOPE`; a box asked by neither is never asked,
+ * so this flag reaching past either is inert rather than dangerous — it chooses
+ * an engine for a call some other gate already decided to make. What it may
+ * never reach past is `CASTING_V2_SCOPE` itself.
+ *
+ * ⚠ **It does not refuse to boot without `OPENROUTER_API_KEY`**, on
+ * `CASTING_FACE_DISCOVERY_SCOPE`'s own argument: a boxer with no transport is
+ * the fallback case the road is built around — today's detector answers, and
+ * nobody sees anything at all.
+ *
+ * # WHAT IS TRUE WHILE IT IS OFF, WHICH IS EVERYWHERE TODAY
+ *
+ * Byte-identical to the tree before it: no boxer is built, `pointer` sends
+ * today's detector request name by name, and nothing reaches OpenRouter.
+ */
+export const CASTING_POINTER_ENGINE_SCOPE_ENV = "CASTING_POINTER_ENGINE_SCOPE";
+
+export class CastingPointerEngineScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_POINTER_ENGINE_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingPointerEngineScopeConfigurationError";
+  }
+}
+
+export class CastingPointerEngineCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_POINTER_ENGINE_SCOPE_ENV} ${detail}`);
+    this.name = "CastingPointerEngineCoverageError";
+  }
+}
+
+export function parseCastingPointerEngineScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingPointerEngineScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's boxes are drawn by the boxer rather than today's detector.
+ *
+ * An AND of the chain at the point of use, like every sibling: the boot check
+ * refuses a scope reaching past its parent, and a boot check nobody invoked is
+ * the second way a flag pair goes wrong.
+ */
+export function captureCastingPointerEngineEnabled(userId: number): boolean {
+  const child = parseCastingPointerEngineScope(process.env[CASTING_POINTER_ENGINE_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingV2Enabled(userId);
+}
+
+export function validateCastingPointerEngineEnvironment(input: {
+  scope: string | undefined;
+  castingScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingPointerEngineScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingV2Scope(input.castingScope);
+  if (parent.kind === "off") {
+    throw new CastingPointerEngineCoverageError(
+      `cannot be enabled while ${CASTING_V2_SCOPE_ENV} is off — nothing below an off parent is reachable`,
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingPointerEngineCoverageError(
+      `cannot be "all" while ${CASTING_V2_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingPointerEngineCoverageError(
+      `names users outside ${CASTING_V2_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}
+
 /* --------------------- the dispatch sub-flag, RETIRED (#1577 slice D4)
 
    `CASTING_REFINE_DISPATCH_SCOPE` stood here with its env constant, its two

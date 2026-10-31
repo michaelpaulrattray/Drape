@@ -34,7 +34,10 @@ const log = createModuleLogger("providers/openrouterText");
  *      permanently deferred.
  */
 
-const BASE_URL = "https://openrouter.ai/api/v1";
+/** Exported for the face panel's boxer (#2863), which shares this transport's
+ *  address, key and failure classifier rather than declaring its own. */
+export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+const BASE_URL = OPENROUTER_BASE_URL;
 
 /**
  * The interpreter model, pinned. M3 ran this slug for path A's interpreter and

@@ -94,7 +94,7 @@
  */
 import { biggestOf, spreadOf } from "./referenceBoxes";
 import { boundForJudge } from "./judgeFrame";
-import { isBareNoun, mergeDiscoveries, parseDiscovery } from "./faceDiscovery";
+import { DISCOVERY_NAME_MAX_WORDS, isBareNoun, mergeDiscoveries, parseDiscovery } from "./faceDiscovery";
 import { createModuleLogger } from "../logging/logger";
 import type { BoxSpread } from "./referenceBoxes";
 import type { DiscoveredFeature, FeatureCoverage, FeatureKind, UnseenFeature } from "./faceDiscovery";
@@ -557,7 +557,7 @@ export async function markReferenceThings(input: {
 
   const askable: DiscoveredFeature[] = [];
   for (const feature of input.features) {
-    if (!isBareNoun(feature.name)) {
+    if (!isBareNoun(feature.name, DISCOVERY_NAME_MAX_WORDS)) {
       /* Named in words no detector can use. It stays takeable by WORDS, which
          is why it is reported rather than discarded (#2570's lesson on the cast
          road: a parse rule became a deletion). */
@@ -571,16 +571,36 @@ export async function markReferenceThings(input: {
     askable.push(feature);
   }
 
-  const markers: ReferenceMarker[] = [];
-  for (const feature of askable) {
-    let boxes: readonly PointerBox[];
+  /*
+    EVERY NAME IS ASKED AT ONCE, AND READ BACK IN THE READING'S ORDER (#2863).
+
+    It was one ask after another, which is the shape no reader can gather: the
+    boxer's measured request carries every name of a picture in ONE call, and a
+    reader only sees the names that are waiting together. So all the asks start
+    in the same turn and their answers are walked in the order the reading gave
+    them, which leaves `markers` and `unmarked` exactly as the loop built them.
+    On today's detector it is the same requests, through the same fal gate.
+  */
+  type Asked =
+    | { feature: DiscoveredFeature; boxes: readonly PointerBox[] }
+    | { feature: DiscoveredFeature; error: unknown };
+  const asked = await Promise.all(askable.map(async (feature): Promise<Asked> => {
     try {
-      boxes = await pointer.call(input.reader, {
+      const boxes = await pointer.call(input.reader, {
         image: input.picture,
         name: feature.name,
         signal: input.signal,
       });
+      return { feature, boxes };
     } catch (error) {
+      return { feature, error };
+    }
+  }));
+  const markers: ReferenceMarker[] = [];
+  for (const one of asked) {
+    const feature = one.feature;
+    if ("error" in one) {
+      const error = one.error;
       log.warn(
         { name: feature.name, why: error instanceof Error ? error.message : String(error) },
         "[referenceDiscovery] the detector did not answer about this one — no marker, words still open",
@@ -588,6 +608,7 @@ export async function markReferenceThings(input: {
       unmarked.push(feature.name);
       continue;
     }
+    const boxes = one.boxes;
     const box = biggestOf(boxes);
     const spread = spreadOf(boxes);
     if (box === null || spread === null) {
