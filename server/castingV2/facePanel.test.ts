@@ -2158,10 +2158,14 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
   });
 
   it("folds under a FOUND row too, not only a catalogued one", () => {
+    /* ⚠ The lodger read ~~`iris`~~ until #2840's second half: an iris is the
+       ordinary body (`isPlainAnatomy`) and draws no row anywhere now, so it
+       could no longer stand for "a thing folded under a found row". The arm's
+       subject is the fold, so the lodger is a word that is not plain. */
     const panel = panelOf({
       found: [
         { noun: "third eye", kind: "anatomy", on: "forehead" },
-        { noun: "iris", kind: "anatomy", on: "third eye" },
+        { noun: "veins", kind: "anatomy", on: "third eye" },
         { noun: "choker", kind: "accessory", on: "neck" },
         { noun: "chain", kind: "accessory", on: "choker" },
       ],
@@ -2169,7 +2173,7 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     /* A body part lists under Face since #2801. */
     const open = sectionOf(panel, "face")!;
     expect(open.rows.map((row) => row.name)).toEqual(["Third eye"]);
-    expect(open.rows[0]!.instances.map((one) => one.name)).toEqual(["Iris"]);
+    expect(open.rows[0]!.instances.map((one) => one.name)).toEqual(["Veins"]);
     /* A worn thing on a worn thing stays its child, in Accessories. */
     const accessories = sectionOf(panel, "accessories")!;
     expect(accessories.rows.map((row) => row.name)).toEqual(["Choker"]);
@@ -2464,41 +2468,55 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     x 100+100n, y 200+50n unless the arm places it. Nothing here is tuned; the
     allowances fall out of that span.
   */
+  /*
+    ⚠ **THE FOUR ARMS BELOW WERE WRITTEN ON A COLLARBONE AND A PAIR OF
+    SHOULDERS, AND SINCE #2840's SECOND HALF THOSE ARE NO ROWS AT ALL** — his
+    word of 2026-10-30: *no* to collarbone and shoulders being rows, *yes* to a
+    Body section for real features. Each arm keeps its subject (WHERE a found
+    body part lists) and now carries a real feature off the face: his lizard's
+    tail, a cyborg's neck implant, a pair of wings. The old fixture is struck in
+    each, and the plain-anatomy rule has its own block further down.
+  */
   it("lists a found body part that is not on the face under Body, not Face", () => {
     const panel = panelOf({
       catalogued: ["eye@left", "eye@right", "teeth", "lips"],
-      found: [{ noun: "collarbone", kind: "anatomy", on: "" }],
+      /* ~~`collarbone`~~ — plain anatomy since #2840's second half. */
+      found: [{ noun: "tail", kind: "anatomy", on: "" }],
     });
     /* The face section holds the face and nothing else. */
     expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth"]);
-    expect(rowNames(panel, "body")).toEqual(["Collarbone"]);
+    expect(rowNames(panel, "body")).toEqual(["Tail"]);
   });
   it("sends a body part DIRECTLY below the face to Body, where only the down axis can decide", () => {
-    /* The arm the first one cannot be: a collarbone sits under the chin, so it
-       is well within the face's span ACROSS (centre x 50, the face's own
-       midline) and outside it only DOWN. Without this, a rule that had quietly
-       lost its vertical half would still pass every arm above, because a box on
-       the helper's default diagonal is outside the face on both axes at once. */
+    /* The arm the first one cannot be: a ~~collarbone~~ neck implant sits under
+       the chin, so it is well within the face's span ACROSS (centre x 50, the
+       face's own midline) and outside it only DOWN. Without this, a rule that
+       had quietly lost its vertical half would still pass every arm above,
+       because a box on the helper's default diagonal is outside the face on
+       both axes at once. */
     const panel = panelOf({
       catalogued: ["eye@left", "eye@right", "teeth", "lips"],
-      found: [{ noun: "collarbone", kind: "anatomy", on: "", x: 10, y: 170 }],
+      found: [{ noun: "neck implant", kind: "anatomy", on: "", x: 10, y: 170 }],
     });
     expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth"]);
-    expect(rowNames(panel, "body")).toEqual(["Collarbone"]);
+    expect(rowNames(panel, "body")).toEqual(["Neck implant"]);
   });
 
-  it("draws his round-9 pair of Shoulders under Body rather than twice under Face", () => {
+  it("draws a pair of found body parts under Body rather than twice under Face", () => {
+    /* ~~his round-9 pair of Shoulders~~ — plain anatomy since #2840's second
+       half, and drawn nowhere now (the block further down holds that). The
+       subject here is a PAIR's placement, so the pair is a real one. */
     const panel = panelOf({
       catalogued: ["eye@left", "eye@right", "teeth", "lips"],
       found: [
-        { noun: "shoulders", kind: "anatomy", on: "", instance: 1 },
-        { noun: "shoulders", kind: "anatomy", on: "", instance: 2 },
+        { noun: "wings", kind: "anatomy", on: "", instance: 1 },
+        { noun: "wings", kind: "anatomy", on: "", instance: 2 },
       ],
     });
     expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth"]);
-    /* Still two rows — this card moves them, and whether a pair folds into one
-       row is the other half of #2840 and is not decided here. */
-    expect(rowNames(panel, "body")).toEqual(["Shoulders", "Shoulders"]);
+    /* Still two rows — two of one found noun are two items (#2565 §6), and
+       whether a real pair draws as one row is not decided here. */
+    expect(rowNames(panel, "body")).toEqual(["Wings", "Wings"]);
   });
 
   it("keeps a body part that IS on the face under Face", () => {
@@ -2520,9 +2538,10 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
        span at all. */
     const panel = panelOf({
       catalogued: ["skin"],
-      found: [{ noun: "collarbone", kind: "anatomy", on: "" }],
+      /* ~~`collarbone`~~ — plain anatomy since #2840's second half. */
+      found: [{ noun: "tail", kind: "anatomy", on: "" }],
     });
-    expect(rowNames(panel, "face")).toEqual(["Collarbone"]);
+    expect(rowNames(panel, "face")).toEqual(["Tail"]);
     expect(rowNames(panel, "body")).toEqual(["Skin"]);
   });
 
@@ -3120,5 +3139,195 @@ describe("one thing, one row — hair holds no parts, and only a garment is a pi
     const choker = sectionOf(panel, "accessories")!.rows.find((row) => row.name === "Choker")!;
     expect(choker.instances.map((one) => one.name)).toEqual(["Chain"]);
     expect(sectionOf(panel, "outfit")).toBeNull();
+  });
+});
+
+/**
+ * THE ORDINARY BODY IS NOT A FEATURE — #2840's second half, his word of
+ * 2026-10-30.
+ *
+ * His eye: *"no idea why collarbone is showing up?"* (round 10) and *"Her
+ * shoulders were picked up randomly no idea why."* (round 11). The relay
+ * recommended and he agreed: **yes** to a Body section for real non-face
+ * features (a tail, wings, an implant off the face), **no** to collarbone and
+ * shoulders being rows at all. Marks ON a shoulder still list.
+ *
+ * ⚠ Every arm that says *no row* has a control beside it on the SAME fixture
+ * shape that says *a row* — an arm that passes because the helper draws
+ * nothing would otherwise read exactly like the rule working.
+ */
+describe("the ordinary body is not a feature — a collarbone or a shoulder draws no row (#2840)", () => {
+  const frame = { width: 1000, height: 1500 };
+  type Found = { noun: string; kind: FeatureKind; on?: string; instance?: number; x?: number; y?: number };
+  const panelOf = (input: { found?: readonly Found[]; catalogued?: readonly string[] }) => facePanel({
+    rows: [],
+    pronouns: SHE,
+    contentUrl: (key) => `https://bucket.example/${key}`,
+    maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+    discovering: true,
+    scan: {
+      frameUrl: "https://bucket.example/casting/master.jpg",
+      slots: new Map((input.catalogued ?? []).map((slot, at) => [slot as FeatureSlot, {
+        box: { x: 10 + at * 10, y: 20 + at * 10, width: 50, height: 40, frame },
+        maskUrl: `data:image/png;base64,${slot}`,
+      }])),
+      discovered: (input.found ?? []).map((one, at) => ({
+        slot: `discovered:${one.noun.replace(/[^a-z0-9]+/g, "-")}#${one.instance ?? 1}` as FeatureSlot,
+        noun: one.noun,
+        instance: one.instance ?? 1,
+        kind: one.kind,
+        on: one.on ?? "",
+        box: { x: one.x ?? 100 + at * 100, y: one.y ?? 200 + at * 50, width: 80, height: 60, frame },
+        maskUrl: `data:image/png;base64,${one.noun}`,
+      })),
+      namedNotCut: [],
+    },
+  });
+  const sectionOf = (panel: FacePanel, group: string) =>
+    panel.groups.find((one) => one.group === group) ?? null;
+  const rowNames = (panel: FacePanel, group: string) =>
+    (sectionOf(panel, group)?.rows ?? []).map((row) => row.name);
+  /* Every name the panel carries anywhere — a row, a child, a rectangle — and
+     every slot a tap could send, so "no row" cannot hide in a corner. */
+  const everyName = (panel: FacePanel) => panel.groups.flatMap((group) => group.rows.flatMap((row) => [
+    row.name,
+    ...row.instances.map((one) => one.name),
+    ...row.regions.map((one) => one.name).filter((name): name is string => name !== null),
+  ]));
+  const everySlot = (panel: FacePanel) => panel.groups.flatMap((group) => group.rows.flatMap((row) => [
+    ...row.slots,
+    ...row.regions.map((one) => one.slot),
+  ]));
+  /* A face to measure Body against, so a found body part off it would list
+     under Body if it listed at all. */
+  const FACE = ["eye@left", "eye@right", "teeth", "lips"];
+  /* Does the panel draw a found row for this one noun, anywhere at all. */
+  const drawsFound = (noun: string) =>
+    panelOf({ catalogued: FACE, found: [{ noun, kind: "anatomy", on: "" }] }).groups
+      .some((group) => group.rows.some((row) => row.slots.some((slot) => slot.startsWith("discovered:"))));
+
+  it("his round-10 collarbone draws no row, no rectangle and no Body heading", () => {
+    const panel = panelOf({ catalogued: FACE, found: [{ noun: "collarbone", kind: "anatomy", on: "" }] });
+    expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth"]);
+    expect(sectionOf(panel, "body")).toBeNull();
+    expect(everyName(panel).filter((name) => /collar/i.test(name))).toEqual([]);
+    expect(everySlot(panel).filter((slot) => slot.includes("collarbone"))).toEqual([]);
+  });
+
+  it("CONTROL — the same panel with his lizard's tail in its place draws Body: Tail", () => {
+    /* The arm above is only evidence if this very fixture CAN draw a Body row. */
+    const panel = panelOf({ catalogued: FACE, found: [{ noun: "tail", kind: "anatomy", on: "" }] });
+    expect(rowNames(panel, "body")).toEqual(["Tail"]);
+    expect(sectionOf(panel, "body")!.rows[0]!.regions).toHaveLength(1);
+  });
+
+  it("his shoulders draw nothing — round 9's pair as `shoulders`, round 11's as `shoulder`", () => {
+    for (const noun of ["shoulders", "shoulder"]) {
+      const panel = panelOf({
+        catalogued: FACE,
+        found: [
+          { noun, kind: "anatomy", on: "", instance: 1, x: 100, y: 300 },
+          { noun, kind: "anatomy", on: "", instance: 2, x: 800, y: 300 },
+        ],
+      });
+      expect(sectionOf(panel, "body"), noun).toBeNull();
+      expect(everyName(panel).filter((name) => /shoulder/i.test(name)), noun).toEqual([]);
+    }
+  });
+
+  it("drops every plain part the reading has named on his casts, as the reading spelled it", () => {
+    /* LITERAL, never read back out of the list under test: an arm that walked
+       the rule's own words would pass on an empty list. Every spelling here is
+       one a kept reading or a #2846 reading actually wrote, plus the build's
+       facets and his own "hips chest" (fable-382 §3). */
+    const spelled = [
+      "collarbone", "collarbones", "collar bone", "shoulders", "shoulder", "neck", "chest", "arms", "arm",
+      "hands", "legs", "torso", "abdomen", "nipple", "nipples", "bust", "waist", "hips",
+      "head", "face", "skull", "scalp", "forehead", "cheek", "cheeks", "eyelid", "eyelashes", "eyelash",
+      "iris", "irises", "pupil", "nostril", "nostrils", "mouth", "tooth",
+    ];
+    expect(spelled.filter(drawsFound)).toEqual([]);
+  });
+
+  it("CONTROL — a real feature keeps its row, and the match is the WHOLE name, never a part of it", () => {
+    /* `neck` is plain and `neck hardware` is his cyborg's headline find; the
+       same for `eye`/`third eye`, `nose`/`nose horn`, `jaw`/`jaw spikes`, and
+       `arm`/`arm spikes`. */
+    const real = [
+      "tail", "wings", "third eye", "jaw hardware", "neck hardware", "neck implant", "neck frill",
+      "tusks", "snout", "brow ridge", "nose horn", "fangs", "horn nub", "jaw spikes", "arm spikes",
+    ];
+    expect(real.filter((noun) => !drawsFound(noun))).toEqual([]);
+  });
+
+  it("a mark ON a shoulder still lists — a tattoo, a scar, and a tattoo the reading named for the shoulder", () => {
+    const panel = panelOf({
+      catalogued: FACE,
+      found: [
+        { noun: "shoulder", kind: "anatomy", on: "" },
+        { noun: "tattoo", kind: "marking", on: "shoulder" },
+        { noun: "scar", kind: "marking", on: "shoulders" },
+        { noun: "shoulder tattoo", kind: "marking", on: "" },
+      ],
+    });
+    expect(rowNames(panel, "open")).toEqual(["Tattoo", "Scar", "Shoulder tattoo"]);
+    /* And the shoulder itself is nowhere — not a row, not a parent. */
+    expect(everyName(panel)).not.toContain("Shoulder");
+    expect(sectionOf(panel, "body")).toBeNull();
+  });
+
+  it("a worn thing on a shoulder still lists under Accessories, and shoulder armour keeps its row", () => {
+    const panel = panelOf({
+      catalogued: FACE,
+      found: [
+        { noun: "shoulders", kind: "anatomy", on: "" },
+        { noun: "strap", kind: "accessory", on: "shoulders" },
+        { noun: "shoulder armor", kind: "accessory", on: "" },
+      ],
+    });
+    expect(rowNames(panel, "accessories")).toEqual(["Strap", "Shoulder armor"]);
+    expect(everyName(panel)).not.toContain("Shoulders");
+  });
+
+  it("a body feature the reading put ON a plain part keeps a row of its own, in Body", () => {
+    /* Before #2840's second half a creature's spikes on its shoulder were the
+       Shoulder row's child; with the shoulder gone they are placed as if they
+       sat on nothing, and never hung under a row that is not drawn. */
+    const panel = panelOf({
+      catalogued: FACE,
+      found: [
+        { noun: "shoulder", kind: "anatomy", on: "" },
+        { noun: "spikes", kind: "anatomy", on: "shoulder" },
+      ],
+    });
+    expect(rowNames(panel, "body")).toEqual(["Spikes"]);
+    expect(sectionOf(panel, "body")!.rows[0]!.instances).toEqual([]);
+  });
+
+  it("CONTROL — his round-10 panel as a whole: Hair is one row, two earrings are two, the collarbone is nothing", () => {
+    /* His round-10 tattooed cast as the pointer road kept it
+       (`relay-r10eye/reading-a1.json`): two buns on the hair and the
+       collarbone — plus two hoop earrings and a tattoo on her shoulder, so the
+       rules that must NOT move are on the same panel as the one that does. */
+    const panel = panelOf({
+      catalogued: [...FACE, "hair"],
+      found: [
+        { noun: "buns", kind: "anatomy", on: "hair", instance: 1, x: 605, y: 35 },
+        { noun: "buns", kind: "anatomy", on: "hair", instance: 2, x: 203, y: 29 },
+        { noun: "collarbone", kind: "anatomy", on: "", x: 400, y: 900 },
+        { noun: "hoop earring", kind: "accessory", on: "ear", instance: 1, x: 250, y: 500 },
+        { noun: "hoop earring", kind: "accessory", on: "ear", instance: 2, x: 700, y: 500 },
+        { noun: "tattoo", kind: "marking", on: "shoulder", x: 150, y: 1000 },
+      ],
+    });
+    /* Hair: ONE row, no parts (#2862, PR #2886). */
+    expect(rowNames(panel, "hair")).toEqual(["Hair"]);
+    expect(sectionOf(panel, "hair")!.rows[0]!.instances).toEqual([]);
+    /* Two earrings: two rows (#2565 §6, untouched). */
+    expect(rowNames(panel, "accessories")).toEqual(["Hoop earring", "Hoop earring"]);
+    /* The tattoo lists; the collarbone does not, and so there is no Body. */
+    expect(rowNames(panel, "open")).toEqual(["Tattoo"]);
+    expect(sectionOf(panel, "body")).toBeNull();
+    expect(everyName(panel).filter((name) => /collar/i.test(name))).toEqual([]);
   });
 });
