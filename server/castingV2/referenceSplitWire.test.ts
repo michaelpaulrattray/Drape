@@ -164,3 +164,131 @@ describe("the tap's cut, at the wire", () => {
     ).resolves.toBeNull();
   });
 });
+
+/**
+ * THE MASK DOWNLOADS — added 2026-10-31 (#14 slice 3a-2), after the entrance's
+ * first real split measured 32 sequential round trips at 32,710 ms against
+ * 1,025 ms overlapped: 69% of a 47.7 s road, and the court's 4.3–6.6 s had only
+ * ever been the provider call.
+ *
+ * Overlapping them is a one-line change with two properties that are NOT
+ * incidental, so both are held here: the ORDER, because a piece's index becomes
+ * its id in the hit-test map and `cleanSplit`'s drop reasons refer to arrival
+ * order; and the per-mask TOLERANCE, because one unreadable mask must stay one
+ * missing piece rather than becoming a failed split.
+ */
+describe("the split's mask downloads", () => {
+  /*
+    ⚠ THESE ARMS SERVE THE MASKS OVER http, NOT AS `data:` URIs, AND THAT IS
+    THE WHOLE REASON THEY WORK. `fetchMask` decodes a `data:` URI inline with
+    no network call at all, so an arm built on data URIs exercises the DECODE
+    path and can never see a download overlap — the first draft of the
+    in-flight arm did exactly that and read a peak of 1 against correct code.
+    The provider answers with http urls, so that is what is driven here.
+  */
+  const PNG_BY_URL = new Map<string, Buffer>();
+
+  async function bandPng(rows: number): Promise<Buffer> {
+    const sharp = (await import("sharp")).default;
+    const raw = Buffer.alloc(32 * 32);
+    for (let y = 0; y < rows; y += 1) raw.fill(255, y * 32, (y + 1) * 32);
+    return sharp(raw, { raw: { width: 32, height: 32, channels: 1 } }).png().toBuffer();
+  }
+
+  /** A fetch that answers the split POST with urls, and those urls with bytes. */
+  function serve(options: {
+    urls: string[];
+    delayFor?: (url: string) => number;
+    onMaskOpen?: () => void;
+    onMaskClose?: () => void;
+    corrupt?: string;
+  }): void {
+    vi.stubGlobal("fetch", async (url: string) => {
+      const asString = String(url);
+      if (asString.startsWith("https://fal.run/")) {
+        return {
+          ok: true,
+          status: 200,
+          headers: new Map(),
+          text: async () => JSON.stringify({ masks: options.urls }),
+          json: async () => ({ masks: options.urls }),
+        } as unknown as Response;
+      }
+      options.onMaskOpen?.();
+      const wait = options.delayFor?.(asString) ?? 0;
+      if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+      options.onMaskClose?.();
+      const bytes = asString === options.corrupt
+        ? Buffer.from([0x9e, 0x8b, 0x7e, 0x6b, 0xea, 0x67])
+        : PNG_BY_URL.get(asString)!;
+      return {
+        ok: true,
+        status: 200,
+        headers: new Map(),
+        arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+      } as unknown as Response;
+    });
+  }
+
+  it("hands the pieces back in the order the provider listed them", async () => {
+    /* Three bands holding visibly different amounts of white, with the FIRST
+       url served SLOWEST — so a road that kept them as they arrived rather
+       than as they were listed would reorder them and this arm would redden. */
+    const urls = ["https://masks.example/a", "https://masks.example/b", "https://masks.example/c"];
+    PNG_BY_URL.set(urls[0]!, await bandPng(4));
+    PNG_BY_URL.set(urls[1]!, await bandPng(10));
+    PNG_BY_URL.set(urls[2]!, await bandPng(20));
+    const delays = new Map([[urls[0]!, 60], [urls[1]!, 20], [urls[2]!, 0]]);
+    serve({ urls, delayFor: (url) => delays.get(url) ?? 0 });
+
+    const pieces = await splitAtPoints({ apiKey: "k", image: await picture(32, 32) });
+
+    expect(pieces).toHaveLength(3);
+    const live = pieces.map((piece) => {
+      let n = 0;
+      for (let at = 0; at < piece.data.length; at += 1) if (piece.data[at]! > 127) n += 1;
+      return n;
+    });
+    expect(live[0]).toBeLessThan(live[1]!);
+    expect(live[1]).toBeLessThan(live[2]!);
+  });
+
+  it("has more than one download in flight at once", async () => {
+    /* ⚠ THE PROPERTY, NOT THE CLOCK. A latency assertion here would be a timer
+       on somebody else's machine; what the change actually did is overlap the
+       round trips, and the honest way to hold that is to count how many were
+       open at the same moment. Reverting to `for … await` makes this peak
+       exactly 1 and reddens the arm. */
+    const urls = [1, 2, 3, 4].map((n) => `https://masks.example/${n}`);
+    for (const url of urls) PNG_BY_URL.set(url, await bandPng(8));
+    let open = 0;
+    let peak = 0;
+    serve({
+      urls,
+      delayFor: () => 15,
+      onMaskOpen: () => {
+        open += 1;
+        peak = Math.max(peak, open);
+      },
+      onMaskClose: () => {
+        open -= 1;
+      },
+    });
+
+    await splitAtPoints({ apiKey: "k", image: await picture(32, 32) });
+
+    expect(peak).toBeGreaterThan(1);
+  });
+
+  it("keeps the readable pieces when one mask cannot be read", async () => {
+    const urls = ["https://masks.example/x", "https://masks.example/bad", "https://masks.example/z"];
+    PNG_BY_URL.set(urls[0]!, await bandPng(8));
+    PNG_BY_URL.set(urls[2]!, await bandPng(8));
+    serve({ urls, corrupt: urls[1] });
+
+    const pieces = await splitAtPoints({ apiKey: "k", image: await picture(32, 32) });
+
+    /* One missing piece, never a failed split. */
+    expect(pieces).toHaveLength(2);
+  });
+});

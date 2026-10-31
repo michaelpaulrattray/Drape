@@ -843,17 +843,45 @@ export async function splitAtPoints(input: {
   const urls: string[] = (Array.isArray(json?.masks) ? json.masks : [])
     .map((entry: any) => (typeof entry === "string" ? entry : entry?.url))
     .filter((url: unknown): url is string => typeof url === "string" && url.length > 0);
-  const pieces: Mask[] = [];
-  for (const url of urls) {
-    try {
-      pieces.push(await placeInFrame(await fetchMask(url, signal), { left: 0, width }, width, height));
-    } catch (cause) {
-      /* One unreadable mask is one missing piece, never a failed split: the
-         rest of the picture still lights. */
-      log.warn({ cause: String(cause) }, "a split piece could not be read");
-    }
-  }
-  return pieces;
+  /*
+    ⚠ THE DOWNLOADS OVERLAP, AND THAT IS TWO THIRDS OF THIS ROAD — measured
+    2026-10-31 (#14 slice 3a-2), on the court's own worn fixture at the court's
+    own 768x1024:
+
+    | half                                   | one at a time | overlapped |
+    |---|---|---|
+    | the ONE provider call                  | 14,973 ms     | 14,973 ms  |
+    | the 32 mask downloads                  | **32,710 ms** | **1,025 ms** |
+    | the road                               | 47,683 ms     | 15,998 ms  |
+
+    A 32-mask answer was **32 sequential HTTP round trips**, 69% of the wait,
+    and the court never paid for them at all: its 4.3–6.6 s is the provider
+    call alone (`q.ms`). So §8's latency band was never a reading of this
+    function, and a customer would have waited ~48 s for a picture to light.
+    The cell is `scripts/_14-split-halves-disposable.mts`, which times the two
+    halves separately and is in the tree because this table cites it.
+
+    **`Promise.all` over `urls.map` PRESERVES ORDER, and that is load-bearing
+    rather than incidental**: a piece's index becomes its id in the hit-test map
+    (`referenceSpotlightMap.ts`) and `cleanSplit`'s `dropped[].at` refers to
+    arrival order, so a shape that reordered the pieces would renumber what the
+    surface lights. The per-mask tolerance is kept exactly as it was — one
+    unreadable mask is one missing piece and never a failed split — which is why
+    each download catches for itself instead of the set rejecting together.
+  */
+  const settled = await Promise.all(
+    urls.map(async (url) => {
+      try {
+        return await placeInFrame(await fetchMask(url, signal), { left: 0, width }, width, height);
+      } catch (cause) {
+        /* One unreadable mask is one missing piece, never a failed split: the
+           rest of the picture still lights. */
+        log.warn({ cause: String(cause) }, "a split piece could not be read");
+        return null;
+      }
+    }),
+  );
+  return settled.filter((piece): piece is Mask => piece !== null);
 }
 
 /**
@@ -2842,7 +2870,7 @@ export function createFalRegionReader(input: {
        addition and none of them has a deadline. */
     async landmark({ image, name }) {
       assertPicture(image, name);
-      /* `name` here is `landmarkNameOf`'s / the removal table's own fixed
+      /* `name` here is the accessory table's / the removal table's own fixed
          word, not a reading's noun — the closed vocabulary, as before. */
       const json = await post(apiKey, POINT, { image_url: dataUri(image), prompt: name }, signal, "theClosedVocabularyPrompt");
       const points: any[] = Array.isArray(json.points) ? json.points : [];

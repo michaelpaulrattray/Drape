@@ -132,8 +132,8 @@ describe("no question is invented, and none carries a side", () => {
 
           An addition's facet card says `region: null` and means it — segmenting
           the MASTER for horns asks where a thing is she does not have. Its
-          cutting word is still a real region with a real card (phrasing, edge,
-          neighbours), and the card table is the one that owns it. The source
+          cutting word is still a real region with a real card (its phrasing,
+          when it has one), and the card table is the one that owns it. The source
           says which picture the word is for, so this is an ownership test that
           still cannot be satisfied by an invented phrase.
         */

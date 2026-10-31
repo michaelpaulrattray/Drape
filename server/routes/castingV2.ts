@@ -40,9 +40,16 @@ import { CASTING_V2_COSTS, CASTING_V2_ROLL_PRICE_CREDITS,
 } from "../casting/castingCreditCosts";
 import {
   captureCastingReferenceAttachEnabled,
+  captureCastingReferenceSelectorEnabled,
   captureCastingConceptUploadEnabled,
   captureCastingV2Enabled,
 } from "../castingV2/castingV2Scope";
+import {
+  cutNameEngine,
+  openSpotlight,
+  spotlightRegionReader,
+  tapSpotlight,
+} from "../castingV2/referenceSpotlight";
 import { reimagineBrief } from "../castingV2/reimagine";
 import { authorTextEngine } from "../castingV2/promptAuthor";
 import { CAST_STYLES } from "../../shared/castStyles";
@@ -68,7 +75,9 @@ import {
 import {
   ReferenceAttachmentCapError,
   ReferenceAttachmentOwnershipError,
+  readOwnedReferenceAttachment,
 } from "../db/castingV2ReferenceAttachments";
+import { createHash } from "node:crypto";
 import { spokenError } from "../_core/spokenError";
 import { UNLOCKABLE_FIELDS } from "../castingV2/briefCompiler";
 import { facePanel, maskFetchUrl, type PanelBox, type PanelInkWorn, type PanelScan } from "../castingV2/facePanel";
@@ -826,6 +835,55 @@ const conceptRouter = router({
     }),
 });
 
+/**
+ * THE ATTACHED PICTURE'S BYTES, OWNER-PROVED AND BYTE-PROVED — the spotlight
+ * entrance's one read (#14 slice 3a-2).
+ *
+ * Two refusals, and they are different facts:
+ *
+ * 1. **Somebody else's attachment is answered the way a missing one is.** The
+ *    owner is in the statement that reads the row (invariant 1 —
+ *    `readOwnedReferenceAttachment` puts `userId` in its own `WHERE`), and the
+ *    id comes from the session and never from input (invariant 3).
+ * 2. **The bytes must be the bytes the row describes.** The attach door stores
+ *    what it was given unchanged precisely so that `digest` means byte
+ *    identity later, and lighting a DIFFERENT object while calling it the
+ *    picture they gave is the wrong-frame class.
+ *
+ * ⚠ **The sha256 comparison is three inline lines here and also three inline
+ * lines in `server/routes/referenceDelivery.ts`, and that is a judgement
+ * rather than an oversight.** The thing that must not be duplicated — the
+ * owner-scoped SELECT — already is not: both roads call the same db function.
+ * What remains is `sha256(bytes) === row.digest`, which has no structure to
+ * share, and folding it into a helper would mean reshaping a live
+ * customer-facing serving route inside a slice that ships dark. If a third
+ * reader of this rule ever appears, that is the moment it earns a module.
+ */
+async function loadOwnedReferenceFrame(
+  userId: number,
+  referenceId: string,
+): Promise<{ bytes: Buffer; mime: string; width: number; height: number }> {
+  const attachment = await readOwnedReferenceAttachment({ userId, attachmentPublicId: referenceId });
+  if (attachment === null) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "That picture isn't here." });
+  }
+  const stored = await storageReadBytes(attachment.storageKey);
+  const digest = createHash("sha256").update(stored.bytes).digest("hex");
+  if (digest !== attachment.digest) {
+    log.error(
+      { userId, referenceId, byteSize: stored.bytes.byteLength },
+      "[referenceSpotlight] the object at the attachment's key is not the object the row describes",
+    );
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "This picture could not be read." });
+  }
+  return {
+    bytes: stored.bytes,
+    mime: attachment.mime,
+    width: attachment.width,
+    height: attachment.height,
+  };
+}
+
 const referenceRouter = router({
   /**
    * ATTACHING A PICTURE — build two's door (design §2, countersigned fable-1063
@@ -914,6 +972,123 @@ const referenceRouter = router({
         }
         throw error;
       }
+    }),
+
+  /**
+   * OPEN AN ATTACHED PICTURE INTO A SPOTLIGHT — #14 slice 3a-2, the entrance.
+   *
+   * Slice 3a-1 built the four roads and gave them no way in. This is the way
+   * in: it is the first and only thing in the product that reads
+   * `CASTING_REFERENCE_SELECTOR_SCOPE` on a request, so until this landed the
+   * flag bought nothing at runtime however it was set.
+   *
+   * ⚠ **IT RETURNS GEOMETRY AND NEVER A PIXEL OF THE PHOTOGRAPH.** The answer
+   * is an index map — one byte per pixel saying which piece owns it — and the
+   * browser already holds the picture it attached, so there is nothing to send
+   * back. That is §6's fence (*"the attachment and every cut live at
+   * owner-only addresses; no public URL"*) kept by construction rather than by
+   * remembering.
+   *
+   * Nothing is stored and nothing is charged: no `casting_reference_crops`
+   * row, no object, no credit. The first mint is slice 4's.
+   */
+  openSpotlight: protectedProcedure
+    .input(z.object({ referenceId: publicId }).strict())
+    .mutation(async ({ ctx, input }) => {
+      /* The flag first, and NOT_FOUND rather than a refusal — outside the
+         scope there is no such capability, and a code that says "not yet"
+         advertises one. The AND of the whole chain is inside this call. */
+      if (!captureCastingReferenceSelectorEnabled(ctx.user.id)) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No such thing." });
+      }
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingReferenceSpotlightOpen);
+
+      const frame = await loadOwnedReferenceFrame(ctx.user.id, input.referenceId);
+      const reader = spotlightRegionReader();
+      if (reader === null) return { lit: false as const, why: "no-reader" };
+
+      const opened = await openSpotlight({
+        apiKey: process.env.FAL_KEY ?? "",
+        frame: frame.bytes,
+        reader,
+        /* From the session, never from input (invariant 3). For the log only. */
+        about: { userId: ctx.user.id, attachmentPublicId: input.referenceId },
+      });
+      /* FAIL-OPEN (§4): a picture that will not light is not an ask that
+         failed. The surface shows the attach exactly as it looks today, and
+         the words road is untouched. */
+      if (!opened.ok) return { lit: false as const, why: opened.why };
+
+      /*
+        AN EXPLICIT PROJECTION (invariant 8). The tally stays OUT of it: it is
+        every number the clean-up used — contested pixels, dropped pieces,
+        fragment counts — and not one of them is a number a customer could act
+        on. It goes to the log, where the measurement reads it.
+      */
+      return {
+        lit: true as const,
+        map: opened.map.bytes.toString("base64"),
+        width: opened.map.width,
+        height: opened.map.height,
+        pieces: opened.map.pieces,
+      };
+    }),
+
+  /**
+   * TAKE WHAT IS UNDER THE FINGER AND NAME IT — #14 slice 3a-2.
+   *
+   * A tap is honoured wherever it lands, lit or not: the court cut all four
+   * worn things including the earring and the necklace, and neither of those
+   * has a piece in the split at all (§0 hazard 1).
+   *
+   * ⚠ **THE FACES ARE DETECTED HERE RATHER THAN CARRIED FROM THE OPEN.** The
+   * service would happily take the open read's boxes, and re-using them is
+   * what it documents — but they would have to travel to the browser and back
+   * to get here, and **a rectangle around a customer's face is not a thing to
+   * put on a wire and accept back as input.** A client-supplied face box is
+   * also a client-supplied way to turn §6's fence off. So the detect is bought
+   * again, server-side, at ≈0.5¢ and ~1.8 s a tap, and the saving is declined
+   * on purpose.
+   */
+  tapSpotlight: protectedProcedure
+    .input(z.object({
+      referenceId: publicId,
+      /* The frame's own pixels. A tap outside the picture is a question about
+         a place that does not exist and the road answers nothing for it, so
+         the bound here is only against an absurd number. */
+      x: z.number().int().min(0).max(20000),
+      y: z.number().int().min(0).max(20000),
+    }).strict())
+    .mutation(async ({ ctx, input }) => {
+      if (!captureCastingReferenceSelectorEnabled(ctx.user.id)) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No such thing." });
+      }
+      enforceRateLimit(ctx.user.id, RATE_LIMITS.castingReferenceSpotlightTap);
+
+      const frame = await loadOwnedReferenceFrame(ctx.user.id, input.referenceId);
+      const reader = spotlightRegionReader();
+      const engine = cutNameEngine();
+      if (reader === null || engine === null) return { took: false as const, why: "no-reader" };
+      const took = await tapSpotlight({
+        apiKey: process.env.FAL_KEY ?? "",
+        frame: frame.bytes,
+        at: { x: input.x, y: input.y },
+        reader,
+        engine,
+        about: { userId: ctx.user.id, attachmentPublicId: input.referenceId },
+      });
+      if (!took.ok) return { took: false as const, why: took.why };
+
+      return {
+        took: true as const,
+        cut: took.cut.bytes.toString("base64"),
+        width: took.cut.width,
+        height: took.cut.height,
+        bounds: took.bounds,
+        /* `null` when the reader would not give a bare noun — the chip shows
+           the cut with no name rather than a guess (§1's law-9 property). */
+        name: took.name,
+      };
     }),
 
   /*

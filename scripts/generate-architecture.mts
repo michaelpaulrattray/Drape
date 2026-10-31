@@ -2100,9 +2100,10 @@ export function shapeCopyFindings(project: Project, files: readonly string[]): F
           The claim a finding makes is "this literal IS X, re-typed" — and that
           claim needs the literal to be most of X. Measured on this tree, the
           minority matches are all one phenomenon: `{ bytes, contentType }`
-          appears in five modules and lands inside `MaskedRefineResult`, which
-          has seven fields. Two of seven is a pair of ordinary words that a
-          bigger shape happens to contain, not a copy of it. Two of three is
+          appears in five modules and lands inside the masked harvest's result
+          type, which had seven fields (deleted with the harvest, #2859). Two
+          of seven is a pair of ordinary words that a bigger shape happens to
+          contain, not a copy of it. Two of three is
           `HarvestEvidence` with `deliveredRegions` dropped, which is the live
           defect this check exists for.
 

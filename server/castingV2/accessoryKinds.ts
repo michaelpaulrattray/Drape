@@ -34,18 +34,17 @@
 export const LANDMARK_OF_ACCESSORY: {
   words: readonly string[];
   landmark: string;
-  drops: boolean;
   /**
    * WHAT TO ASK A SEGMENTER FOR ONCE IT EXISTS — the other half of the same
    * table, and it was missing.
    *
    * An addition cannot be segmented before it is painted, but it can be
-   * segmented AFTER, and that is what the harvest asks. The name for that
-   * question was a hardcoded `"earring"` fallback, so **an edit adding or
-   * removing GLASSES harvested wherever her earrings were.** Exactly the defect
-   * `landmarkNameOf` exists to prevent: `statedAccessories` is one facet over
-   * several objects, and every question about it needs the instruction as well
-   * as the facet.
+   * segmented AFTER, and that is what the masked-edit harvest asked (deleted
+   * with the paste road, #2859). The name for that question was a hardcoded
+   * `"earring"` fallback, so **an edit adding or removing GLASSES harvested
+   * wherever her earrings were.** `statedAccessories` is one facet over several
+   * objects, and every question about it needs the instruction as well as the
+   * facet — which is why the kind comes from the words, through `accessoryEntry`.
    */
   region: string;
   /**
@@ -120,7 +119,6 @@ export const LANDMARK_OF_ACCESSORY: {
   {
     words: ["earring", "stud", "hoop", "dangle", "drop"],
     landmark: "earlobe",
-    drops: true,
     region: "earring",
     pair: true,
     bothSides: "one on each ear, a matching pair",
@@ -132,7 +130,6 @@ export const LANDMARK_OF_ACCESSORY: {
   {
     words: ["glasses", "spectacles", "frames", "sunglasses", "eyewear"],
     landmark: "eye",
-    drops: false,
     region: "glasses",
     pair: false,
     /* The specimen this whole clause exists for. Her glasses are IN the master,
@@ -148,7 +145,6 @@ export const LANDMARK_OF_ACCESSORY: {
        files a nose as a nose. */
     words: ["nose ring", "nose stud", "nose piercing", "nose hoop", "septum", "nostril"],
     landmark: "nose",
-    drops: false,
     region: "nose stud",
     pair: false,
     site: { question: "nose", words: "nose", plural: false },
@@ -207,12 +203,12 @@ export function pairClauseFor(described?: string): string {
  */
 export function accessoryEntry(described?: string) {
   const said = (described ?? "").toLowerCase();
-  let best: { landmark: string; drops: boolean; region: string; length: number } | null = null;
+  let best: { landmark: string; region: string; length: number } | null = null;
   for (const entry of LANDMARK_OF_ACCESSORY) {
     for (const word of entry.words) {
       if (!said.includes(word)) continue;
       if (!best || word.length > best.length) {
-        best = { landmark: entry.landmark, drops: entry.drops, region: entry.region, length: word.length };
+        best = { landmark: entry.landmark, region: entry.region, length: word.length };
       }
     }
   }

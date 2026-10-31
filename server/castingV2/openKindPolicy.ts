@@ -209,7 +209,8 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
     standing: "policy",
   },
 
-  /* ── the eight total tables ─────────────────────────────────────────────── */
+  /* ── the total tables — seven now; the eighth, the masked-edit harvest's edge
+     table, was deleted with it (#2859) ─────────────────────────────────────── */
   FREE_SUBJECT_KIND: {
     file: "refineSubjects.ts",
     asks: "presence or degree — whether an ask on this may ever REFUSE",
@@ -249,8 +250,8 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
         + "— scales across her cheeks — delivers at SURFACE amplitude and will be "
         + "under-read by an instrument counting at 25. That failure is loud (a band table "
         + "reporting that nothing moved about a picture that visibly changed, which is the "
-        + "freckle case verbatim) and it is instrument-only: this table never reaches the "
-        + "paid render path, by `MOVES_ITS_EDGE`'s own header. A kind whose reports read "
+        + "freckle case verbatim) and it is instrument-only for an open kind: nothing on the "
+        + "paid render path reads this answer for one. A kind whose reports read "
         + "that way is a kind asking to be promoted and measured",
     },
     standing: "policy",
@@ -295,20 +296,6 @@ export const OPEN_KIND_POLICY: Record<string, OpenKindAnswer> = {
         + "honestly\"*). `bilateralPair` is specifically forbidden until promotion: horns, "
         + "wings and antlers are all pairs (§5), and per-instance geometry is exactly what "
         + "promotion buys",
-    },
-    standing: "owed",
-  },
-  MOVES_ITS_EDGE: {
-    file: "maskedRefine.ts",
-    asks: "whether this facet may claim a reveal — what was behind something that left",
-    answer: "false",
-    basis: {
-      stated: "a reveal is attributed to a REGION, and an open kind has no region anybody "
-        + "has named. Claiming one would point `departed`'s 160px reach at a boundary "
-        + "nobody measured, and run-6 has the specimen for what that delivers: 7,955 px "
-        + "claimed on a band where a hank of hair arrived on her neck. Unreachable today "
-        + "because the scope above is `fullFrame` — declared anyway, because a declaration "
-        + "by silence is precisely what that table exists to prevent",
     },
     standing: "owed",
   },
@@ -773,11 +760,6 @@ export function openKindAmplitude(): ChangeAmplitude {
 /** How much of the frame an open kind's edit may touch. */
 export function openKindZoneScope(): ZoneScope {
   return "fullFrame";
-}
-
-/** Whether an open kind may claim a reveal. */
-export function openKindMovesItsEdge(): boolean {
-  return false;
 }
 
 /** Why an open kind files nothing in the library. */

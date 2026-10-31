@@ -658,7 +658,7 @@ the live service on every push.
 | `CASTING_INK_REGION_CROP_SCOPE` | whether the named surface, rather than the patch inside it, is what is cut |
 | `CASTING_REFERENCE_ATTACH_SCOPE` | the door that takes her picture at all |
 | `CASTING_REFERENCE_TAKE_SCOPE` | taking a named thing out of an attached picture — "wear this jacket" and the jacket in their photograph reaches the render as a person-free cut (#2736 slice 2) |
-| `CASTING_REFERENCE_SELECTOR_SCOPE` | whether an attached picture is READ at all, and every takeable thing in it boxed — markers in memory only, no cut and no surface yet (#14 slice 2) |
+| `CASTING_REFERENCE_SELECTOR_SCOPE` | whether an attached picture splits into pieces that light under the pointer, and a tap takes and names one (#14 slice 3a-2) |
 | `CASTING_POINTER_ENGINE_SCOPE` | who draws the box round a named thing, on every road that asks for one — the face panel, the take and the reference reading (#2863) |
 | `CASTING_HAIR_REFERENCE_SCOPE` | taking her hair from an attached picture |
 | `CASTING_INK_REFERENCE_SCOPE` | whether an attached picture may be the document for a tattoo |

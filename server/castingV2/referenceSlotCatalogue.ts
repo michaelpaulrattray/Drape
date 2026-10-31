@@ -290,8 +290,8 @@ type QuestionSource =
    *
    * An ADDITION arrives through an edit, so its facet card says `region: null`
    * and means it: segmenting the master for horns asks where a thing is that
-   * she does not have, and `needsLandmarkDestination` is the path that places
-   * one instead. That is a fact about the MASTER.
+   * she does not have; an `object`-scope facet is placed from a landmark
+   * instead. That is a fact about the MASTER.
    *
    * The mint is a different picture. It cuts from the frame that just delivered
    * the feature, where the thing is plainly there and plainly askable — the

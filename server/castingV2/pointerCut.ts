@@ -537,6 +537,90 @@ export function placeNames(
   return places;
 }
 
+/*
+  ---- THE ORDINARY BODY IS NOT A FEATURE (#2840, his word of 2026-10-30) ----
+
+  His eye on his own panels, verbatim: *"no idea why collarbone is showing
+  up?"* (round 10) and *"Her shoulders were picked up randomly no idea why."*
+  (round 11). The relay recommended, and he agreed (*"i agree with your
+  suggestion"*): **yes** to a Body section for real non-face features — a tail,
+  wings, a chest scar, an implant off the face — and **no** to collarbone and
+  shoulders being rows at all. #2856's check 4 says the same thing in its own
+  words: a piece gets a row only when it is *"a real feature, not generic
+  anatomy"*.
+
+  So a body part every person has, named by the reading as plain anatomy,
+  gets no row and no rectangle. It is the place things sit, the same idea as
+  {@link placeNames} above, except that nothing has to be named sitting on it.
+
+  # WHY THIS IS A LIST, AND WHY IT IS A NARROW ONE
+
+  ⚠ **The reading's own fields cannot carry it, and that was read before the
+  list was written.** Measured on every reading kept on disk for his casts, a
+  `collarbone` and a lizard's `tail` arrive identically: `kind: anatomy`,
+  `on: ""`, `coverage: single`, a count of one. Nothing the reading declares
+  tells the body every person has from a feature this cast has. Only the noun
+  does, so the noun is what is read — and only for `anatomy`.
+
+  It is not a list of features, and it does not break his principle that
+  features come from the picture: nothing here decides what the reading may
+  NAME. Every word below names the ordinary human body, which is never a
+  feature of anybody. And it is his own older ruling arriving on the found
+  road: the build is *"a single thing like body type or body shape it doesnt
+  need individal pieces like hips chest etc"* (fable-382 §3), and on the
+  discovery road the build is words alone (#2752). A found `chest` row was
+  that ruling's piece coming back through a side door.
+
+  Every word is one of three things: a word the reading has actually used for
+  a body part on his casts — as a found thing in the kept readings and the
+  #2846 readings, or in its own list of what it could not see (`hands`,
+  `legs` on his lizard) — one of the build's own facets (bust, waist,
+  shoulders, arms, and his *"hips chest"*), or a second spelling of one of
+  those (`collar bone`, and `eyelashes` and `irises`, which the plural fold
+  in {@link normalisedName} does not bring back to their singulars).
+
+  ⚠ **The match is the WHOLE normalised name, never a substring**, for the
+  reason {@link coveredByCatalogue} gives: `neck` is plain and `neck hardware`,
+  `neck implant` and `neck tattoo` are his casts' headline finds. So is `third
+  eye` against `eye`, `nose horn` against `nose`, `shoulder armor` against
+  `shoulder`.
+
+  ⚠ **What it does NOT catch, declared.** A plain part the reading names in a
+  word that is not here (`thigh`, `throat`) still draws a row, exactly as today
+  — a row too many, never a real feature lost. A creature's unusual version of
+  a plain part named with the plain word (a scaled `neck`) gets no row; it is
+  changed by words, which is #2856's cautious panel. And a mark ON a plain part
+  is untouched: a tattoo or a scar is `kind: marking`, never `anatomy`, so it
+  keeps its own row wherever it sits.
+
+  ⚠ **What it does NOT stop, declared.** The pointer road still buys a box and
+  a cut for each of these names; only the panel drops the row. That is
+  deliberate for this card: the panel is rebuilt from the KEPT reading every
+  time it is opened, so a rule here reaches every scan already on file without
+  a re-scan. Not buying the cut is the follow-up, and its home is
+  {@link foundRoadOf}'s `place` road.
+*/
+const PLAIN_ANATOMY_WORDS: readonly string[] = [
+  /* Below the head — the build, which his ruling keeps as one thing. */
+  "neck", "collarbone", "collar bone", "shoulder", "chest", "bust", "torso",
+  "abdomen", "waist", "hip", "arm", "hand", "leg", "nipple",
+  /* The head and face's own scaffolding — what the face rows already answer,
+     or what the catalogue deliberately gives no row (lashes, fable-382 §1). */
+  "head", "face", "skull", "scalp", "forehead", "cheek", "eyelid", "eyelash",
+  "eyelashes", "iris", "irises", "pupil", "nostril", "mouth", "tooth",
+];
+const PLAIN_ANATOMY: ReadonlySet<string> = new Set(PLAIN_ANATOMY_WORDS.map((word) => normalisedName(word)));
+
+/**
+ * Is this the ordinary body rather than a feature — see the block above.
+ *
+ * `anatomy` only: a word on the list filed as anything else is the reading
+ * saying it is a garment, a worn thing or a mark, and that is its answer.
+ */
+export function isPlainAnatomy(found: { noun: string; kind: FeatureKind }): boolean {
+  return found.kind === "anatomy" && PLAIN_ANATOMY.has(normalisedName(found.noun));
+}
+
 /**
  * WHICH ROAD ONE FOUND THING TAKES — one answer, read in one place.
  *
