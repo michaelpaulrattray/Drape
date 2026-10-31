@@ -27,6 +27,7 @@ import { throughFalGate } from "./falConcurrency";
 import { classifyFalHttp, falHeaders } from "../providers/falTransport";
 import { REGION_CARDS, REGION_CARD_ENTRIES, type AskedAs, type RegionCard } from "./regionCards";
 import { FILL_MEASURED_NOT_REFUSED, judgeCut } from "./cutQuality";
+import { onTheFace } from "./faceExtent";
 import { MaskError, overlapWith, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { PointerBox, RegionReader, SideRegions } from "./maskedRefine";
@@ -703,34 +704,6 @@ export function keepPiecesAtTheSide(
  *  as well as across — the face rule judges both. */
 export type DroppedFacePiece = { pixels: number; centreX: number; centreY: number };
 
-/**
- * IS A THING CENTRED HERE ON THE FACE (#2844) — no farther outside the face
- * read's extent, on either axis, than that axis's middle is inside it.
- *
- * Read across, that is {@link atTheSide}'s own construction turned outward: a
- * piece beyond the face's edge is still the face's when it is no farther past
- * that edge than the edge is from the face's middle. Read down, the same
- * sentence with the face's top, bottom and middle row. A tie is kept, for
- * `atTheSide`'s reason. Both bounds come off the one face read, so nothing here
- * is tuned: the face is its own measure.
- */
-function onTheFace(
-  centreX: number,
-  centreY: number,
-  face: { midline: number; left: number; right: number; top: number; bottom: number; middle: number },
-): boolean {
-  const across = centreX < face.left
-    ? face.left - centreX <= face.midline - face.left
-    : centreX > face.right
-      ? centreX - face.right <= face.right - face.midline
-      : true;
-  const down = centreY < face.top
-    ? face.top - centreY <= face.middle - face.top
-    : centreY > face.bottom
-      ? centreY - face.bottom <= face.bottom - face.middle
-      : true;
-  return across && down;
-}
 
 /**
  * ONLY THE PIECES OF A FACE FEATURE THAT ARE ON THE FACE — an eye, a brow or
@@ -2466,6 +2439,12 @@ export function createFalRegionReader(input: {
           boxes: boxes.length,
           atThisSide: here.length,
           fills: judged.map((one) => (one.verdict === null ? null : one.verdict.fill)),
+          /* HOW MANY SEPARATE PIECES EACH CUT CAME BACK IN, and how big its
+             biggest one was (#2841). Measured, refusing nothing — the fill
+             beside them cannot see fragmentation at all, which is how a cut in
+             29 scraps passed the judge. */
+          pieces: judged.map((one) => (one.verdict === null ? null : one.verdict.pieces)),
+          largestPieceShares: judged.map((one) => (one.verdict === null ? null : one.verdict.largestPieceShare)),
           found: kept !== null,
         },
         kept === null

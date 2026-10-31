@@ -70,6 +70,7 @@
  * the founder.
  */
 import { capitalize, type CastPronouns } from "./castPronouns";
+import { onTheFace, type FaceExtent } from "./faceExtent";
 import type { FeatureKind } from "./faceDiscovery";
 import { catalogueWordsOf, normalisedName, type NamedNotCut } from "./pointerCut";
 import type { FeatureSlot } from "./recipeAssembler";
@@ -2007,21 +2008,91 @@ export function facePanel(input: {
   };
 
   /**
+   * THE FACE THIS SCAN ITSELF DREW — the span of the catalogue face rows it
+   * actually cut, or null when it cut none.
+   *
+   * This is the measuring stick for *is a found body part on the face*, and it
+   * is the scan's OWN answer rather than a list of face words: whatever the
+   * catalogue groups as `face` (eye, brow, lashes, nose, lips, teeth,
+   * cheekbone, jaw, chin, ear, horns), and only those of them this cast turned
+   * out to have. A creature whose single drawn face row is its horns is
+   * measured by its horns — the right answer for that creature, and one no word
+   * list could give. That is N3's own principle (*"we really cannot be working
+   * from fixed lists in a fluid editing application"*).
+   *
+   * ⚠ **Only boxes sharing the asking thing's frame are unioned.** *A box
+   * without its frame is a rectangle in an unknown space* ({@link PanelBox}'s
+   * own header), so a slot measured on another frame is skipped rather than
+   * mixed into the span. Memoised per frame because every found row on one scan
+   * asks the same question.
+   */
+  const faceExtents = new Map<string, FaceExtent | null>();
+  const faceExtentOn = (frame: PanelBox["frame"]): FaceExtent | null => {
+    const key = `${frame.width}x${frame.height}`;
+    const held = faceExtents.get(key);
+    if (held !== undefined) return held;
+    let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity;
+    const drawnSlots = input.scan?.slots;
+    if (drawnSlots !== undefined) {
+      drawnSlots.forEach((drawn, slot) => {
+        if (slotDefinition(slot)?.group !== "face") return;
+        if (drawn.box.frame.width !== frame.width || drawn.box.frame.height !== frame.height) return;
+        left = Math.min(left, drawn.box.x);
+        right = Math.max(right, drawn.box.x + drawn.box.width);
+        top = Math.min(top, drawn.box.y);
+        bottom = Math.max(bottom, drawn.box.y + drawn.box.height);
+      });
+    }
+    /* The centre of what was drawn is the honest midline here. The reader's own
+       comes off the face read the side-splitting already used; a span built
+       from rectangles has no better answer, and {@link FaceExtent} says so. */
+    const extent = left <= right && top <= bottom
+      ? { left, right, top, bottom, midline: (left + right) / 2, middle: (top + bottom) / 2 }
+      : null;
+    faceExtents.set(key, extent);
+    return extent;
+  };
+
+  /**
    * The section a found thing's OWN row lists in: a worn thing is an
-   * accessory, by his ruling above; a BODY PART lists under Face; a mark on the
-   * skin is also on this character.
+   * accessory, by his ruling above; a mark on the skin is also on this
+   * character; a BODY PART lists under Face when it is ON the face, and under
+   * Body when it is not.
    *
    * ⚠ **Body parts moved out of *Also on this character* on 2026-10-29 (#2801)**,
    * on his eye on the first creature: a found *Tusks* row sat beside the
    * tattoos. His ruling above puts marks in that section; a tusk, a snout or a
-   * third eye is the body. ⚠ **A body part that is not on the face (a tail, a
-   * wing) also lists under Face**, because nothing on the reading says which is
-   * which without a word list; that limit is declared on the card.
+   * third eye is the body.
+   *
+   * ⚠ **AND FACE IS NO LONGER WHERE EVERY BODY PART LANDS — #2840, his eye
+   * rounds 9 and 10.** This docblock used to close *"a body part that is not on
+   * the face (a tail, a wing) also lists under Face, because nothing on the
+   * reading says which is which without a word list; that limit is declared on
+   * the card"*, and #2807 part 1 named the day that limit would end: *"a
+   * reading holding a body part the scan's face cuts do not touch is the day
+   * this becomes one branch plus one frame for his eye"*. His round 9 drew
+   * **two Shoulders rows under Face**, and his round 10 a **Collarbone** —
+   * *"no idea why collarbone is showing up?"*. Those are the instance.
+   *
+   * **The branch reads PLACE, not words**: a found body part whose box is not
+   * centred on {@link faceExtentOn}'s span lists under Body. `Body` is already
+   * declared in {@link PANEL_GROUPS} between Hair and Outfit, and an empty
+   * section filters itself out — so this needs no panel design and adds no
+   * heading to a cast that has no body rows. His own placement ruling (#2789)
+   * is what it serves: *"the body rows hold the body alone"*.
+   *
+   * ⚠ **It fails toward today's panel.** A scan that drew no face row at all
+   * has no span to measure against, and every body part stays under Face
+   * exactly as it does now — a missing measurement never moves a row.
    */
-  const ownSectionOf = (kind: FeatureKind): PanelSection => {
-    if (kind === "accessory") return "accessories";
-    if (kind === "anatomy") return "face";
-    return "open";
+  const ownSectionOf = (found: { kind: FeatureKind; box: PanelBox }): PanelSection => {
+    if (found.kind === "accessory") return "accessories";
+    if (found.kind !== "anatomy") return "open";
+    const face = faceExtentOn(found.box.frame);
+    if (face === null) return "face";
+    const centreX = found.box.x + found.box.width / 2;
+    const centreY = found.box.y + found.box.height / 2;
+    return onTheFace(centreX, centreY, face) ? "face" : "body";
   };
 
   /** One found thing as a child of whatever it sits on. */
@@ -2382,7 +2453,7 @@ export function facePanel(input: {
     const row: PanelRow = {
       state: "settled",
       slots: [found.slot],
-      group: ownSectionOf(found.kind),
+      group: ownSectionOf(found),
       name: capitalize(noun),
       spoken: spokenName,
       /*
@@ -2436,7 +2507,7 @@ export function facePanel(input: {
         push({
           state: "settled",
           slots: [child.slot],
-          group: ownSectionOf(child.kind),
+          group: ownSectionOf(child),
           name: capitalize(noun),
           spoken: spokenName,
           words: [],

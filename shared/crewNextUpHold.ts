@@ -979,6 +979,25 @@ export type UnheldDecision = {
   readonly recommendation: string;
   /** Why this one is HIS, or `null` for an ordinary card (#2117). */
   readonly founderHeld: string | null;
+  /**
+   * THE OPEN PULL REQUEST THAT ALREADY HOLDS THIS CARD OFF EVERY SEAT'S OFFER,
+   * or `null` (#2866).
+   *
+   * ⚠ **`null` MEANS "NOT BY A PULL REQUEST", NEVER "STILL ON OFFER"** — and
+   * the difference is the whole of this field. Two states take a card off offer
+   * (`buildStateHoldsOffOffer`): an open pull request and a live claim. This
+   * band is handed the pull requests and is **not** handed the comment facts a
+   * claim is read from, so a `null` here is silent about the claim half by
+   * construction. **The printed row must say no more than that** — #2764's own
+   * governing ⚠, *a reader-side repair must not be allowed to say more than it
+   * knows*, applied to the sentence this reader's band prints.
+   *
+   * ⚠ **AND IT IS `null` ON EVERY ROW WHEN THE BOARD WAS NOT READ.** The caller
+   * that could not read the open pull requests is the only thing that knows it
+   * could not, and it says so rather than printing this field's silence as a
+   * fact.
+   */
+  readonly heldOffOfferBy: number | null;
 };
 
 /**
@@ -1035,6 +1054,38 @@ export type UnheldDecision = {
  * recommendation is a question for HIM or a note for the next shift is a
  * judgement about work, and a `blocked` label applied by a script would take a
  * takeable card off every seat's offer on a guess.
+ *
+ * # ⚠ AND ITS PRINTED BAND SAID MORE THAN IT KNEW — #2866, 2026-10-30
+ *
+ * The band's own sentence closed *"and **every seat is still offered them**"*,
+ * **and that half was false of the very first card it ever fired on.** This
+ * reader was handed `{ issueNumber, labels, body }` and nothing about pull
+ * requests, so it could not know that an open one already holds a card off
+ * every seat's offer — and `buildStateHoldsOffOffer` makes an open pull request
+ * one of only two states that do exactly that.
+ *
+ * **Measured over the live queue the night it was repaired (97 open cards, 12
+ * open pull requests):** the band named **#2841** and #2841 was on offer to
+ * nobody — `pullRequestBuildsCard(#2860, 2841)` answers `["title","branch"]`,
+ * `crewCardBuildState` answers `{"kind":"pull-request","pullRequest":2860,
+ * "stage":"gate"}`, and `buildStateHoldsOffOffer` answers `true`. The seat cut
+ * agreed on the same pass: #2841 was in its skipped list. So the sentence was
+ * wrong on **1 of 1 rows**, and it was wrong in the direction that
+ * **manufactures work** — a shift reading it is being sent to apply a hold to a
+ * card that needs none, which is what the band was built to stop costing.
+ *
+ * ⚠ **THE ROW IS KEPT AND ONLY THE CLAIM IS DROPPED, which is the card's own
+ * option 2 and not its option 1.** Narrowing the band to drop a held card would
+ * hide a cell whose pull request may be about something else entirely, and the
+ * band's value is that a person reads the row and decides. Its defect was one
+ * clause that pre-decided wrongly.
+ *
+ * ⚠ **THE ANSWER IS INJECTED, NOT THE BOARD, AND THE REASON IS AT THE BYTES.**
+ * `openPullRequestBuilding` owns the selection, and it lives in
+ * `shared/crewCardBuildState.ts` — **which imports THIS module** (its line 92,
+ * for the hold vocabulary). Taking the board here and calling that reader would
+ * close a cycle between the two, so the caller passes the answer it already has
+ * and neither side keeps a copy of the rule (working law 4).
  */
 export function planUnheldDecisions(input: {
   /** Every OPEN card, with the labels and body `gh issue list` returns. */
@@ -1043,6 +1094,17 @@ export function planUnheldDecisions(input: {
     readonly labels: readonly string[];
     readonly body: string;
   }>;
+  /**
+   * WHICH OPEN PULL REQUEST ALREADY HOLDS A CARD OFF OFFER — `openPullRequestBuilding`
+   * (`shared/crewCardBuildState.ts`) wrapped by the caller, which holds the board.
+   *
+   * ⚠ **ABSENT MEANS THE BOARD WAS NOT READ, NOT THAT NOTHING HOLDS THESE
+   * CARDS** — `notBuilt`'s precedent one module over, and the same failure
+   * direction: with no resolver every row answers `null`, the caller prints
+   * that it could not look, and the band behaves exactly as it did before this
+   * existed. **A missing resolver can never invent a card being on offer.**
+   */
+  readonly heldOffOfferBy?: (card: number) => number | null;
 }): readonly UnheldDecision[] {
   const found: UnheldDecision[] = [];
   for (const row of input.open) {
@@ -1063,6 +1125,10 @@ export function planUnheldDecisions(input: {
       workLabels,
       recommendation,
       founderHeld: FOUNDER_HELD_CARDS.get(row.issueNumber) ?? null,
+      /* ⚠ `?? null` and never `|| null`: pull request #0 does not exist, but a
+         resolver answering `0` would be a reader fault worth seeing as a row
+         rather than silently reading as "nothing holds it". */
+      heldOffOfferBy: input.heldOffOfferBy?.(row.issueNumber) ?? null,
     });
   }
   return found.sort((a, b) => a.issueNumber - b.issueNumber);
