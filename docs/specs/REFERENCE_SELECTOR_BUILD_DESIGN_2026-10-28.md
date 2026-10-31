@@ -16,6 +16,93 @@ and is cited to a file. The parent design's six rulings (fable-1505 §1) are
 inherited except where one of his later words retired one, and each such
 retirement is named.*
 
+⚠ *AMENDED 2026-10-31 (the escalated Fable seat, on card #14's held design
+decision): **the surface is the SPOTLIGHT, not the markers** — §0 below carries
+the decision, his words and the court's numbers; §§1, 3, 4, 6, 8 and 9 carry
+their amendments inline, struck never deleted.*
+
+---
+
+## 0 · AMENDED TO THE SPOTLIGHT — 2026-10-31, on his eye
+
+**His eye, 2026-10-30, on a private prototype built from this card's spotlight
+court output (chat, verbatim): *"I WOULD SAY I LIKE THIS MUCH BETTER THAN THE
+BOXES THOUGH"* — recorded on #14 as *"Taken as the direction, with spotlight
+over boxes in both the picker and the face panel."*** His earlier eye on the
+marker mock (2026-10-29, verbatim: *"i think it reads well enough for now
+aslong as we get the tech working i can refine the design later"*) passed that
+mock as it stood; the later word is a direct comparison of the two surfaces,
+and the comparison wins. His own proposal, the same day, is the interaction
+spec: *"what if instead of boxes it worked exactly as pinterest works it sort
+of highlights the piece your mouse is over and darkens the rest? for the
+reference picker does that help the design?"*
+
+**So slice 3 builds the spotlight**: the attached picture is split into pieces
+once; the piece under the pointer lights while the rest darkens; a tap takes
+the piece under the finger. There are no named markers on the picture any
+more — **the name is read from the TAPPED cut and lands on its chip before any
+money moves**, which keeps §1's law-9 property intact in the same strength.
+
+**The road is measured, not believed** — the spotlight court ran 2026-10-30
+(`relay-agent-14spot`; the full verdict with every number is a comment on #14;
+≈$0.31 house): a 32-point SAM 3 grid in ONE call (`fal-ai/sam-3/image`, point
+prompts, empty text prompt) splits a photo into pieces that light whole
+garments — 7 of 9 things garment-level, 4.3–6.6 s typical and 52.3 s once,
+≈0.5¢ a photo; a single SAM 3 POINT at the tapped spot cuts the right piece
+8 of 9 (1.1–3.8 s, ≈0.5¢ a tap); and today's reader names a whole-thing cut
+8 of 8 (one text call per tap on the cut on flat grey, 1.5–4.1 s,
+0.05–0.23¢). **A spotlight is buildable on SAM 3 and is not buildable on the
+split alone** — the split lights, the point cuts, the reader names: three
+calls with three different jobs.
+
+**What the spotlight dissolves — the two problems that made slice 3
+unstartable as written:**
+
+- **The streaming problem is gone.** The marker road bought one ~13 s detect
+  per name, sequentially — 169 s for a 12-marker picture — and slice 3 owed a
+  per-marker transport nobody had designed. The split is ONE call; hover is
+  then a hit-test in the browser and costs nothing. No operation rows, no
+  polling, no transport architecture.
+- **#2787 never reaches this surface.** Two names arriving on one identical
+  box was the marker road's collision; with no per-name boxes drawn there is
+  nothing to collide. (#2787 stays open and `blocked` — the per-name detect
+  still serves the words-only take, #2736's road.)
+
+**What it does NOT dissolve — three hazards, measured in the same court, each
+owned below:**
+
+1. **Small things are not in the split.** The earring and the necklace had no
+   piece of their own, so hover cannot show them. A tap is therefore honoured
+   wherever it lands, lit or not: the point cut found all four worn things,
+   earring and necklace included (4 of 4, IoU 0.985 / 0.943 / 0.901 / 0.893).
+   §3 carries the rule.
+2. **The face must never light.** Hovering jewellery or hair lit the whole
+   person, face included, in both split methods. The likeness fence now binds
+   the HOVER SET, not only the cut — §6 carries the rule.
+3. **Part or whole.** A point returns whatever part is under the finger (the
+   belt's keeper alone, honestly named *"leather strap"*; a second tap on the
+   strap returned the whole belt at 0.958), and lapels, cuffs and toe caps
+   come back as their own pieces. The clean-up handles the hover half; the
+   chip's honest name and a second tap handle the tap half. §3 carries it.
+
+**And one obligation is his, verbatim:** *"Whoever builds slice 3 owes that
+clean-up as part of the split, measured on the court's fixtures."* It is the
+no-extra-call post-process his prototype carries — keep each piece's main body
+(components of at least 10% of its largest); give a pixel two pieces claim to
+the one it sits deeper inside; fill holes under 2% of the piece — and it
+answered his own question on the frame (why the jacket lit part of the scarf):
+the raw masks speckle on textured knits, and one point's mask leaked onto the
+neighbouring piece.
+
+**What this amendment does not change:** the no-words tap is still a complete
+ask (§1 — the noun arrives at tap time instead of attach time, and the
+customer still sees it before the spend); no fixed list anywhere (§2); the
+fences (§6); the flag, its chain and its off-until-the-surface-exists position
+(§9); slices 1 and 2 as shipped history; slice 5 and the #2736 seam. **His
+word is the direction, not yet a formal yes on a built surface** — slice 3's
+evidence pack goes to his eye, and #14 still closes only on his eye on a real
+tapped edit on his own account.
+
 ---
 
 ## 1 · THE NO-WORDS TAP — the owed first section, answered
@@ -48,13 +135,25 @@ the marker and type words instead (Q1's SUPPLEMENT ruling, unchanged), and
 the geometry of what they tapped — their own choice — is what is cut, whatever
 the label said.
 
-**What dies with this answer, and it is a saving:** the parent design's §3
+~~**What dies with this answer, and it is a saving:** the parent design's §3
 point-prompt dependency — the one fact it leaned on hardest and marked
 *documented, not driven* — is **not needed**. A tap selects a found region,
 and the found region's box goes to the segmenter through `regionInBox`
 (`falRegionReader.ts:1375`), which #2532's bench measured and #2692 built.
 The $0.03 confirm-the-schema probe from §3 is cancelled; the road a tap takes
-is already driven.
+is already driven.~~
+
+⚠ **The paragraph above reversed with the spotlight (§0, 2026-10-31): a tap IS
+a point prompt now.** It held only while a tap selected a pre-boxed marker.
+What the parent design marked *documented, not driven* is now DRIVEN: the
+spotlight court measured a SAM 3 point cut at 8 of 9 garment-level, so the
+dependency returns with numbers instead of a belief, and no $0.03 probe is
+needed either way. **What §1 actually decides holds unchanged**: the no-words
+tap carries its noun by construction, and a human eye — the customer's — sits
+between the reader's naming and the spend. The noun is read from the tapped
+CUT (8 of 8 on whole-thing cuts) and lands on the chip they see before they
+press Refine; the only thing that moved is WHEN the name is bought — at tap
+time, for the one thing tapped, instead of at attach time for everything.
 
 ---
 
@@ -89,7 +188,12 @@ is already driven.
   and when the reading finds nothing takeable, it says so and leaves the
   words road open: **"We couldn't find anything in this picture to take.
   You can still describe what you want in words."** Nothing is charged for
-  either.
+  either. ⚠ *(2026-10-31: under the spotlight the attach-time trigger for
+  that second sentence mostly disappears — an empty or failed split fails
+  open SILENTLY to the words road, because a tap still works anywhere. The
+  sentence survives where it is still true: a TAP whose cut the judge refuses
+  gets it, which is #2565 slice 2's holes-mean-words rule wearing this
+  surface's copy.)*
 - **The `casting_reference_crops` mint (Q2's row) needs one schema change.**
   The table (migration 0040) has never held a row; its `intent` column is
   `enum('hair','eyeColour')` — a fixed list in the one place the open road
@@ -107,18 +211,73 @@ is already driven.
 
 ---
 
-## 3 · THE SURFACE — what the customer sees (the mock shows this)
+## 3 · THE SURFACE — what the customer sees ~~(the mock shows this)~~
+
+⚠ *(2026-10-31: the marker mock no longer shows this surface — the visual
+reference is the spotlight prototype he preferred, built from the court's
+pieces; his refine-later word covers the visual polish.)*
 
 The attach door does not move: one `+` beside the ask box, any picture, no
 label naming a feature (`referenceAttachCopy.ts`'s own ruling). What changes
 is what happens after the picture lands.
 
+⚠ **AMENDED 2026-10-31 (§0): items 1–3 below are struck and replaced by this
+block; items 4 and 5 stand unchanged.**
+
 1. **The picture opens large the moment it is attached** — his spec's own
+   verb: *"upload it it appear and like a pinterest style selector"*. While
+   the split runs, the only words on it are honest progress: **"Reading your
+   picture…"** — no catalogue names, no skeleton rows (his #2566 finding 1).
+   The split is ONE call, 4.3–6.6 s measured (52.3 s once, on the provider's
+   bad minute); a split that fails or stalls leaves the picture exactly as an
+   attach looks today — words road untouched, nothing charged, nothing said
+   about machinery (§4's fail-open property, inherited).
+2. **The piece under the pointer lights; the rest darkens.** His sentence is
+   the spec. No boxes, no dots, no labels painted on the picture. The lit
+   geometry is the cleaned split piece (§0's owed clean-up), faces never
+   light and the whole-person piece never lights (§6), and tiny fragments
+   never light. On a touch screen there is no hover: the first tap lights the
+   piece, a second tap takes it.
+3. **Tap to take; tap again to let go.** A tap is honoured wherever it lands,
+   lit or not — small things (an earring, a necklace) have no split piece and
+   are still cut correctly by the point under the finger (4 of 4 in the
+   court). On a tap the piece is cut (one SAM 3 point), cleaned and judged
+   (`cutQuality.ts`, consumed never rewritten), faces subtracted in the
+   bytes, and NAMED — one text call on the cut — and a chip with that name
+   appears above the ask box, the same row the attached-picture chip already
+   lives in (`RefinePanel.tsx`). **The chip says what was actually cut**: tap
+   the belt's keeper and it honestly names the small thing it got; tap
+   elsewhere on the belt and the whole belt comes (0.958 on the court's
+   second tap). The chip shows the cut piece at about 2 s and its name when
+   the reader answers, 2–4 s later. **Several taps on one picture is the
+   first ship** — his spec sentence is literally *"i click the hair and
+   earrings"*, so Q6's owed question stays answered YES for multiple TAPS;
+   the ONE-PICTURE ruling itself is unchanged and the copy still says it.
+
+   **One property the marker road had that the spotlight trades away, named
+   rather than glossed:** the reading never marked scene things, because it
+   was only ever asked about the person or the item. A split does not know a
+   wall from a jacket, so a background piece can light on hover. The first
+   ship accepts that: a tapped scene piece is cut, honestly named, and the
+   ask meets the same scenery wall the words road has — Refine changes the
+   person, not the shoot, and the refusal says so. If his eye finds lit
+   backgrounds noisy on the built surface, the repair is design polish under
+   his refine-later word, never a pre-naming pass — naming every piece up
+   front would re-buy the per-name economy the spotlight just retired.
+
+   **The whole-OUTFIT take moves to slice 5**, where garment identity exists
+   (the named cuts, through the #2736 seam): the split does not know which
+   pieces are garments until they are tapped and named, so a pre-named
+   *Outfit* group on the split would be a guess. Piece taps serve *"wear this
+   jacket"* from the first ship; *"put them in this whole outfit"* stays his
+   sentence and lands with the seam.
+
+~~1. **The picture opens large the moment it is attached** — his spec's own
    verb: *"upload it it appear and like a pinterest style selector"*. While
    it is being read, the only words on it are honest progress: **"Reading
    your picture…"** No catalogue names, no skeleton rows (his #2566
-   finding 1).
-2. **Found things appear as small round markers ON the picture** — the
+   finding 1).~~
+~~2. **Found things appear as small round markers ON the picture** — the
    Pinterest affordance — each with a short name in the customer's own
    vocabulary (the discovery read's bare noun: *Hair*, *Jacket*, *Earrings*,
    *Neck tattoo*). Markers appear as they are found rather than all at once.
@@ -128,14 +287,15 @@ is what happens after the picture lands.
    Garments mark **per piece** (*Jacket*, *Top*, *Belt*) under one quiet
    *Outfit* group affordance that selects all of them in one tap — piece
    taps serve *"wear this jacket"*; the group tap serves *"put them in this
-   whole outfit"* (both are his own sentences, #2736).
-3. **Tap to choose; tap again to let go.** A chosen marker gets a selected
+   whole outfit"* (both are his own sentences, #2736).~~
+~~3. **Tap to choose; tap again to let go.** A chosen marker gets a selected
    ring, and a chip with the same name appears above the ask box — the same
    row the attached-picture chip already lives in (`RefinePanel.tsx`).
    **Several taps on one picture is the first ship** — his spec sentence is
    literally *"i click the hair and earrings"*, so Q6's owed question is
    answered YES for multiple TAPS; the ONE-PICTURE ruling itself is
-   unchanged and the copy still says it.
+   unchanged and the copy still says it.~~
+
 4. **Then they speak, or they don't.** Say nothing and press Refine: the
    full look of each chosen thing applies (§1). Type — *"use the hair color
    only"* — and the words scope what is taken from the chosen things (Q1,
@@ -186,6 +346,44 @@ because that half was never stale.
 | the edit renders | the repaint road (every paid refine since #1577 4b), cuts as references | **#2736's design owns how a cut rides the repaint** — see §5 |
 | after it lands | the item is re-cut from the CAST's own picture and saved; the stranger's photo never carries forward | **RULED** — #2565 slice 4, his *"okay cool im happy with the build"* |
 
+⚠ **AMENDED 2026-10-31 (§0): THE SURFACE NO LONGER CONSUMES ROWS 2–4 — THE
+SPLIT AND THE POINT REPLACE THEM.** The reference reading
+(`referenceDiscovery.ts`, slice 2, merged dark — `readAndMarkReference` has
+zero production callers, read 2026-10-30) and the per-name detect are
+superseded on the picker road: the attach buys ONE split instead, and the name
+is read from the tapped cut. Row 4's cut survives with a different prompt — a
+POINT at the tap, not `regionInBox` on a marker's box. **The detect →
+`regionInBox` machinery itself stays BUILT and stays serving the words-only
+take** (#2736's sentence road, live at `users:1`); whether slice 2's reading
+road is retired outright is its own card the moment slice 3a lands, never
+folded in (his 2026-09-24 rule) — a dark road with no planned consumer is
+exactly what the ghost audit exists to catch. Four steps the spotlight ADDS,
+none of which exists in the tree tonight:
+
+| step | what runs | state |
+|---|---|---|
+| split the picture once | SAM 3, a 32-point grid in ONE call (`fal-ai/sam-3/image`, point prompts, empty text prompt) | **UNBUILT** — `falRegionReader.ts` sends one box prompt plus `max_masks` (`:1355`) and has no point-prompt shape; the court drove the raw endpoint. The provider refuses `max_masks` > 32, measured |
+| clean the split | his owed post-process, no extra call: components ≥10% of a piece's largest kept; a contested pixel to the deeper piece; holes <2% filled; tiny fragments and the whole-person piece dropped from the hover set (§6) | **UNBUILT** — prototyped on the court's fixtures; measured there again before the surface ships (his verbatim obligation, §0) |
+| cut the tapped spot | SAM 3, ONE point prompt at the tap | **UNBUILT** as a reader shape; measured in the court at 8 of 9 garment-level, 1.1–3.8 s |
+| name the tapped cut | today's reader, one call on the cut on flat grey, the bare-noun contract (`isBareNoun`) | prompt shape **measured** in the slice-1 and spotlight courts (8 of 8 on whole-thing cuts); the production call site is slice 3a's |
+
+⚠ **THAT 8-OF-8 WAS MEASURED ON A FRAMING THE PRODUCT DID NOT USE, AND SINCE
+#2875 IT IS (2026-10-31).** The courts named each piece on a tight crop of
+itself — bounding box, 8% margin, enlarged to a 384-px longer side, grey 150 —
+and `pieceOnGrey` shipped the whole photograph greyed out at 128 instead, so
+the figure quoted here described a method the code did not run. Re-measured on
+the court's own nine tap cuts, 300 reader calls, $0.42: the two framings SCORE
+the same (82 of 96 either way), the seven garment-sized pieces are 12 of 12 in
+both, and the crop wins on the two things that are not the score — it is
+**2.1× cheaper a name** and it is **stable**, where the whole frame answered
+one 0.2% piece six different ways including *"Table leg"*. `pieceOnGrey` now
+crops, so this row's figure and the shipped road are the same road. ⚠ **It
+costs about half a second a name** (p50 2.10 s against 1.64 s, interleaved).
+
+Rows 5–10 of the table above (clean/judge, person-free bytes, the mint, the
+ask, the render, the re-cut) are **unchanged** — the tap's cut enters the same
+pipeline whatever drew it.
+
 Three build notes that are decisions, stated so they are not re-made:
 
 - **The reference reading is the discovery shape with a different question.**
@@ -195,14 +393,22 @@ Three build notes that are decisions, stated so they are not re-made:
   first (*what is this picture of; what is the person wearing; what is the
   standalone item*) and adds the head crop only when a person is present.
   Names obey the same bare-noun contract (`isBareNoun`), because they become
-  `regionInBox` neighbours and detector prompts.
+  `regionInBox` neighbours and detector prompts. ⚠ *(2026-10-31: built, dark,
+  and no longer on the surface's road — see the amendment above. The bare-noun
+  contract itself moves to the tap's cut-naming call unchanged.)*
 - **A failed reading fails open to words, silently costing nothing** — the
   same property `faceDiscovery.ts` holds for scans: `{ ok: false }` means the
   picture simply presents with no markers and the words road untouched. A
-  provider's bad minute must never make an attach look broken.
-- **Markers are bounded** (a cap near 12, largest-first) so a busy photo is a
+  provider's bad minute must never make an attach look broken. ⚠ *(2026-10-31:
+  the property transfers to the SPLIT verbatim — a failed or empty split means
+  the picture presents with no spotlight, taps still honoured, words road
+  untouched, nothing charged, nothing said.)*
+- ~~**Markers are bounded** (a cap near 12, largest-first) so a busy photo is a
   surface and not a quiz; everything found remains takeable by WORDS even
-  when unmarked.
+  when unmarked.~~ ⚠ *(2026-10-31: no markers to bound. The hover set is
+  bounded by the split's own ceiling — the provider refuses more than 32
+  masks — and by the clean-up's fragment and face rules; everything stays
+  takeable by TAP anywhere and by WORDS always.)*
 
 ---
 
@@ -243,6 +449,18 @@ unmeasured surface gets the same capability sentence the road gives today.
 
 ## 6 · THE FENCES THAT HOLD, unchanged
 
+- ⚠ **AMENDED 2026-10-31 (§0 hazard 2): the likeness fence binds the HOVER SET
+  too.** Measured in the spotlight court: hovering the earring lit the whole
+  person, face included, and hovering the hair did the same in the other split
+  method. So, before any piece can light: every split piece has detected face
+  boxes subtracted in its mask (`subtractFaces`, `referenceTake.ts` — consumed,
+  never rewritten), and a piece that still covers a detected face's box — the
+  whole-person piece both split methods produce on a worn photo — is **dropped
+  from the hover set entirely**: a person is not a takeable thing. A tap there
+  still works, because the point cut returns the garment or hair under the
+  finger, not the person (4 of 4 in the court), and the tiny skin specks the
+  court saw at a hair piece's edge die in the same subtraction. **A face never
+  lights, on any road, under any split.**
 - **The likeness fence (Q4), strengthened to the strongest form:** the face
   is never a marker, never a tap target, never a cut. Any cut whose region
   overlaps a detected face is cleaned by SUBTRACTION IN THE BYTES —
@@ -269,6 +487,12 @@ unmeasured surface gets the same capability sentence the road gives today.
 
 ## 7 · THE DISAPPEARING-TECHNOLOGY GATE — answered in this body
 
+⚠ *(2026-10-31: all three answers HOLD under the spotlight and the first gets
+stronger — a lit piece under the pointer explains itself where a field of
+named dots had to be read. Nothing new to learn, the same one decision with
+full basis, and the technology still shows nowhere: the light is the picture's
+own geometry, and no split, segment, point or engine word reaches a screen.)*
+
 1. **What must the customer learn?** Nothing. They already attach pictures
    with `+`; the picture now shows them, in their own words, what it holds,
    and they tap what they want the way they tap anything. Saying nothing is
@@ -287,7 +511,10 @@ unmeasured surface gets the same capability sentence the road gives today.
 
 ## 8 · COSTS AND LATENCY, per house (clause 3 — stated or it is not decision-grade)
 
-```
+⚠ **AMENDED 2026-10-31 (§0): the block below is the MARKER road's economy and
+is struck — the spotlight's measured numbers follow it.**
+
+~~```
 fal (house)   per ATTACH   1 discovery read (one or two crops)   ≈ $0.009–0.018
                            + 1 detect per marker (≤12)           ≈ ½¢ each
                              (inferred: #2565 §8's one-feature read is ~1¢
@@ -303,7 +530,26 @@ latency       reading: markers appear progressively, first within ~10–20 s,
               while the customer is looking and typing anyway;
               tap-time cut: ~12 s at SAM 3's measured mean, inside the edit
               they just asked for.
+```~~
+
 ```
+fal (house)   per ATTACH   1 split call (32-point grid, one request)  ≈ 0.5¢
+                           4.3–6.6 s measured, 52.3 s once — all on
+                           FAL_CONCURRENCY; assertFalBudget untouched
+              per TAP      1 point cut ≈ 0.5¢ (1.1–3.8 s, measured)
+openrouter    per TAP      1 naming call on the cut ≈ 0.05–0.23¢ (1.5–4.1 s);
+              the interpreter call on refine is unchanged — the chosen
+              things' nouns ride it (Q1's one-call shape)
+credits       NOTHING NEW. A hover costs nothing; a tap is not a render;
+              the edit is the Refine price they already pay.
+latency       hover is a browser hit-test, free and instant once the split
+              lands; a tap's chip shows the cut piece at ~2 s and its name
+              ~2–4 s after that.
+```
+
+**The economy also moved in the right direction**: the marker road paid 2–7¢
+at every attach whether anything was tapped or not; the spotlight pays ≈0.5¢
+at attach and buys the rest only when the customer actually taps.
 
 ⚠ **The per-call figures are measured on CAST RENDERS** (#2532 bench, #2566
 build, #2565 §8) **and inferred for reference photographs** — busy scenes,
@@ -352,11 +598,21 @@ so slice 4's *"a cut with holes or broken edges is still not used"* is true of
 holes and not of pieces; **#2842**, a noun made of several parts keeps the
 biggest single part (`laces` returned 9 boxes and kept a 57x66 speck).
 
-⚠ **One number here contradicts the latency line above and slice 3 owns it:** a
+~~⚠ **One number here contradicts the latency line above and slice 3 owns it:** a
 whole picture took **169 s** (12 markers) and **116 s** (7), because the detect
 calls run one at a time at ~13 s each. The *"first markers within ~10–20 s"*
 sentence still holds for the FIRST marker — **so slice 3 streams markers as they
-land and never awaits the road.**
+land and never awaits the road.**~~ ⚠ *(2026-10-31: dissolved by the spotlight —
+one split call replaces the twelve detects, so there is nothing to stream; §0.)*
+
+⚠ **A SECOND COURT RAN AND IS COMPLETE — THE SPOTLIGHT COURT, 2026-10-30
+(`relay-agent-14spot`), AND IT IS THE ONE THE AMENDED SURFACE IS BUILT ON. Do
+not re-run it either.** The full verdict with every number, the split-method
+comparison (SAM 2 auto-segment, the 32-point SAM 3 grid, the SAM colour map),
+the point-cut and naming tables, and the three hazards are a comment on #14;
+§0 carries what binds the build. ≈$0.31 house, reported there. Its frames and
+the clickable prototype he judged are on the relay's machine
+(`C:\Users\Admin\drape-scratch\relay-14spot\`), never posted.
 
 ---
 
@@ -377,14 +633,98 @@ reads this document and the mock verdict first):
 2. **The reference reading, dark**: discovery variant + detect boxes on
    attach, server-side, no UI; the crops-table migration ceremony (§2) rides
    ahead of the first mint.
-3. **The surface**: the picture opens with markers, taps, chips — behind the
+3. ⚠ **REWRITTEN 2026-10-31 (§0), and cut in two PRs because the first is
+   server-dark and the second is his eye's:**
+   **(3a) The split-and-tap road, dark (server):** the 32-point grid call —
+   the reader's first point-prompt shape; his owed clean-up, measured on the
+   court's fixtures before the surface ships (§0, verbatim obligation); the
+   face-subtraction-and-drop rule for the hover set (§6); the point cut at a
+   tap; and the cut-naming call. All behind the flag, no UI. Two sentences
+   are corrected in the same commits that make them true:
+   `productionFlagPositions.mts`'s *"buys a reading nobody can see yet"*, and
+   the flag's catalogue entry, which describes the slice-2 reading as what
+   the flag buys. **Slice 2's reading road is left dark and untouched here;
+   its retirement is its own card the moment 3a lands** (§4's amendment).
+
+   ⚠ **3a IS CUT IN TWO, AND THE SEAM IS THE FLAG GATE — 2026-10-31,
+   `foreman-20261031-0418`.** The four roads above are built and the thing
+   that ties them to the flag is not, so the honest line between them is
+   *roads* and *entrance*:
+
+   - **(3a-1) THE FOUR ROADS — BUILT.** `splitAtPoints` and `cutAtPoint`
+     (`falRegionReader.ts`, both through the module's existing `post` so they
+     inherit the census and the one fal gate — **no fifth concurrency path**,
+     `assertFalBudget` untouched); `cleanSplit` (`referenceSplitCleanup.ts`,
+     his three rules plus §6's face rule); `nameTheCut`
+     (`referenceCutName.ts`, the court's prompt copied not paraphrased, its
+     own `reference.cutName` read purpose). ⚠ **His owed clean-up is
+     DISCHARGED and the measurement is on the card**: replayed against the
+     court's own saved split masks, the jacket's leak onto the scarf falls
+     **25,449 px (30.8% of the scarf) → 29 px**, and the measurement caught a
+     real ordering defect — the whole-person piece winning every contested
+     pixel and taking the tank top from 0.992 to **0.358** — which is why §6's
+     drop now runs BEFORE the arbitration and inside the same function.
+     ⚠ **One cost is stated rather than buried: the HAIR's hover region
+     shrinks, 0.935 → 0.503**, because a rectangular face box subtracted out
+     of a hair piece takes the hair inside the rectangle with it. That is §6
+     working as written; **changing it is a change to the likeness fence and
+     is HIS, not a builder's.**
+     ⚠ **BOTH FIGURES ABOVE WERE TAKEN ON THE COURT'S DEDUPLICATED MASKS, AND
+     #2873 IS WHAT MAKES THEM TRUE OF THE PRODUCT — read that card's note on
+     3a-2 below before quoting either.** They were never wrong about the
+     pipeline they describe; the pipeline simply did not exist until the court's
+     own near-duplicate step was ported. On the shipped road, measured
+     2026-10-31 on a real raw grid: **6 of 9 garment-level, which is this
+     slice's own "after" figure exactly**, and **the hair stands at 0.653
+     rather than 0.503** — still the one real cost, still below the 0.75 bar,
+     still his decision and not a builder's.
+   - **(3a-2) THE ENTRANCE — NOT BUILT.** The service that reads the
+     attachment's bytes, gates on `CASTING_REFERENCE_SELECTOR_SCOPE`, and
+     calls split → clean → face-detect, then cut → name on a tap. ⚠ **The two
+     owed sentence corrections belong HERE and were deliberately NOT made in
+     3a-1**: until something calls these roads the flag buys exactly what it
+     bought before, so correcting them on 3a-1 would have made this document
+     describe a purchase the code had not made. **3a-1 is road with no
+     entrance and says so** — nothing reaches it at runtime, so nothing a
+     customer or his account can do changes by a byte.
+   - ⚠ **One thing 3a-1 did NOT measure, declared rather than implied:** the
+     clean-up was measured on the court's **deduplicated** pieces, because
+     that is what the court saved. A live 32-point grid returns the same
+     garment from many points, and ~~the arbitration's tie rule collapses
+     duplicates by itself (measured: 18 pieces → 13, 8 → 5)~~ — but *on a raw
+     grid* that is reasoning, not a reading. **3a-2's first act is one real
+     split on his own account, and the figure to watch is the piece count.**
+     ⚠ **IT WAS BOUGHT (3a-2) AND THE STRUCK CLAUSE WAS WRONG IN THE WORST
+     DIRECTION — #2873, closed 2026-10-31.** The contest does not collapse
+     duplicates, it **CARVES** them: every contested pixel goes to exactly one
+     winner, so thirty-two near-identical masks become thirty-two slivers of one
+     another. Measured on a real raw grid: **26 / 26 / 28 pieces, and 2 of the 9
+     things garment-level** — pointing at the middle of a tank top lit 20% of it
+     and a sweater 21%. **The cause is that the court's own near-duplicate step
+     (`court.mjs:67`) never left the harness**, so every figure here was taken on
+     a set the shipped road did not produce. The step is ported with its
+     threshold measured rather than inherited
+     (`SPLIT_SAME_THING_IOU` = 0.5, the court used 0.85): the shipped road
+     now gives **11 / 6 / 8 pieces and 6 of 9**, and the per-thing hover numbers
+     are 0.978 tank top, 0.991 jacket, 0.994 scarf, 0.981 sweater, 0.954 belt,
+     0.986 sneaker, 0.653 hair.
+   **(3b) The surface:** the picture opens large, *"Reading your picture…"*,
+   the spotlight hover (tap-to-light on touch), tap → cut → chip with the
+   cut's own name, tap again to let go, fail-open to words — behind the flag,
+   evidence pack both themes, copy audit (every string verified / adapted /
+   invented). The visual reference is the spotlight prototype he preferred,
+   not the marker mock; **his formal yes comes on the built surface, on his
+   own account.**
+   ~~**The surface**: the picture opens with markers, taps, chips — behind the
    flag, evidence pack both themes against the approved mock, copy audit
-   (every string mock-verified / adapted / invented).
-4. **The tap's cut rides the ask**: regionInBox on tap (one box per call —
-   `pointerCut.ts`'s cap rule, inherited), face subtraction, the first
-   `casting_reference_crops` mint, nouns + cuts on the interpreter call, the
-   landed edit's re-cut-from-the-cast (#2565's rule). Hair, jewellery,
-   tattoos and every named non-garment thing work end to end here.
+   (every string mock-verified / adapted / invented).~~
+4. **The tap's cut rides the ask**: ~~regionInBox on tap (one box per call —
+   `pointerCut.ts`'s cap rule, inherited)~~ *(2026-10-31: the cut is 3a's
+   point road now; this slice carries it into the ask)* — face subtraction,
+   the first `casting_reference_crops` mint (the §2 ceremony rides ahead of
+   it), nouns + cuts on the interpreter call, the landed edit's
+   re-cut-from-the-cast (#2565's rule). Hair, jewellery, tattoos and every
+   named non-garment thing work end to end here.
    ⚠ **Depends on #2565 slice 2's clean-and-refuse pipeline — and that
    dependency is DISCHARGED, not removed (2026-10-30, #2827).** It read
    ~~"(unbuilt at the time of writing, per `pointerCut.ts`'s own
@@ -397,14 +737,27 @@ reads this document and the mock verdict first):
    (`subtractFaces`, `referenceTake.ts`, #2736 slice 2): built, consumed,
    never rebuilt here.
 5. **Garments through the seam** — WITH #2736's consumer (one PR or two
-   adjacent, whichever the two cards' builders agree, but one road).
+   adjacent, whichever the two cards' builders agree, but one road). ⚠
+   *(2026-10-31: the one-tap whole-OUTFIT take lands here too, where garment
+   identity exists in the named cuts — §3's amendment says why it cannot ride
+   the split.)*
 
-**What closes #14:** his eye on the mock (this sitting's ask), then the
-slices, then his eye on a real tapped edit on his own account. A card waiting
-on his eye does not close before it.
+**What closes #14:** ~~his eye on the mock (this sitting's ask), then the
+slices~~ *(2026-10-31: the mock ask is discharged — he passed the marker mock
+on 2026-10-29 and then preferred the spotlight prototype on 2026-10-30, which
+is the direction §0 builds; what remains is)* the slices, then **his eye on a
+real tapped edit on his own account**. A card waiting on his eye does not
+close before it.
 
 ## 10 · What this design does NOT decide
 
 #2736's step 0 (how a garment cut rides the repaint — that card's own Fable
 pass); the #2566 grouping repair (his five findings — its own design pass,
 owed there); §12.1's ink-placement widening; any widening past `users:1`.
+
+⚠ *Added 2026-10-31:* **the FACE PANEL's spotlight** — his 2026-10-30 word
+covers *"both the picker and the face panel"*, and the panel half is **#2868**,
+filed so the direction is not lost; it builds on the rebuilt panel (#2856,
+#2862), never here. And **the disposition of slice 2's dark reading road**
+(`referenceDiscovery.ts`) once 3a lands — its own card then, per §4's
+amendment, never folded into a build or a retirement.

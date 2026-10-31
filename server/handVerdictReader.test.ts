@@ -48,7 +48,7 @@ import { describe, expect, it } from "vitest";
 
 import { crewCardCommentFact } from "@shared/crewCardBuildState";
 import { blockOpeningLines } from "@shared/crewMarkdownLead";
-import { HAND_VERDICT_MARKER, isHandVerdict } from "@shared/handVerdict";
+import { HAND_VERDICT_MARKER, SHIFT_ANSWER_MARKERS, isHandVerdict, isShiftAnswer } from "@shared/handVerdict";
 
 import { classifyComment, type PrIdentity } from "../scripts/lib/reviewRounds.mts";
 
@@ -193,5 +193,83 @@ describe("what counts as the relay's hand verdict (#1568)", () => {
     expect(isHandVerdict(REAL_VERDICT)).toBe(true);
     expect(isHandVerdict(`## Heading\n\n${REAL_VERDICT}`)).toBe(false);
     expect(isHandVerdict("")).toBe(false);
+  });
+});
+
+describe("a shift's ANSWER is not a verdict and cannot clear a hold (#2855)", () => {
+  /*
+    ⚠ **THIS IS THE WHOLE CONTROL OF #2855 AND THE RISK IT WAS FILED WITH.**
+    The card's own ⚠ reads: *"a shift must never be able to clear a hold by
+    writing a header."* The way it cannot is that no decision reads
+    `isShiftAnswer` — so the arms here drive `classifyComment`, the merge tool's
+    own reader, over the two answer headers and assert it answers exactly what
+    it answered before this predicate existed.
+  */
+  const ANSWERS = SHIFT_ANSWER_MARKERS.map((marker) => `${marker} — seat1-20261030-193841**\n\nDone; the numbers are on the PR.`);
+
+  it("the reader recognises both headers the standing orders mandate", () => {
+    for (const body of ANSWERS) expect(isShiftAnswer(body)).toBe(true);
+    /* The positive control's other half: it is a real reader, not `() => true`. */
+    expect(isShiftAnswer(REAL_VERDICT)).toBe(false);
+    expect(isShiftAnswer("**Relay finding — HELD**\n\nfix it")).toBe(false);
+    expect(isShiftAnswer("")).toBe(false);
+    /* Anchored at the start of the header line, exactly as its siblings are. */
+    expect(isShiftAnswer(`## Heading\n\n${ANSWERS[0]}`)).toBe(false);
+    /* ⚠ AND THE ANCHOR IS `startsWith`, NOT `includes` — a sabotage that
+       loosened it SURVIVED the line above, because that body's header line does
+       not contain the marker at all. These do, mid-sentence, which is the shape
+       the anchor exists to refuse. */
+    expect(isShiftAnswer("Quoting the orders: **Finding answered — <shift id>** is the header.")).toBe(false);
+    expect(isShiftAnswer("> **Repair pushed — seat1**")).toBe(false);
+  });
+
+  it("⚠ the merge tool classifies it as nothing at all — byte for byte what it was", () => {
+    for (const body of ANSWERS) {
+      expect(classifyComment(comment(body), PR)).toBe("not-a-verdict");
+    }
+    /* And it is neither of the two kinds that decide, asked directly. */
+    for (const body of ANSWERS) {
+      expect(isHandVerdict(body)).toBe(false);
+    }
+  });
+
+  it("the card reader files it as an `answer`, which names a PULL REQUEST and decides nothing", () => {
+    const fact = crewCardCommentFact({
+      card: 2852,
+      body: ANSWERS[0]!,
+      createdAt: "2026-10-30T09:16:05Z",
+      authorLogin: PR.ownerLogin,
+      ownerLogin: PR.ownerLogin,
+    });
+    expect(fact).toEqual({ kind: "answer", card: 2852, at: "2026-10-30T09:16:05Z" });
+  });
+
+  it("CONTROL — an answer by another account is no fact at all", () => {
+    /*
+      Every seat posts as his account, so this gate is what keeps an outsider's
+      comment from moving a word on his page — the same floor the finding and
+      the verdict already stand on.
+    */
+    expect(crewCardCommentFact({
+      card: 2852,
+      body: ANSWERS[0]!,
+      createdAt: "2026-10-30T09:16:05Z",
+      authorLogin: "someone-else",
+      ownerLogin: PR.ownerLogin,
+    })).toBeNull();
+  });
+
+  it("CONTROL — a finding wearing an answer header is still the relay's finding", () => {
+    /*
+      The two hand markers are asked FIRST in `crewCardCommentFact`, so a body
+      that somehow carried both cannot be downgraded to an answer. Driven on the
+      order rather than trusted.
+    */
+    const both = `**Relay finding — HELD**\n\n**Finding answered — seat1**`;
+    expect(crewCardCommentFact({
+      card: 7, body: both, createdAt: "2026-10-30T09:00:00Z",
+      authorLogin: PR.ownerLogin, ownerLogin: PR.ownerLogin,
+    })).toMatchObject({ kind: "finding" });
+    expect(classifyComment(comment(both), PR)).toBe("finding");
   });
 });

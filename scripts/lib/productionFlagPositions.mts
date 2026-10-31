@@ -388,17 +388,47 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
     why:
       "built dark 2026-10-30 (#14 slice 2, the reference reading), shipped at "
       + "`off` and ABSENT from the service -- the design's section 9 says dark "
-      + "at birth. It buys what nothing else on this road buys: a text reading of "
-      + "an attached picture plus one detector rectangle per name it brings "
-      + "back. While it is off an attach is byte-identical to today -- no text "
-      + "call, no detect, no money, and the words road untouched. What it "
-      + "produces is a bounded list of named, boxed markers in memory and "
-      + "nothing else: no cut, no casting_reference_crops row, no stored byte, "
-      + "and no customer-visible surface, because the surface is slice 3 and the "
-      + "tap's cut is slice 4. So `users:1` on his account buys a reading "
-      + "nobody can see yet, which is why it stays off until slice 3 draws it. "
-      + "It is a child of CASTING_REFERENCE_ATTACH_SCOPE in the boot chain and "
-      + "can never reach past the door that keeps the picture it reads.",
+      + "at birth. ** WHAT IT BUYS CHANGED ON 2026-10-31 (slice 3a-2, the "
+      + "spotlight's entrance) AND THE OLD SENTENCE IS CORRECTED RATHER THAN "
+      + "KEPT.** It read `users:1` on his account buys a reading nobody can see "
+      + "yet, which was true while NOTHING IN THE PRODUCT READ THIS VARIABLE ON "
+      + "A REQUEST: slice 2's reading road has never had a caller, and slice "
+      + "3a-1's four roads shipped dark with none either. The two procedures "
+      + "castingV2.reference.openSpotlight and .tapSpotlight are the first and "
+      + "only readers of it on a request path, so from that commit the flag "
+      + "buys something a person could actually look at. On, opening an "
+      + "attached picture buys ONE 32-point SAM 3 split plus one face detect "
+      + "(about a cent, and measured at 15 s for the provider call alone on "
+      + "2026-10-31) and hands back a hit-test map -- one byte per pixel saying "
+      + "which piece owns it, 14-28 KB -- and a tap buys one point cut plus one "
+      + "naming call (about 0.7 cents). Still NOTHING IS STORED and nothing is "
+      + "charged: no casting_reference_crops row, no object, no credit, because "
+      + "the first mint is slice 4's. Slice 2's reading road stays dark and "
+      + "uncalled; its disposition is its own card. While it is off an attach is "
+      + "byte-identical to today -- no split, no detect, no text call, no money, "
+      + "and the words road untouched. It stays off until the surface draws the "
+      + "map (slice 3b) AND the hover set is usable: the entrance's first real "
+      + "split measured 26-29 pieces surviving out of 32 on all three court "
+      + "fixtures, where the court's own harness deduplicated to 8-18 before it "
+      + "scored anything. It is a child of CASTING_REFERENCE_ATTACH_SCOPE in "
+      + "the boot chain and can never reach past the door that keeps the "
+      + "picture it reads.",
+  },
+  CASTING_POINTER_ENGINE_SCOPE: {
+    position: "users:1",
+    why:
+      "set to users:1 on the service by the relay 2026-10-31, after #2864 merged "
+      + "(squash 7adedb7c), on his standing word that his own account is never "
+      + "asked; read back by name, parent CASTING_V2_SCOPE=all. Built dark 2026-10-30 (#2863, his 'yes' to Gemini 4 Argon as the boxer "
+      + "with Qwen3-VL behind it, on #2846 part 5's blind marks: Argon 62 right "
+      + "of 65, today's detector 57 with 5 wrong). Shipped `off` and absent from "
+      + "the service until then; while off every box is today's detector request, name by "
+      + "name, and nothing reaches OpenRouter. The relay sets it to users:1 on "
+      + "his account after merge on his standing word that his own account is "
+      + "never asked; widening past him is his word after his own panel round. "
+      + "Price stated: 0.51 cents a scan against 0.16, about $5 per 1,000 scans, "
+      + "house money and never a customer credit. A child of CASTING_V2_SCOPE in "
+      + "the boot chain.",
   },
   CASTING_FACE_SCAN_SCOPE: {
     position: "all",

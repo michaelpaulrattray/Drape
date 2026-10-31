@@ -1,7 +1,7 @@
 {
-  "edition": 784,
-  "updatedAt": "2026-10-30T06:50:26.543000Z",
-  "shift": "One job tonight, and it came from two of your notes at once. On the round-9 character you flagged two rows both called Shoulders. On the round-10 one you asked why a Collarbone was showing up. Both were sitting under Face. A collarbone is not on a face, and neither is a shoulder.\n\nThey now sit under their own heading, Body, which appears between Hair and Outfit. Face is left holding the face: eyes, brows, nose, lips, ears. I drove it in the real app in both the light and dark themes and checked it by eye — before, Face listed Eyes, Brows, Nose, Lips, Ears, Shoulders, Shoulders, Collarbone; after, those last three are under Body and Face holds only the face.\n\nThe part worth knowing is that the Body heading already existed in the studio and had simply never had anything to put in it, so it never appeared. There was no new screen to design and nothing to decide about how it should look. What was missing was the one rule that decides which heading a found body part belongs under, and that rule had been written down months ago as waiting for exactly this: a real character where the studio found a body part that is nowhere near the face. Your last two looks gave it two.\n\nHow it decides is the bit that matters for creatures. It does not work from a list of face words, because that is the rigid thing you have told us to stop doing. It measures where the face actually is on that particular picture, using the face parts the studio itself just cut out of it. So a creature whose only facial feature the studio could find is its horns is measured by its horns, which is the right answer for that creature and is one no list could give. And if the studio could not cut any face parts at all, nothing moves — the panel behaves exactly as it does today rather than guessing.\n\nOne thing I deliberately did not build, and I want to be straight about it. Two rows both called Shoulders are still two rows — they have moved to Body together, but they have not become one row with a left and a right under it the way Ears does. That is a different fault with a different cause, and one of the two may not even be a shoulder but a piece of the top. Folding them is a new decision rather than a tidy-up, so it stays open on the same note.\n\nI also kept the frames off the public code site, as that note asks, so there is nothing to look at on this page. They are pictures of a character on a public repository, and the shoulders in them are placed by hand rather than read off a real scan — they prove the headings are right, not that any particular character reads that way. Your next real look at a character is the honest test of that.\n\nNothing needs you right now. The change is waiting on a review before it goes live.",
+  "edition": 795,
+  "updatedAt": "2026-10-31T04:50:00.000Z",
+  "shift": "Two jobs are in and live, and the night's real value was three things nobody had to spend money on.\n\nThe first was a question about your character panel that has been impossible to answer. When the studio reads a face, it names everything it can see - and if it names something the panel already has its own question for, it hands that thing over and trusts the panel's question to draw it. When that question comes back with nothing, the thing vanishes: no row, no picture, no mention. Nobody could tell how often that happens, because the words the reading handed over were never written down anywhere. They are now. The studio records them from tonight, so in a week we can say whether anything is actually being lost.\n\nWhat I could measure already: every single one of the 86 face readings the studio has kept has at least one question that came back empty - but almost all of those are honest, because no character has horns and nobody is wearing glasses. Looking for a question that came back empty for something the studio itself had drawn on the same character minutes earlier, there is exactly ONE in the whole record - and it is your scan from tonight, the one that lost the eyes, brows and ears. Its cause was fixed and shipped this morning.\n\nThe second was your tattoo-arm scan. The fix for it went in at quarter past four. One number was missing before anyone could trust it - how tall your pictures actually are - and it turned out to be sitting in the studio's own records all along: 1536 tall, so the fix catches your case with a wide margin, and it does not interfere with a face that is in the right place.\n\nThe third I was not looking for. Checking that the same fix is safe to use everywhere else, I measured where every face sits in every picture the studio has read. No real face has ever been low in the frame - but NINE eye outlines are: one sits at the waist, and one from yesterday is a box covering a quarter of the whole picture, labelled Left eye. Pressing that row to change an eye would aim a paid edit at the wrong place. It is filed with every number, and the first thing to check is whether this morning's fix already closes it.\n\nNothing was spent tonight: no credits, no pictures generated, no settings changed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -38,7 +38,7 @@
           "state": "waiting"
         },
         {
-          "title": "The studio surfaces — the Pinterest-style reference selector (#14): FIRST PIECE BUILT, switched off. The studio can read an attached picture and work out what is in it and where; the markers on screen are the next piece and the tap-to-cut the one after. Then the settings' second pass (#15), outfit-card thumbnails (#61), the honest sentence at a words-only tattoo sale (#65)",
+          "title": "The studio surfaces — the Pinterest-style reference selector (#14): THE MACHINERY IS BUILT AND NOW HAS ITS WAY IN (the entrance shipped 2026-10-31, PR #2872), and the setting is still off. There is finally something real behind the switch: attach a photo and the studio can split it, tidy it, hand the shape of every piece to the screen, and on a tap cut and name what is under your finger. Nothing is wired to a screen yet, so nothing a customer can see has changed, and nothing is stored or charged. ⚠ AND THE TEST YOU ASKED FOR SAYS THE NEXT STEP IS NOT READY (#2873): splitting a real photo leaves about 27 pieces where the earlier test had 8 to 18, because that test merged near-duplicates in its own scratch script and the studio never got that step. A coat on a hanger comes back as 27 pieces. The screen cannot be built over that, so it is its own job, and the measuring that settles it costs nothing. Also fixed on the way: the split was downloading its 32 pieces one at a time — 48 seconds down to 16. Still yours to decide later, unchanged: hovering hair lights less of it, because your face rule takes a rectangle out of every piece. You see that on a real screen. Then the settings' second pass (#15), outfit-card thumbnails (#61), the honest sentence at a words-only tattoo sale (#65)",
           "state": "waiting"
         },
         {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-30T05:03:29.306Z",
+      "readAt": "2026-10-31T04:37:24.431Z",
       "items": [
         {
           "issueNumber": 30,
@@ -194,6 +194,18 @@
           "issueNumber": 2551,
           "title": "N3: the ink-form demand table has no reachable writer — zero rows in both worlds, all time (ghost audit, found at slice 2)",
           "kind": "design-unbuilt",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 2858,
+          "title": "N3 slice 2: which things may keep a saved picture - the fixed list, or the customer's own words (a design decision, parent #2565)",
+          "kind": "rung",
+          "rung": "N3"
+        },
+        {
+          "issueNumber": 2868,
+          "title": "The face panel's pieces light up spotlight-style, like the picker (his word 2026-10-30)",
+          "kind": "rung",
           "rung": "N3"
         },
         {
@@ -7712,8 +7724,8 @@
     {
       "id": "reference-selector-mock-14",
       "title": "Taking things from a picture — the selector's surface, three moments, your eye before any build",
-      "question": "WHAT YOU ARE LOOKING AT — the mock of the tap-to-pick selector (#14), not a live screen. Three moments, left to right: the picture just attached and being read; the things it found, each with a named dot on the picture; and two things chosen — hair and earrings, your own example — with the box saying that nothing typed means the full look of both.\n\nThe photo is a stand-in (one of our own generated test pictures), and the dots are placed by hand to show the surface — in the real thing they come from reading the picture, whatever it holds, never from a menu.\n\nWHAT I AM ASKING: does this surface read right? Three things worth your eye: (1) dots on the picture with names — is that how you want to choose, or too busy on a crowded photo? (2) the 'Whole outfit' affordance beside per-piece dots — right call? (3) the no-words line under the box — plain enough? If it reads right, reply on the card and the build is cut into slices (a small court on real reference photos runs first, house money). If anything reads wrong, say which and the design moves before anything is built.",
-      "state": "open",
+      "question": "ANSWERED — NOTHING HERE WAITS ON YOU. This was the dots mock for the selector (#14). You passed it on the 29th (\"it reads well enough for now aslong as we get the tech working\"), and on the 30th you saw the lit-up prototype and said you liked it much better than the boxes. That later word is the answer: the design is rewritten to the lit-up version you picked (2026-10-31), these dots frames are history, and your next look at this card will be the built lit-up surface on your own account.",
+      "state": "answered",
       "filedAt": "2026-10-28T03:09:45.000Z",
       "issueNumber": 14,
       "frames": [
@@ -7761,6 +7773,48 @@
     }
   ],
   "pipeline": [
+    {
+      "id": "cut-name-words-2877",
+      "title": "A correct three-word name is no longer thrown away (#2877)",
+      "status": "merged",
+      "prNumber": 2879,
+      "note": "The reader was asked for up to three words and then refused for giving three, so a correct name became no name at all. Measured in the same 300 readings: 8 showed nothing, 7 of those 8 were right, and every one was exactly three words. Neither easy fix was allowed — widening the rule would have loosened three other places, and re-wording the question would have voided the test it was measured on — so each place now carries the limit its own question asks for, read back out of that question's own words so the two cannot drift apart again."
+    },
+    {
+      "id": "sentry-glob-advisory-2880",
+      "title": "The security check that was blocking every piece of work is clear again (#2880)",
+      "status": "merged",
+      "prNumber": 2881,
+      "note": "The one that unblocked the board. Two advisories published tonight under our error reporting; bumping the reporting library cannot fix them — measured, because even its newest release carries the same affected package — so the fixed version is pinned directly and narrowed to the single package that pulls it in. Production dependencies 2 problems to 0. Checked twice that it did not break the build: a clean install on the gate, and a real build here with the new version installed."
+    },
+    {
+      "id": "cut-name-crop-2875",
+      "title": "A tapped piece is named from a close-up of itself (#2875)",
+      "status": "merged",
+      "prNumber": 2878,
+      "note": "Merged on the gate alone — triage applied no hold label, and the diff is neither money nor anything a customer can see. Measured at 300 reader calls for 42 cents of our money; both framings score the same, and the close-up won on steadiness and cost."
+    },
+    {
+      "id": "spotlight-hover-dedupe-2873",
+      "title": "The lit-up picture lights the garment, not a sliver of it (#2873)",
+      "status": "merged",
+      "prNumber": 2876,
+      "note": "Merged on the gate alone — triage read the diff and applied no label, so no human read was owed. Six of nine things light as themselves against two before; the picture goes 26 pieces to 11."
+    },
+    {
+      "id": "selector-entrance-14",
+      "title": "The lit-up picture gets its way in, and the one test the plan asked for came back (#14)",
+      "status": "in-review",
+      "prNumber": 2872,
+      "note": "⚠ STILL STUCK, and the reason has CHANGED since last night — it has now been read and approved. The review landed on this exact version and passed it. The only thing left is that it clashes with the main line, and the clash is just the maps of the product we generate automatically. The catch: fixing the clash counts as a new version, which makes the approval go stale, so it has to be done by the same hand that approves it. Nothing is wrong with the work."
+    },
+    {
+      "id": "selector-spotlight-design-14",
+      "title": "The selector's design now says the lit-up version you picked over the boxes (#14)",
+      "status": "merged",
+      "prNumber": 2869,
+      "note": "Design document only, merged ebce311e — no product code, no switch moved, nothing spent."
+    },
     {
       "id": "cut-quality-bar-2565",
       "title": "A cut-out that fills almost none of the area it was asked about is thrown away (#2565)",
@@ -11152,7 +11206,7 @@
     {
       "id": "schema-kept-pixels-2565",
       "title": "Our schema stops saying that only one kind of refusal keeps a picture — there are four, and the only one the live site holds is one of the other three (#2565)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2836,
       "note": "Gate green in 4.1 minutes. Held for a human review because any change under the database folder counts as a money path, whatever it touches — here it is comment text and a test, no column moved."
     },
@@ -11166,19 +11220,68 @@
     {
       "id": "outfit-whole-box-2845",
       "title": "The outfit is one box on the picture, with its pieces inside it — your round-10 note (#2845)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2850,
       "note": "Held for a human review because it changes what you see on the photograph. Driven in the running app in both themes: before, hovering the one Outfit row lit four separate boxes and drew no outfit box; after, it lights one. Pictures stayed off the public repo."
     },
     {
       "id": "body-part-section-2840",
       "title": "A shoulder and a collarbone stop being listed as parts of a face, and get their own Body heading (#2840)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2851,
       "note": "Server only, but a customer sees it, so it is held for a human review rather than merged on the gate. Rendered in the real app in both themes, before and after, with the before arm reproducing the fault."
+    },
+    {
+      "id": "sleeve-coverage-2848",
+      "title": "A tattoo sleeve is one piece of ink, so it gets a row you can pick (#2848)",
+      "status": "in-review",
+      "prNumber": 2852,
+      "note": "STUCK, and not on the crew. The job is finished and correct; it clashes with the main line and only Fable can clear it, because clearing it would wipe the note Fable left on it and the job would then go in unread. Two separate shifts have re-checked that this is really the only road. Your tattoo rows wait on it."
+    },
+    {
+      "id": "cut-fragmentation-2841",
+      "title": "Every cut now records how many separate pieces it came back in, and nothing refuses on it yet (#2841)",
+      "status": "merged",
+      "prNumber": 2860,
+      "note": "Finished and green thirteen hours before this shift and never merged. Synced onto a main that had moved fifteen commits, re-gated on the merged tree, merged on the gate alone — server logs only, nothing a customer sees."
+    },
+    {
+      "id": "band-pr-blind-2866",
+      "title": "The end-of-shift check stops telling every shift a job is free when something is already building it (#2866)",
+      "status": "merged",
+      "prNumber": 2870,
+      "note": "Crew machinery only. Finished and green six hours before this shift and never merged; synced, re-gated and merged on the gate alone."
+    },
+    {
+      "id": "extra-box-2838",
+      "title": "A rectangle past the reading's own count is cut, and kept where it lands on nothing else — so a second sleeve can be reached (#2838)",
+      "status": "merged",
+      "prNumber": 2865,
+      "note": "Stuck eleven hours on a clash that was only the generated map; measured, one command, re-gated and merged on the gate alone. The other half of two Tattoo rows is still in #2852."
+    },
+    {
+      "id": "catalogue-road-nouns-2793",
+      "title": "The studio now writes down the words it hands to the panel's own questions, so a thing that quietly goes missing can be found (#2793)",
+      "status": "merged",
+      "prNumber": 2889,
+      "note": "Measured over all 86 kept readings; the pairing it needs becomes readable from tonight's readings onward. Merged on the gate alone - server logs only, nothing a customer sees."
     }
   ],
   "problems": [
+    {
+      "id": "cut-named-from-whole-frame-2875",
+      "severity": "warning",
+      "state": "resolved",
+      "title": "Fixed — a tapped piece is named from a close-up of itself now (#2875)",
+      "detail": "Tap something in an attached photo and the chip's name now comes from a close-up of\nthat piece, which is what the test we quote actually measured. Before, the reader was\nshown the whole photograph with everything but your piece painted grey — on a flat-lay,\nthat is a belt lost in a field of grey.\n\nBoth ways score the same overall, so the score is not why it moved. The close-up is\nsteady where the whole picture guesses: asked about a belt keeper, the whole picture\ngave six different answers including table leg and leaf; the close-up gave two, one of\nthem eleven times out of twelve. It is also about half the cost a name.\n\nNobody could have hit it — the setting is off — so this is a thing fixed before it ever\nreached you."
+    },
+    {
+      "id": "spotlight-hover-set-too-busy-2873",
+      "severity": "warning",
+      "state": "resolved",
+      "title": "Fixed — the lit-up picture lights the garment now, not a scrap of it (#2873)",
+      "detail": "Point at the middle of a thing and it lights up almost entirely: a tank top went from 20% to 98%, a sweater from 21% to 98%. Six of the nine things on your test pictures light as themselves, where two did. One thing on this row was wrong and is worth recording: it said the fix would cost nothing to measure because the old test's results were on disk. They were not — the old test tidied its results before saving them. Buying them again cost about one and a half cents, and they are saved now."
+    },
     {
       "id": "correct-picture-thrown-away-2837",
       "severity": "warning",
@@ -11189,9 +11292,9 @@
     {
       "id": "cut-floor-drops-correct-feature-2831",
       "severity": "warning",
-      "state": "open",
+      "state": "resolved",
       "title": "The face panel can drop a feature that is really there, and keep one that is not (#2831)",
-      "detail": "Live on your account only.\n\nA check decides whether the cut-out picture of a feature is good enough to keep. Measured tonight on two characters: it threw away a correct cut of a long curved tail, so that tail would not be listed at all, and it kept a cut of a sword that had been asked for as chest armour.\n\nThe cause is that the check asks how much of its own rectangle a cut fills, and anything thin — a chain, a cord, a tail — fills very little of its rectangle however right the cut is. Measured: a band worn around something must be about seven per cent of its own width before it passes.\n\nNothing was changed, because you are mid-round on this panel and moving the bar between rounds would make your next look unreadable against the last. The numbers and the recommendation are on card 2831, for the relay."
+      "detail": "RESOLVED — card #2831 closed 2026-10-30T10:25:37Z, read at the card rather than at a merge note.\n\nA check decides whether the cut-out picture of a feature is good enough to keep, and it was throwing away a correct cut of a long curved tail while keeping a cut of a sword asked for as chest armour. Anything thin — a chain, a cord, a tail — fills very little of its own rectangle however right the cut is.\n\nNothing on this row needs you."
     },
     {
       "id": "stranded-pr-unreachable-2814",
@@ -11416,6 +11519,13 @@
       "state": "resolved",
       "title": "A merged change that is not on the live site is now noticed, instead of nobody watching (#2748)",
       "detail": "This bit twice today, and you would not have been able to tell by looking.\n\nWhen a change is merged, Railway rebuilds and publishes the site. If that build fails, the change stays merged, stays green, stays reviewed — and simply is not live. Everything the team naturally looks at agrees that it shipped: the pull request says merged, the code is on the main branch, and the site answers healthy, because the OLD version is still running and answering.\n\nToday one change sat finished-but-not-live for 52 minutes before anyone noticed, and it was noticed by accident. A second one sat for two hours. Nobody skipped a step: the person who writes a change has finished and gone by the time it merges, and every alarm the team owns watches work that is still in progress.\n\nThe underlying cause of the failures is Railway's, not ours — their builder has failed nine of eleven attempts today and their status page reports degraded performance. What is ours is that nothing was checking whether what we merged is actually the thing running. There is a reading that would answer it exactly, which the site already publishes.\n\nBoth of today's changes are now live, so nothing is outstanding on the live site tonight — what stays open is that nobody was watching. It is written up and not yet built. It is tooling rather than something you can see, so it waits behind the current feature work. Nothing is charged wrongly and nothing is lost — the delay is the whole of the harm, and a change that is not live is simply the previous version still serving.\n\nRESOLVED 2026-10-28 — built and live (PR #2749, serving as 7fd0237b). The reader asks one question, is the commit on main the commit production is serving, and files one plain-English job on the board when it is not: about two minutes after a failed publish, and every three hours as the net for a publish that never started. It is deliberately blind to Railway's own success and failure records, which were wrong in both directions on the morning this was found, and it can never open a second job for the same thing."
+    },
+    {
+      "id": "ghost-conflict-stuck-prs-2031031",
+      "severity": "warning",
+      "state": "open",
+      "title": "Three finished pieces of work still cannot be merged, and the thing blocking them is still not real (#2848, #2863, #14)",
+      "detail": "This is the crew's own machinery, not the product — nothing a customer sees is affected.\n\nUnchanged from last night, and re-measured tonight against the newer main line, because\na measurement taken yesterday is not a fact about today: all three still clash on the\ngenerated map alone and nothing else. Three of three. We have a tool that merges that\nfile by itself, which GitHub does not use, so the clash reads as real on the page and is\na ghost. It is one command each.\n\nAll three are deliberately the relay's hand and not a shift's, and each says why on\nitself: one adds rate limits and is money work, one needs a key put on the service\nfirst, and one carries a review note that any push — even a harmless one — would make\nread as already dealt with. Seven shifts have now been sent at that third one and every\none of them was right to leave it alone.\n\nNothing is waiting on you here."
     }
   ],
   "acknowledgedReplyIds": [
@@ -11724,7 +11834,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-30T05:03:29.305Z",
+    "readAt": "2026-10-31T04:37:24.431Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11793,7 +11903,11 @@
       {
         "issueNumber": 2565,
         "title": "N3: Refine keeps what the customer chose — every edit from the original, one current description, and a saved picture of each chosen thing (his word 2026-10-16)",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2858 — a design decision (which kinds may keep a picture), and #2856 — box checks, which step-aside needs. Both open. Build #2856 first."
+        }
       },
       {
         "issueNumber": 2566,
@@ -11875,17 +11989,66 @@
       {
         "issueNumber": 2844,
         "title": "N3 face reader, his eye round 10: the Left eye's outline reaches a face tattooed on the arm (a paid refine paints on it), sleeves have no row, and a Collarbone row",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "#2848 (sleeves, PR #2852, held for the relay), and #2856 + #2862 for the Collarbone row itself — #2840's placement half is live."
+        }
       },
       {
         "issueNumber": 2845,
         "title": "N3 face reader, his eye round 10: the outfit can't be picked as a whole, and a creature's rag cloth is called Straps with a box over its face",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — defect 1 is live; your eye on the Outfit row, and your word on the run-on subtitle (say nothing, or its own card)."
+        }
       },
       {
         "issueNumber": 2846,
         "title": "Court: are the face reader's three engines (naming, boxing, cutting) still the right ones, measured on his ten eye rounds",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — the court is done. RECOMMENDED: change nothing, all three readers stay. Your eye on the box frames closes it; they are on your machine, not here."
+        }
+      },
+      {
+        "issueNumber": 2856,
+        "title": "His ruling: a cautious panel. Reliable rows always show, and a piece gets a row only when its box passes the checks; failed pieces are edited by words",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "the four it governs landing to it — PR #2850 and cards #2845, #2787, #2840. Then your eye on the panel closes it. It needs no build of its own."
+        }
+      },
+      {
+        "issueNumber": 2862,
+        "title": "His ruling: one thing, one row, one plain name. No duplicate names, no splitting a thing into compartments (hair is one row)",
         "urgent": false
+      },
+      {
+        "issueNumber": 2863,
+        "title": "His ruling: the face panel's box step moves to Gemini 4 Argon with Qwen3-VL as fallback, behind a new flag on his account first",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — your eye on your next panel scan. Built, live at `users:1`, nothing owed from the crew (see the comment below)."
+        }
+      },
+      {
+        "issueNumber": 2885,
+        "title": "N3 face reader, his eye round 11: on a version made by taking an outfit from a photo, Eyes, Brows and Ears come back empty on both sides",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2888,
+        "title": "N3 face reader: the refine, ink and reference readers still trust a face read that can land on a tattoo (the scan is fixed by #2887)",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "PR #2887 merging. This card builds on its `headBox` reader option."
+        }
       }
     ]
   }

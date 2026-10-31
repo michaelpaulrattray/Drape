@@ -19,26 +19,57 @@
  * its own so a caller that needs the verdict and not a cleaned mask (the panel
  * road) never pays for one.
  *
+ * # ⚠ THE FLOOR IS A PER-CALLER DECISION, AND THE PANEL ROAD DOES NOT TAKE IT
+ *
+ * **#2831, the relay's decision of 2026-10-30: the face panel stops refusing on
+ * fill; the take road keeps its floor.** Every caller states which road it is
+ * by passing `fillFloor` — a number to refuse below, or
+ * {@link FILL_MEASURED_NOT_REFUSED} to measure the fill and never refuse on it.
+ * It is **required**, with no default, which is the whole of "put the split
+ * where it can't be lost": a new caller cannot inherit either road silently,
+ * and the comparison itself still happens in exactly one place.
+ *
+ * **Why the two roads differ, and it is not inconsistency.** On the take road a
+ * cut is never shown to anyone, a refusal costs nothing (the edit rides on
+ * words) and a partial cut costs a paid render. On the panel every row's cut is
+ * outlined on hover, so a partial or wrong cut is visible before anyone refines
+ * on it — while **a missing row is invisible**, which is the failure he reported
+ * three times in one week (#2800, #2810, #2817).
+ *
  * # THE BAR, AND WHERE ITS NUMBER COMES FROM
  *
  * Measured 2026-10-29 (`foreman-20261029-1806`; the record is on #2565 and the
  * cell is `scripts/_2565-cut-quality-bar-disposable.mts`): 32 segmenter reads,
  * 8 asks across 3 real pictures, $0.70 of house money read at fal's own books.
  *
- * **Correct cuts fill 42.3 – 73.5% of the rectangle they were asked for. The
- * known-bad fills 8.3%.** The known-bad is #2736's own specimen: asked for
- * *"the clothing and harness straps worn on the body"* the segmenter returns
- * **only the straps**, silently, with a plausible-looking cut. The worst
- * correct cut is **5.1× above it**, and any line in that gap separates all
- * eight arms. `CUT_FILL_FLOOR` sits at 20% — 2.1× under the worst correct cut
- * and 2.4× over the known-bad.
+ * ⚠ ~~**Correct cuts fill 42.3 – 73.5% of the rectangle they were asked for.**~~
+ * **THAT POPULATION IS FALSIFIED AND THE SENTENCE IS STRUCK — #2831, measured
+ * 2026-10-30 (`foreman-20261030-0847`, `output/_2565-thin/ledger.json`, read at
+ * the rows here rather than taken from the card).** A **correct** cut of a long
+ * curved tail, looked at and right, fills **17.00%** — under this floor, so it
+ * got no row and nothing was said. The same run **kept** a cut that is the
+ * wrong object entirely: asked for *"the armour plating on the chest"* the
+ * segmenter cut **the sword in the character's hand**, and that passed at
+ * **21.64%**. A right answer scored lower than a wrong one, **so fill does not
+ * order correctness**, which is the one thing a refusal has to do. Two further
+ * readings, both on the card: anything worn *around* something cuts as a ring
+ * whose box is the whole thing it encircles, so **a band must be 7% of its own
+ * span to clear 0.2**; and the same box on the same picture moved **3.27
+ * points** between two runs, which is wider than the margin the correct chain
+ * cleared the floor by (0.7).
+ *
+ * **The known-bad fills 8.3%** and that half stands: #2736's own specimen,
+ * asked for *"the clothing and harness straps worn on the body"* the segmenter
+ * returns **only the straps**, silently, with a plausible-looking cut.
+ * `CUT_FILL_FLOOR` stays at 20% **for the road that owns that specimen** — the
+ * take road — and the gap it was set in is now known to be about 8 points wide
+ * (17.0% down to 8.3%) against a measurement that wobbles 3.3 of them.
  *
  * ⚠ **IT IS A FLOOR ON ONE KNOWN-BAD SPECIMEN, NOT A CALIBRATION, AND IT SAYS
- * SO HERE RATHER THAN IN A REPORT NOBODY RE-READS.** The shape is right — a
- * wide gap, a stable measure, a visibly broken cut at the bottom of it — and
- * the number tightens as more bad cuts turn up. **Every judgement logs its
- * fill** at the call site, so the population grows by itself instead of by
- * somebody deciding to go and measure again.
+ * SO HERE RATHER THAN IN A REPORT NOBODY RE-READS.** **Every judgement reports
+ * its fill whichever road asked for it**, and both callers log it, so the
+ * population grows by itself instead of by somebody deciding to go and measure
+ * again — which is how the two rows above were found.
  *
  * ⚠ **A fill bar does not refuse small things, which was the falsification arm
  * and it fired on the third attempt.** A bar on "how much of its box did it
@@ -49,6 +80,15 @@
  * first two attempts never fired at all (asked for *"the boots"*, the detector
  * returned no box), which is why the arm is named here rather than just its
  * result: a falsification that did not run is not a falsification.
+ *
+ * ⚠ **AND THAT ARM WAS LOOKING IN THE WRONG DIRECTION, WHICH IS WHY IT PASSED
+ * — #2831.** A fill bar does not refuse a *small* thing, and that is true. What
+ * it refuses is a **THIN LONG** thing: a stud is a disc in a box its own size,
+ * while a tail, a chain or a band worn around something is a sliver inside the
+ * whole territory it sweeps. The falsifying specimen was never going to be an
+ * earring, and the arm that would have caught it is the one above that names a
+ * ring's own arithmetic. **A falsification arm is only as good as its guess
+ * about which way the instrument fails.**
  *
  * # ⚠ TWO THINGS §4's OWN SENTENCE GETS WRONG, BOTH MEASURED
  *
@@ -114,11 +154,25 @@ const CLAIMED = (byte: number | undefined): boolean => (byte ?? 0) > 0;
 /**
  * THE REFUSAL BAR — fill of the asked rectangle, below which a cut is not used.
  *
- * 20%. Measured population and reasoning in this module's header: correct cuts
- * 42.3–73.5%, the known-bad 8.3%, 5.1× of room between them. A FLOOR on one
+ * 20%. Measured population and reasoning in this module's header: the known-bad
+ * 8.3%, and the lowest **correct** cut yet measured 17.0%. A FLOOR on one
  * known-bad specimen rather than a calibration.
+ *
+ * ⚠ **IT IS THE TAKE ROAD'S POSITION AND NOT THE PRODUCT'S** (#2831). The road
+ * that owns the known-bad specimen passes it; the face panel passes
+ * {@link FILL_MEASURED_NOT_REFUSED} instead. Importing this constant is not the
+ * same as being on the road it was measured for.
  */
 export const CUT_FILL_FLOOR = 0.2;
+
+/**
+ * THE PANEL ROAD'S POSITION — measure the fill, log it, never refuse on it.
+ *
+ * A named constant rather than a bare `null` so that *which roads do not refuse
+ * on fill* is one grep rather than a reading of three call sites, and so the
+ * sentence a reviewer needs is at the call instead of in this file (#2831).
+ */
+export const FILL_MEASURED_NOT_REFUSED = null;
 
 /**
  * HOW FAR THE SHARP AREA IS WIDENED, AND HOW FAR THE RAMP RUNS OUTSIDE IT.
@@ -137,7 +191,7 @@ export const CUT_WIDEN_PX = 2;
 export const CUT_FEATHER_PX = 2;
 
 /** Why a cut was or was not used — one word, for the log and for the row. */
-export type CutRefusal = "used" | "no-pixels" | "no-box-area" | "below-fill-floor";
+export type CutRefusal = "used" | "no-pixels" | "no-box-area" | "no-overlap" | "below-fill-floor";
 
 /** What a cut was judged to be, carrying every number the judgement used. */
 export type CutVerdict = {
@@ -150,6 +204,33 @@ export type CutVerdict = {
   /** Claimed pixels inside the asked rectangle. */
   readonly insideBox: number;
   readonly why: CutRefusal;
+  /**
+   * HOW MANY SEPARATE PIECES THE CUT CAME BACK IN — MEASURED, REFUSING
+   * NOTHING (#2841).
+   *
+   * ⚠ **The fill number cannot see this at all, which is the finding.** A cut
+   * of a leather jacket's collar came back as **29 disconnected scraps** whose
+   * largest piece was 43.5% of it — the collar band across the back of the neck
+   * simply missing — and `judgeCut` called it `used`, because 29 scraps adding
+   * up to 24.6% of a rectangle are indistinguishable from one clean shape at
+   * 24.6%. The customer gets a few specks of a collar where they asked for the
+   * collar. Measured 2026-10-30 on a real cut, `output/_14court/kinds/
+   * ref-hanger-cut-collar.jpg`, looked at rather than described.
+   *
+   * ⚠ **AND NOTHING REFUSES ON EITHER NUMBER, DELIBERATELY — the card's own
+   * recommendation and #2831's lesson.** A legitimately scattered subject
+   * exists: a lace-up panel, a fringe, a chain, freckles. #2831 measured what
+   * happens when a bar is invented without a population — a correct tail at
+   * 17% beside a wrong sword cut at 22% — so the honest order is to grow the
+   * population first and decide after. These two numbers go in the log beside
+   * the fill, on every judgement, for free, and they decide nothing.
+   *
+   * `pieces` is `0` exactly when nothing was claimed; `largestPieceShare` is
+   * `null` then, and is otherwise the biggest piece over every claimed pixel —
+   * so **1 is one clean shape** and a small number is a shattered one.
+   */
+  readonly pieces: number;
+  readonly largestPieceShare: number | null;
 };
 
 type Box = { x: number; y: number; width: number; height: number };
@@ -182,16 +263,96 @@ function claimedPixels(mask: Mask, box: Box): { claimed: number; insideBox: numb
 }
 
 /**
+ * HOW MANY SEPARATE PIECES A MASK IS IN, AND HOW BIG ITS LARGEST ONE IS
+ * (#2841) — measured, never refused on. See {@link CutVerdict.pieces}.
+ *
+ * **Four connectivity, for `closeHoles`'s own stated reason**: eight walks
+ * diagonal noise through a one-pixel gap, so two scraps touching at a corner
+ * would count as one shape where the eye sees two. The two readers therefore
+ * agree about what "connected" means, which is the only way their numbers can
+ * be read side by side in one log line.
+ *
+ * The typed stack with its own cursor is `closeHoles`'s idiom rather than a new
+ * one: a full-frame garment mask runs to ~865k pixels and this is the same hot
+ * loop. Nothing is mutated — the visited array is this function's own.
+ */
+export function piecesOf(mask: Mask): { count: number; largest: number; claimed: number } {
+  const { width, height, data } = mask;
+  const size = width * height;
+  const seen = new Uint8Array(size);
+  const stack = new Int32Array(size);
+  let count = 0;
+  let largest = 0;
+  let claimed = 0;
+  for (let start = 0; start < size; start += 1) {
+    if (seen[start] || !CLAIMED(data[start])) continue;
+    count += 1;
+    let top = 0;
+    seen[start] = 1;
+    stack[top] = start;
+    top += 1;
+    let pixels = 0;
+    while (top > 0) {
+      top -= 1;
+      const p = stack[top]!;
+      pixels += 1;
+      const x = p % width;
+      /*
+        THE FOUR NEIGHBOURS, WRITTEN OUT RATHER THAN THROUGH A CLOSURE, AND THE
+        NUMBER IS WHY — this is the only place in this file that trades its
+        shape for speed, so it says what it bought.
+
+        Measured warm, 20 runs, on a 1024×1536 mask carrying a million claimed
+        pixels — the full-frame garment cut `closeHoles` names: a `push` closure
+        declared inside the loop costs **175.5 ms** a cut and this costs
+        **5.4 ms**. A face scan makes 21–27 cuts, so the closure would have put
+        about **four seconds** on every face read, for a measurement that
+        deliberately refuses nothing. Re-measured after reverting and
+        re-applying, both ways, because a 32× reading is the kind that is a
+        cold JIT rather than a fact.
+      */
+      if (x > 0) {
+        const q = p - 1;
+        if (!seen[q] && CLAIMED(data[q])) { seen[q] = 1; stack[top] = q; top += 1; }
+      }
+      if (x < width - 1) {
+        const q = p + 1;
+        if (!seen[q] && CLAIMED(data[q])) { seen[q] = 1; stack[top] = q; top += 1; }
+      }
+      if (p >= width) {
+        const q = p - width;
+        if (!seen[q] && CLAIMED(data[q])) { seen[q] = 1; stack[top] = q; top += 1; }
+      }
+      if (p + width < size) {
+        const q = p + width;
+        if (!seen[q] && CLAIMED(data[q])) { seen[q] = 1; stack[top] = q; top += 1; }
+      }
+    }
+    claimed += pixels;
+    if (pixels > largest) largest = pixels;
+  }
+  return { count, largest, claimed };
+}
+
+/**
  * JUDGE ONE CUT — the refusal half, on the RAW mask.
  *
- * Three refusals, in the order they can be answered most cheaply. Only the last
- * is a number, and its population is in this module's header.
+ * Four refusals, in the order they can be answered most cheaply. **The first
+ * three are yes/no facts with nothing to tune and every caller takes them;
+ * only the last is a number, and only the caller that asked for it takes
+ * that** (#2831, and this module's header carries why).
+ *
+ * `fillFloor` is REQUIRED and has no default: a number refuses below it,
+ * {@link FILL_MEASURED_NOT_REFUSED} measures the fill and returns it without
+ * ever refusing on it. A caller that must think about which road it is on
+ * cannot end up on the wrong one by writing nothing.
  */
-export function judgeCut(input: { mask: Mask; box: Box }): CutVerdict {
-  const { mask, box } = input;
+export function judgeCut(input: { mask: Mask; box: Box; fillFloor: number | null }): CutVerdict {
+  const { mask, box, fillFloor } = input;
   const { claimed, insideBox } = claimedPixels(mask, box);
   if (claimed === 0) {
-    return { use: false, fill: null, claimed, insideBox, why: "no-pixels" };
+    /* Nothing to break into pieces, and nothing to walk for it. */
+    return { use: false, fill: null, claimed, insideBox, why: "no-pixels", pieces: 0, largestPieceShare: null };
   }
   const area = box.width * box.height;
   if (area <= 0) {
@@ -199,13 +360,47 @@ export function judgeCut(input: { mask: Mask; box: Box }): CutVerdict {
        divided by zero, and refused rather than waved through: a caller handing
        this an empty rectangle has a defect of its own, and passing it would
        hide that defect behind a drawn row. */
-    return { use: false, fill: null, claimed, insideBox, why: "no-box-area" };
+    return { use: false, fill: null, claimed, insideBox, why: "no-box-area", pieces: 0, largestPieceShare: null };
   }
   const fill = insideBox / area;
-  if (fill < CUT_FILL_FLOOR) {
-    return { use: false, fill, claimed, insideBox, why: "below-fill-floor" };
+  if (insideBox === 0) {
+    /*
+      THE SEGMENTER ANSWERED ABOUT SOMETHING ELSEWHERE — the rectangle WAS the
+      question and not one pixel of the answer is inside it.
+
+      ⚠ **THIS REFUSAL IS HERE BECAUSE TAKING THE FLOOR OFF A ROAD WOULD
+      OTHERWISE OPEN A HOLE IN IT** (#2831). A nil overlap is a nil fill, so
+      while every caller refused below 20% this case was swallowed by the floor
+      and never needed naming. `pointerCut` has always had its own box-against-
+      box check before it judges; `sideByDetector` has not, and would have begun
+      keeping cuts that miss their rectangle entirely the moment the floor came
+      off. It is a yes/no about two rectangles with no tolerance to tune, so it
+      belongs beside the other two and not beside the number.
+
+      ⚠ **On the take road this moves a `why` WORD and no decision**: such a cut
+      read `below-fill-floor` before and reads `no-overlap` now, which is the
+      better diagnosis of the same refusal.
+    */
+    return { use: false, fill, claimed, insideBox, why: "no-overlap", pieces: 0, largestPieceShare: null };
   }
-  return { use: true, fill, claimed, insideBox, why: "used" };
+  /*
+    THE FRAGMENTATION READING, TAKEN AFTER THE THREE CHEAP REFUSALS AND BEFORE
+    THE ONE NUMBER (#2841).
+
+    After them, so a mask with nothing in it and one that missed its rectangle
+    entirely pay for no walk at all — both are already answered and neither has
+    a shape worth describing. BEFORE the fill bar, so a cut REFUSED on fill
+    still carries its two numbers into the log: the population this is being
+    grown for is every cut the road makes, and the refused ones are exactly
+    where a later bar would have to be able to tell a fringe from a shattering.
+  */
+  const broken = piecesOf(mask);
+  const pieces = broken.count;
+  const largestPieceShare = broken.claimed === 0 ? null : broken.largest / broken.claimed;
+  if (fillFloor !== null && fill < fillFloor) {
+    return { use: false, fill, claimed, insideBox, why: "below-fill-floor", pieces, largestPieceShare };
+  }
+  return { use: true, fill, claimed, insideBox, why: "used", pieces, largestPieceShare };
 }
 
 /**
@@ -224,12 +419,43 @@ export function judgeCut(input: { mask: Mask; box: Box }): CutVerdict {
  *
  * The caller's mask is never mutated: the fill lands in a copy.
  */
-export function closeHoles(mask: Mask): {
+export function closeHoles(
+  mask: Mask,
+  options?: {
+    /**
+     * ⚠ **FILL ONLY THE HOLES THIS SMALL — added for #14 slice 3a, additively.**
+     *
+     * His split clean-up fills *"holes under 2% of the piece"* and leaves a
+     * bigger one alone (`referenceSplitCleanup.ts`), which is this function's
+     * own distinction — *"one big hole and forty specks are different defects"*
+     * — turned into a decision instead of a report. **Absent, every hole is
+     * filled exactly as before**, so the take road and the panel road are
+     * untouched by a byte.
+     *
+     * The caller computes the share, because 2% of WHAT is the caller's
+     * question: the split asks 2% of the piece, and nothing here knows what a
+     * piece is.
+     */
+    maxHolePixels: number;
+  },
+): {
   mask: Mask;
+  /** Pixels in every hole FOUND, whether or not it was filled. */
   holePixels: number;
+  /** Holes FOUND, whether or not they were filled. */
   holeCount: number;
+  /** The largest hole FOUND, whether or not it was filled. */
   largestHole: number;
+  /** Pixels actually filled — equal to `holePixels` when no ceiling was given. */
+  filledPixels: number;
+  /** Holes actually filled — equal to `holeCount` when no ceiling was given. */
+  filledCount: number;
 } {
+  /* ⚠ The three counts above describe what was FOUND and keep the meaning
+     every existing caller reads them with; what a ceiling changes is only
+     which of them were FILLED, which is why the fill is reported separately
+     rather than by narrowing a number somebody already depends on. */
+  const ceiling = options?.maxHolePixels ?? Number.POSITIVE_INFINITY;
   const { width, height, data } = mask;
   const size = width * height;
   const outside = new Uint8Array(size);
@@ -262,13 +488,24 @@ export function closeHoles(mask: Mask): {
     push(p + width);
   }
   /* What is left is background the outside never reached — a hole. Walked once
-     more so each hole's own size is known, and filled on the way through. */
+     more so each hole's own size is known.
+
+     ⚠ THE FILL HAPPENS AFTER THE WALK, NOT DURING IT, AND THAT IS #14 SLICE
+     3A'S ONE CHANGE HERE. It used to write `filled[q] = 255` as it popped each
+     pixel — correct while every hole was filled unconditionally, and unable to
+     honour a ceiling, because a hole's size is not known until its walk ENDS.
+     So each hole's members are collected first and written only once the size
+     verdict is in. With no ceiling the verdict is always "fill", which is why
+     no existing caller can see a difference. */
   const filled = Buffer.from(data);
   const seen = new Uint8Array(size);
   const walk = new Int32Array(size);
+  const members = new Int32Array(size);
   let holePixels = 0;
   let holeCount = 0;
   let largestHole = 0;
+  let filledPixels = 0;
+  let filledCount = 0;
   const enclosed = (p: number): boolean => !outside[p] && !CLAIMED(data[p]);
   for (let start = 0; start < size; start += 1) {
     if (seen[start] || !enclosed(start)) continue;
@@ -281,8 +518,8 @@ export function closeHoles(mask: Mask): {
     while (cursor > 0) {
       cursor -= 1;
       const q = walk[cursor]!;
+      members[hole] = q;
       hole += 1;
-      filled[q] = 255;
       const x = q % width;
       const neighbours = [
         x > 0 ? q - 1 : -1,
@@ -300,8 +537,19 @@ export function closeHoles(mask: Mask): {
     }
     holePixels += hole;
     if (hole > largestHole) largestHole = hole;
+    if (hole > ceiling) continue;
+    for (let at = 0; at < hole; at += 1) filled[members[at]!] = 255;
+    filledPixels += hole;
+    filledCount += 1;
   }
-  return { mask: { data: filled, width, height }, holePixels, holeCount, largestHole };
+  return {
+    mask: { data: filled, width, height },
+    holePixels,
+    holeCount,
+    largestHole,
+    filledPixels,
+    filledCount,
+  };
 }
 
 /**
@@ -368,10 +616,12 @@ export type CleanedCut = {
 export async function cleanCut(input: {
   mask: Mask;
   box: Box;
+  /** Which road is asking — see {@link judgeCut}. Required, and for the same reason. */
+  fillFloor: number | null;
   widenBy?: number;
   featherBy?: number;
 }): Promise<CleanedCut> {
-  const verdict = judgeCut({ mask: input.mask, box: input.box });
+  const verdict = judgeCut({ mask: input.mask, box: input.box, fillFloor: input.fillFloor });
   if (!verdict.use) {
     return { verdict, mask: null, bounds: null, holePixels: 0, holeCount: 0 };
   }

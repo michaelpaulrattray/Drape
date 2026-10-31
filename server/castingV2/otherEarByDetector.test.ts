@@ -57,7 +57,12 @@ describe("the reader's other-ear look, with a provider answering the way his cro
    * `face` answers the face; the detector boxes both hoops and the ring; a box
    * cut answers the box filled (or, under `thin`, a sliver of it).
    */
-  function stub(over: { boxes?: Array<{ x: number; y: number; width: number; height: number }>; thin?: boolean } = {}) {
+  function stub(over: {
+    boxes?: Array<{ x: number; y: number; width: number; height: number }>;
+    thin?: boolean;
+    /** The segmenter answers about something nowhere near the rectangle asked. */
+    elsewhere?: boolean;
+  } = {}) {
     const detected: string[] = [];
     const cuts: Array<{ x_min: number; x_max: number }> = [];
     vi.stubGlobal("fetch", async (url: unknown, init: any) => {
@@ -71,7 +76,13 @@ describe("the reader's other-ear look, with a provider answering the way his cro
         const [box] = body.box_prompts;
         cuts.push({ x_min: box.x_min, x_max: box.x_max });
         const rect = { x: box.x_min, y: box.y_min, width: box.x_max - box.x_min, height: box.y_max - box.y_min };
-        const answer = over.thin ? { ...rect, width: 1 } : rect;
+        const answer = over.elsewhere
+          /* ⚠ ON THIS SIDE OF THE FACE AND OUTSIDE THE RECTANGLE, WHICH IS THE
+             WHOLE POINT. Drawn in the far corner first, this arm passed under
+             sabotage: `keepPiecesAtTheSide` was dropping it for being on the
+             wrong side, so the overlap refusal was never the thing under test. */
+          ? { x: 170, y: 90, width: 8, height: 16 }
+          : over.thin ? { ...rect, width: 1 } : rect;
         return json({ masks: [{ url: await uri(maskWith([answer])) }] });
       }
       if (body.prompt === "face") return json({ masks: [{ url: await uri(maskWith([{ x: 60, y: 20, width: 80, height: 90 }])) }] });
@@ -105,8 +116,40 @@ describe("the reader's other-ear look, with a provider answering the way his cro
     expect(cuts).toEqual([]);
   });
 
-  it("a cut that fills almost none of its rectangle is refused, as the pointer road refuses it", async () => {
+  /*
+    ⚠ **THIS ARM IS INVERTED AND THE ONE UNDER IT IS NEW — #2831, the relay's
+    decision of 2026-10-30: the face panel stops refusing on fill.**
+
+    ~~*"a cut that fills almost none of its rectangle is refused, as the pointer
+    road refuses it"*~~ was this road's position for one day. A thin hoop is
+    precisely the shape a fill bar refuses — a ring's bounding box is the whole
+    thing it encircles, so a band must be 7% of its own span to clear 20% — and
+    this road exists because of #2800, *"why did it pick up her left ear but not
+    the left earing?"*. **A bar that refuses earrings for being thin was the
+    wrong instrument on the card about a missing earring.** Measured: a correct
+    tail cut filled 17.00% and was thrown away, a wrong cut of a sword passed at
+    21.64%.
+
+    What still refuses is the pair of yes/no facts, and the second one is the
+    reason the arm below exists: this road never had a box-against-box check of
+    its own, so taking the floor off would have opened a hole where a cut of the
+    wrong object entirely gets kept. `judgeCut` carries that refusal now.
+  */
+  it("keeps a thin cut of the hoop, and no longer refuses it for being thin", async () => {
     stub({ thin: true });
+    const reader = createFalRegionReader({ apiKey: "k", pairInOneRead: true });
+    const found = await reader.sideByDetector!({ image: await frame(), name: "earring", side: "left" });
+    expect(found).not.toBeNull();
+    /* One pixel wide, at the hoop's own rectangle — the cut it was refused for. */
+    expect(boundsOf(found!)).toEqual({ ...IMAGE_RIGHT_HOOP, width: 1 });
+  });
+
+  it("⚠ still refuses a cut that misses the rectangle it was asked about", async () => {
+    /* The segmenter answers about something in the far corner of the picture.
+       Its fill of the asked rectangle is nil, which the floor used to swallow;
+       with no floor on this road it is `judgeCut`'s own `no-overlap` refusal
+       that keeps it out, and this arm is what proves that did not go with it. */
+    stub({ elsewhere: true });
     const reader = createFalRegionReader({ apiKey: "k", pairInOneRead: true });
     expect(await reader.sideByDetector!({ image: await frame(), name: "earring", side: "left" })).toBeNull();
   });

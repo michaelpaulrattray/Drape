@@ -169,6 +169,89 @@ describe("the repairs-owed reading (#1977)", () => {
     expect(after.repairs).toHaveLength(8);
   });
 
+  it("a shift's ANSWER after the newest finding demotes the repair without removing it (#2855)", () => {
+    /*
+      ⚠ **A REPAIR IS NOT ALWAYS A COMMIT, AND THAT IS THE WHOLE CARD.** The
+      relay's finding on PR #2852 asked for a re-measurement and said so in its
+      own last line; a shift ran it — 72 readings, $2.00 of house money — and
+      answered under the standing orders' header. The head never moved, so this
+      reader went on offering a repair that was delivered and sitting in a
+      comment, and a seat that trusts the row re-runs the measurement.
+
+      ⚠ **DEMOTED, NEVER REMOVED.** The relay may disagree with the answer, and
+      a list that could lose a repair is the behaviour this module exists to
+      end. It sorts behind every un-answered one and keeps its clock.
+    */
+    const rows = structuredClone(LIVE.rows) as RepairPullRequestRow[];
+    const before = repairsOwedFrom(rows, LIVE.ownerLogin);
+    expect(before.repairs[0]!.pullRequest).toBe(1924);
+    expect(before.repairs.every((repair) => repair.answeredAt === null)).toBe(true);
+
+    const held = rows.find((row) => row.number === 1924)!;
+    const newestFinding = (held.comments ?? [])
+      .filter((comment) => (comment.body ?? "").startsWith("**Relay finding"))
+      .map((comment) => comment.createdAt!)
+      .sort()
+      .pop()!;
+    (held.comments as unknown[]).push({
+      id: 9_100_001,
+      author: { login: LIVE.ownerLogin },
+      createdAt: "2026-10-08T07:00:00Z",
+      body: [
+        "**Finding answered — seat1-20261008-0700**",
+        "",
+        "Re-measured; the numbers are on the PR.",
+      ].join("\n"),
+    });
+    expect("2026-10-08T07:00:00Z" > newestFinding).toBe(true);
+
+    const after = repairsOwedFrom(rows, LIVE.ownerLogin);
+    /* Still nine. Nothing is lost. */
+    expect(after.repairs).toHaveLength(before.repairs.length);
+    const answered = after.repairs.find((repair) => repair.pullRequest === 1924)!;
+    expect(answered.answeredAt).toBe("2026-10-08T07:00:00Z");
+    /* It was first and it is now last — the only change this makes. */
+    expect(after.repairs[after.repairs.length - 1]!.pullRequest).toBe(1924);
+    /* And its own clock is untouched: it has still been owed since 21:55Z. */
+    expect(answered.heldSince).toBe(before.repairs[0]!.heldSince);
+    /* The word says so, so a night where every repair is answered cannot read
+       as nine untouched ones. */
+    expect(repairsOwedWord(after, READ_AT_MS)).toContain("1 answered — waiting on the relay");
+  });
+
+  it("⚠ an answer BEFORE the newest finding answers nothing — and the real fixture is the case", () => {
+    /*
+      PR #1924 carries a real `**Finding answered` comment at 22:40:16Z and the
+      relay's newest finding at 23:53:37Z — the relay read the answer and still
+      refused. An answer older than the refusal it answers is not an answer, and
+      this is measured on the capture rather than constructed.
+    */
+    const row = LIVE.rows.find((entry) => entry.number === 1924)!;
+    const answers = (row.comments ?? [])
+      .filter((comment) => /^\s*\*\*(Finding answered|Repair pushed)/.test(comment.body ?? ""));
+    expect(answers).toHaveLength(1);
+    expect(answers[0]!.createdAt! < "2026-10-07T23:53:37Z").toBe(true);
+    expect(repairsOwedFrom(LIVE.rows, LIVE.ownerLogin).repairs
+      .find((repair) => repair.pullRequest === 1924)!.answeredAt).toBeNull();
+  });
+
+  it("CONTROL — an answer by ANOTHER account moves nothing (#2855)", () => {
+    /*
+      Every seat posts as his account, so the author gate is not a formality: it
+      is what keeps an outsider's comment from reordering a seat's work.
+    */
+    const rows = structuredClone(LIVE.rows) as RepairPullRequestRow[];
+    (rows.find((row) => row.number === 1924)!.comments as unknown[]).push({
+      id: 9_100_002,
+      author: { login: "someone-else" },
+      createdAt: "2026-10-08T07:00:00Z",
+      body: "**Finding answered — not the relay's account**",
+    });
+    const after = repairsOwedFrom(rows, LIVE.ownerLogin);
+    expect(after.repairs[0]!.pullRequest).toBe(1924);
+    expect(after.repairs[0]!.answeredAt).toBeNull();
+  });
+
   it("a later VERDICT on the same head clears the repair, and an earlier one does not", () => {
     /*
       `reviewPresence`'s own rule (#1673): the newest hand comment decides, and a
@@ -685,6 +768,7 @@ describe("the card behind a repair, and the claim on it (#2769)", () => {
       draft: false,
       heldSince: "2026-10-28T23:00:00Z",
       findings: 1,
+      answeredAt: null,
     };
     expect(pullRequestBuildsCard({ number: 9001, headRefName: repair.headRefName }, 1)).toContain("branch");
     const read = repairCardClaims({ repairs: [repair], openCards: [1, 20261029], facts: [], nowMs: NOW });

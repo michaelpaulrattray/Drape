@@ -221,6 +221,30 @@ export type FaceDiscovery =
 export type DiscoveryCrop = { kind: "head" | "full"; bytes: Buffer; contentType: string };
 
 /**
+ * WHERE THE HEAD CROP IS CUT FROM — the rectangle, in the frame's own pixels,
+ * or `null` when the frame is too small to cut one (#2885).
+ *
+ * Exported because the face reader now checks its face against it: on the
+ * founder's round-11 cast the segmenter's `face` read landed on a face tattooed on the
+ * arm, and this rectangle is a reference that read cannot move. **It is
+ * geometry, not a reading**: the top {@link HEAD_FRACTION} of the frame at full
+ * width, decided by the frame's size alone. Nothing about it comes from the
+ * segmenter, so judging the face read against it is not the read judging
+ * itself.
+ *
+ * {@link discoveryCropsOf} cuts its head crop from exactly this rectangle, so
+ * the crop the discovery reads and the box the face is judged by cannot drift
+ * apart (working law 4).
+ */
+export function discoveryHeadBoxOf(
+  frame: { width: number; height: number },
+): { left: number; top: number; width: number; height: number } | null {
+  const height = Math.round(frame.height * HEAD_FRACTION);
+  if (frame.width < 64 || height < 64) return null;
+  return { left: 0, top: 0, width: frame.width, height };
+}
+
+/**
  * Cut the two pictures a discovery asks about.
  *
  * ⚠ **BOTH OR NEITHER, and that changed with the relay's finding on PR #2570.**
@@ -257,8 +281,8 @@ export async function discoveryCropsOf(frame: {
 
   const crops: DiscoveryCrop[] = [];
   try {
-    const headHeight = Math.round(frame.height * HEAD_FRACTION);
-    if (frame.width < 64 || headHeight < 64) {
+    const head = discoveryHeadBoxOf(frame);
+    if (head === null) {
       log.warn(
         { width: frame.width, height: frame.height },
         "the frame is too small to cut a head crop — no discovery is asked",
@@ -267,7 +291,7 @@ export async function discoveryCropsOf(frame: {
     }
     crops.push(await bound(
       await sharp(frame.bytes)
-        .extract({ left: 0, top: 0, width: frame.width, height: headHeight })
+        .extract(head)
         .resize({ width: ASK_WIDTH })
         .png()
         .toBuffer(),
@@ -466,19 +490,60 @@ export const DISCOVERY_SCHEMA = {
 } as const;
 
 /**
+ * THE WORD BOUND THIS ROAD'S OWN PROMPT ASKS FOR.
+ *
+ * Two, and the prompt above states it TWICE — the instruction line (*"one or
+ * two plain words"*) and the schema's own `name` description. This constant
+ * sits beside them so the gate and the ask cannot drift apart, which is the
+ * whole of #2877.
+ */
+export const DISCOVERY_NAME_MAX_WORDS = 2;
+
+/**
  * Whether a name is usable as a cutter's prompt.
+ *
+ * # ⚠ THE WORD CAP IS THE CALLER'S, AND IT USED TO BE THIS FUNCTION'S (#2877)
+ *
+ * It was a hard two-word cap here, and **one of the four call sites asks its
+ * reader for three words** — `CUT_NAME_PROMPT` (`referenceCutName.ts`), whose
+ * own sentence is *"a bare noun phrase of one to three words"*. So that prompt
+ * invited exactly what this gate refused, and `nameTheCut` turns a refusal into
+ * `null`, which shows the customer **no name at all**.
+ *
+ * Measured on the spotlight court's nine tap cuts (#2875, 300 reader calls):
+ * **8 of 300 readings showed no name, 7 of those 8 had named the thing
+ * correctly, and every one of the 8 was exactly three words.** No other
+ * rejection fired in 300 readings. On the hoop earring alone, 5 of 12 readings
+ * answered *"Gold hoop earring"* and showed nothing.
+ *
+ * ⚠ **Neither obvious one-line fix was available, and that is why the cap
+ * moved OUT here rather than up or down.** Widening this to three would
+ * silently widen three OTHER call sites whose prompts ask for two; re-wording
+ * `CUT_NAME_PROMPT` to say two is forbidden by that module's own header — it
+ * is copied byte-for-byte from the court and a paraphrase invalidates its
+ * 8-of-8 figure, which is the rule that made #2848 cost a bench.
+ *
+ * So each caller passes the bound ITS prompt states, from a constant declared
+ * beside that prompt: {@link DISCOVERY_NAME_MAX_WORDS} (2) here and on the
+ * reference-discovery road, `CUT_NAME_MAX_WORDS` (3) on the cut-naming road.
+ * **The argument is REQUIRED rather than defaulted on purpose** — a new caller
+ * must name its own prompt's bound instead of inheriting one nobody chose, and
+ * inheriting a bound nobody chose is precisely what this repaired.
+ *
+ * The model for the shape is `openLaneKind.ts`, whose own three-word gate has
+ * carried its reason at the point of enforcement all along.
  *
  * The three rejections are the three measured shapes: a parenthetical or a
  * comma-separated list, a positional clause, and a caption. Exported because a
  * contract nobody can check is a hope, and the suite holds the real prompt's
  * output to it.
  */
-export function isBareNoun(name: string): boolean {
+export function isBareNoun(name: string, maxWords: number): boolean {
   const trimmed = name.trim();
   if (trimmed.length === 0) return false;
   if (/[(),/]/.test(trimmed)) return false;
   if (/\b(with|in|on|under|over|near|around|styled|wearing)\b/i.test(trimmed)) return false;
-  return trimmed.split(/\s+/).length <= 2;
+  return trimmed.split(/\s+/).length <= maxWords;
 }
 
 /**
@@ -498,7 +563,7 @@ function cleanName(raw: unknown): { ok: boolean; name: string } | null {
   if (typeof raw !== "string") return null;
   const name = raw.trim().toLowerCase();
   if (name.length === 0 || name.length > 40) return null;
-  return { ok: isBareNoun(name), name };
+  return { ok: isBareNoun(name, DISCOVERY_NAME_MAX_WORDS), name };
 }
 
 function cleanCount(raw: unknown): number {
@@ -554,7 +619,7 @@ function cleanHost(raw: unknown): string {
   if (typeof raw !== "string") return "";
   const host = raw.trim().toLowerCase();
   if (host.length === 0 || host.length > 40) return "";
-  return isBareNoun(host) ? host : "";
+  return isBareNoun(host, DISCOVERY_NAME_MAX_WORDS) ? host : "";
 }
 
 /**

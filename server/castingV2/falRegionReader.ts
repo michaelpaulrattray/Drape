@@ -26,10 +26,12 @@ import { throughCensus } from "./callCensus";
 import { throughFalGate } from "./falConcurrency";
 import { classifyFalHttp, falHeaders } from "../providers/falTransport";
 import { REGION_CARDS, REGION_CARD_ENTRIES, type AskedAs, type RegionCard } from "./regionCards";
-import { judgeCut } from "./cutQuality";
+import { FILL_MEASURED_NOT_REFUSED, judgeCut } from "./cutQuality";
+import { onTheFace } from "./faceExtent";
 import { MaskError, overlapWith, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { PointerBox, RegionReader, SideRegions } from "./maskedRefine";
+import type { PointerBoxer } from "./pointerBoxer";
 
 const log = createModuleLogger("castingV2/falRegionReader");
 
@@ -216,6 +218,10 @@ async function post(
  */
 export const POINTER_DETECT_ABOUT = "pointer.detect";
 export const POINTER_BOX_ABOUT = "pointer.box";
+
+/** The spotlight's two roads, named for the census (#14 slice 3a). */
+export const REFERENCE_SPLIT_ABOUT = "reference.split";
+export const REFERENCE_POINT_ABOUT = "reference.point";
 
 /**
  * HOW A CALL IS LABELLED IN THE CALL CENSUS — decided at the CALL SITE and
@@ -699,34 +705,6 @@ export function keepPiecesAtTheSide(
  *  as well as across — the face rule judges both. */
 export type DroppedFacePiece = { pixels: number; centreX: number; centreY: number };
 
-/**
- * IS A THING CENTRED HERE ON THE FACE (#2844) — no farther outside the face
- * read's extent, on either axis, than that axis's middle is inside it.
- *
- * Read across, that is {@link atTheSide}'s own construction turned outward: a
- * piece beyond the face's edge is still the face's when it is no farther past
- * that edge than the edge is from the face's middle. Read down, the same
- * sentence with the face's top, bottom and middle row. A tie is kept, for
- * `atTheSide`'s reason. Both bounds come off the one face read, so nothing here
- * is tuned: the face is its own measure.
- */
-function onTheFace(
-  centreX: number,
-  centreY: number,
-  face: { midline: number; left: number; right: number; top: number; bottom: number; middle: number },
-): boolean {
-  const across = centreX < face.left
-    ? face.left - centreX <= face.midline - face.left
-    : centreX > face.right
-      ? centreX - face.right <= face.right - face.midline
-      : true;
-  const down = centreY < face.top
-    ? face.top - centreY <= face.middle - face.top
-    : centreY > face.bottom
-      ? centreY - face.bottom <= face.bottom - face.middle
-      : true;
-  return across && down;
-}
 
 /**
  * ONLY THE PIECES OF A FACE FEATURE THAT ARE ON THE FACE — an eye, a brow or
@@ -777,16 +755,229 @@ export function keepPiecesOnTheFace(
 }
 
 /**
- * THE CONNECTED PIECES OF A MASK, EACH KEPT OR DROPPED BY ITS CENTRE — the one
- * labelling both rules above read, so the ear's rule and the face's cannot
- * disagree about what a piece is. 8-neighbour.
+ * ⚠ **THE PROVIDER REFUSES MORE THAN THIS MANY MASKS IN ONE READ — MEASURED,
+ * NOT READ OFF A PAGE** (the spotlight court, 2026-10-30: one call was refused
+ * for `max_masks` above it and came back with no masks at all).
+ */
+export const SPLIT_MAX_MASKS = 32;
+
+/**
+ * SPLIT ONE PHOTOGRAPH INTO PIECES, IN A SINGLE READ — #14 slice 3a's hover road.
+ *
+ * A grid of point prompts with an EMPTY text prompt: SAM 3 answers one object
+ * per point, and `object_id` per point is what keeps them separate (the
+ * provider's own schema: *"Prompts sharing an object id refine the same
+ * object"*). The grid is 8x4 on a landscape frame and 4x8 on a portrait one, at
+ * cell centres — the court's own shape, which measured 7 of 9 things
+ * garment-level at 4.3–6.6 s and ≈0.5¢ a photograph.
+ *
+ * ⚠ **`prompt: ""` IS SENT ON PURPOSE AND IS NOT A TIDYING OPPORTUNITY.** The
+ * provider's schema gives `prompt` a DEFAULT OF `"wheel"`, so a body that omits
+ * the field does not ask "split this picture" — it asks the segmenter to go
+ * looking for a wheel. The empty string is the whole instruction that this is a
+ * point-driven read, and `server/castingV2/referenceSplitWire.test.ts` asserts
+ * it on the OUTGOING body (invariant 5) rather than near the constant.
+ *
+ * ⚠ **`include_scores` IS DELIBERATELY NOT SENT, and that is a clause-4
+ * decision rather than an omission.** The disappearing-technology law's clause 4
+ * — *read what the engine already gives you before reaching for a better one* —
+ * has its founding instance in exactly this model: `include_scores: true` bought
+ * on every call and every score discarded (#246/#475). The court sent it because
+ * the court was measuring. Nothing on this road reads a score: the hover set is
+ * decided by his geometry rules, not by the provider's confidence. So it is not
+ * bought. **If a later slice finds a use for the scores — ranking which piece
+ * lights when two overlap is the obvious candidate — it turns the field on and
+ * reads them in the same commit, never one without the other.**
+ *
+ * A failed or empty read answers with NO pieces and throws nothing: §4's
+ * fail-open property, transferred to the split verbatim — *"a failed or empty
+ * split means the picture presents with no spotlight, taps still honoured,
+ * words road untouched, nothing charged, nothing said."*
+ */
+export async function splitAtPoints(input: {
+  apiKey: string;
+  image: Buffer;
+  signal?: AbortSignal;
+}): Promise<readonly Mask[]> {
+  const { apiKey, image, signal } = input;
+  assertPicture(image, "the attached picture");
+  const sharp = (await import("sharp")).default;
+  const meta = await sharp(image).metadata();
+  const width = meta.width ?? 0;
+  const height = meta.height ?? 0;
+  if (width <= 0 || height <= 0) return [];
+  const columns = width >= height ? 8 : 4;
+  const rows = width >= height ? 4 : 8;
+  const points: { x: number; y: number; label: number; object_id: number }[] = [];
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      points.push({
+        x: Math.round(((column + 0.5) / columns) * width),
+        y: Math.round(((row + 0.5) / rows) * height),
+        label: 1,
+        object_id: points.length + 1,
+      });
+    }
+  }
+  let json: any;
+  try {
+    json = await post(
+      apiKey,
+      SAM3,
+      {
+        image_url: dataUri(image),
+        prompt: "",
+        point_prompts: points,
+        apply_mask: false,
+        output_format: "png",
+        return_multiple_masks: true,
+        max_masks: SPLIT_MAX_MASKS,
+      },
+      signal,
+      { road: REFERENCE_SPLIT_ABOUT },
+    );
+  } catch (cause) {
+    log.warn({ cause: String(cause) }, "the split could not be read — the picture presents with no spotlight");
+    return [];
+  }
+  const urls: string[] = (Array.isArray(json?.masks) ? json.masks : [])
+    .map((entry: any) => (typeof entry === "string" ? entry : entry?.url))
+    .filter((url: unknown): url is string => typeof url === "string" && url.length > 0);
+  /*
+    ⚠ THE DOWNLOADS OVERLAP, AND THAT IS TWO THIRDS OF THIS ROAD — measured
+    2026-10-31 (#14 slice 3a-2), on the court's own worn fixture at the court's
+    own 768x1024:
+
+    | half                                   | one at a time | overlapped |
+    |---|---|---|
+    | the ONE provider call                  | 14,973 ms     | 14,973 ms  |
+    | the 32 mask downloads                  | **32,710 ms** | **1,025 ms** |
+    | the road                               | 47,683 ms     | 15,998 ms  |
+
+    A 32-mask answer was **32 sequential HTTP round trips**, 69% of the wait,
+    and the court never paid for them at all: its 4.3–6.6 s is the provider
+    call alone (`q.ms`). So §8's latency band was never a reading of this
+    function, and a customer would have waited ~48 s for a picture to light.
+    The cell is `scripts/_14-split-halves-disposable.mts`, which times the two
+    halves separately and is in the tree because this table cites it.
+
+    **`Promise.all` over `urls.map` PRESERVES ORDER, and that is load-bearing
+    rather than incidental**: a piece's index becomes its id in the hit-test map
+    (`referenceSpotlightMap.ts`) and `cleanSplit`'s `dropped[].at` refers to
+    arrival order, so a shape that reordered the pieces would renumber what the
+    surface lights. The per-mask tolerance is kept exactly as it was — one
+    unreadable mask is one missing piece and never a failed split — which is why
+    each download catches for itself instead of the set rejecting together.
+  */
+  const settled = await Promise.all(
+    urls.map(async (url) => {
+      try {
+        return await placeInFrame(await fetchMask(url, signal), { left: 0, width }, width, height);
+      } catch (cause) {
+        /* One unreadable mask is one missing piece, never a failed split: the
+           rest of the picture still lights. */
+        log.warn({ cause: String(cause) }, "a split piece could not be read");
+        return null;
+      }
+    }),
+  );
+  return settled.filter((piece): piece is Mask => piece !== null);
+}
+
+/**
+ * CUT WHATEVER IS UNDER THE FINGER — #14 slice 3a's tap road.
+ *
+ * ONE SAM 3 point prompt at the tapped spot. The court measured this at 8 of 9
+ * things garment-level, 1.1–3.8 s and ≈0.5¢ a tap — and crucially **4 of 4 on
+ * the worn photograph including the earring and the necklace**, which have no
+ * piece in the split at all. That is why a tap is honoured wherever it lands,
+ * lit or not (§3).
+ *
+ * ⚠ **A POINT RETURNS A PART AS READILY AS A WHOLE, AND THAT IS CORRECT
+ * BEHAVIOUR RATHER THAN A DEFECT TO TUNE OUT.** The court's belt tap landed on
+ * the belt's keeper and cut the keeper alone, honestly named *"leather strap"*;
+ * a second tap on the strap returned the whole belt at 0.958. So the cut is
+ * NAMED after it is taken rather than assumed, and the chip carries the cut's
+ * own name — which is what keeps §1's law-9 property at full strength.
+ *
+ * `null` when the provider answers with nothing, which the caller reads as
+ * "that tap found nothing" and never as a failure worth a refusal.
+ */
+export async function cutAtPoint(input: {
+  apiKey: string;
+  image: Buffer;
+  /** Where the finger landed, in the frame's own pixels. */
+  at: { x: number; y: number };
+  signal?: AbortSignal;
+}): Promise<Mask | null> {
+  const { apiKey, image, at, signal } = input;
+  assertPicture(image, "the attached picture");
+  const sharp = (await import("sharp")).default;
+  const meta = await sharp(image).metadata();
+  const width = meta.width ?? 0;
+  const height = meta.height ?? 0;
+  if (width <= 0 || height <= 0) return null;
+  /* A tap outside the picture is a question about a place that does not exist,
+     and clamping it would answer about a different place instead. */
+  if (at.x < 0 || at.y < 0 || at.x >= width || at.y >= height) return null;
+  let json: any;
+  try {
+    json = await post(
+      apiKey,
+      SAM3,
+      {
+        image_url: dataUri(image),
+        prompt: "",
+        point_prompts: [{ x: Math.round(at.x), y: Math.round(at.y), label: 1, object_id: 1 }],
+        apply_mask: false,
+        output_format: "png",
+      },
+      signal,
+      { road: REFERENCE_POINT_ABOUT },
+    );
+  } catch (cause) {
+    log.warn({ cause: String(cause) }, "the tap could not be cut");
+    return null;
+  }
+  const urls: string[] = (Array.isArray(json?.masks) ? json.masks : [])
+    .map((entry: any) => (typeof entry === "string" ? entry : entry?.url))
+    .filter((url: unknown): url is string => typeof url === "string" && url.length > 0);
+  const first = urls[0];
+  if (first === undefined) return null;
+  try {
+    return await placeInFrame(await fetchMask(first, signal), { left: 0, width }, width, height);
+  } catch (cause) {
+    log.warn({ cause: String(cause) }, "the tap's cut could not be read");
+    return null;
+  }
+}
+
+/**
+ * THE CONNECTED PIECES OF A MASK, EACH KEPT OR DROPPED BY A PREDICATE — the one
+ * labelling every rule here reads, so the ear's rule, the face's and the
+ * split's cannot disagree about what a piece is. 8-neighbour.
  *
  * Returns the same mask object when nothing was dropped, and `null` for `kept`
  * when nothing is left.
+ *
+ * ⚠ **EXPORTED AND ITS PREDICATE WIDENED FOR #14 SLICE 3A, ADDITIVELY.** The
+ * split's clean-up keeps *"components of at least 10% of its largest"* (his
+ * rule, `referenceSplitCleanup.ts`), which needs two facts the two facial
+ * callers above never asked for: a piece's own `pixels`, and the `largestPixels`
+ * across the pieces of this mask. Both arrive as NEW fields and a NEW second
+ * argument, so the ear and face rules — which destructure neither — cannot
+ * change behaviour by a byte. **The alternative was a second connected-
+ * components walk in the new module, which is working law 4's mirror and the
+ * shape this repository has repeatedly been bitten by**; `largestPixels` is
+ * handed over rather than recomputed so the clean-up costs ONE walk per piece
+ * and not two.
  */
-function keepPiecesWhere(
+export function keepPiecesWhere(
   mask: Mask,
-  keep: (piece: { centreX: number; centreY: number }) => boolean,
+  keep: (
+    piece: { centreX: number; centreY: number; pixels: number },
+    all: { largestPixels: number; count: number },
+  ) => boolean,
 ): { kept: Mask | null; dropped: DroppedFacePiece[] } {
   const { width, height, data } = mask;
   /* Labelled inside the mask's own bounds only: a side's answer is a few
@@ -844,7 +1035,12 @@ function keepPiecesWhere(
       pieces.push({ pixels, sumX, sumY });
     }
   }
-  const drop = pieces.map(({ pixels, sumX, sumY }) => !keep({ centreX: sumX / pixels, centreY: sumY / pixels }));
+  let largestPixels = 0;
+  for (const piece of pieces) if (piece.pixels > largestPixels) largestPixels = piece.pixels;
+  const all = { largestPixels, count: pieces.length };
+  const drop = pieces.map(
+    ({ pixels, sumX, sumY }) => !keep({ centreX: sumX / pixels, centreY: sumY / pixels, pixels }, all),
+  );
   if (!drop.some(Boolean)) return { kept: mask, dropped: [] };
   const out = Buffer.from(data);
   let left = 0;
@@ -874,24 +1070,30 @@ function keepPiecesWhere(
  * mask is resampled to the crop it answers about instead of throwing, because a
  * paid edit is not worth losing to a provider's scaling preference. Nearest
  * neighbour, so a binary mask stays binary.
+ *
+ * `top` and `height` are for a crop that is not full height — the head crop the
+ * face is asked again on (#2885). Absent, the crop is the frame's whole height,
+ * which is every half-frame caller's answer exactly as before.
  */
 async function placeInFrame(
   half: Mask,
-  crop: { left: number; width: number },
+  crop: { left: number; width: number; top?: number; height?: number },
   width: number,
   height: number,
 ): Promise<Mask> {
+  const top = crop.top ?? 0;
+  const cropHeight = crop.height ?? height;
   let source = half;
-  if (half.width !== crop.width || half.height !== height) {
+  if (half.width !== crop.width || half.height !== cropHeight) {
     log.warn(
-      { returned: `${half.width}x${half.height}`, expected: `${crop.width}x${height}` },
+      { returned: `${half.width}x${half.height}`, expected: `${crop.width}x${cropHeight}` },
       "[falRegionReader] the segmenter answered at a different size than it was asked — resampling to the crop",
     );
     const sharp = (await import("sharp")).default;
     const { data, info } = await sharp(half.data, {
       raw: { width: half.width, height: half.height, channels: 1 },
     })
-      .resize({ width: crop.width, height, kernel: "nearest", fit: "fill" })
+      .resize({ width: crop.width, height: cropHeight, kernel: "nearest", fit: "fill" })
       /* `toColourspace` is not decoration: a resize of a one-channel raw buffer
          comes back as THREE channels, and the guard below caught it on the first
          run. D-210, for the fourth time through the same door. */
@@ -906,7 +1108,7 @@ async function placeInFrame(
   const data = Buffer.alloc(width * height, 0);
   for (let y = 0; y < source.height; y += 1) {
     const from = y * source.width;
-    source.data.copy(data, y * width + crop.left, from, from + source.width);
+    source.data.copy(data, (y + top) * width + crop.left, from, from + source.width);
   }
   return { data, width, height };
 }
@@ -1167,8 +1369,48 @@ export function createFalRegionReader(input: {
    * default is today's answer and the flip is his, with his eye on the panel.
    */
   pairInOneRead?: boolean;
+  /**
+   * WHO DRAWS THE BOX ROUND A NAMED THING — absent, today's detector (#2863).
+   *
+   * The CALLER decides, for `pairInOneRead`'s reason: this module does not know
+   * whose picture it is reading, and `CASTING_POINTER_ENGINE_SCOPE` is a
+   * per-account switch (`pointerBoxerFor`). Present, every `pointer` question
+   * and the other-ear look ask it first, with one request per picture for all
+   * the names asked of it at once; when it answers `null` (every engine
+   * failed) each name is asked of today's detector exactly as it is today.
+   */
+  boxer?: PointerBoxer;
+  /**
+   * WHERE THE HEAD IS, AS THE CALLER ALREADY KNOWS IT — absent, today's face
+   * read exactly (#2885, the founder's eye, round 11).
+   *
+   * The segmenter's `face` read is the authority for every pair's midline, the
+   * face rule, the ear rules and the other-ear look, and on the founder's round-11 cast
+   * it answered **a face tattooed on the cast's arm**: a 67px box low on the frame,
+   * so the real eyes, brows and ears were all found and then dropped as "away
+   * from the face", and both earrings fell on one side of a midline at x81.
+   * Inside this reader there is no second opinion to refuse that read with —
+   * the read IS the head authority — so the reference has to arrive from
+   * outside it.
+   *
+   * The scan hands in the rectangle the discovery's head crop is cut from
+   * (`discoveryHeadBoxOf`), measured on the frame it reads. With it, a piece
+   * of the face read whose centre lies outside the box is not the cast's face; a read
+   * with no piece left is asked again of the head crop alone; and only if that
+   * finds nothing does the scan go on without a face, as a missing face does.
+   * See {@link judgedFace}.
+   *
+   * The CALLER decides, for `pairInOneRead`'s reason, and only the scan passes
+   * it: a refine builds its own reader and gets today's answer.
+   */
+  headBox?: {
+    /** The size of the picture the box was measured on. */
+    frame: { width: number; height: number };
+    /** The rectangle, in that picture's own pixels. */
+    box: { left: number; top: number; width: number; height: number };
+  };
 }): RegionReader {
-  const { apiKey, signal, pairInOneRead = false } = input;
+  const { apiKey, signal, pairInOneRead = false, boxer, headBox } = input;
 
   /**
    * WHICH SIGNAL ONE CALL RUNS UNDER — the reader's own, the caller's, or both
@@ -1542,13 +1784,155 @@ export function createFalRegionReader(input: {
   const faceOf = (image: Buffer, imageUrl?: string): Promise<FaceSpan | null> => {
     const held = faces.get(image);
     if (held) return held;
-    const asked = (async () => {
-      const face = await askRegion(image, SHARED_PROMPT, "all", imageUrl);
-      return face ? spanOf(face) : null;
-    })();
+    const asked = faceMaskOf(image, imageUrl).then((face) => (face ? spanOf(face) : null));
     faces.set(image, asked);
     asked.catch(() => faces.delete(image));
     return asked;
+  };
+
+  /**
+   * THE FACE READ ITSELF, once per picture — the mask {@link faceOf} measures
+   * and the build row's head is cut from (`region("face")`), so the midline and
+   * the head box cannot come from two different readings of one frame (#2885).
+   * One promise per buffer, for `faces`' reason.
+   */
+  const faceMasks = new Map<Buffer, Promise<Mask | null>>();
+  const faceMaskOf = (image: Buffer, imageUrl?: string): Promise<Mask | null> => {
+    const held = faceMasks.get(image);
+    if (held) return held;
+    const asked = (async () => judgedFace(image, await askRegion(image, SHARED_PROMPT, "all", imageUrl), undefined))();
+    faceMasks.set(image, asked);
+    asked.catch(() => faceMasks.delete(image));
+    return asked;
+  };
+
+  /**
+   * IS THIS FACE ON THE HEAD — the face read judged against the head box the
+   * caller handed in, and asked again of the head alone when it is not
+   * (#2885, the founder's eye, round 11: *"it also didnt pick up her eyes /brows etc"*).
+   *
+   * # What production logged
+   *
+   * On the founder's round-11 cast the scan's face was
+   * `{"left":50,"right":117,"top":955,"bottom":1132,"midline":81}` — a 67px box
+   * in the lower left of the frame, where the cast's arm carries a tattooed face. The
+   * segmenter FOUND the real eyes (centres y≈463), brows (y≈416) and ears
+   * (y≈469), and the face rule (#2844) dropped every one as away from that
+   * face. Both earrings sat on one side of a midline at x81, so they were kept
+   * as one side's piece and drawn as one ear-to-ear box.
+   *
+   * # The rule: a piece whose CENTRE is outside the head box is not the cast's face
+   *
+   * Judged per connected piece, and by the piece's centre rather than its
+   * extent, because the two defects and the healthy face separate there and
+   * nowhere else. Read off the face spans #2844's controls recorded on eleven
+   * frames the face read got RIGHT (the round-10 cast, 2796, 2800, 2801, 2810,
+   * 2833 and five turned faces), the face's middle row sits at **30–41% of the
+   * frame's height**, against a head box that ends at 50% — and on **six of
+   * the eleven** the face's own chin reaches PAST that line (2833: y810 of
+   * 1536), so a rule asking the whole extent to fit would have refused a
+   * correct face on most casts. The tattooed face on round 11 BEGAN at row
+   * 955, which is below the half line of any frame under 1,910px tall.
+   *
+   *   one wrong face      every piece is outside, nothing is left, and the
+   *                       head is asked again
+   *   real + tattoo       the union fear on #2885 (`keep: "all"` unions every
+   *                       answer): the tattoo's piece is dropped and the real
+   *                       face stands, with no second request
+   *   a real face         every piece is inside and the read is returned as
+   *                       it came — the same object, today's span
+   *
+   * # Asked again of the head alone, never of the frame again
+   *
+   * The same question of the same frame is the same answer (`SHARED_PROMPT`'s
+   * own measurement), so a re-ask of the frame would buy the tattoo twice. The
+   * head crop is the rectangle the discovery reads, and the arm is not in it.
+   * It costs ONE more segmenter read (≈0.5¢), on the refused frames only; a
+   * read the reader trusted costs nothing extra. It is one request and asks for
+   * one instance — the #2532 guard on several instances holds, because this is
+   * `askRegion` with `multiple` left `false`.
+   *
+   * # And when that finds nothing either
+   *
+   * `null`: the scan goes on without a face, which is exactly what a frame the
+   * segmenter finds no face on has always done — pairs cut at the frame's
+   * middle, and NO feature dropped for being away from a face, because there is
+   * no face to be away from. **A refused span never becomes "no eyes"**: the
+   * face rule only drops against a face it has.
+   *
+   * ⚠ **What it cannot judge, declared.** The box is the top half of the frame
+   * at full width, so a face-shaped mark whose centre is ALSO in the top half
+   * (a tattoo on a raised shoulder, a print high on the chest of a close crop)
+   * is inside it and is believed, as today. And a picture of a different size
+   * from the one the box was measured on is not judged at all — it is logged
+   * and read as today, because a box in the wrong pixel space is the
+   * wrong-frame class this file already warns about twice.
+   */
+  const judgedFace = async (
+    image: Buffer, face: Mask | null, callSignal: AbortSignal | undefined,
+  ): Promise<Mask | null> => {
+    if (headBox === undefined || face === null) return face;
+    const sharp = (await import("sharp")).default;
+    const meta = await sharp(image).metadata();
+    const width = meta.width ?? 0;
+    const height = meta.height ?? 0;
+    if (
+      width !== headBox.frame.width || height !== headBox.frame.height
+      || face.width !== width || face.height !== height
+    ) {
+      log.warn(
+        {
+          picture: `${width}x${height}`,
+          face: `${face.width}x${face.height}`,
+          measuredOn: `${headBox.frame.width}x${headBox.frame.height}`,
+        },
+        "[falRegionReader] the head box was measured on a different picture — the face read is not judged by it",
+      );
+      return face;
+    }
+    const box = headBox.box;
+    const { kept, dropped } = keepPiecesWhere(face, (piece) => (
+      piece.centreX >= box.left && piece.centreX < box.left + box.width
+      && piece.centreY >= box.top && piece.centreY < box.top + box.height
+    ));
+    if (dropped.length === 0) return face;
+    if (kept !== null) {
+      /* Numbers only — where the dropped pieces were and how big, and the box
+         they were judged against. Never a word of the reading. */
+      log.info(
+        { headBox: box, dropped },
+        "[falRegionReader] the face read held a piece away from the head — not the cast's face",
+      );
+      return kept;
+    }
+    log.info(
+      { headBox: box, dropped },
+      "[falRegionReader] the face read landed away from the head — asking the head alone",
+    );
+    const crop = await sharp(image)
+      .extract({ left: box.left, top: box.top, width: box.width, height: box.height })
+      .png()
+      .toBuffer();
+    const again = await askRegion(crop, SHARED_PROMPT, "all", undefined, callSignal);
+    if (again === null) {
+      log.warn(
+        { headBox: box },
+        "[falRegionReader] the head alone answered no face either — the scan reads on without one, as for a frame with no face",
+      );
+      return null;
+    }
+    const placed = await placeInFrame(again, box, width, height);
+    const span = spanOf(placed);
+    log.info(
+      {
+        headBox: box,
+        face: span === null
+          ? null
+          : { left: span.left, right: span.right, top: span.top, bottom: span.bottom, midline: Math.round(span.axis) },
+      },
+      "[falRegionReader] the head alone answered the cast's face",
+    );
+    return span === null ? null : placed;
   };
 
   const axes = new Map<Buffer, Promise<FaceSpan | null>>();
@@ -1908,6 +2292,94 @@ export function createFalRegionReader(input: {
   };
 
   /**
+   * ONE REQUEST PER PICTURE — the boxer's batch (#2863).
+   *
+   * Callers ask name by name (`pointerCut` starts every found name's ask in
+   * the same turn, `markReferenceThings` too), and the boxer's whole measured
+   * shape is ONE request carrying every name. So the asks are gathered here:
+   * every `pointer` question about the same picture that arrives before the
+   * next turn of the event loop joins one batch, keyed on the very Buffer
+   * asked about, and the batch is sent once. A name asked twice in one batch
+   * is asked once and both askers get its boxes.
+   *
+   * ⚠ **A batch that every engine failed is asked of today's detector NAME BY
+   * NAME, with each asker's own signal** — the request that leaves is then
+   * byte-identical to the one this reader sent before the boxer existed, and a
+   * detector failure there THROWS to its asker exactly as it always has
+   * ("a transport failure is NOT an absence").
+   *
+   * ⚠ **Signals, declared rather than implied.** The batch is sent under the
+   * reader's own signal, plus the askers' signal when every asker passed the
+   * same one (the reference reading passes one to all its names); askers with
+   * different signals do not cancel one another's batch.
+   */
+  type BoxAsk = {
+    name: string;
+    imageUrl: string | undefined;
+    signal: AbortSignal | undefined;
+    resolve: (boxes: readonly PointerBox[]) => void;
+    reject: (error: unknown) => void;
+  };
+  const gathering = new Map<Buffer, BoxAsk[]>();
+  const sendBatch = async (image: Buffer, asks: readonly BoxAsk[]): Promise<void> => {
+    const names = Array.from(new Set(asks.map((ask) => ask.name)));
+    const signals = new Set(asks.map((ask) => ask.signal));
+    const shared = signals.size === 1 ? asks[0].signal : undefined;
+    let answer: ReadonlyMap<string, readonly PointerBox[]> | null = null;
+    try {
+      const sharp = (await import("sharp")).default;
+      const meta = await sharp(image).metadata();
+      if (meta.width && meta.height) {
+        answer = await boxer!.boxAll({
+          image, width: meta.width, height: meta.height, names, signal: signalFor(shared),
+        });
+      }
+    } catch (error) {
+      log.warn(
+        { names: names.length, why: error instanceof Error ? error.name : "unknown" },
+        "[falRegionReader] the boxer threw — today's detector answers",
+      );
+      answer = null;
+    }
+    if (answer !== null) {
+      for (const ask of asks) ask.resolve(answer.get(ask.name) ?? []);
+      return;
+    }
+    /* The last resort, untouched: one detector call per name, as today. */
+    const byName = new Map<string, Promise<readonly PointerBox[]>>();
+    for (const ask of asks) {
+      const call = byName.get(ask.name) ?? detectBoxes(image, ask.name, ask.imageUrl, ask.signal);
+      byName.set(ask.name, call);
+      call.then(ask.resolve, ask.reject);
+    }
+  };
+  const boxesFor = (
+    image: Buffer,
+    name: string,
+    imageUrl: string | undefined,
+    callSignal: AbortSignal | undefined,
+  ): Promise<readonly PointerBox[]> => {
+    if (boxer === undefined) return detectBoxes(image, name, imageUrl, callSignal);
+    /* Thrown HERE and never batched: a page that is not a picture is asked of
+       nobody, as on today's road. */
+    assertPicture(image, name);
+    return new Promise((resolve, reject) => {
+      const open = gathering.get(image);
+      const ask: BoxAsk = { name, imageUrl, signal: callSignal, resolve, reject };
+      if (open !== undefined) {
+        open.push(ask);
+        return;
+      }
+      gathering.set(image, [ask]);
+      setImmediate(() => {
+        const asks = gathering.get(image) ?? [];
+        gathering.delete(image);
+        void sendBatch(image, asks);
+      });
+    });
+  };
+
+  /**
    * THE REGION INSIDE ONE RECTANGLE — the pointer road's second half.
    *
    * The prompt goes out EMPTY on purpose: the rectangle is the question, and
@@ -2054,6 +2526,27 @@ export function createFalRegionReader(input: {
         return emptyLike(image, name);
       };
 
+      /*
+        THE BUILD ROW'S HEAD IS THE FACE THE MIDLINE CAME FROM (#2885).
+
+        `faceScan`'s composed plan cuts the cast's build below `region("face")`, and
+        that is the SAME request as the midline's (`SHARED_PROMPT`). Read
+        straight off it, the head box under the build row trusted the very
+        answer #2885 caught landing on the arm, so with a head box in hand it is
+        the judged face instead — one face per frame, refused and re-asked in
+        one place. Without one this is today's road, unchanged below.
+
+        ⚠ It unions every answer where the plain road takes the first. On a read
+        with one mask those are the same mask; with two, the first could be the
+        tattoo, and the judged union cannot be.
+      */
+      if (name === SHARED_PROMPT && headBox !== undefined) {
+        const face = callSignal === undefined
+          ? await faceMaskOf(image, imageUrl)
+          : await judgedFace(image, await askRegion(image, SHARED_PROMPT, "all", imageUrl, callSignal), callSignal);
+        return face ?? absent();
+      }
+
       if (BILATERAL.has(name)) {
         const both = await bilateral(image, name, imageUrl, axisKey, callSignal);
         return both ?? absent();
@@ -2194,7 +2687,7 @@ export function createFalRegionReader(input: {
      * minute as a feature the cast has not got.
      */
     async pointer({ image, name, imageUrl, signal: callSignal }): Promise<readonly PointerBox[]> {
-      return detectBoxes(image, name, imageUrl, callSignal);
+      return boxesFor(image, name, imageUrl, callSignal);
     },
 
     /**
@@ -2225,9 +2718,18 @@ export function createFalRegionReader(input: {
      * are the ones whose centre is where THIS side's ear is — {@link atTheSide},
      * the very rule the segmenter's own pieces are judged by, so the found
      * side's earring and a septum ring are never this side's. Each is cut
-     * inside its rectangle, refused under #2795's fill floor exactly as the
-     * pointer road refuses a cut, and what is left is judged once more by
-     * {@link keepPiecesAtTheSide}. `null` when nothing is left.
+     * inside its rectangle and judged exactly as the pointer road judges a cut,
+     * and what is left is judged once more by {@link keepPiecesAtTheSide}.
+     * `null` when nothing is left.
+     *
+     * ⚠ **THE FILL IS MEASURED AND LOGGED HERE, NEVER REFUSED ON — #2831.**
+     * This road took #2795's fill floor until 2026-10-30, and a thin hoop is
+     * exactly the shape that floor refuses: a ring's bounding box is the whole
+     * thing it encircles, so a band must be 7% of its own span to clear 20%.
+     * **On a card about an earring that has no picture, a bar that refuses
+     * earrings for being thin was the wrong instrument** (the measurement is on
+     * #2831, the reasoning in `cutQuality.ts`'s header). What refuses is the two
+     * yes/no facts: no pixels, and no overlap with the rectangle that asked.
      *
      * The face read is the one the midline came from (`faceOf`), so it costs no
      * request; with no face there is no side to judge by and the answer is
@@ -2241,14 +2743,14 @@ export function createFalRegionReader(input: {
          mapping, read the same way. */
       const imageSide = side === "left" ? "imageRight" : "imageLeft";
       const face = { midline: span.axis, left: span.left, right: span.right };
-      const boxes = await detectBoxes(image, singularOf(name), imageUrl, undefined);
+      const boxes = await boxesFor(image, singularOf(name), imageUrl, undefined);
       const here = boxes
         .filter((box) => atTheSide(box.x + box.width / 2, imageSide, face))
         /* A pair read may come back with this many instances; so may a side. */
         .slice(0, PAIR_MAX_MASKS);
       const judged = await Promise.all(here.map(async (box) => {
         const mask = await cutInBox(image, name, box, imageUrl, undefined);
-        return { box, mask, verdict: mask === null ? null : judgeCut({ mask, box }) };
+        return { box, mask, verdict: mask === null ? null : judgeCut({ mask, box, fillFloor: FILL_MEASURED_NOT_REFUSED }) };
       }));
       const used = judged.filter((one) => one.verdict?.use === true).map((one) => one.mask as Mask);
       const kept = used.length === 0
@@ -2263,6 +2765,12 @@ export function createFalRegionReader(input: {
           boxes: boxes.length,
           atThisSide: here.length,
           fills: judged.map((one) => (one.verdict === null ? null : one.verdict.fill)),
+          /* HOW MANY SEPARATE PIECES EACH CUT CAME BACK IN, and how big its
+             biggest one was (#2841). Measured, refusing nothing — the fill
+             beside them cannot see fragmentation at all, which is how a cut in
+             29 scraps passed the judge. */
+          pieces: judged.map((one) => (one.verdict === null ? null : one.verdict.pieces)),
+          largestPieceShares: judged.map((one) => (one.verdict === null ? null : one.verdict.largestPieceShare)),
           found: kept !== null,
         },
         kept === null

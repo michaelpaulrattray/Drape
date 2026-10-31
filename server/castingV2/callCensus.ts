@@ -75,6 +75,16 @@ export type ProviderCall = {
    * SIZE of a sentence and carries none of it.
    */
   tokens?: { in: number; out: number };
+  /**
+   * WHAT IT COST IN DOLLARS, when the provider says so on the reply (#2863).
+   *
+   * OpenRouter answers `usage.cost` when it is asked to, and the face panel's
+   * boxer asks — so its rows carry the price the account was charged rather
+   * than a figure somebody multiplies out of a rate card later. Absent means
+   * NOT REPORTED, never free; `total.pricedCalls` is the denominator that keeps
+   * the two apart.
+   */
+  costUsd?: number;
 };
 
 type Census = {
@@ -180,7 +190,7 @@ export function recordProviderCall(call: ProviderCall): void {
 export async function throughCensus<T>(
   what: Omit<ProviderCall, "ms" | "ok">,
   run: () => Promise<T>,
-  detail?: (value: T) => Pick<ProviderCall, "tokens"> | undefined,
+  detail?: (value: T) => Pick<ProviderCall, "tokens" | "costUsd"> | undefined,
 ): Promise<T> {
   const startedAt = Date.now();
   try {
@@ -216,6 +226,10 @@ export type CallCensus = {
     tokensOut: number;
     tokenCalls: number;
     labelledCalls: number;
+    /** Dollars, summed over the calls that reported a price (#2863)... */
+    costUsd: number;
+    /** ...and how many those were, so an unpriced call never reads as free. */
+    pricedCalls: number;
   };
   /**
    * WALL TIME, against the sum above — the pair that says whether the minutes
@@ -264,7 +278,13 @@ function summarize(census: Census): CallCensus {
   let tokensOut = 0;
   let tokenCalls = 0;
   let labelledCalls = 0;
+  let costUsd = 0;
+  let pricedCalls = 0;
   for (const call of census.calls) {
+    if (typeof call.costUsd === "number" && Number.isFinite(call.costUsd) && call.costUsd >= 0) {
+      costUsd += call.costUsd;
+      pricedCalls += 1;
+    }
     ms += call.ms;
     if (!call.ok) failed += 1;
     if (call.tokens) {
@@ -296,7 +316,10 @@ function summarize(census: Census): CallCensus {
   }
   return {
     calls: census.calls,
-    total: { calls: census.calls.length, ms, failed, tokensIn, tokensOut, tokenCalls, labelledCalls },
+    total: {
+      calls: census.calls.length, ms, failed, tokensIn, tokensOut, tokenCalls, labelledCalls,
+      costUsd, pricedCalls,
+    },
     wallMs: Date.now() - census.startedAt,
     byStage,
     byModel,

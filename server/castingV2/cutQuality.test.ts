@@ -20,6 +20,18 @@
  * item clears it, and the eventual callers include rows for an earring and a
  * septum ring (#2781, #2789). That is the falsification arm, and in the court
  * it took three attempts to fire at all.
+ *
+ * ⚠ **AND IT PASSED WHILE THE BAR WAS WRONG, WHICH IS THE SHARPER LESSON —
+ * #2831.** A fill bar does not refuse a small thing; it refuses a **thin long**
+ * thing, because a tail or a band worn around something is a sliver inside the
+ * whole territory it sweeps. Measured on real pictures the day after the bar
+ * shipped, a **correct** tail cut filled 17.00% and a **wrong** cut (a sword,
+ * asked for as chest armour) passed at 21.64%. So the floor is a **per-caller**
+ * decision now, and this file's arms say which road each one is about: the take
+ * road passes `CUT_FILL_FLOOR`, the face panel passes
+ * `FILL_MEASURED_NOT_REFUSED`. **The arm that holds the split is `the same cut,
+ * two roads, two answers`** — one mask, one box, both positions, so neither
+ * road can quietly acquire the other's.
  */
 import { describe, expect, it } from "vitest";
 
@@ -27,10 +39,12 @@ import {
   CUT_FEATHER_PX,
   CUT_FILL_FLOOR,
   CUT_WIDEN_PX,
+  FILL_MEASURED_NOT_REFUSED,
   cleanCut,
   closeHoles,
   featherOutside,
   judgeCut,
+  piecesOf,
 } from "./cutQuality";
 import type { Mask } from "./maskedComposite";
 
@@ -64,12 +78,12 @@ function claimedOf(mask: Mask): number {
   return n;
 }
 
-describe("judgeCut — the refusal half, on raw cuts", () => {
+describe("judgeCut on the take road's floor — the refusal half, on raw cuts", () => {
   it("uses a cut that fills most of the rectangle it was asked for", () => {
     /* A disc of r=60 in a 140×140 box: π·3600/19600 ≈ 57.7%, inside the
        42.3–73.5% band every correct cut in the court landed in. */
     const mask = disc(blank(), 100, 100, 60);
-    const verdict = judgeCut({ mask, box: { x: 30, y: 30, width: 140, height: 140 } });
+    const verdict = judgeCut({ mask, box: { x: 30, y: 30, width: 140, height: 140 }, fillFloor: CUT_FILL_FLOOR });
     expect(verdict.use).toBe(true);
     expect(verdict.why).toBe("used");
     expect(verdict.fill).toBeGreaterThan(0.5);
@@ -81,7 +95,7 @@ describe("judgeCut — the refusal half, on raw cuts", () => {
        straps" inside a box asked about a whole garment. A 20×160 strip in a
        150×150 box is 14.2%, the same defect at the same order of magnitude. */
     const mask = rect(blank(), 95, 20, 20, 160);
-    const verdict = judgeCut({ mask, box: { x: 25, y: 25, width: 150, height: 150 } });
+    const verdict = judgeCut({ mask, box: { x: 25, y: 25, width: 150, height: 150 }, fillFloor: CUT_FILL_FLOOR });
     expect(verdict.use).toBe(false);
     expect(verdict.why).toBe("below-fill-floor");
     expect(verdict.fill).toBeLessThan(CUT_FILL_FLOOR);
@@ -94,13 +108,13 @@ describe("judgeCut — the refusal half, on raw cuts", () => {
        refused small items it would be the wrong instrument, and this is the arm
        that would say so. */
     const mask = disc(blank(), 100, 100, 8);
-    const verdict = judgeCut({ mask, box: { x: 88, y: 88, width: 24, height: 24 } });
+    const verdict = judgeCut({ mask, box: { x: 88, y: 88, width: 24, height: 24 }, fillFloor: CUT_FILL_FLOOR });
     expect(verdict.use).toBe(true);
     expect(verdict.fill).toBeGreaterThan(CUT_FILL_FLOOR);
   });
 
   it("refuses an empty mask as no-pixels, never as a fill failure", () => {
-    const verdict = judgeCut({ mask: blank(), box: { x: 0, y: 0, width: 50, height: 50 } });
+    const verdict = judgeCut({ mask: blank(), box: { x: 0, y: 0, width: 50, height: 50 }, fillFloor: CUT_FILL_FLOOR });
     expect(verdict.use).toBe(false);
     expect(verdict.why).toBe("no-pixels");
     expect(verdict.fill).toBeNull();
@@ -109,7 +123,7 @@ describe("judgeCut — the refusal half, on raw cuts", () => {
 
   it("refuses a rectangle with no area rather than dividing by it", () => {
     const mask = disc(blank(), 100, 100, 20);
-    const verdict = judgeCut({ mask, box: { x: 10, y: 10, width: 0, height: 40 } });
+    const verdict = judgeCut({ mask, box: { x: 10, y: 10, width: 0, height: 40 }, fillFloor: CUT_FILL_FLOOR });
     expect(verdict.use).toBe(false);
     expect(verdict.why).toBe("no-box-area");
     expect(verdict.fill).toBeNull();
@@ -135,7 +149,7 @@ describe("judgeCut — the refusal half, on raw cuts", () => {
     disc(mask, 40, 40, 8);
     disc(mask, 150, 150, 30);
     const box = { x: 20, y: 20, width: 40, height: 40 };
-    const verdict = judgeCut({ mask, box });
+    const verdict = judgeCut({ mask, box, fillFloor: CUT_FILL_FLOOR });
 
     expect(verdict.claimed).toBeGreaterThan(verdict.insideBox * 10);
     expect(verdict.insideBox / (box.width * box.height)).toBeLessThan(CUT_FILL_FLOOR);
@@ -147,16 +161,276 @@ describe("judgeCut — the refusal half, on raw cuts", () => {
     expect(verdict.why).toBe("below-fill-floor");
   });
 
+  it("⚠ refuses the known-bad at its own measured size — #2831's guard on the take road", () => {
+    /* THE RELAY'S OWN ASK ON #2831: *"Add a guard arm proving the take road
+       still refuses the 8.3% specimen."* The arm above uses a 14.2% sliver,
+       which is the same defect an order of magnitude up; this one is drawn at
+       the known-bad's own figure, so a floor loosened toward the 17% correct
+       tail — the obvious wrong repair, and the one the card declined — reddens
+       here. 8.3% of a 150x150 box is 1,867 pixels; a 13x144 strip lying wholly
+       inside it is 1,872. */
+    const mask = rect(blank(), 95, 30, 13, 144);
+    const box = { x: 25, y: 25, width: 150, height: 150 };
+    const verdict = judgeCut({ mask, box, fillFloor: CUT_FILL_FLOOR });
+    expect(verdict.fill).toBeCloseTo(0.083, 3);
+    expect(verdict.use).toBe(false);
+    expect(verdict.why).toBe("below-fill-floor");
+  });
+
   it("treats the floor itself as usable — the bar refuses BELOW it", () => {
     /* Exactly 20% of a 100×100 box is 2,000 pixels. A 40×50 rectangle is
        2,000 pixels, so this arm sits on the line and must be USED: a bar
        written `<=` instead of `<` would refuse it, and nothing else in this
        suite would notice. */
     const mask = rect(blank(), 10, 10, 40, 50);
-    const verdict = judgeCut({ mask, box: { x: 0, y: 0, width: 100, height: 100 } });
+    const verdict = judgeCut({ mask, box: { x: 0, y: 0, width: 100, height: 100 }, fillFloor: CUT_FILL_FLOOR });
     expect(verdict.insideBox).toBe(2000);
     expect(verdict.fill).toBeCloseTo(CUT_FILL_FLOOR, 10);
     expect(verdict.use).toBe(true);
+  });
+});
+
+/**
+ * THE FACE PANEL'S POSITION — #2831, the relay's decision of 2026-10-30: the
+ * panel stops refusing on fill and keeps logging it.
+ *
+ * Every arm here passes `FILL_MEASURED_NOT_REFUSED`, which is the panel's two
+ * callers' own argument (`pointerCut`'s discovery cut, `falRegionReader`'s
+ * `sideByDetector`). **What this block has to prove is both halves**: that the
+ * fill no longer refuses, AND that taking it off did not take the two yes/no
+ * refusals with it — which is the one real risk in the change, because a nil
+ * overlap is a nil fill and was swallowed by the floor until today.
+ */
+describe("judgeCut on the panel road — the fill is measured and never refused on", () => {
+  it("keeps the shape of a CORRECT thin cut that the floor threw away", () => {
+    /* The tail, at its measured size. `output/_2565-thin/ledger.json` row
+       `scorpion-tail`: a correct cut of the whole sweep of a long curved tail,
+       looked at, fill 0.1700 — refused, no row, nothing said. A 60x500 strip in
+       a 150x1200 box is 16.67%, the same defect at the same figure. */
+    const mask = rect(blank(600, 1300), 300, 300, 60, 500);
+    const box = { x: 250, y: 100, width: 150, height: 1200 };
+    const panel = judgeCut({ mask, box, fillFloor: FILL_MEASURED_NOT_REFUSED });
+    expect(panel.use).toBe(true);
+    expect(panel.why).toBe("used");
+    /* Measured, not discarded: the number is still there for the log. */
+    expect(panel.fill).toBeCloseTo(0.1667, 3);
+    expect(panel.fill).toBeLessThan(CUT_FILL_FLOOR);
+  });
+
+  it("⚠ the same cut, two roads, two answers — and neither road can take the other's", () => {
+    /* THE ARM THAT HOLDS THE SPLIT. One mask, one box, both positions. A
+       `fillFloor` quietly defaulted on either side, or a floor re-read from the
+       constant inside `judgeCut` instead of from the caller, reddens here and
+       nowhere else in this file. */
+    const mask = rect(blank(), 95, 20, 20, 160);
+    const box = { x: 25, y: 25, width: 150, height: 150 };
+    const take = judgeCut({ mask, box, fillFloor: CUT_FILL_FLOOR });
+    const panel = judgeCut({ mask, box, fillFloor: FILL_MEASURED_NOT_REFUSED });
+
+    expect(take.use).toBe(false);
+    expect(take.why).toBe("below-fill-floor");
+    expect(panel.use).toBe(true);
+    expect(panel.why).toBe("used");
+    /* The MEASUREMENT is identical — only the verdict differs. */
+    expect(panel.fill).toBe(take.fill);
+    expect(panel.claimed).toBe(take.claimed);
+    expect(panel.insideBox).toBe(take.insideBox);
+  });
+
+  it("⚠ still refuses a cut that misses the rectangle entirely — the hole the floor used to cover", () => {
+    /* A nil overlap is a nil fill, so while every road refused below 20% this
+       case never needed its own name. `pointerCut` has a box-against-box check
+       of its own; `sideByDetector` has not, and would have started keeping cuts
+       of the wrong object the moment the floor came off. So the refusal is in
+       the judgement, and it holds with NO floor at all. */
+    const mask = rect(blank(), 150, 150, 30, 30);
+    const box = { x: 0, y: 0, width: 50, height: 50 };
+    const verdict = judgeCut({ mask, box, fillFloor: FILL_MEASURED_NOT_REFUSED });
+    expect(verdict.use).toBe(false);
+    expect(verdict.why).toBe("no-overlap");
+    expect(verdict.claimed).toBeGreaterThan(0);
+    expect(verdict.insideBox).toBe(0);
+    expect(verdict.fill).toBe(0);
+    /* And the floored road answers the same thing, by the same reason: the
+       overlap fact is road-independent and is checked before the number. */
+    expect(judgeCut({ mask, box, fillFloor: CUT_FILL_FLOOR }).why).toBe("no-overlap");
+  });
+
+  it("still refuses an empty mask, with no floor to refuse it", () => {
+    const verdict = judgeCut({
+      mask: blank(),
+      box: { x: 0, y: 0, width: 50, height: 50 },
+      fillFloor: FILL_MEASURED_NOT_REFUSED,
+    });
+    expect(verdict.use).toBe(false);
+    expect(verdict.why).toBe("no-pixels");
+  });
+
+  it("still refuses a rectangle with no area, with no floor to refuse it", () => {
+    const mask = disc(blank(), 100, 100, 20);
+    const verdict = judgeCut({
+      mask,
+      box: { x: 10, y: 10, width: 0, height: 40 },
+      fillFloor: FILL_MEASURED_NOT_REFUSED,
+    });
+    expect(verdict.use).toBe(false);
+    expect(verdict.why).toBe("no-box-area");
+  });
+
+  it("keeps a ring whose box is the whole thing it encircles — the collar arithmetic", () => {
+    /* #2831's second reading, drawn at its own figures. Anything worn AROUND
+       something cuts as a ring, and a ring's bounding box is the whole thing it
+       encircles: π(R² − (R−t)²) over (2R)², which for a 400px span is
+       **14.9% at a 20px band and 20.5% at 28px** — so a band must be 7% of its
+       own width to clear this floor, and no real chain is. A chunky 20px collar
+       is a perfectly correct cut; on this road it keeps its row. */
+    const mask = blank(420, 420);
+    disc(mask, 210, 210, 200);
+    disc(mask, 210, 210, 180, 0);
+    const box = { x: 10, y: 10, width: 400, height: 400 };
+    const panel = judgeCut({ mask, box, fillFloor: FILL_MEASURED_NOT_REFUSED });
+    expect(panel.fill).toBeCloseTo(0.149, 2);
+    expect(panel.fill).toBeLessThan(CUT_FILL_FLOOR);
+    expect(panel.use).toBe(true);
+    /* And the arithmetic the card states: the same ring judged on the take
+       road's floor is refused, which is that road's declared limit (#2736). */
+    expect(judgeCut({ mask, box, fillFloor: CUT_FILL_FLOOR }).why).toBe("below-fill-floor");
+  });
+});
+
+describe("how many pieces a cut came back in — measured, refusing nothing (#2841)", () => {
+  it("counts one clean shape as one piece whose largest share is all of it", () => {
+    const mask = disc(blank(), 100, 100, 40);
+    const broken = piecesOf(mask);
+    expect(broken.count).toBe(1);
+    expect(broken.claimed).toBe(claimedOf(mask));
+    expect(broken.largest).toBe(broken.claimed);
+  });
+
+  it("counts three separate discs as three, and the largest share is arithmetic", () => {
+    /* Radii 30, 20 and 10, far enough apart to share no pixel. A disc of radius
+       r has about πr² pixels, so the largest is about 900π of 1400π — the
+       answer is owed before the run, which is this file's rule. */
+    const mask = blank();
+    disc(mask, 40, 40, 30);
+    disc(mask, 120, 40, 20);
+    disc(mask, 40, 150, 10);
+    const broken = piecesOf(mask);
+    expect(broken.count).toBe(3);
+    expect(broken.claimed).toBe(claimedOf(mask));
+    expect(broken.largest / broken.claimed).toBeCloseTo(900 / 1400, 2);
+  });
+
+  it("FOUR connectivity — two squares touching only at a corner are two pieces", () => {
+    /*
+      ⚠ THE ARM THAT HOLDS THE TWO READERS TOGETHER. `closeHoles` uses four
+      connectivity and says why; eight would walk this corner and call these one
+      shape, and the two numbers could then never be read side by side in one
+      log line. Eight-connectivity would answer 1 here.
+    */
+    const mask = blank();
+    rect(mask, 10, 10, 10, 10);
+    rect(mask, 20, 20, 10, 10);
+    expect(piecesOf(mask).count).toBe(2);
+  });
+
+  it("counts nothing as nothing, rather than dividing by zero", () => {
+    expect(piecesOf(blank())).toEqual({ count: 0, largest: 0, claimed: 0 });
+  });
+
+  it("the judge carries the two numbers on a KEPT cut, and refuses nothing on them", () => {
+    /*
+      THE CARD'S OWN SPECIMEN, IN THE SMALL (#2841). A real cut of a leather
+      jacket's collar came back as 29 disconnected scraps whose largest was
+      43.5% of it, and `judgeCut` called it `used` — because the fill number
+      cannot see fragmentation at all. This is that shape: many scraps, a fill
+      well over the floor, and still `use: true`.
+
+      ⚠ **`use` is `true` ON PURPOSE and this arm is the one that says so.** The
+      card's own recommendation is *"log the two numbers now and refuse nothing
+      yet"*, and #2831's lesson is what a bar invented without a population
+      does. A later hand that makes this refuse will redden here and read why.
+    */
+    const mask = blank();
+    /* Four 50×50 blocks (10,000 px) and twenty-five 4×4 specks (400 px), none
+       touching: 29 pieces, 10,400 claimed, the largest 2,500 — a share of
+       24.0% — filling 26.0% of the 200×200 rectangle, which is over the take
+       road's 20% floor. Every number is owed before the run. */
+    for (const [x, y] of [[0, 0], [60, 0], [0, 60], [60, 60]]) rect(mask, x!, y!, 50, 50);
+    for (let n = 0; n < 25; n += 1) rect(mask, 130 + (n % 5) * 12, 10 + Math.floor(n / 5) * 12, 4, 4);
+    const box = { x: 0, y: 0, width: 200, height: 200 };
+    const verdict = judgeCut({ mask, box, fillFloor: CUT_FILL_FLOOR });
+    expect(verdict.pieces).toBe(29);
+    expect(verdict.claimed).toBe(10_400);
+    expect(verdict.largestPieceShare).toBeCloseTo(2_500 / 10_400, 6);
+    expect(verdict.fill).toBeCloseTo(10_400 / 40_000, 6);
+    /* And the fill is comfortably over the floor, which is the whole point:
+       nothing about 29 scraps is visible to the number that decides. */
+    expect(verdict.fill!).toBeGreaterThan(CUT_FILL_FLOOR);
+    /* A shattered cut is still USED. That is the defect the card names, left
+       standing deliberately until the population says where a bar goes. */
+    expect(verdict.why).toBe("used");
+    expect(verdict.use).toBe(true);
+  });
+
+  it("a cut REFUSED on fill still carries its two numbers", () => {
+    /*
+      The refused cuts are exactly where a later bar would have to tell a fringe
+      from a shattering, so they are in the population too. A single small disc
+      under the floor: one piece, all of it.
+    */
+    const mask = disc(blank(), 100, 100, 8);
+    const verdict = judgeCut({ mask, box: { x: 0, y: 0, width: 200, height: 200 }, fillFloor: CUT_FILL_FLOOR });
+    expect(verdict.why).toBe("below-fill-floor");
+    expect(verdict.pieces).toBe(1);
+    expect(verdict.largestPieceShare).toBe(1);
+  });
+
+  it("the share is of EVERY claimed pixel, not only the ones inside the box", () => {
+    /*
+      ⚠ THIS ARM EXISTS BECAUSE A SABOTAGE SURVIVED. Dividing by `insideBox`
+      instead of by the claimed total left every other arm green — on those the
+      box is the whole frame, so the two numbers are equal and nothing can tell
+      them apart. Here they differ on purpose.
+
+      The question these numbers answer is *is this cut one thing or many*,
+      which is about the SHAPE and not about the rectangle. A cut sprawling past
+      its box is already described by `fill` and `claimed`; a denominator of
+      `insideBox` would make the same shape read as more broken the further it
+      reached outside, which is a different question answered by accident.
+
+      Inside the 100×100 box: one 40×40 block, 1,600 px. Outside it: one 20×20
+      block, 400 px. Two pieces, 2,000 claimed, the largest 1,600 — 80% of the
+      cut and 100% of what is inside the box.
+    */
+    const mask = blank();
+    rect(mask, 10, 10, 40, 40);
+    rect(mask, 150, 150, 20, 20);
+    const verdict = judgeCut({
+      mask,
+      box: { x: 0, y: 0, width: 100, height: 100 },
+      fillFloor: FILL_MEASURED_NOT_REFUSED,
+    });
+    expect(verdict.claimed).toBe(2_000);
+    expect(verdict.insideBox).toBe(1_600);
+    expect(verdict.pieces).toBe(2);
+    expect(verdict.largestPieceShare).toBeCloseTo(1_600 / 2_000, 6);
+    /* And NOT the other denominator, said out loud so the arm cannot be read
+       as agreeing with both. */
+    expect(verdict.largestPieceShare).not.toBeCloseTo(1_600 / 1_600, 6);
+  });
+
+  it("CONTROL — a refusal taken before the walk reports no pieces and pays for no walk", () => {
+    /* `no-pixels` and `no-overlap` are answered without a shape to describe,
+       and both say so rather than reporting a number nobody measured. */
+    const empty = judgeCut({ mask: blank(), box: { x: 0, y: 0, width: 10, height: 10 }, fillFloor: CUT_FILL_FLOOR });
+    expect([empty.why, empty.pieces, empty.largestPieceShare]).toEqual(["no-pixels", 0, null]);
+    const elsewhere = judgeCut({
+      mask: disc(blank(), 180, 180, 10),
+      box: { x: 0, y: 0, width: 20, height: 20 },
+      fillFloor: CUT_FILL_FLOOR,
+    });
+    expect([elsewhere.why, elsewhere.pieces, elsewhere.largestPieceShare]).toEqual(["no-overlap", 0, null]);
   });
 });
 
@@ -284,7 +558,7 @@ describe("cleanCut — the pipeline, and why its order is load-bearing", () => {
   it("judges, closes, widens and feathers a cut it keeps", async () => {
     const mask = disc(blank(), 100, 100, 60);
     disc(mask, 100, 100, 9, 0);
-    const out = await cleanCut({ mask, box: { x: 30, y: 30, width: 140, height: 140 } });
+    const out = await cleanCut({ mask, box: { x: 30, y: 30, width: 140, height: 140 }, fillFloor: CUT_FILL_FLOOR });
     expect(out.verdict.use).toBe(true);
     expect(out.holeCount).toBe(1);
     expect(out.holePixels).toBeGreaterThan(200);
@@ -296,7 +570,7 @@ describe("cleanCut — the pipeline, and why its order is load-bearing", () => {
 
   it("does not clean a cut it refuses, and hands back no mask at all", async () => {
     const mask = rect(blank(), 95, 20, 20, 160);
-    const out = await cleanCut({ mask, box: { x: 25, y: 25, width: 150, height: 150 } });
+    const out = await cleanCut({ mask, box: { x: 25, y: 25, width: 150, height: 150 }, fillFloor: CUT_FILL_FLOOR });
     expect(out.verdict.use).toBe(false);
     expect(out.verdict.why).toBe("below-fill-floor");
     expect(out.mask).toBeNull();
@@ -314,7 +588,7 @@ describe("cleanCut — the pipeline, and why its order is load-bearing", () => {
        would mean something different from what was measured. */
     const mask = rect(blank(), 60, 60, 43, 43);
     const box = { x: 50, y: 50, width: 100, height: 100 };
-    const raw = judgeCut({ mask, box });
+    const raw = judgeCut({ mask, box, fillFloor: CUT_FILL_FLOOR });
     expect(raw.use).toBe(false);
     expect(raw.fill).toBeLessThan(CUT_FILL_FLOOR);
     expect(raw.fill).toBeGreaterThan(CUT_FILL_FLOOR - 0.02);
@@ -324,6 +598,7 @@ describe("cleanCut — the pipeline, and why its order is load-bearing", () => {
     const widened = await cleanCut({
       mask,
       box,
+      fillFloor: CUT_FILL_FLOOR,
       widenBy: CUT_WIDEN_PX,
       featherBy: CUT_FEATHER_PX,
     });
@@ -332,7 +607,7 @@ describe("cleanCut — the pipeline, and why its order is load-bearing", () => {
     const closed = closeHoles(mask).mask;
     const { dilateMask } = await import("./maskGeometry");
     const grown = await dilateMask(closed, 6);
-    const afterCleaning = judgeCut({ mask: grown, box });
+    const afterCleaning = judgeCut({ mask: grown, box, fillFloor: CUT_FILL_FLOOR });
     expect(afterCleaning.fill!).toBeGreaterThan(raw.fill!);
     expect(afterCleaning.use).toBe(true);
   });
@@ -342,6 +617,7 @@ describe("cleanCut — the pipeline, and why its order is load-bearing", () => {
     const out = await cleanCut({
       mask,
       box: { x: 30, y: 30, width: 140, height: 140 },
+      fillFloor: CUT_FILL_FLOOR,
       widenBy: 0,
       featherBy: 0,
     });

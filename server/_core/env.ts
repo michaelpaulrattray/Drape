@@ -66,6 +66,8 @@ import {
   CASTING_REFERENCE_ATTACH_SCOPE_ENV,
   CASTING_REFERENCE_TAKE_SCOPE_ENV,
   CASTING_REFERENCE_SELECTOR_SCOPE_ENV,
+  CASTING_POINTER_ENGINE_SCOPE_ENV,
+  validateCastingPointerEngineEnvironment,
   validateCastingInkReferenceEnvironment,
   CASTING_INK_REFERENCE_SCOPE_ENV,
   validateCastingRetryEnvironment,
@@ -606,6 +608,17 @@ export function validateEnv(): void {
   validateCastingReferenceSelectorEnvironment({
     scope: process.env[CASTING_REFERENCE_SELECTOR_SCOPE_ENV],
     attachScope: process.env[CASTING_REFERENCE_ATTACH_SCOPE_ENV],
+  });
+  /*
+    WHICH ENGINE DRAWS THE BOX ROUND A NAMED THING (#2863). Checked against the
+    chain root, because its consumers hang from two different parents (the face
+    scan and the attach door) and a box neither of them asks for is never
+    asked. No key clause: without OPENROUTER_API_KEY today's detector answers,
+    which is the fallback the road is built around.
+  */
+  validateCastingPointerEngineEnvironment({
+    scope: process.env[CASTING_POINTER_ENGINE_SCOPE_ENV],
+    castingScope: process.env[CASTING_V2_SCOPE_ENV],
   });
   /*
     A TATTOO DOCUMENTED BY HER OWN PICTURE. The same parent for the same reason,

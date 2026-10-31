@@ -39,13 +39,27 @@
  * wrong.
  *
  * So: **one box per call, always** — the reader's type refuses an array — and
- * **at most `count` boxes, in the order the detector returned them**, where
- * `count` is what the discovery read said it could see. On a count of one that
- * is exactly the arm that won 7 of 10. On a count of two it is the design's
- * *several rows*, one cut each, never a union (#2565 §6: left and right are
- * separate items). And on the cast that defeated the old shape it is the cap
- * doing its job: `third eye` counted ONE, so the two extra rectangles the
- * detector found round the ordinary eyes are never asked about.
+ * **`count` boxes become this name's instances, in the order the detector
+ * returned them**, where `count` is what the discovery read said it could see.
+ * On a count of one that is exactly the arm that won 7 of 10. On a count of two
+ * it is the design's *several rows*, one cut each, never a union (#2565 §6: left
+ * and right are separate items).
+ *
+ * ⚠ **AND A BOX PAST THE COUNT IS NO LONGER THROWN AWAY UNASKED — #2838 ROAD 2,
+ * AND THIS PARAGRAPH SAID THE OPPOSITE UNTIL IT LANDED.** It closed *"on the
+ * cast that defeated the old shape it is the cap doing its job: `third eye`
+ * counted ONE, so the two extra rectangles the detector found round the ordinary
+ * eyes are never asked about"* — true of that cast, and the same sentence cost
+ * his round-9 cast a sleeve. **Both facts are real and neither is a number
+ * question**: the reading names `tattoo` once on `arm` where there are two full
+ * sleeves, so a cap of `count` outlines one arm and leaves the other unpickable.
+ * What separates the two cases is not how many boxes to cut but **what the extra
+ * one turns out to BE**, which this module already decides for every other cut:
+ * an extra is cut and kept only where it lands on nothing the scan already
+ * holds. The third eye's extras are the ordinary eyes' own pixels and fold into
+ * Eyes; a second sleeve on an arm no row covers stays. The measured price is at
+ * the cap itself, in {@link cutDiscovered} — **0.4 extra calls a reading** over
+ * five of his real readings, and both of the two were the defect.
  *
  * # WHICH NAMES COME HERE, AND THE LIST IS DERIVED
  *
@@ -67,32 +81,47 @@
  *
  * # WHAT IT REFUSES, AND WHAT IT DELIBERATELY DOES NOT JUDGE
  *
- * Three refusals, and the one threshold among them was measured rather than
- * picked:
+ * **TWO refusals, and neither of them is a number** — see the ⚠ below, where
+ * the third one and its measurement are struck:
  *
  *   **a mask with no pixels** — there is nothing to draw and nothing to point
  *   at, so there is no row;
  *   **a mask that does not overlap the rectangle that asked for it** — the
  *   segmenter answered about something else. A yes/no about two rectangles,
- *   with no tolerance to tune;
- *   **a mask that fills less than a fifth of that rectangle** — the "only the
- *   straps" answer, a coherent fragment of the thing returned silently in
- *   place of the thing. `cutQuality.ts` carries the measurement and the ⚠
- *   below carries what it replaced.
+ *   with no tolerance to tune, and checked twice over: `overlaps` here on the
+ *   boxes, and `judgeCut`'s own `no-overlap` on the pixels.
+ *
+ * ⚠ **AND THE THIRD REFUSAL IS GONE — #2831, the relay's decision of
+ * 2026-10-30: THE FACE PANEL STOPS REFUSING ON FILL.** This list read
+ * ~~*"**a mask that fills less than a fifth of that rectangle** — the 'only
+ * the straps' answer"*~~ for one day, and the day after it shipped the bar was
+ * measured on two more pictures: a **correct** cut of a long curved tail — the
+ * whole sweep of it, looked at — fills **17.00%**, so it was thrown away and
+ * that feature would simply not be listed; and a cut of **the sword in the
+ * character's hand**, asked for as *"the armour plating on the chest"*, passed
+ * at **21.64%** and would have been drawn as a row called armour. **A right
+ * answer scored lower than a wrong one, so the measure does not order
+ * correctness** — the one thing a refusal has to do. Anything worn *around*
+ * something makes it worse by geometry: a ring's bounding box is the whole
+ * thing it encircles, so a band must be 7% of its own span to clear 20%.
+ * **The fill is still measured and logged on every judgement** — that is how
+ * these two were found — and it decides nothing here. The floor is a
+ * per-caller argument now and the take road (`referenceTake.ts`) keeps it,
+ * where a refused cut costs nothing and an unseen partial cut costs a paid
+ * render; here every row's cut is outlined on hover, so a wrong cut is visible
+ * and **a missing row is not** (#2800, #2810, #2817).
  *
  * ⚠ **BROKENNESS IS JUDGED HERE NOW, AND THE SENTENCE THAT SAID IT WAS NOT IS
  * STRUCK — 2026-10-29, #2565 slice 2.** ~~*"this road has no clean-and-refuse
  * pipeline to call and does not invent one: an area threshold here would be a
- * number nobody measured"*~~ — **the number is measured and this road is its
- * first caller.** `cutQuality.ts`'s `judgeCut` refuses a cut filling less than
- * a fifth of the rectangle it was asked about; correct cuts measured 42.3–73.5%
- * and the known-bad 8.3%, with 5.1× of room between them, and a correct nose
- * stud and hoop earring clear it comfortably (49.6% and 67.1%), which was the
- * falsification arm. The population and the two things §4's own sentence gets
- * wrong — holes run BACKWARDS as a signal, and want closing rather than
- * refusing — are in that module's header. **It is a third refusal of exactly
- * the kind the two above already are**: local to one name, no row, every other
- * row and the whole catalogue scan untouched.
+ * number nobody measured"*~~ — the number was measured and this road was its
+ * first caller. **Kept as the record, because the ⚠ above is what happened to
+ * it:** the threshold lasted a day on this road, the population it was set on
+ * (*"correct cuts 42.3–73.5%"*) is falsified, and what the pipeline still does
+ * here is close holes and clean a cut it is keeping. The two things §4's own
+ * sentence gets wrong — holes run BACKWARDS as a signal, and want closing
+ * rather than refusing — are in that module's header and are untouched by
+ * #2831.
  *
  * ⚠ **LOOSENESS IS STILL NOT JUDGED, AND THAT HALF STAYS DECLARED.** #2532's
  * own open list ends *"the loose-region case is still unsolved"* — a shoulder
@@ -111,8 +140,9 @@
  * do it"*). So this road is LIVE for him and he has been reading its panels in
  * eye rounds 3 and 4 the same week. **A refusal added here is in front of him
  * on the next deploy, not waiting behind a flip** — which is the argument for
- * logging every fill rather than only the refusals, and for the floor being
- * one exported constant.
+ * logging every fill rather than only the refusals, and it is why the fill bar
+ * that stood here for one day was taken off by a decision rather than quietly
+ * retuned (#2831): the rows it was dropping were already in front of him.
  *
  * # It cannot take a row off the panel, and it cannot break a scan
  *
@@ -123,7 +153,7 @@
  * is the property slice 1 was held on twice and it is the one to protect.
  */
 import { boundsOf } from "./segmentCuts";
-import { judgeCut } from "./cutQuality";
+import { FILL_MEASURED_NOT_REFUSED, judgeCut } from "./cutQuality";
 import { LANDMARK_OF_ACCESSORY, accessoryEntry } from "./accessoryKinds";
 import { scanPlan } from "./faceScan";
 import { catalogueSlots, type SlotGroup } from "./referenceSlotCatalogue";
@@ -559,6 +589,43 @@ export function pointerFeatures(
 }
 
 /**
+ * THE NAMES THAT TOOK THE CATALOGUE ROAD — the reading's own bare nouns the
+ * scan is already buying a question for (#2793).
+ *
+ * The fourth quarter of {@link foundRoadOf}, and the only one nothing reported.
+ * `pointerFeatures` answers *what is asked about*, `wordsOnlyFeatures` answers
+ * *what travels as prose*, and these are the names handed to the catalogue on
+ * the understanding that its own question will draw them.
+ *
+ * ⚠ **IT EXISTS BECAUSE THE LOSS DIRECTION IS UNREADABLE AFTER THE FACT, which
+ * is #2793's whole subject.** `coveredByCatalogue` is a spelling test, so a
+ * covered name never reaches the pointer road — and if that catalogue question
+ * comes back EMPTY on this frame, the thing has no road at all and no row.
+ * Measured over all 86 kept readings on production the day this landed: every
+ * one of them has at least one empty catalogue question (`glasses` 86 of 86,
+ * `facial hair` 82, `horns` 75, `earring` 44, `eyebrows` 27), so the
+ * opportunity is not rare. What could not be measured is the PAIRING — whether
+ * the reading had actually named the thing the question missed — because these
+ * nouns were kept nowhere: not in the kept scan row (`offListFeatures` drops
+ * them before anything is stored), not in the discovery read's log line (which
+ * carries a count, `named`), and not here.
+ *
+ * ⚠ **A count would not have answered it and the sibling fields in the summary
+ * log say so in their own words**: `unusableNames` and `cannotSeeNames` were
+ * added to the discovery's line for exactly this reason — *"those two lists are
+ * kept nowhere else … so without the nouns here that road is unreadable after
+ * the fact"*. This is the same sentence, one road over.
+ *
+ * Nouns only, as every list on that line is. The `about` prose never travels.
+ */
+export function catalogueRoadFeatures(
+  features: readonly DiscoveredFeature[],
+): readonly DiscoveredFeature[] {
+  const places = placeNames(features);
+  return features.filter((feature) => foundRoadOf(feature, places) === "catalogue");
+}
+
+/**
  * THE NAMES THAT TRAVEL AS WORDS BECAUSE NOTHING WILL BE CUT FOR THEM.
  *
  * The `scattered` and `makeup` halves — known before any call is made. The
@@ -801,6 +868,9 @@ export function settleByPlace(regions: readonly DiscoveredRegion[]): {
   samePlace: { noun: string; into: string }[];
   /** Every accessory the picture put on a garment, by noun. */
   onGarment: { noun: string; onto: string }[];
+  /** Every thing whose host joined another's place, and the survivor it now
+   *  sits on (#2862) — see {@link hostsOfMerged}. */
+  onMerged: { noun: string; from: string; onto: string }[];
 } {
   const placed: Placed[] = regions.map((region, at) => ({
     region,
@@ -826,9 +896,21 @@ export function settleByPlace(regions: readonly DiscoveredRegion[]): {
     merged.push({ noun: one.region.noun, into: home.region.noun });
   }
 
-  const garments = kept.filter((one) => one.region.kind === "clothing");
+  /* A host that joined another's place hands what sits on it to the survivor
+     — before the garment rule below, so a thing whose own pixels lie on a
+     garment is still moved by the picture, which is the stronger answer. */
+  const repoint = hostsOfMerged(merged, kept.map((one) => one.region.noun));
+  const onMerged: { noun: string; from: string; onto: string }[] = [];
+  const lodged = kept.map((one): Placed => {
+    const onto = repoint(one.region.on, one.region.noun);
+    if (onto === one.region.on) return one;
+    onMerged.push({ noun: one.region.noun, from: one.region.on, onto });
+    return { ...one, region: { ...one.region, on: onto } };
+  });
+
+  const garments = lodged.filter((one) => one.region.kind === "clothing");
   const rehosted: { noun: string; onto: string }[] = [];
-  const settled = kept.map((one): Placed => {
+  const settled = lodged.map((one): Placed => {
     if (one.region.kind !== "accessory" || one.pixels === 0) return one;
     let best: { garment: Placed; shared: number } | null = null;
     for (const garment of garments) {
@@ -849,6 +931,65 @@ export function settleByPlace(regions: readonly DiscoveredRegion[]): {
     regions: settled.sort((a, b) => a.at - b.at).map((one) => one.region),
     samePlace: merged,
     onGarment: rehosted,
+    onMerged,
+  };
+}
+
+/**
+ * A HOST THAT JOINED ANOTHER'S PLACE TAKES ITS LODGERS WITH IT (#2862, his
+ * eye round 11).
+ *
+ * His words, verbatim: *"it thought the chain which is apart of her outfit was
+ * a necklace"*. The rule he set the same day is that a thing on a garment is
+ * part of the Outfit, and the panel reads that off `on`. But the place rules
+ * above can REMOVE the noun an `on` names: when two nouns' cuts are one place,
+ * the second one is dropped from the reading and logged under the survivor
+ * (`samePlace`) — it is in neither the rows nor `named`. So a chain the
+ * reading said sits on `harness`, where `harness` and `top` were cut onto one
+ * halter top (the card's own example of two names for one garment), points
+ * at a noun that is no longer anywhere, the panel finds no host, and the chain
+ * becomes a row of its own under Accessories. The measured pair in this
+ * module's own block is the same shape: `collar` joined `jacket` at 0.605, so
+ * a pin on the collar would have lost its garment the same way.
+ *
+ * ⚠ **IT IS NOT CONFIRMED TO BE WHAT HAPPENED ON ROUND 11.** That reading is
+ * on production and was not read for this card. What this closes is a road
+ * by which a thing on a garment can lose its garment, proven on the shape
+ * above; whether round 11 took this road or another (`mergeDiscoveries`
+ * resolving two crops' different hosts to `""` is the other one in the code)
+ * is not known here, and that is said rather than implied.
+ *
+ * The answer is the place rule's own: the dropped noun WAS the survivor's
+ * place, so whatever sat on it sits on the survivor. Two guards, each with
+ * its case on the far side:
+ *
+ *   A NOUN STILL STANDING   when another instance of the merged noun kept its
+ *                           own row (`strap#1` joined the harness, `strap#2`
+ *                           did not), `on: strap` may mean the one that stands,
+ *                           so it is left exactly as the reading wrote it.
+ *   ONTO ITSELF             a thing is never re-pointed onto its own noun: a
+ *                           host that joined the very thing sitting on it says
+ *                           nothing about where that thing sits.
+ *
+ * Returned as a function so `named` — the words with no picture — is
+ * re-pointed by the same answer as the rows (`cutDiscovered`).
+ */
+export function hostsOfMerged(
+  merged: readonly { noun: string; into: string }[],
+  standing: readonly string[],
+): (on: string, noun: string) => string {
+  const stands = new Set(standing.map((noun) => normalisedName(noun)));
+  const into = new Map<string, string>();
+  for (const one of merged) {
+    const key = normalisedName(one.noun);
+    if (stands.has(key) || into.has(key)) continue;
+    into.set(key, one.into);
+  }
+  return (on, noun) => {
+    if (on.trim() === "") return on;
+    const onto = into.get(normalisedName(on));
+    if (onto === undefined || normalisedName(onto) === normalisedName(noun)) return on;
+    return onto;
   };
 }
 
@@ -1551,6 +1692,25 @@ export async function cutDiscovered(input: {
   const notThere: { noun: string; on: string }[] = [];
   /* Every body-part cut that was a place the panel draws no row for (#2810). */
   const wholePlace: { noun: string; is: string }[] = [];
+  /*
+    EVERY BOX BEYOND THE COUNT THAT WAS CUT, AND WHETHER IT BECAME A ROW
+    (#2838 road 2).
+
+    ⚠ **It is a VERDICT and not a call count, and that distinction is the one
+    this line could get wrong.** The summary log's own note says the number of
+    calls belongs to the call census and nowhere else (working law 4), and this
+    does not restate it: the census counts `POINTER_BOX_ABOUT` calls, this says
+    what the extra ones DECIDED. The two differ whenever a cut comes back with
+    no pixels, which the census counts and this does not.
+
+    It is here because road 2's whole justification is a rate, and the rate it
+    was built on is five of his readings read off a court's recorded answers.
+    #2809 is the standing warning: a second look was shipped on three specimens
+    and ran for three weeks with `rescued: 0` sitting in the log, written there
+    for exactly this purpose and never read. So this reading exists from the
+    first reading rather than from the first argument about it.
+  */
+  const beyondTheCount: { noun: string; kept: boolean }[] = [];
   /* Every name asked again on its own host's crop: boxes offered, and on the host. */
   const askedOnHost: {
     noun: string;
@@ -1684,6 +1844,14 @@ export async function cutDiscovered(input: {
     let boxes: readonly PointerBox[] = [];
     /* The product's word, when it is what placed this name's boxes. */
     let product: string | null = null;
+    /*
+      THE SLOTS OF THE BOXES BEYOND THE COUNT (#2838 road 2), so the verdict on
+      each is read at the FOOT of this task and not at the `settle` that first
+      saw it. An extra worn on another thing the reading found is HELD BACK by
+      the barrier, so a verdict taken where it was settled would read `kept:
+      false` on a cut that is about to become a row.
+    */
+    const extraSlots: string[] = [];
 
     const cutInside = async (box: PointerBox, index: number) => {
       try {
@@ -1709,32 +1877,56 @@ export async function cutDiscovered(input: {
           return { index, region: null, broke: false };
         }
         /*
-          THE QUALITY BAR — #2565 §4's, measured, and this road's own declared
-          gap now filled (see this module's header, where the sentence saying
-          there was no pipeline to call is struck).
+          THE JUDGEMENT — and on THIS road the fill is a MEASUREMENT and never
+          a refusal (#2831, the relay's decision of 2026-10-30).
 
-          A cut that fills less than a fifth of the rectangle it was asked
-          about is the "only the straps" answer: the segmenter returning a
-          coherent fragment of the thing, silently, with a plausible-looking
-          mask. It gets no row, exactly as a cut with no pixels gets no row.
+          ⚠ **IT USED TO REFUSE HERE AND THAT WAS THE DEFECT.** A cut filling
+          under a fifth of its rectangle got no row, on the reasoning that it
+          was the "only the straps" answer — a coherent fragment of the thing
+          returned silently in place of the thing. Measured on two real
+          pictures the day after it shipped: a **correct** cut of a long curved
+          tail fills **17.00%** and was thrown away with nothing said, while a
+          cut of **the sword in the character's hand**, asked for as chest
+          armour, passed at **21.64%**. Fill does not order correctness, and on
+          this road the cost of losing that coin flip is a feature of his
+          character vanishing invisibly — the thing he reported by eye three
+          times in one week (#2800, #2810, #2817). Every row's cut is outlined
+          on hover here, so a partial or wrong cut is visible before anyone
+          refines on it; a missing row is not.
 
-          ⚠ **The fill is logged on EVERY judgement, used or refused, and that
-          is deliberate rather than noisy.** The floor is a FLOOR taken on one
-          known-bad specimen, so the population it wants is the one this road
-          produces in use; logging only refusals would grow a record of what
-          the bar already catches and tell nobody where the correct cuts sit.
+          What still refuses, and both are yes/no facts: no pixels at all, and
+          no overlap with the rectangle that asked. The second is checked twice
+          over — `overlaps` above on the boxes, and `no-overlap` inside the
+          judgement on the pixels.
+
+          ⚠ **The fill is logged on EVERY judgement, which is now the whole of
+          what it is for.** The number keeps growing its population for free —
+          that is how the tail and the sword were found — and it decides
+          nothing.
         */
-        const verdict = judgeCut({ mask, box });
+        const verdict = judgeCut({ mask, box, fillFloor: FILL_MEASURED_NOT_REFUSED });
         if (!verdict.use) {
           log.warn(
-            { name: feature.name, askedAbout: box, answered: bounds, fill: verdict.fill, why: verdict.why },
-            "the cut did not fill enough of the rectangle it was asked about — no row",
+            {
+              name: feature.name, askedAbout: box, answered: bounds, fill: verdict.fill, why: verdict.why,
+              /* #2841, on the refused side too: a later bar would have to tell
+                 a fringe from a shattering, and the refused cuts are where it
+                 would have to do it. */
+              pieces: verdict.pieces, largestPieceShare: verdict.largestPieceShare,
+            },
+            "the cut had nothing of the rectangle it was asked about in it — no row",
           );
           return { index, region: null, broke: false };
         }
         log.debug(
-          { name: feature.name, fill: verdict.fill, claimed: verdict.claimed },
-          "the cut cleared the quality bar",
+          {
+            name: feature.name, fill: verdict.fill, claimed: verdict.claimed,
+            /* #2841: the fill above cannot see fragmentation, so these two ride
+               beside it on every kept cut. They refuse nothing — they are the
+               population a bar would need before anybody writes one. */
+            pieces: verdict.pieces, largestPieceShare: verdict.largestPieceShare,
+          },
+          "the cut is kept, and this is how much of its rectangle it filled — and how many pieces it came in",
         );
         return {
           index,
@@ -1768,6 +1960,46 @@ export async function cutDiscovered(input: {
       /** The places the scan cut that the panel deliberately draws no row
        *  for (#2810), or `null` when the caller offered no scan. */
       unDrawn: readonly CatalogueCut[] | null,
+      /**
+       * A BOX BEYOND THE COUNT (#2838 road 2) — it may ADD a row and may do
+       * nothing else.
+       *
+       * The reading did not count this instance, so whatever its cut turns out
+       * to be says nothing about the name — and ONE piece of this task's state
+       * is therefore left alone where a counted cut would move it:
+       *
+       *   **`held`** — #2801's *"a name the catalogue drew part of keeps its
+       *   other cuts"*, the second tusk beside the tusk that IS Teeth. That rule
+       *   was measured on COUNTED cuts, and the catalogue drawing an ORDINARY
+       *   EYE under an extra rectangle of `third eye` is not the catalogue
+       *   drawing part of the third eye. Letting an extra's fold set `held`
+       *   would keep a `lying` cut this module measured and refused — on the
+       *   three-eyed cast, a picture of the HAIR drawn as a third eye. Its arm
+       *   is in `pointerCut.test.ts`, driven on that shape, and it reddens under
+       *   the removal of this one line.
+       *
+       * ⚠ **AND ONE THING IS DELIBERATELY *NOT* GUARDED, WHICH THIS BLOCK
+       * CLAIMED FOR A WHILE AND COULD NOT PROVE: A STRAYED EXTRA.** A draft
+       * kept an extra out of `strays`/`wandered` on the reasoning that it must
+       * not open the paid second ask on a crop (gated on `wandered > 0`). Two
+       * things were wrong with it. **It is not better behaviour**: a strayed
+       * cut is evidence already bought, and handing it to the name whose place
+       * it landed on is precisely what #2796's road exists for — the septum
+       * ring would otherwise have no row under any name. **And it could not be
+       * driven**: reaching that gate needs `mine` empty with `landed` not, so
+       * every counted cut judged away WITHOUT straying, which takes a counted
+       * cut that is `lying` while the extra strays and an `on` that names a
+       * catalogue slot at the same time. Two attempts at real geometry could not
+       * build it, and a guard whose arm passes green under its own removal is
+       * the inert shape this repository keeps paying for.
+       *
+       * **So the honest statement of the cost is not "no new calls":** a reading
+       * where every counted cut was judged away and an extra strayed may buy one
+       * `detect` on a crop that the cap would not have. That is #2796's road
+       * doing its job on a reading that had already gone wrong, and it is said
+       * here rather than implied by a clause about additivity.
+       */
+      beyondTheCount = false,
     ): void => {
       /* A box from the product's word must be where that kind is worn. */
       if (product !== null && !onItsSite(region, product, cuts)) {
@@ -1823,6 +2055,7 @@ export async function cutDiscovered(input: {
       const row = cuts === null ? null : catalogueRowOf(region, cuts);
       if (row !== null) {
         intoCatalogue.push({ noun: feature.name, into: row.slot });
+        if (beyondTheCount) return;
         heldInto.push(row.slot);
         held = true;
         return;
@@ -1883,7 +2116,24 @@ export async function cutDiscovered(input: {
         const onHost = offered
           .map((box) => ({ x: box.x + area.x, y: box.y + area.y, width: box.width, height: box.height }))
           .filter((box) => besideItsHost({ box, on: feature.on }, frame, cuts).at === "host");
-        /* THE CAP, as on the first ask, in the order the detector offered them. */
+        /*
+          THE CAP, as on the first ask, in the order the detector offered them.
+
+          ⚠ **AND #2838 ROAD 2 IS DELIBERATELY *NOT* APPLIED HERE — the law-7
+          sweep's one other site, with the reason read rather than assumed.**
+          His defect cannot occur on this road: it fires only for a name whose
+          `on` names a place the SCAN cut (`hosts.length === 0` returns, four
+          lines up), and every `on` road 2's measured extras carry — `arm`,
+          `cheek`, `forehead` — is no catalogue slot. A sleeve on an arm never
+          reaches this crop at all.
+
+          What IS reachable here is a name on a real slot whose crop offers more
+          rectangles than the reading counted — two earrings on one ear. That is
+          **his own open design question** on #2833 (several of one noun on one
+          place) and #2862's one-thing-one-row ruling, not a cap question, so it
+          is named here and left for those cards rather than folded into this
+          one (his 2026-09-24 rule).
+        */
         const near = onHost.slice(0, Math.max(1, feature.count));
         askedOnHost.push({ noun: feature.name, why, offered: offered.length, onHost: onHost.length, cut: near.length });
         const again = await Promise.all(near.map(cutInside));
@@ -1966,18 +2216,163 @@ export async function cutDiscovered(input: {
         return;
       }
 
-      /* THE CAP — the module header carries the measurement it comes from. */
-      const asking = boxes.slice(0, Math.max(1, feature.count));
+      /*
+        THE CAP, AND THE BOXES BEYOND IT (#2838 road 2) — the module header
+        carries the cap's own measurement, and this carries road 2's.
+
+        The cap is `count` boxes, in the detector's order, and it stays exactly
+        that for the boxes that BECOME this name's instances. What changes is
+        that a box past it is no longer thrown away unasked: it is cut, and kept
+        only where it lands on nothing the scan already holds. `settle` is the
+        whole of that judgement and it already existed — a cut that is a
+        catalogue row's own pixels is that row, a cut nearer another place than
+        the one the reading named is not this name's, a body part cut as a whole
+        place is not a part of it. Road 2 adds no bar and no number.
+
+        # WHY THE CAP COULD NOT SIMPLY BE RAISED, WHICH IS THE WHOLE CARD
+
+        His round-9 cast has a full tattoo sleeve on each arm. The reading names
+        `tattoo` ONCE, on `arm`, count 1; the detector boxes BOTH arms; the cap
+        cuts the first. So one sleeve is outlined and the other cannot be picked
+        — *"her tattoos were not picked up"*, from the other end. And the cap
+        cannot go: on the three-eyed cast the detector returned THREE boxes for
+        `third eye` and two of them were the ordinary eyes, which is the
+        measurement in the module header. Both are true, so the question is not
+        how many boxes to cut but which of the extra ones is a thing.
+
+        # WHAT IT COSTS, MEASURED ON WHAT WAS ALREADY BOUGHT
+
+        Read off the boxing court's own recorded `detect` answers — the same
+        model this road calls (`falRegionReader.ts`'s `DETECT`) — over five of
+        his real readings (r5, r8, r9, r10c, r10t), against each reading's own
+        count:
+
+          names the detector boxed at all   25
+          boxes cut today (at most count)   28
+          boxes beyond the count            2   ← road 2's whole spend
+
+        **0.4 extra segmenter calls per reading**, against the 21–27 reads a
+        scan already makes (#2191). And both of the two are the defect itself:
+
+          r9  tattoo on=arm   count 1, 2 boxes — kept x0-196, EXTRA x872-1024
+          r5  tattoo on=cheek count 1, 2 boxes — kept x391-417, EXTRA x641-663
+
+        ⚠ **A HOST FILTER ON THE RECTANGLE WAS DESIGNED, MEASURED AND DROPPED,
+        and it is recorded so nobody builds it again.** The tempting cheap gate
+        is {@link besideItsHost} on the extra's rectangle alone, which is what
+        {@link askOnHostCrop} does before its own cap. It refuses NOTHING here:
+        it needs `on` to name a place the scan cut, and the three `on` values
+        this road's extras actually carry — `arm`, `cheek`, `forehead` — are
+        none of them catalogue slots (`scanPlan()`), so all three answer
+        `unchecked`. A filter that cannot fire is machinery, not a saving.
+
+        ⚠ **AND A BARE "the rectangle touches a cut the scan drew" GATE IS WORSE
+        THAN NONE, which this module has already measured.** The hair is cut
+        down the whole body on some casts, so its claimed pixels are 0 px from
+        everything — {@link besideItsHost}'s own docblock records 283 correct
+        boxes refused by a catalogue place with no found rival, *every one of
+        them by the hair*. So the extras are judged on their CUT, like every
+        other cut on this road, and the two wasted calls on the three-eyed cast
+        are the stated price of not refusing a real row by a strand of hair.
+      */
+      const counted = Math.max(1, feature.count);
+      const asking = boxes.slice(0, counted);
       const cut = await Promise.all(asking.map(cutInside));
       const landed: DiscoveredRegion[] = [];
       for (const one of cut.sort((a, b) => a.index - b.index)) {
         if (one.broke) broke = true;
         if (one.region !== null) landed.push(one.region);
       }
+      /*
+        THE BOXES BEYOND THE COUNT ARE A SECOND WAVE, AND BOTH HALVES OF THAT
+        SENTENCE ARE LOAD-BEARING (#2838 road 2).
+
+        **SECOND**, not part of the `Promise.all` above, because an extra may
+        only be kept where it lands on nothing the scan already holds — so the
+        scan's cuts must be in hand to judge it, and `catalogueCuts()` is a
+        promise the catalogue scan RESOLVES. Cutting the counted boxes first
+        keeps today's timing exactly: the counted cuts still run while the
+        catalogue scan is still going, and only a reading that actually has an
+        extra waits for it. Measured, that is 0.4 readings in one.
+
+        **AND NO EXTRA IS BOUGHT AT ALL WITH NO SCAN IN HAND**, which is the
+        fail-closed half. With `cuts === null` — no catalogue offered, or a scan
+        that threw — nothing can say whether an extra is a thing or an ordinary
+        eye, and the honest answer to a question you cannot ask is the cap. This
+        is not a corner: it is the shape every unit fixture of this road takes,
+        and without this line the three-eyed cast's two extras would become two
+        rows in exactly the case where nothing could notice.
+      */
+      /*
+        ⚠ **AND THE EXTRAS HAVE A CEILING, WHICH THE FIRST SHAPE OF THIS DID
+        NOT — `boxes.slice(counted)` let the DETECTOR'S OWN ANSWER decide how
+        many paid cuts a reading buys.** The frame is the customer's picture and
+        the noun is the customer's words, so a busy picture answered with twenty
+        rectangles for one name is twenty segmenter calls on that name — and the
+        measured sentence this whole road rests on, *0.4 extra calls a reading*,
+        would be true of five readings and of nothing else.
+
+        **The ceiling is `count` again, and that is the point: it is not a new
+        number.** The module already trusts exactly one quantity to say how many
+        of a thing there are, and road 2 asks about at most that many more — so
+        at most `2 x max(1, count)` rectangles are ever cut for one name. It
+        covers every case the measurement found (count 1, one extra), it scales
+        the way the defect scales (a reading that counts two anklets and the
+        detector boxes four gets four), and a tuned constant would have needed a
+        bench nobody has run.
+
+        A truncation is LOGGED rather than silent, for the same reason the
+        verdict is: the rate at which real readings hit this is the only thing
+        that could ever justify moving it.
+      */
+      const over = boxes.slice(counted, counted + counted);
+      if (boxes.length > counted + counted) {
+        log.warn(
+          { name: feature.name, boxes: boxes.length, count: counted, asked: counted + counted },
+          "the detector offered more rectangles than twice what the reading counted — the ones past the ceiling are not cut",
+        );
+      }
+      /*
+        ⚠ **THE COUNTED CUTS SETTLE FIRST AND THE ORDER IS LOAD-BEARING**, for
+        the same reason the held-back cuts settle before the lying ones are
+        judged: `settle` reads and moves this task's own state. A counted cut
+        that folds into a catalogue row sets `held`, and #2801's rule then keeps
+        this name's other cuts — so settling an extra first would read a `held`
+        that the counted cut was about to set, and the two orders disagree on
+        the real second-tusk cast. The extras go last, where the state they
+        read is final.
+      */
+      const askExtras = async (
+        cuts: readonly CatalogueCut[] | null,
+        unDrawn: readonly CatalogueCut[] | null,
+      ): Promise<void> => {
+        if (over.length === 0) return;
+        if (cuts === null) {
+          log.debug(
+            { name: feature.name, boxes: boxes.length, count: counted },
+            "the detector offered more rectangles than the reading counted, and there is no scan to judge them against — the count is the cap",
+          );
+          return;
+        }
+        const extra = await Promise.all(over.map((box, at) => cutInside(box, counted + at)));
+        for (const one of extra.sort((a, b) => a.index - b.index)) {
+          if (one.broke) broke = true;
+          if (one.region === null) continue;
+          extraSlots.push(one.region.slot);
+          settle(one.region, cuts, null, unDrawn, true);
+        }
+      };
+      if (landed.length === 0) {
+        /* Nothing of this name could be drawn, so the extras are still asked —
+           a reading whose first rectangle came back empty is exactly a reading
+           whose second one may be the thing. */
+        await askExtras(await catalogueCuts(), await unDrawnCuts());
+      }
       if (landed.length > 0) {
         const cuts = await catalogueCuts();
         const unDrawn = await unDrawnCuts();
         for (const region of landed) settle(region, cuts, null, unDrawn);
+        await askExtras(cuts, unDrawn);
         /*
           EVERY CUT WAS SOMEWHERE ELSE — ASK ONCE MORE, ON THE PLACE THE READING
           NAMED (#2796, the third defect: the real stud had no row at all).
@@ -2067,6 +2462,9 @@ export async function cutDiscovered(input: {
         "the cut of this body part lies mostly on other places the scan cut — not this body part, no row",
       );
       notThere.push({ noun: feature.name, on: feature.on });
+    }
+    for (const slot of extraSlots) {
+      beyondTheCount.push({ noun: feature.name, kept: mine.some((region) => region.slot === slot) });
     }
     return { name: feature.name, regions: mine, declined, broke, held, heldInto };
   }));
@@ -2220,6 +2618,15 @@ export async function cutDiscovered(input: {
     under the place it joined rather than written into `named`.
   */
   const settled = settleByPlace(regions);
+  /* The words with no picture name hosts too — rivets on a harness that
+     joined the top — so they are re-pointed by the same answer as the rows,
+     or a scattered trim's words would lose the Outfit row the rows found
+     (#2862, `hostsOfMerged`). */
+  const repointNamed = hostsOfMerged(settled.samePlace, settled.regions.map((region) => region.noun));
+  const namedSettled = named.map((one) => {
+    const onto = repointNamed(one.on, one.noun);
+    return onto === one.on ? one : { ...one, on: onto };
+  });
 
   /*
     ⚠ `found` IS ROWS, NOT CALLS, AND THE DIFFERENCE IS THE COST (the relay's
@@ -2327,12 +2734,30 @@ export async function cutDiscovered(input: {
       notThere,
       /* Body-part cuts that were a whole un-drawn place — the face — so got no row (#2810). */
       wholePlace,
+      /* Boxes beyond the reading's own count that were cut, and whether each
+         became a row (#2838 road 2) — the rate road 2 rests on, from the first
+         reading rather than from an argument about it. */
+      beyondTheCount,
       /* What the place rules decided, so a merged or moved row can be traced to
          the pixels that decided it rather than looking like a lost one. */
       samePlace: settled.samePlace,
       onGarment: settled.onGarment,
+      /* What sat on a host that joined another's place, and the survivor it
+         now sits on (#2862) — nouns only, like every field here. */
+      onMerged: settled.onMerged,
+      /*
+        THE FOURTH ROAD'S NOUNS (#2793) — what the reading named and handed to
+        the catalogue, which until now was the one road that reported nothing.
+
+        It is here and not a count for `unusableNames`' stated reason: paired
+        against the kept row's own `empty` list, it says whether a question that
+        came back empty had been named by the reading, which is the difference
+        between a thing that is not there and a thing with no road at all. A
+        count cannot tell those apart, and nothing else keeps these nouns.
+      */
+      catalogueNouns: catalogueRoadFeatures(input.features).map((feature) => feature.name),
     },
     "pointer road",
   );
-  return { regions: settled.regions, asked, declined, failed, named };
+  return { regions: settled.regions, asked, declined, failed, named: namedSettled };
 }

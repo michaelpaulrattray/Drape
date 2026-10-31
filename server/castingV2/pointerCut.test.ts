@@ -19,6 +19,7 @@
  * pass on the wrong row.
  */
 import sharp from "sharp";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -33,15 +34,18 @@ import {
   normalisedName,
   offListFeatures,
   placeNames,
+  catalogueRoadFeatures,
   pointerFeatures,
   productWordFor,
   settleByPlace,
   wordsOnlyFeatures,
   besideItsHost,
   besideItsFoundHost,
+  hostsOfMerged,
   type CatalogueCut,
   type DiscoveredRegion,
 } from "./pointerCut";
+import { facePanel } from "./facePanel";
 import { catalogueSlots } from "./referenceSlotCatalogue";
 import { scanPlan } from "./faceScan";
 import type { DiscoveredFeature } from "./faceDiscovery";
@@ -258,6 +262,102 @@ describe("offListFeatures — a name the scan already buys never reaches this ro
   });
 });
 
+describe("catalogueRoadFeatures — the fourth road's nouns, so the loss direction is readable (#2793)", () => {
+  /*
+    WHY THIS EXISTS AT ALL. `coveredByCatalogue` is a spelling test, so a found
+    name the catalogue covers never reaches the pointer road — the catalogue's
+    own question is trusted to draw it. If that question comes back EMPTY on
+    this frame, the thing has no road at all and no row; and until this function
+    those nouns were kept NOWHERE, so the loss could not be measured after the
+    fact. Measured over all 86 kept readings on production the day this landed,
+    every one has at least one empty catalogue question, so the opportunity is
+    not rare — what was missing was the other half of the pair.
+  */
+  it("returns the covered names and nothing else, in the reading's own order", () => {
+    const took = catalogueRoadFeatures([
+      feature("hair"), feature("jacket"), feature("eyes", 2), feature("sash"), feature("ears"),
+    ]);
+    expect(took.map((one) => one.name)).toEqual(["hair", "eyes", "ears"]);
+  });
+
+  /*
+    ⚠ THE ARM THAT MAKES IT A QUARTER RATHER THAN A NEW RULE, and the only one
+    that can go red when somebody adds a fifth road: every name a reading
+    produces takes EXACTLY ONE of the four roads `foundRoadOf` declares, so the
+    three reported populations plus this one are the whole reading. Written as a
+    partition over a mixed reading rather than as four separate counts, because
+    four counts that each look right can still lose a name between them.
+  */
+  it("completes the partition — every name takes exactly one road, and the four cover the reading", () => {
+    const reading = [
+      /* catalogue: a question the scan sends. */
+      feature("eyes", 2), feature("hair"),
+      /* place: anatomy something else says it sits on. */
+      feature("arm", 1, { kind: "anatomy", on: "" }),
+      /* words: makeup, and a thing with no outline to cut. */
+      feature("eyeliner", 1, { kind: "makeup" }),
+      feature("freckles", 1, { coverage: "scattered" }),
+      /* pointer: a worn thing with an outline. */
+      feature("jacket", 1, { kind: "clothing" }),
+      feature("tattoo", 1, { kind: "marking", on: "arm" }),
+    ];
+    const roads = {
+      catalogue: catalogueRoadFeatures(reading),
+      words: wordsOnlyFeatures(reading).map((one) => ({ name: one.noun })),
+      pointer: pointerFeatures(reading),
+      /* The place road is the remainder by construction — it is the one road
+         that produces nothing at all, so it is named here rather than left as
+         an unexplained shortfall. */
+    };
+    const named = [...roads.catalogue, ...roads.words, ...roads.pointer].map((one) => one.name);
+    const places = [...placeNames(reading)];
+    expect(places).toEqual(["arm"]);
+    /* DISJOINT: no name is on two roads. */
+    expect(new Set(named).size).toBe(named.length);
+    /* EXHAUSTIVE: the four roads are the whole reading. */
+    expect([...named, ...places].sort()).toEqual(reading.map((one) => one.name).sort());
+    /* And each road got what it should, so a partition that is merely tidy
+       cannot pass this. */
+    expect(roads.catalogue.map((one) => one.name)).toEqual(["eyes", "hair"]);
+    expect(roads.words.map((one) => one.name)).toEqual(["eyeliner", "freckles"]);
+    expect(roads.pointer.map((one) => one.name)).toEqual(["jacket", "tattoo"]);
+  });
+
+  /* A covered name that is ALSO a place stays on the catalogue road, because
+     `foundRoadOf` asks the catalogue first. `hair` is both — the scan has a
+     question for it and `bangs` sits on it — and a reading that reported it as
+     a place would be reporting the scaffolding instead of the loss. */
+  it("keeps a name that is both covered and a place on the catalogue road", () => {
+    const reading = [feature("hair"), feature("bangs", 1, { on: "hair" })];
+    expect(placeNames(reading).has("hair")).toBe(true);
+    expect(catalogueRoadFeatures(reading).map((one) => one.name)).toEqual(["hair"]);
+  });
+
+  /*
+    ⚠ AND THE FIELD MUST SURVIVE, which is a different claim from the function
+    being right. #2809 is the standing warning one road over: a number written
+    into this module's summary log for a stated purpose, read by nobody for
+    three weeks. The census this function exists for reads `catalogueNouns` off
+    the `pointer road` line and pairs it with the kept row's own `empty` list,
+    so a later edit that drops the field takes the measurement with it and
+    leaves every arm above green. Read at the module's own source because the
+    log goes out through a pino transport in a worker and cannot be captured
+    here; it is a DELETION guard and claims nothing more.
+  */
+  it("is reported on the summary log line, beside the other three roads", () => {
+    const source = readFileSync(
+      new URL("./pointerCut.ts", import.meta.url),
+      "utf8",
+    );
+    const line = source.slice(source.indexOf("const named: NamedNotCut[]"));
+    const summary = line.slice(0, line.indexOf('"pointer road"'));
+    expect(summary).toContain("catalogueNouns: catalogueRoadFeatures(input.features)");
+    for (const road of ["wordsOnly:", "rows:", "gated:"]) {
+      expect(summary, road).toContain(road);
+    }
+  });
+});
+
 describe("discoveredSlotOf — an identity, never a description", () => {
   it("is prefixed, slugged and numbered", () => {
     expect(discoveredSlotOf("jaw hardware", 1)).toBe(`${DISCOVERED_SLOT_PREFIX}jaw-hardware#1`);
@@ -456,36 +556,48 @@ describe("cutDiscovered — the two calls, and what is asked on each", () => {
   });
 
   /*
-    ⚠ THE THIRD REFUSAL — #2565 §4's quality bar, and this arm exists because
-    invariant 7 asks for a test that the control BLOCKS rather than one that it
-    is present. The two arms under it are the pair that keeps the bar honest:
-    a legitimately small thing is kept, and the bar's own number is what
-    decides, so a floor moved by somebody reddens all three.
+    ⚠ **THE THIRD REFUSAL IS GONE AND THIS ARM IS ITS INVERSE — #2831, the
+    relay's decision of 2026-10-30: THE FACE PANEL STOPS REFUSING ON FILL.**
 
-    The specimen is the shape the court measured: asked about a whole garment,
-    the segmenter returns a coherent fragment of it — "only the straps" — with
-    a plausible-looking mask. 60x600 inside a 600x600 rectangle is 10% fill,
-    which is the real known-bad's 8.2% to within a point.
+    ~~*"drops a cut that fills almost none of the rectangle it was asked
+    about"*~~ stood here for one day. The day after it shipped, the bar was
+    measured on two more real pictures (`output/_2565-thin/ledger.json`): a
+    **correct** cut of a long curved tail fills **17.00%** and was thrown away
+    with nothing said, while a cut of **the sword in the character's hand**,
+    asked for as *"the armour plating on the chest"*, passed at **21.64%**.
+    A right answer scored below a wrong one, so fill does not order
+    correctness — and on this road the cost of refusing is a feature of his
+    character vanishing invisibly, which is what he reported by eye three times
+    in one week (#2800, #2810, #2817).
+
+    So the specimen below — the court's own "only the straps" shape, 60x600
+    inside a 600x600 rectangle, 10% fill — now KEEPS its row, and its fill is
+    logged. That is deliberately the honest cost of the decision: this road
+    would rather draw a partial cut, which is outlined on hover and can be seen,
+    than drop a correct one silently. **The road that owns that specimen —
+    `referenceTake`, where a cut is never shown and a partial one costs a paid
+    render — still refuses it, and `cutQuality.test.ts` holds the split.**
   */
-  it("drops a cut that fills almost none of the rectangle it was asked about", async () => {
+  it("keeps a cut that fills almost none of its rectangle, and no longer drops it", async () => {
     const reader = readerWith({
       detects: { jacket: [{ x: 60, y: 0, width: 600, height: 576 }] },
       cuts: () => maskAt({ x: 300, y: 0, width: 60, height: 576 }),
     });
     const out = await cutDiscovered({ frame: FRAME, features: [feature("jacket")], reader });
-    expect(out.regions).toEqual([]);
-    /* Not silently lost: the name is still on the record as asked-and-uncut,
-       which is what keeps the call census honest about a call that was bought
-       and produced no row. */
-    expect(out.named.map((one) => one.noun)).toEqual(["jacket"]);
+    expect(out.regions).toHaveLength(1);
+    expect(out.regions[0]!.noun).toBe("jacket");
+    /* And it is a row rather than an asked-and-uncut name. */
+    expect(out.named).toEqual([]);
   });
 
-  it("keeps a SMALL thing that fills its own small rectangle — the falsification arm", async () => {
-    /* The bar must not refuse a septum ring for being small. A real SAM cut of
-       a thin wire hoop fills 50.1% of its box (measured on the court's own
-       masks), and a compact nose stud 67.1–76.1%; both are far above the floor.
-       This arm is the one that would say so if a fill bar were the wrong
-       instrument for small worn things. */
+  it("keeps a SMALL thing that fills its own small rectangle", async () => {
+    /* This was the fill bar's falsification arm — a septum ring must not be
+       refused for being small — and it PASSED while the bar was wrong, which is
+       #2831's sharper lesson: a fill bar refuses a thin LONG thing, not a small
+       one, so the arm was looking the wrong way. It is kept because the row
+       itself still matters: a real SAM cut of a thin wire hoop fills 50.1% of
+       its box and a compact nose stud 67.1–76.1%, and a small worn thing having
+       its own row is what #2781 and #2789 are about. */
     const reader = readerWith({
       detects: { "septum ring": [{ x: 100, y: 100, width: 20, height: 12 }] },
       cuts: () => maskAt({ x: 102, y: 102, width: 14, height: 8 }),
@@ -1033,6 +1145,99 @@ describe("the place rules — one row per place on the picture, never per spelli
     expect(out.onGarment).toEqual([]);
   });
 
+  /* ---- a host that joined another's place takes its lodgers with it (#2862) ---- */
+
+  /*
+    His round 11: *"it thought the chain which is apart of her outfit was a
+    necklace"*. The shape driven here is the card's own example of two names
+    for one garment — `harness` and `top` on a halter top with built-in straps
+    — with a chain the reading said sits on `harness`. The chain lies on
+    neither garment's pixels (a thin strand below the hem), so the garment rule
+    cannot rescue it: only the merge can say where it sits.
+
+    ⚠ This is NOT confirmed to be the road round 11 took — that reading is on
+    production and was not read for this card. It is a road by which a thing
+    on a garment loses its garment, and it is closed on this shape.
+  */
+  const halterTop = [{ x: 100, y: 100, width: 200, height: 160 }];
+  const halterStraps = [{ x: 100, y: 100, width: 200, height: 150 }];
+  const strand = [{ x: 180, y: 300, width: 6, height: 60 }];
+
+  it("a chain on a harness that joined the top's place now sits on the top", () => {
+    const out = settleByPlace([
+      region("harness", "clothing", halterStraps),
+      region("top", "clothing", halterTop),
+      region("chain", "accessory", strand, { on: "harness" }),
+    ]);
+    expect(out.samePlace).toEqual([{ noun: "harness", into: "top" }]);
+    expect(out.regions.map((one) => [one.noun, one.on])).toEqual([["top", ""], ["chain", "top"]]);
+    expect(out.onMerged).toEqual([{ noun: "chain", from: "harness", onto: "top" }]);
+    /* And the picture did not do it: the chain is on no garment's pixels. */
+    expect(out.onGarment).toEqual([]);
+  });
+
+  it("and through the panel, that chain is inside the Outfit rather than a row of its own", () => {
+    const out = settleByPlace([
+      region("harness", "clothing", halterStraps),
+      region("top", "clothing", halterTop),
+      region("chain", "accessory", strand, { on: "harness" }),
+    ]);
+    const panel = facePanel({
+      rows: [],
+      pronouns: { subject: "she", object: "her", possessive: "her", plural: false },
+      contentUrl: (key) => key,
+      maskUrl: (key) => key,
+      discovering: true,
+      scan: {
+        frameUrl: "https://bucket.example/frame.png",
+        slots: new Map(),
+        discovered: out.regions.map((one) => ({
+          slot: one.slot, noun: one.noun, instance: one.instance, kind: one.kind, on: one.on,
+          box: one.box, maskUrl: `data:image/png;base64,${one.noun}`,
+        })),
+      },
+    });
+    expect(panel.groups.map((one) => one.group)).toEqual(["outfit"]);
+    const outfit = panel.groups[0]!.rows[0]!;
+    expect(outfit.instances.map((one) => one.name)).toEqual(["Top"]);
+    expect(outfit.slots).toContain(discoveredSlotOf("chain", 1));
+  });
+
+  it("STILL AS WRITTEN — an `on` naming a noun another instance of which still stands is left alone", () => {
+    /* `strap#1` joined the harness; `strap#2` is a strap of its own across the
+       chest, so `on: strap` may mean that one, and guessing is the defect. */
+    const out = settleByPlace([
+      region("harness", "clothing", halterTop),
+      region("strap", "clothing", halterStraps, { instance: 1 }),
+      region("strap", "clothing", [{ x: 400, y: 100, width: 30, height: 200 }], { instance: 2 }),
+      region("buckle", "accessory", [{ x: 500, y: 400, width: 10, height: 10 }], { on: "strap" }),
+    ]);
+    expect(out.samePlace).toEqual([{ noun: "strap", into: "harness" }]);
+    expect(out.regions.find((one) => one.noun === "buckle")?.on).toBe("strap");
+    expect(out.onMerged).toEqual([]);
+  });
+
+  it("NEVER ONTO ITSELF — a thing whose host joined it keeps the host the reading gave", () => {
+    /* `top on=harness`, and the harness joined the top: that says nothing about
+       where the top sits, so it is not re-pointed onto its own noun. */
+    const out = settleByPlace([
+      region("harness", "clothing", halterStraps),
+      region("top", "clothing", halterTop, { on: "harness" }),
+    ]);
+    expect(out.regions.map((one) => [one.noun, one.on])).toEqual([["top", "harness"]]);
+    expect(out.onMerged).toEqual([]);
+  });
+
+  it("hostsOfMerged leaves a hostless thing hostless and an unmerged host as written", () => {
+    const repoint = hostsOfMerged([{ noun: "harness", into: "top" }], ["top", "chain"]);
+    expect(repoint("", "chain")).toBe("");
+    expect(repoint("neck", "chain")).toBe("neck");
+    /* Compared in the comparison spelling, so the reading's own capital or a
+       hyphen reaches it. */
+    expect(repoint("Harness", "chain")).toBe("top");
+    expect(repoint("harness", "chain")).toBe("top");
+  });
+
   /* ---- his round-1 ⚠: anatomy is never folded into anything ---- */
 
   it("⚠ body hardware is NEVER joined to a garment, however many pixels they share", () => {
@@ -1135,6 +1340,29 @@ describe("the place rules — one row per place on the picture, never per spelli
       reader,
     });
     expect(out.regions.map((one) => [one.noun, one.kind])).toEqual([["jacket", "clothing"]]);
+  });
+
+  it("through cutDiscovered: the words of rivets on a harness that joined the top travel on to the top (#2862)", async () => {
+    /* The words with no picture name hosts too, and they are re-pointed by the
+       same answer as the rows — or a scattered trim's words would lose the
+       Outfit row its garment is drawn as. */
+    const reader = readerWith({
+      detects: {
+        top: [{ x: 100, y: 100, width: 200, height: 160 }],
+        harness: [{ x: 100, y: 100, width: 200, height: 150 }],
+      },
+    });
+    const out = await cutDiscovered({
+      frame: FRAME,
+      features: [
+        feature("top", 1, { kind: "clothing" }),
+        feature("harness", 1, { kind: "clothing" }),
+        feature("rivets", 1, { kind: "accessory", on: "harness", coverage: "scattered", about: "small studs" }),
+      ],
+      reader,
+    });
+    expect(out.regions.map((one) => one.noun)).toEqual(["top"]);
+    expect(out.named.map((one) => [one.noun, one.on, one.why])).toEqual([["rivets", "top", "scattered"]]);
   });
 });
 
@@ -1580,16 +1808,22 @@ describe("one ring, two names — the rectangle says what a thin cut's pixels ca
     this block's own comment records that the measured things on his crop were
     the *rectangles* (17x12 and 20x11), and the pixel pattern is a stand-in.
 
-    The end-to-end arm goes through `cutDiscovered`, which since this slice
-    judges a cut against #2565 §4's quality bar — and a 19% fill sits under the
-    20% floor, so the wireframe was refused and the second name fell through to
-    `named` instead of joining the first's place. **The fixture's pixels were
-    the unrealistic half, not the bar**: driven over the court's real masks
+    The end-to-end arm goes through `cutDiscovered`, which for one day judged a
+    cut against #2565 §4's quality bar — and a 19% fill sat under the 20% floor,
+    so the wireframe was refused and the second name fell through to `named`
+    instead of joining the first's place. **The fixture's pixels were the
+    unrealistic half, not the bar**: driven over the court's real masks
     (`scripts/_2565-cut-quality-cell-disposable.mts`), a REAL SAM cut of a thin
     wire hoop earring — the same shape class as a septum ring, a mostly-empty
-    bounding box — fills **50.1%**, two and a half times the floor, while the
-    known-bad strap sliver reads 8.2% and is refused. A segmenter does not
-    return one-pixel wireframes.
+    bounding box — fills **50.1%**. A segmenter does not return one-pixel
+    wireframes.
+
+    ⚠ **AND THE FLOOR CAME OFF THIS ROAD THE NEXT DAY (#2831), SO THE FIXTURE
+    IS NO LONGER WHAT KEEPS THIS ARM GREEN — IT IS KEPT ANYWAY.** The reason it
+    was changed outlives the bar that forced it: the mask a segmenter really
+    returns is the thing this end-to-end arm should be driven on, and a
+    one-pixel wireframe was a stand-in for rectangles. Reverting it would make
+    the arm's subject less real, not more.
 
     So this arm alone gets a ring whose wire is two pixels rather than one (72
     pixels, 36% fill). **`body` and `edge` are untouched**, so every
@@ -2315,9 +2549,10 @@ describe("the first creature — one pair of tusks, and a body part lying on oth
 
   /* The brow ridge's cut on the founder's picture (reading r4): the insides of
      both ears, apart — 0.911 of its own pixels on the catalogue's ear and horn
-     cuts. Big enough to clear the fill floor (a third of the box), so the arms
-     below are about place and nothing else. Each ear's cut is larger than the
-     piece on it, so neither is that cut's "same place" (#2757's fold). */
+     cuts. It fills a third of its box, which mattered while this road had a
+     fill floor and does not since #2831; the arms below are about place and
+     nothing else either way. Each ear's cut is larger than the piece on it, so
+     neither is that cut's "same place" (#2757's fold). */
   const browBox = { x: 100, y: 100, width: 300, height: 60 };
   const earPieces = litMask([{ x: 100, y: 105, width: 60, height: 50 }, { x: 330, y: 105, width: 60, height: 50 }]);
   const leftEar = { x: 90, y: 100, width: 80, height: 70 };
@@ -2479,4 +2714,190 @@ describe("a body part cut as the whole face is not a part of it (#2810, his eye 
     expect([...unDrawn].sort()).toEqual([...expected].sort());
     expect(rows.filter((slot) => unDrawn.includes(slot))).toEqual([]);
   });
+});
+
+/**
+ * A BOX BEYOND THE READING'S COUNT (#2838 road 2) — his two tattoo sleeves.
+ *
+ * ⚠ **EVERY ARM HERE OFFERS A CATALOGUE, AND THAT IS WHY THEY HAD TO BE
+ * WRITTEN RATHER THAN FOUND.** An extra box is kept only where it lands on
+ * nothing the scan already holds, so with no scan in hand the cap stands — and
+ * every pre-existing fixture on this road passes no catalogue. All 146 of them
+ * stayed green through this change WITHOUT exercising one line of it, which is
+ * the inert-guard shape exactly: a suite that cannot fail cannot vouch.
+ *
+ * The geometry is his, not invented. The boxes are the ones the boxing court's
+ * recorded `detect` answers hold for round 9, on the 1024x1536 frame production
+ * reads, and the frame here is that size for the same reason.
+ */
+describe("the boxes beyond the count — his second sleeve, and the third eye that must not come back", () => {
+  const BIG = { bytes: Buffer.from("his frame"), width: 1024, height: 1536 };
+  const bigMask = (box: PointerBox): Mask => maskAt(box, BIG);
+  const cutOf = (slot: string, group: CatalogueCut["group"], question: string, box: PointerBox): CatalogueCut => (
+    { slot: slot as never, group, question, box, mask: bigMask(box) }
+  );
+
+  /* The scan's own cuts on a cast like his: everything the catalogue draws is up
+     at the head, and nothing it drew is anywhere near an arm. */
+  const headScan = [
+    /* The hair stops above the forehead, as it does on his cast — a hair cut
+       drawn down over the brow makes every face find `lying` on it, which the
+       first shape of these arms discovered by refusing the third eye itself. */
+    cutOf("hair", "hair", "hair", { x: 197, y: 30, width: 619, height: 270 }),
+    cutOf("eye@left", "face", "eyes", { x: 420, y: 430, width: 60, height: 30 }),
+    cutOf("eye@right", "face", "eyes", { x: 570, y: 430, width: 60, height: 30 }),
+    cutOf("lips", "face", "lips", { x: 480, y: 560, width: 90, height: 40 }),
+  ];
+
+  /* His round 9, read off `relay-2846/boxing-r9.json`: the reading names
+     `tattoo` ONCE on `arm` and the detector boxes BOTH arms. */
+  const leftSleeve = { x: 0, y: 890, width: 196, height: 645 };
+  const rightSleeve = { x: 872, y: 843, width: 152, height: 690 };
+  const sleeveName = feature("tattoo", 1, {
+    kind: "marking",
+    on: "arm",
+    about: "a sleeve of dragon and floral motifs",
+    coverage: "single",
+  });
+
+  it("HIS DEFECT — one `tattoo`, two sleeves boxed, and BOTH become rows", async () => {
+    const reader = readerWith({
+      detects: { tattoo: [leftSleeve, rightSleeve] },
+      cuts: (box) => bigMask(box),
+    });
+    const out = await cutDiscovered({
+      frame: BIG,
+      features: [sleeveName],
+      reader,
+      catalogue: async () => headScan,
+    });
+
+    /* Both rectangles were asked about — the second on its own call, as the cap
+       itself requires (one box per call, never an array). */
+    expect(reader.asked.boxes.map((one) => one.box)).toEqual([leftSleeve, rightSleeve]);
+    expect(out.regions.map((one) => one.noun)).toEqual(["tattoo", "tattoo"]);
+    expect(out.regions.map((one) => one.instance)).toEqual([1, 2]);
+    expect(out.regions.map((one) => one.slot)).toEqual([
+      `${DISCOVERED_SLOT_PREFIX}tattoo#1`,
+      `${DISCOVERED_SLOT_PREFIX}tattoo#2`,
+    ]);
+    /* The second row is the OTHER arm and not a second outline of the first —
+       two rows over one sleeve would be his complaint wearing a disguise. */
+    expect(out.regions[0]!.box).toMatchObject(leftSleeve);
+    expect(out.regions[1]!.box).toMatchObject(rightSleeve);
+  });
+
+  /*
+    ⚠ THE ARM THE CAP EXISTS FOR, AND IT IS THE ONE THAT MUST NOT GO GREEN BY
+    ACCIDENT. #2532's three-eyed cast: the detector returns THREE rectangles for
+    `third eye`, and two of them are the ordinary eyes. Road 2 asks about them —
+    and each cut IS an eye's own pixels, so each is the Eyes row and gets no
+    `third eye` row. One row out, not three.
+  */
+  it("THE THIRD EYE — the two extra rectangles are the ordinary eyes, so they fold and get no row", async () => {
+    const third = { x: 490, y: 330, width: 50, height: 30 };
+    const leftEye = headScan[1]!.box;
+    const rightEye = headScan[2]!.box;
+    const reader = readerWith({
+      detects: { "third eye": [third, leftEye, rightEye] },
+      cuts: (box) => bigMask(box),
+    });
+    const out = await cutDiscovered({
+      frame: BIG,
+      features: [feature("third eye", 1, { on: "forehead", about: "a central eye above the two normal eyes" })],
+      reader,
+      catalogue: async () => headScan,
+    });
+
+    /* TWO of the three cut, not three: the ceiling is `count` again, so one
+       counted rectangle buys at most one extra. The third is truncated and the
+       answer does not change — both extras here are an ordinary eye. */
+    expect(reader.asked.boxes.map((one) => one.box)).toEqual([third, leftEye]);
+    /* ONE row, and it is the forehead eye. */
+    expect(out.regions.map((one) => one.noun)).toEqual(["third eye"]);
+    expect(out.regions[0]!.box).toMatchObject(third);
+  });
+
+  /*
+    ⚠ **THE CEILING, ON ITS OWN, ASSERTED ON THE ASK.** `boxes.slice(counted)`
+    with no bound let the DETECTOR decide how many paid cuts a reading buys —
+    the frame is the customer's picture and the noun is the customer's words, so
+    a busy picture answered with many rectangles for one name is many segmenter
+    calls on that name. At most `2 x count` are ever cut.
+  */
+  it("the detector cannot buy more cuts than twice the count, however many rectangles it offers", async () => {
+    const many = Array.from({ length: 9 }, (_, at) => ({ x: 40 + at * 90, y: 1200, width: 40, height: 40 }));
+    const reader = readerWith({ detects: { freckle: many }, cuts: (box) => bigMask(box) });
+    await cutDiscovered({
+      frame: BIG,
+      features: [feature("freckle", 2, { kind: "marking", on: "arm" })],
+      reader,
+      catalogue: async () => headScan,
+    });
+
+    /* count 2 -> two counted and at most two extra, never nine. */
+    expect(reader.asked.boxes.map((one) => one.box)).toEqual(many.slice(0, 4));
+  });
+
+  /*
+    ⚠ **FAIL-CLOSED: WITH NO SCAN IN HAND NOTHING BEYOND THE COUNT IS EVEN
+    BOUGHT.** Asserted on the ASK and not on the answer, which is this suite's
+    whole discipline (invariant 5): a shape that cut the extra and then threw
+    the row away would pass an assertion about rows while spending the money.
+  */
+  it("CONTROL — with no catalogue to judge against, the count is the cap and the extra is never asked", async () => {
+    const reader = readerWith({
+      detects: { tattoo: [leftSleeve, rightSleeve] },
+      cuts: (box) => bigMask(box),
+    });
+    const out = await cutDiscovered({ frame: BIG, features: [sleeveName], reader });
+
+    expect(reader.asked.boxes.map((one) => one.box)).toEqual([leftSleeve]);
+    expect(out.regions).toHaveLength(1);
+  });
+
+  /*
+    ⚠ **THE ARM FOR THE ONE LINE THE REST OF THIS BLOCK CANNOT SEE: AN EXTRA
+    THAT FOLDS MUST NOT SET `held`.**
+
+    #2801's rule is *"a name the catalogue drew part of keeps its other cuts"* —
+    the second tusk beside the tusk that IS Teeth. It was measured on COUNTED
+    cuts, and the catalogue drawing an ordinary eye under an extra rectangle of
+    `third eye` is not the catalogue drawing part of the third eye. So an extra's
+    fold is recorded and sets nothing.
+
+    Driven on the shape where the difference is a WRONG ROW rather than a
+    counter: the counted rectangle's cut lands on the hair, so it is a body part
+    lying mostly on another place and gets no row (#2801); the two extras are the
+    ordinary eyes and fold. With the guard the cast gets NO third-eye row, which
+    is right — nothing of a third eye was ever cut. Without it the fold sets
+    `held`, #2801's rule then keeps the lying cut, and a picture of the HAIR is
+    drawn on his panel as a third eye.
+
+    ⚠ This arm was written because a first attempt at proving the guard
+    SURVIVED SABOTAGE GREEN: it asserted on the detector's call list with a
+    counted cut that landed, so `mine.length === 0` was never true and the
+    branch it meant to drive was unreachable from it.
+  */
+  it("an extra that folds into a catalogue row does not thereby keep this name's lying cut", async () => {
+    const onTheHair = { x: 300, y: 100, width: 40, height: 40 };
+    const leftEye = headScan[1]!.box;
+    const rightEye = headScan[2]!.box;
+    const reader = readerWith({
+      detects: { "third eye": [onTheHair, leftEye, rightEye] },
+      cuts: (box) => bigMask(box),
+    });
+    const out = await cutDiscovered({
+      frame: BIG,
+      features: [feature("third eye", 1, { on: "forehead", about: "a central eye above the two normal eyes" })],
+      reader,
+      catalogue: async () => headScan,
+    });
+
+    /* Two asked — one counted, one extra under the ceiling — and nothing drawn.
+       The hair is not a third eye and the eye it folded into is not one either. */
+    expect(reader.asked.boxes.map((one) => one.box)).toEqual([onTheHair, leftEye]);
+    expect(out.regions).toEqual([]);
+  });
+
 });

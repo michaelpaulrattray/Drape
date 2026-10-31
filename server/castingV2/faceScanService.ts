@@ -68,8 +68,17 @@ import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
 import { captureCastingFaceDiscoveryEnabled, captureCastingScanTableEnabled } from "./castingV2Scope";
-import { discoverFeatures, discoveryCropsOf, type FaceDiscovery, type FeatureKind } from "./faceDiscovery";
+import { pointerBoxerFor } from "./pointerBoxer";
+import {
+  discoverFeatures,
+  discoveryCropsOf,
+  discoveryHeadBoxOf,
+  type FaceDiscovery,
+  type FeatureKind,
+} from "./faceDiscovery";
 import { keepScan, serveKeptScan, type KeptScanShape } from "./keptFaceScan";
+import { coversAFaceCut } from "./maskCoverage";
+import { slotDefinition } from "./referenceSlotCatalogue";
 import {
   catalogueCutsOf,
   unDrawnCutsOf,
@@ -170,6 +179,26 @@ export type ScannedFace = {
 };
 
 /**
+ * THE FACE'S OWN CUTS, out of everything a scan cut — for his check 1 (#2856).
+ *
+ * Derived from the catalogue's own `group` rather than from a list of nouns
+ * written here, so a face row added to the catalogue is asked about on the day
+ * it is added and nobody has to remember this line (working law 4). Only rows
+ * this scan actually CUT are in it: an unasked or empty face row has no mask,
+ * and a question nothing can answer is not asked.
+ *
+ * Exported so it can be driven on its own. The bench the scan suite uses
+ * answers every question with one shape, so an arm going through a scan cannot
+ * tell which group this reads — it was sabotaged to `accessories` and stayed
+ * green. This is the population, read directly.
+ */
+export function faceCutsOf(masks: ReadonlyMap<FeatureSlot, Mask>): Mask[] {
+  return Array.from(masks.entries())
+    .filter(([slot]) => slotDefinition(slot)?.group === "face")
+    .map(([, mask]) => mask);
+}
+
+/**
  * ONE FOUND ROW AS THE PANEL RECEIVES IT — its mask already a stencil, the way
  * {@link ScannedFace.slots} carries one.
  */
@@ -192,6 +221,27 @@ export type DiscoveredPanelRow = {
   on: string;
   box: PanelBox;
   maskUrl: string;
+  /**
+   * DOES THIS THING'S CUT-OUT SHAPE LIE OVER THE FACE'S OWN FEATURES — his
+   * ruling of 2026-10-30 (#2856, check 1) as amended by him the same hour.
+   *
+   * ⚠ **The rectangle is never the question, and that is his own correction**:
+   * *"im not worried about the box covering the neck that sort of normal if
+   * its the outfit or whatever"*. A rag cloth, a scarf or a high collar has a
+   * rectangle that reaches the chin and is still outfit. What fails is a shape
+   * lying over the mouth, the nose, the eyes — the skin a refine would repaint.
+   *
+   * ⚠ **So it is measured HERE and carried, rather than asked by the panel.**
+   * `facePanel` is a pure projection — *"rows in, rows out"* — and by the time
+   * it sees a row the mask is a base64 PNG it cannot decode. This module holds
+   * the scan's own face cuts and the piece's cut as raw bytes at the same
+   * moment, and it is the only place in the product that ever does.
+   *
+   * `false` is the honest answer for a row nothing could measure: a reading
+   * kept before this field existed restores without it and is treated as not
+   * covering, which is today's panel exactly.
+   */
+  coversFace: boolean;
 };
 
 /**
@@ -328,10 +378,44 @@ async function displayOf(
   const words = new Map<FeatureSlot, readonly string[]>();
   for (const [slot, line] of Array.from(scan.descriptions.entries())) words.set(slot, [line]);
 
+  /*
+    THE FACE'S OWN CUTS, for his check 1 below (#2856, 2026-10-30).
+
+    Derived from the catalogue's own `group` rather than from a list of nouns
+    written here, so a face row added to the catalogue is asked about on the
+    day it is added and nobody has to remember this line (working law 4). Only
+    rows this scan actually CUT are in it — an unasked or empty face row has no
+    mask, and a question nothing can answer is not asked.
+  */
+  const faceCuts = faceCutsOf(scan.masks);
+
   const discovered: DiscoveredPanelRow[] = [];
   for (const region of found) {
     const stencil = await stencilOf(region.mask, region.box);
     stencilBytes += stencil.length;
+    /*
+      HIS CHECK 1, MEASURED AT THE PIXELS (#2856, and his amendment the same
+      hour: *"im not worried about the box covering the neck that sort of
+      normal if its the outfit or whatever"*).
+
+      Measured here because this is the one moment both shapes exist as raw
+      bytes in one process: the panel receives a base64 stencil it cannot
+      decode, and the kept reading restores one. What the answer is FOR is the
+      whole-Outfit outline — a garment lying over the mouth must not drag the
+      row's rectangle up over the face with it.
+
+      ⚠ **Measured on every found row and not only on clothing**, because what
+      counts as a piece of the outfit is the panel's grouping decision and not
+      this module's; asking only the rows one caller happens to want today is
+      how a fact goes missing the first time a second caller wants it.
+    */
+    const coversFace = coversAFaceCut(region.mask, faceCuts);
+    if (coversFace) {
+      log.info(
+        { slot: region.slot, noun: region.noun, faceCuts: faceCuts.length },
+        "[faceScanService] a found shape lies over one of the face's own cuts — it is kept as a row and left out of the whole-outfit outline",
+      );
+    }
     discovered.push({
       slot: region.slot,
       noun: region.noun,
@@ -340,6 +424,7 @@ async function displayOf(
       on: region.on,
       box: region.box,
       maskUrl: `data:image/png;base64,${stencil.toString("base64")}`,
+      coversFace,
     });
   }
 
@@ -407,9 +492,33 @@ export function pairInOneReadEnabled(): boolean {
   return process.env[PAIR_ONE_READ_ENV] === "true";
 }
 
-function defaultRegionReader(): RegionReader | null {
+/**
+ * The scan's reader, for THIS account and THIS frame: `userId` decides only who
+ * draws the box round a found name (`CASTING_POINTER_ENGINE_SCOPE`, #2863), and
+ * the frame's size decides where its head is (#2885).
+ *
+ * ⚠ **THE HEAD BOX IS HANDED IN FOR EVERY SCAN, NOT ONLY WHERE THE DISCOVERY
+ * RUNS.** It is the rectangle the discovery's head crop is cut from
+ * (`discoveryHeadBoxOf`), and that rectangle is geometry — the top half of the
+ * frame, decided by its size — so it exists whether or not the discovery's
+ * paid text read is bought for this account. A face read that lands on a
+ * tattooed arm is wrong for every customer, and the box costs nothing to know.
+ * A frame too small to cut a head crop gets no box, and so today's reader.
+ */
+function defaultRegionReader(
+  userId: number,
+  frame: { width: number; height: number },
+): RegionReader | null {
   const apiKey = process.env.FAL_KEY;
-  return apiKey ? createFalRegionReader({ apiKey, pairInOneRead: pairInOneReadEnabled() }) : null;
+  if (!apiKey) return null;
+  const boxer = pointerBoxerFor(userId);
+  const head = discoveryHeadBoxOf(frame);
+  return createFalRegionReader({
+    apiKey,
+    pairInOneRead: pairInOneReadEnabled(),
+    ...(boxer === undefined ? {} : { boxer }),
+    ...(head === null ? {} : { headBox: { frame: { width: frame.width, height: frame.height }, box: head } }),
+  });
 }
 
 /**
@@ -728,8 +837,19 @@ export async function scannedFace(input: {
     const { value, census } = await withCallCensus(async () => {
     const readBytes = input.dependencies?.readBytes ?? storageReadBytes;
     const publicUrl = input.dependencies?.publicUrl ?? storagePublicUrl;
+    if (input.dependencies?.reader === null) {
+      /* No transport, no reading — see below. Refused before the frame is
+         read, as it always was, when the caller said so outright. */
+      throw new Error("the region reader is not configured (FAL_KEY)");
+    }
+
+    const frame = await readBytes(input.imageKey);
+    const metadata = await sharp(frame.bytes).metadata();
+    if (!metadata.width || !metadata.height) throw new Error("the frame has no readable size");
+    /* Built AFTER the frame is measured, because the reader is handed where
+       this frame's head is (#2885, `defaultRegionReader`). */
     const reader = input.dependencies?.reader === undefined
-      ? defaultRegionReader()
+      ? defaultRegionReader(input.userId, { width: metadata.width, height: metadata.height })
       : input.dependencies.reader;
     if (reader === null) {
       /* No transport, no reading. It refuses rather than returning an empty
@@ -737,10 +857,6 @@ export async function scannedFace(input: {
          payload and the panel would show the second while meaning the first. */
       throw new Error("the region reader is not configured (FAL_KEY)");
     }
-
-    const frame = await readBytes(input.imageKey);
-    const metadata = await sharp(frame.bytes).metadata();
-    if (!metadata.width || !metadata.height) throw new Error("the frame has no readable size");
     const url = publicUrl(input.imageKey);
     /*
       THE DISCOVERY, BESIDE THE QUESTIONS AND NEVER IN FRONT OF THEM (#2566).
@@ -779,6 +895,18 @@ export async function scannedFace(input: {
           on: region.on,
           box: region.box,
           maskUrl: `data:image/png;base64,${stencil.toString("base64")}`,
+          /*
+            ⚠ **NOT MEASURED ON THE PARTIAL, AND IT IS A `false` WITH A REASON
+            RATHER THAN AN OMISSION.** His check 1 (#2856) asks whether this
+            shape lies over the face's own CUTS, and on this road a found row
+            lands the moment it is cut — the face rows it would be compared
+            against may not have come back yet, so the answer here would depend
+            on which read finished first. A partial is the preview the panel
+            draws WHILE the scan runs and `displayOf` replaces it wholesale
+            when the reading lands; `false` is that preview drawn exactly as it
+            was drawn before this field existed.
+          */
+          coversFace: false,
         }];
         const slots = new Map(entry.partial?.slots ?? []);
         entry.partial = {

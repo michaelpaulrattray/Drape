@@ -31,9 +31,9 @@
  *
  * # WHAT IT LOOKS FOR, AND WHY IT IS WELDED TO A NUMBER
  *
- * A path WELDED to a number — `/usr/bin/bash.75`, `/c/Users/Admin.95` — never
- * occurs in prose and is exactly what an expansion leaves behind: the variable
- * is eaten and the digits that followed the amount are not. The looser reading
+ * A path WELDED to a number — `/usr/bin/bash.75`, `/c/Users/Admin.95` — is
+ * exactly what an expansion leaves behind: the variable is eaten and the digits
+ * that followed the amount are not. The looser reading
  * — any shell or home path standing in prose — was measured against the real
  * queue and REFUSED, because **the card that reports this fault names the path
  * in its own title**: *"your roadmap card read /usr/bin/bash where a price
@@ -42,6 +42,45 @@
  * row in it is a block the next shift learns to skip. The sweep's own
  * stuck-pipeline comment states that rule about his page; it is true of a
  * shift's terminal too.
+ *
+ * # ⚠ WHY THE DOT IS REQUIRED, AND WHY GIVING UP THE BARE-AMOUNT CASE COSTS
+ * # NOTHING — DRIVEN THROUGH A REAL SHELL, NOT REASONED ABOUT (#2853)
+ *
+ * The bare-digit branch was kept for *"`$0` welded to a bare amount"*. #2853
+ * asked the right question before removing it — **has that case ever been
+ * observed?** — and the answer is stronger than "no": **no price form can
+ * produce it.** Every realistic money string on this board was put through a
+ * double-quoted shell string on this machine, and what came back is:
+ *
+ *   `$0.75` → `bash.75`     `$0` → `bash`        `$1`…`$9` → nothing
+ *   `$3.20` → `.20`         `$12` → `2`          `$1,200` → `,200`
+ *   `$50`   → `0`           `$159` → `59`        `$8,500` → `,500`
+ *
+ * **Every amount that leaves a path welded to it keeps its dot**, because the
+ * only `$`-form that expands to a PATH is `$0`, and a price written with `$0`
+ * is `$0.75` — it has a decimal point by construction. A dotless weld needs the
+ * source text to be `$0` followed straight by a digit (`$05` → `bash5`), which
+ * is not a price anyone writes.
+ *
+ * ⚠ **And the home-path route cannot produce one at all, which is the fact that
+ * settled it**: `$HOME50` is not `$HOME` welded to `50`, it is **the variable
+ * named `HOME50`**, which is unset and expands to NOTHING — measured, not
+ * assumed. So the digits are absorbed into the variable name and no mark is
+ * left. The same is true of `$PWD` and `$OLDPWD`.
+ *
+ * **So the branch protected a case with no source, and cost every card that
+ * names its own scratch folder.** No test arm drove it either — every positive
+ * control in `server/crewShellDamage.test.ts` carries a dot — which is its own
+ * evidence that nothing ever exercised it.
+ *
+ * ⚠ **THE RESIDUAL IS STATED RATHER THAN CLAIMED CLOSED, AND IT IS A FLOOR.**
+ * Requiring the dot does not make a false positive impossible: the segment
+ * walker still backtracks, so a path carrying a dot before digits inside its
+ * LAST segment — `…\Drape\v1.2`, `…\_2853\round9.2.png` — can still be split
+ * and read as a weld. **Measured over the same 93 open cards: 0 instances**, so
+ * this is a shape with no observed occurrence rather than a known noise source,
+ * and it is left unfixed on purpose instead of being narrowed unmeasured. The
+ * reader is named: the welded rule run over every open card's title and body.
  *
  * # CODE AND QUOTED MATERIAL ARE STRIPPED FIRST, ON A PRECEDENT
  *
@@ -69,6 +108,14 @@
  *   - **loose form, measured for comparison and REFUSED: 1** — #1825's own
  *     title, which is legitimate prose about the fault. One permanent
  *     known-good row is what chose the welded rule over the loose one.
+ *   - ⚠ **re-read 2026-10-30 over 93 open cards, after #2853: the shipped rule
+ *     as it then stood reported 1, and that 1 was FALSE** (#2846's own scratch
+ *     path, in bare prose rather than backticks, so the stripping never reached
+ *     it). With the dot required the same population reports **0**, and the
+ *     #1690 positive control stays green. The harness that measured it was
+ *     controlled first — the copied pattern had to reproduce `planShellDamage`
+ *     exactly before its road numbers counted, because a reader derived from a
+ *     copy inherits the copy's drift.
  *   - **loose form with the stripping removed: 4, across 2 fields.** So the
  *     stripping carries three of the four and the welded rule carries the last,
  *     and neither half is decoration. #1825's body quotes the damaged title in
@@ -158,16 +205,28 @@ function quoteForPattern(literal: string): string {
 }
 
 /**
- * A path from the list above, immediately followed by a number.
+ * A path from the list above, immediately followed by `.` and a number.
  *
- * The trailing shape is `.` + digits (`$0.75` eaten) or digits alone
- * (`$0` welded to a bare amount). A path followed by a SPACE is not a finding —
- * see the docblock on why the loose reading was refused.
+ * The trailing shape is `.` + digits — what `$0.75` leaves behind. A path
+ * followed by a SPACE is not a finding; see the docblock on why the loose
+ * reading was refused.
+ *
+ * ⚠ **THE DOT WAS OPTIONAL UNTIL 2026-10-30 AND THAT WAS THE WHOLE OF #2853.**
+ * The bare-digit branch (`\.?`) is what made **every correctly-filed card with
+ * local frames a false positive**: the segment walker above backtracks, so
+ * `C:\Users\Admin\drape-scratch\relay-2846\frames` gives back `2846` for the
+ * trailing branch to match, and a card that points at its own scratch folder
+ * reads as damage. Those folder names are the house convention — frames stay
+ * off this public repository, so a card with pictures names them on the machine
+ * in a folder called after its own card (`relay-2846`, `_2848`) — **so the
+ * better the filer behaves the more often it fired.** Measured over the 93 open
+ * cards of that day: 1 of 1 reported rows was false (#2846, whose only dollar
+ * sign is an intact `$3.20`).
  */
 const WELDED_SOURCE =
   `(?:${EXPANSION_PATHS.map(quoteForPattern).join("|")})`
   + `(?:[/\\\\][A-Za-z0-9._-]*)*`
-  + `\\.?\\d[\\d.,]*`;
+  + `\\.\\d[\\d.,]*`;
 
 /**
  * A FRESH matcher per field, and that is the whole reason this is a function.

@@ -78,6 +78,51 @@ const FINDING_WORDS: readonly string[] = ["HELD", "FINDING"];
 export const HAND_FINDING_NOTE_MAX = 72;
 
 /**
+ * THE TWO HEADERS A SHIFT ANSWERS A FINDING UNDER — the standing orders'
+ * own spelling, declared here because three readers are about to want it.
+ *
+ * *"a shift never begins a comment with `**Fable review` or `**Relay`; it
+ * answers a finding under its own header (`**Finding answered — <shift id>`,
+ * `**Repair pushed — <shift id>`)."* — `.agents/foreman/prompt.md`, 2026-10-02.
+ */
+export const SHIFT_ANSWER_MARKERS: readonly string[] = [
+  "**Finding answered",
+  "**Repair pushed",
+];
+
+/**
+ * Has a SHIFT said it answered the finding (#2855)?
+ *
+ * ⚠ **THIS IS NOT A VERDICT, IT IS NOT A FINDING, AND IT CAN NEVER CLEAR A
+ * HOLD — and that sentence is the whole control.** `classifyComment` and
+ * `reviewPresence` do not know this predicate exists, so the merge tool's
+ * decision is byte-identical whether or not anybody writes one of these
+ * headers: a held pull request stays held, `--acknowledge` still answers
+ * nothing, and the relay's verdict is still the only thing that passes it.
+ * A shift clearing its own hold by writing a header is the one thing this
+ * card was forbidden to make possible, and the way it is forbidden is that
+ * no decision reads this.
+ *
+ * **What it IS for** is the board's WORD and the seat cut's ORDER. There are
+ * three states and those two readers had two: *nobody has acted* and *a repair
+ * was pushed as a commit*. A repair delivered as an ANSWER — the relay asking
+ * for a re-measurement rather than for code, which PR #2852 is the live
+ * instance of — moved no commit, so both readers called it *repair owed* while
+ * the answer sat in a comment. The row then lies in the direction that hides
+ * work, and the next seat either learns that nothing was owed or, worse, re-runs
+ * a measurement that cost two dollars and forty minutes.
+ *
+ * ⚠ **Anchored at the very start of the header line, like its two siblings**,
+ * and the author gate stays on both roads. The failure direction here is the
+ * gentle one — a missed answer reads as *repair owed*, which is today's
+ * behaviour — so there is no case for loosening it.
+ */
+export function isShiftAnswer(body: string): boolean {
+  const trimmed = headerLine(body).trimStart();
+  return SHIFT_ANSWER_MARKERS.some((marker) => trimmed.startsWith(marker));
+}
+
+/**
  * WHAT THE RELAY ACTUALLY SAID, out of a finding's header line — or `null` when
  * the header says nothing beyond "held" (#1705).
  *

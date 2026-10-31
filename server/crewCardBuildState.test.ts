@@ -38,6 +38,7 @@ import {
   notBuiltCards,
   indexCardBuilds,
   pullRequestBuildsCard,
+  openPullRequestBuilding,
 } from "../shared/crewCardBuildState";
 import { findCardPullRequests } from "../shared/crewShiftState";
 /* #2707: the instruction's claim about the cutter is driven through the real
@@ -655,6 +656,46 @@ describe("the phrase his page draws", () => {
       .toBe("not built — the reason is on the card");
   });
 
+  it("a held PR a shift has answered says who it is waiting on (#2855)", () => {
+    /*
+      ⚠ **A REPAIR IS NOT ALWAYS A COMMIT.** When the relay asks for a
+      re-measurement rather than for code (PR #2852, the live instance), the
+      answer lands in a comment and the head never moves — so this row said
+      *repair owed* over work that was done and on the record, which is the
+      direction that HIDES work. The stage is still `finding` on every row
+      below: nothing here clears a hold.
+    */
+    expect(crewCardBuildPhrase(
+      { kind: "pull-request", pullRequest: 2852, stage: "finding", findingNote: null, findingAnswered: true },
+      NOW,
+    )).toBe("answered — waiting on the relay — PR #2852");
+
+    /* UNCHANGED, and it is the ordinary case: nobody has acted. */
+    expect(crewCardBuildPhrase(
+      { kind: "pull-request", pullRequest: 2850, stage: "finding", findingNote: null, findingAnswered: false },
+      NOW,
+    )).toBe("held on the relay's finding — repair owed — PR #2850");
+    /* And a row from before the field existed reads exactly as it did. */
+    expect(crewCardBuildPhrase(
+      { kind: "pull-request", pullRequest: 2850, stage: "finding", findingNote: null },
+      NOW,
+    )).toBe("held on the relay's finding — repair owed — PR #2850");
+
+    /*
+      ⚠ **THE RELAY'S OWN NOTE STILL WINS (#1705).** A header saying *held for
+      merge order, not a defect* is a fact about the hold; an answer is a fact
+      about who is next. The first is the relay's words and is never overwritten
+      by a shift's.
+    */
+    expect(crewCardBuildPhrase(
+      {
+        kind: "pull-request", pullRequest: 1682, stage: "finding",
+        findingNote: "held for merge order, not a defect", findingAnswered: true,
+      },
+      NOW,
+    )).toBe("held for merge order, not a defect — PR #1682");
+  });
+
   it("a claim names the seat and how long ago, and the first hour says so in words", () => {
     expect(crewCardBuildPhrase({
       kind: "claimed",
@@ -1083,5 +1124,70 @@ describe("the `take it` entry says not to write a claim by hand (#2773)", () => 
        the help text as a refusal of whatever card it was printed under. */
     expect(crewCardCommentFact({ card: 2773, body: crewCardHandbackInstruction(SEAT), createdAt: AT }))
       .toBeNull();
+  });
+});
+
+/**
+ * ⚠ **THE SELECTION HAS A SECOND CALLER NOW, SO IT IS ONE FUNCTION — #2866.**
+ *
+ * The sweep's unheld-decision band printed *"every seat is still offered them"*
+ * about cards an open pull request already holds off offer, and repairing it
+ * means asking which pull request is building a card from a module this one
+ * IMPORTS (`./crewNextUpHold`, for the hold vocabulary) — so the answer is
+ * injected and the rule stays here.
+ *
+ * ⚠ **THE ARM THAT MATTERS IS THE LAST ONE: `crewCardBuildState` AGREES WITH
+ * IT BY CONSTRUCTION.** Three lines of filter-and-sort copied into a second
+ * reader is the mirror working law 4 names, and this family's whole job is to
+ * agree about what is still on offer. If that arm can ever go green while the
+ * two disagree, the extraction has been undone.
+ */
+describe("which open pull request is building a card — one owner, two callers (#2866)", () => {
+  /* The live specimen the band was wrong about, at the shapes `gh pr list`
+     returned them on 2026-10-30: 97 open cards, 12 open pull requests. */
+  const PR_2860 = {
+    number: 2860,
+    title: "fix(crew): a cut broken into 29 pieces (Card: #2841)",
+    headRefName: "team/cut-fragmentation-2841",
+  };
+  const PR_2852 = {
+    number: 2852,
+    title: "fix(casting-v2): a tattoo sleeve is one piece of ink, so it gets a row (Card: #2848)",
+    headRefName: "team/sleeve-coverage-2848",
+  };
+
+  it("⚠ names the pull request that proved the band wrong — the whole point of it", () => {
+    /* `pullRequestBuildsCard` answered `["title","branch"]` on the live read,
+       so this specimen exercises both halves of the match. */
+    expect(pullRequestBuildsCard(PR_2860, 2841)).toEqual(["title", "branch"]);
+    expect(openPullRequestBuilding([PR_2852, PR_2860], 2841)?.number).toBe(2860);
+  });
+
+  it("⚠ CONTROL — a card nothing builds is `null`, or the arm above passes by holding everything", () => {
+    expect(openPullRequestBuilding([PR_2852, PR_2860], 999999)).toBeNull();
+    expect(openPullRequestBuilding([], 2841)).toBeNull();
+  });
+
+  it("⚠ takes the LOWEST number, whatever order the board arrives in", () => {
+    /* A card with a replacement pull request and its predecessor both open
+       names one of them deterministically — two readers answering in different
+       orders would disagree about which number a row prints. */
+    const replacement = { ...PR_2860, number: 2899 };
+    const earlier = { ...PR_2860, number: 2700 };
+    expect(openPullRequestBuilding([replacement, earlier], 2841)?.number).toBe(2700);
+    expect(openPullRequestBuilding([earlier, replacement], 2841)?.number).toBe(2700);
+  });
+
+  it("⚠ `crewCardBuildState` DERIVES from it rather than keeping a copy of the rule", () => {
+    const board = [{ ...PR_2860, number: 2899 }, { ...PR_2860, number: 2700 }, PR_2852];
+    for (const card of [2841, 2848, 999999]) {
+      const picked = openPullRequestBuilding(board, card);
+      const state = crewCardBuildState({ card, openPullRequests: board, facts: [], nowMs: 0 });
+      /* Not "both answer something" — the SAME pull request, or both nothing. */
+      expect(
+        state?.kind === "pull-request" ? state.pullRequest : null,
+        `card ${card}`,
+      ).toBe(picked?.number ?? null);
+    }
   });
 });
