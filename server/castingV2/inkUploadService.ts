@@ -144,7 +144,12 @@ export function defaultCutDesign(
   const apiKey = process.env.FAL_KEY;
   return cutInkDesign({
     bytes: input.bytes,
-    reader: apiKey ? createFalRegionReader({ apiKey }) : refusingRegionReader,
+    /* `headBox` for the reason `refineService`'s own reader carries it (#2888):
+       a cut scoped to a named surface is placed against the face read, and on a
+       cast whose arm wears a tattooed face that read is not the cast's face. */
+    reader: apiKey
+      ? createFalRegionReader({ apiKey, headBox: "topHalfOfEachPicture" })
+      : refusingRegionReader,
     ...(input.scope ? { scope: input.scope } : {}),
     /*
       WHETHER THE CUT MAY BE THE SURFACE — read HERE rather than injected,
