@@ -36,6 +36,16 @@
  * reading of a picture that is no longer there. It is ignored, and the re-scan
  * replaces it through the unique key.
  *
+ * **A row taken under older cut rules is not served either** (#2890, added
+ * after the first one of these was measured). For a year the frame's bytes were
+ * the ONLY thing that could ever invalidate a row — so a rule that fixed a
+ * wrong cut fixed every future scan and not one stored answer, and the stale
+ * answer went on being handed to the panel for as long as the picture stayed
+ * put. Seven of 86 production readings were serving an eye cut the product had
+ * already learnt to drop, two of them on signed casts. A reading now records
+ * `FACE_CUT_RULES_VERSION`, and a row below it is condemned here exactly as a
+ * row with a missing stencil is.
+ *
  * **Nothing here may break a scan.** Every failure — storage, database, a
  * stencil that will not fetch — falls back to exactly today's behaviour, which
  * is a fresh read. A courtesy read's bookkeeping never costs the courtesy.
@@ -43,6 +53,7 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  FACE_CUT_RULES_VERSION,
   keepFaceScan,
   readKeptFaceScan,
   type StoredScanGeometry,
@@ -239,6 +250,13 @@ export async function keepScan(input: {
       found: planned.length,
       empty: input.scan.empty,
       /*
+        WHICH CUT RULES THIS READING MET (#2890) — written on every scan,
+        unconditionally, because the one thing this field must never be is
+        absent on a row taken today. See {@link FACE_CUT_RULES_VERSION}: the
+        serving door condemns a row below it, and absent is the condemn case.
+      */
+      rules: FACE_CUT_RULES_VERSION,
+      /*
         ABSENT RATHER THAN EMPTY when there are none, so a row written by a
         reading that never ran the pointer road is byte for byte the row this
         table held before the field existed — which is what makes the field
@@ -335,6 +353,45 @@ export async function serveKeptScan(input: {
       Absent means true. Every row written before the field existed is a scan.
     */
     if (kept.geometry.scanned === false) return null;
+
+    /*
+      ⚠ A READING TAKEN UNDER OLDER CUT RULES IS NOT SERVED — it is taken again
+      (#2890).
+
+      This is the SAME condemnation the missing stencil below gets, for the same
+      reason one step earlier: a reading whose boxes cannot be trusted is worse
+      than no reading, because the panel believes it and never asks again. The
+      difference is only in what cannot be trusted — there, a cutout that will
+      not fetch; here, a cut the product has since learnt was wrong.
+
+      **What it fixes, measured.** Seven of the 86 kept readings on production
+      carried an eye cut below the middle of the frame, the worst of them a
+      392×772 box called *Left eye* that ran from the eye down to a tattooed
+      face on the cast's arm. The rule that drops exactly that piece shipped on
+      2026-10-30 and reached none of them: all seven were still alive, still on
+      their original frame and therefore still served, two of them on SIGNED
+      casts. Pressing such a row would have aimed a paid refine at an arm.
+
+      It is placed AFTER the carried-only test on purpose. A carried-only row
+      has never been scanned, so it has no cut rules to be stale against and no
+      scan to take again — it is refused one line up and must stay refused
+      there, not condemned here as though a scan had gone wrong.
+
+      The re-scan is house money and the customer is never charged for it, so
+      the cost of being wrong in this direction is cents; the cost of being
+      wrong in the other is a paid edit on the wrong pixels.
+    */
+    if ((kept.geometry.rules ?? 0) < FACE_CUT_RULES_VERSION) {
+      log.info(
+        {
+          candidateId: input.candidateId,
+          rules: kept.geometry.rules ?? null,
+          current: FACE_CUT_RULES_VERSION,
+        },
+        "[keptFaceScan] the kept reading was taken under older cut rules — the reading is condemned and this face re-scans at full price",
+      );
+      return null;
+    }
 
     const slots = new Map<FeatureSlot, { box: PanelBox; maskUrl: string }>();
     for (const slot of kept.geometry.slots) {

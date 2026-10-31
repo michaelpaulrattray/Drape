@@ -225,7 +225,71 @@ export type StoredScanGeometry = {
    * existed is a scan.
    */
   scanned?: boolean;
+  /**
+   * WHICH CUT RULES SHAPED THIS READING — {@link FACE_CUT_RULES_VERSION} as it
+   * stood when the scan was taken (#2890).
+   *
+   * ⚠ **A kept reading outlives the rules that would have shaped it, and until
+   * this field nothing anywhere said so.** A rule that drops a wrong cut fixes
+   * every FUTURE scan and not one stored answer, because the only thing that
+   * has ever invalidated a row is the frame's own bytes moving
+   * (`serveKeptScan`'s `frameKey` test) — so the row goes on being served, with
+   * the old cut, for as long as the picture stays put.
+   *
+   * **Measured, which is why this is a field and not a note.** Of the 86 kept
+   * readings on production, **seven carried an eye cut below the middle of the
+   * frame** — one of them a 392×772 box called *Left eye*, reaching from the
+   * eye down to a tattooed face on the cast's arm. Every one of the seven was
+   * written BEFORE `a29f503e1` (2026-10-30T04:56:45Z), the commit that made
+   * `keepPiecesOnTheFace` drop exactly that piece; the worst of them by
+   * forty-eight minutes. And all seven were **still alive, still matching their
+   * frame, and therefore still served** — two of them on signed casts. The
+   * repair had shipped and could not reach them.
+   *
+   * ⚠ **It is a CLASS and not those seven.** Eight rulings that shape a cut
+   * landed in nine days (#2752, #2800, #2810, #2833, #2844, #2862, #2885,
+   * #2887), and each one left every earlier row serving its old answer in
+   * silence. The next one would have too.
+   *
+   * ⚠ **Optional, and absent is the CONDEMN case rather than a guess** — which
+   * is where this field departs from its three neighbours above, each of whose
+   * absence means *today's panel exactly*. A row with no version was taken
+   * before the cut rules were versioned at all, so nothing can say which rules
+   * it met; that is not a reading to serve, it is a reading to take again. No
+   * migration and no backfill: the row is condemned at the door and the face
+   * re-scans, which is house money the customer is never charged for.
+   */
+  rules?: number;
 };
+
+/**
+ * THE VERSION OF THE RULES THAT DECIDE WHAT A SCAN CUTS, stored on every
+ * reading so a stale one can be told apart from a current one (#2890).
+ *
+ * ⚠ **BUMP THIS IN THE SAME COMMIT AS ANY RULE THAT CHANGES WHAT A SCAN CUTS,
+ * OR THE RULE DOES NOT REACH A SINGLE FACE THAT HAS ALREADY BEEN READ.** That
+ * is the whole of the obligation and it is the reason the constant exists. It
+ * covers every rule a reading's boxes come out of — which piece of an answer is
+ * kept (`keepPiecesOnTheFace`, `keepPiecesAtTheSide`, `judgedFace`), where a
+ * pair is split, what earns a row at all — not the words, not the panel's
+ * grouping, and not a change that only moves where an existing row is listed.
+ *
+ * A version is how a later reader knows two readings are not comparable, and
+ * the reading's own copy of the rules would be a second statement of them that
+ * drifts (working law 4). It is the `VOICE_AUDITION_PASSAGE_VERSION` shape
+ * (`server/castingV2/voiceAuditionPassage.ts`), which exists for the identical
+ * reason: a stored artifact and the thing that produced it, told apart.
+ *
+ * ⚠ **A bump re-scans every face anybody opens, once** — ~$0.08–0.11 of house
+ * money each, never the customer's (`faceScanDailyUsage`'s own docblock), and
+ * only for a face someone actually looks at. That is the price of a cut rule
+ * reaching the faces already read, and it is the cheap half of the trade: the
+ * expensive half is a paid refine aimed at the wrong pixels.
+ *
+ * **1** is the first version: today's rules, as of #2890. Every row written
+ * before this field existed has no version and is condemned.
+ */
+export const FACE_CUT_RULES_VERSION = 1;
 
 export type KeptFaceScan = {
   publicId: string;
@@ -515,6 +579,25 @@ export async function keepCarriedGeometry(input: {
  * readKeptFaceScan}'s reason exactly: a row about different bytes and no row at
  * all are different facts, and only one of them means *this render never wrote
  * its geometry*.
+ *
+ * ⚠ **THIS DOOR DOES NOT READ {@link StoredScanGeometry.rules}, AND THAT IS A
+ * DECLARED LIMIT RATHER THAN AN OVERSIGHT — #2890.** It is a second way into
+ * the same row, outside `serveKeptScan`, and a carried box IS shaped by the cut
+ * rules: `carriedGeometry` measures each one through `reader.regionSides`, which
+ * is the road `keepPiecesOnTheFace` sits on. So a carried box written before a
+ * cut-rule change can hold the same defect a condemned reading does.
+ *
+ * **Measured before it was left alone: of the 86 kept readings on production,
+ * ZERO carry any geometry at all** — no rows, no entries — so the class is
+ * reachable in the code and has no population today.
+ *
+ * It is not condemned here because the trade is genuinely different and is not
+ * a cleanup's to make. A condemned READING re-scans on the spot, which costs
+ * cents of house money and nothing a customer sees; a condemned CARRIED box has
+ * no road back, because it is measured at the RENDER and not on demand — so the
+ * box would simply be gone until the next render. Whether a missing box beats a
+ * possibly-stale one is a question about what the customer sees, and it is filed
+ * as its own card rather than answered inside this one.
  */
 export async function readCarriedGeometry(input: {
   userId: number;

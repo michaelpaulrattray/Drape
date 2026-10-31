@@ -746,6 +746,18 @@ export type DroppedFacePiece = { pixels: number; centreX: number; centreY: numbe
  * `keepPiecesAtTheSide` declares. And it is read for the catalogue's own FACE
  * pairs only ({@link FACE_FEATURES}): an earring may hang below the chin and a
  * horn grows above the brow, so neither is judged by the face's extent.
+ *
+ * ⚠ **AND IT DID NOT REACH THE FACES ALREADY READ — #2890, measured on this
+ * rule's own cast.** A kept reading is served back verbatim, so this rule fixed
+ * every future scan and no stored one: seven of the 86 production readings went
+ * on serving an eye cut below the middle of the frame, and the worst of them is
+ * **this docblock's own tattoo** — row #772's `eye@left`, a 392×772 box whose
+ * stencil is two pieces, the real eye at (596, 459) and the arm's eye at
+ * (929, 1197), the second of which the arithmetic above drops. That row was
+ * written forty-eight minutes before this rule was authored and was still being
+ * served a day later. **So a change here owes a bump of
+ * `FACE_CUT_RULES_VERSION` (`server/db/castingV2FaceScans.ts`)**, which is what
+ * makes a kept reading taken under older rules re-scan instead of answering.
  */
 export function keepPiecesOnTheFace(
   mask: Mask,
