@@ -384,9 +384,12 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "widens it.",
   },
   CASTING_REFERENCE_SELECTOR_SCOPE: {
-    position: "users:1",
+    position: "off",
     why:
-      "set to users:1 on the service by the relay 2026-10-31, after #2899 (slice 3b, "
+      "set back to off 2026-10-31 on his word, after his eye on the live picker (#2902: "
+      + "the grid split lit floor, half pants and one shoe) and the relay's recommendation to "
+      + "drop the picker for the words-only take road; his answer, verbatim: \"1) yes\". "
+      + "Before that: set to users:1 on the service by the relay 2026-10-31, after #2899 (slice 3b, "
       + "the spotlight surface) merged, on his standing word that his own account is "
       + "never asked; read back by name, parent CASTING_REFERENCE_ATTACH_SCOPE=users:1. "
       + "Built dark 2026-10-30 (#14 slice 2, the reference reading), shipped at "
