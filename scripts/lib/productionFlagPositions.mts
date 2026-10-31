@@ -827,9 +827,9 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "casting-only check to admit. This row's POSITION does not move: all, on his reply #202",
   },
   CASTING_CONCEPT_RICH_LOOK_SCOPE: {
-    position: "off",
+    position: "users:1",
     why:
-      "built dark 2026-10-31 (#2911, his bench and his pick: the concept reader moves to "
+      "set to users:1 on the service by the relay 2026-10-31 after #2919 (his picked bench rules) merged, on his standing word that his own account is never asked; read back by name, parent CASTING_CONCEPT_UPLOAD_SCOPE=all. Before that: built dark 2026-10-31 (#2911, his bench and his pick: the concept reader moves to "
       + "Gemini 4 Argon and a rich look with the face and the hair left free), shipped at `off` "
       + "and ABSENT from the service. Off is today's reader byte for byte, proven at the HTTP "
       + "body by conceptReaderWire.test.ts against hashes taken on the tree before the flag "
