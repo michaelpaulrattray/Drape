@@ -413,7 +413,7 @@ function onlyKnownPictures(wire: Wire): void {
  * that comes back half-answered buys the other-ear look (#2800) — ONE
  * `moondream3-preview/detect` call on the whole frame, about 0.16¢ — and
  * `FACE_SCAN_FAL_CALLS` has no term for it: it prices SAM 3 reads, one
- * cutout and one describer. **That gap is #2902 and is deliberately not
+ * cutout and one describer. **That gap is #2903 and is deliberately not
  * closed here**, because a new cost term is its own card and not a thing to
  * fold into a ceiling correction (his ruling, 2026-09-24).
  *
@@ -421,7 +421,7 @@ function onlyKnownPictures(wire: Wire): void {
  * appearing reddens here rather than being averaged into nothing.
  */
 function onlyTheDetectorBesides(wire: Wire): void {
-  expect(new Set(wire.other), "the only unpriced fal endpoint a scan reaches is #2902's detector")
+  expect(new Set(wire.other), "the only unpriced fal endpoint a scan reaches is #2903's detector")
     .toEqual(new Set(wire.other.length === 0 ? [] : ["fal-ai/moondream3-preview/detect"]));
 }
 

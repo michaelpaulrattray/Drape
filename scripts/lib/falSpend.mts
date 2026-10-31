@@ -210,7 +210,7 @@ export const FAL_LOW_BALANCE_USD = 20;
  * the box. ⚠ **The measured band still does not move by arithmetic**: it is a
  * bought reading, and it is now four reads behind the code on the crop road.
  *
- * ⚠ **AND ONE COST A SCAN REACHES IS PRICED NOWHERE HERE — #2902, filed rather
+ * ⚠ **AND ONE COST A SCAN REACHES IS PRICED NOWHERE HERE — #2903, filed rather
  * than folded in.** A worn pair that comes back half-answered buys the
  * other-ear look (#2800): one `moondream3-preview/detect` call on the whole
  * frame, about 0.16¢. This constant has no term for it — it prices SAM 3 reads,
