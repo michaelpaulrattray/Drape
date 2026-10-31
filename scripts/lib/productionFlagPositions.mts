@@ -384,9 +384,12 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "widens it.",
   },
   CASTING_REFERENCE_SELECTOR_SCOPE: {
-    position: "off",
+    position: "users:1",
     why:
-      "built dark 2026-10-30 (#14 slice 2, the reference reading), shipped at "
+      "set to users:1 on the service by the relay 2026-10-31, after #2899 (slice 3b, "
+      + "the spotlight surface) merged, on his standing word that his own account is "
+      + "never asked; read back by name, parent CASTING_REFERENCE_ATTACH_SCOPE=users:1. "
+      + "Built dark 2026-10-30 (#14 slice 2, the reference reading), shipped at "
       + "`off` and ABSENT from the service -- the design's section 9 says dark "
       + "at birth. ** WHAT IT BUYS CHANGED ON 2026-10-31 (slice 3a-2, the "
       + "spotlight's entrance) AND THE OLD SENTENCE IS CORRECTED RATHER THAN "
