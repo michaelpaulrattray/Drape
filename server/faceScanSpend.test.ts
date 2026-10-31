@@ -16,15 +16,23 @@
  * # What this suite derives, and how
  *
  * It does NOT re-implement the re-ask rules. It runs `scanFace` with the real
- * `createFalRegionReader` and a fake `fetch`, and counts the requests that
- * reach `https://fal.run/…`, endpoint by endpoint — assert at the wire. Two
- * kinds of fake segmenter answer them:
+ * `createFalRegionReader` — built the way the scan builds it, head box and all
+ * — and a fake `fetch`, and counts the requests that reach
+ * `https://fal.run/…`, endpoint by endpoint — assert at the wire. Three kinds
+ * of fake segmenter answer them:
  *
  *   FINDS EVERYTHING   every question answered on the first ask — the FEWEST
  *                      reads the code can make.
  *   MISSES ON PURPOSE  answers shaped to fire each re-ask the code has, and the
  *                      worst per question is taken — the MOST it can make when
  *                      every call succeeds.
+ *   LANDS OFF THE HEAD the face read on something that is not the head, so the
+ *                      reader refuses it against the head box and asks the head
+ *                      crop alone (#2895). ⚠ This kind did not exist until
+ *                      2026-10-31 and the drive built its reader with NO head
+ *                      box, so the re-ask #2887 added could not fire here at
+ *                      all: both ceilings priced a reader the scan no longer
+ *                      builds, and nothing went red for two days.
  *
  * Those two are pinned to `FACE_SCAN_FAL_CALLS` in `falSpend.mts`, which holds
  * the figures as constants only so that module stays out of the server's import
@@ -36,6 +44,7 @@
 import sharp from "sharp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { discoveryHeadBoxOf } from "./castingV2/faceDiscovery";
 import { scanFace } from "./castingV2/faceScan";
 import { createFalRegionReader } from "./castingV2/falRegionReader";
 import { catalogueSlots } from "./castingV2/referenceSlotCatalogue";
@@ -55,6 +64,23 @@ const BIREFNET = "fal-ai/birefnet/v2";
 
 const WIDTH = 400;
 const HEIGHT = 600;
+/* The noun the shared face read is asked by (`SHARED_PROMPT` in the reader).
+   Named because three arms below count it and one answers it. */
+const FACE = "face";
+
+/**
+ * THE HEAD BOX THE SCAN HANDS ITS READER — read from the product's own
+ * geometry, never a copy of it (#2895).
+ *
+ * `faceScanService`'s `defaultRegionReader` builds every scan's reader with
+ * `discoveryHeadBoxOf(frame)`, for every frame big enough to cut a head crop
+ * from — so a drive that builds the reader WITHOUT one prices a reader the
+ * scan does not build, which is exactly how the ceiling below came to be one
+ * read low. It is the top half of the frame at full width, decided by the
+ * frame's size alone and by nothing the segmenter says.
+ */
+const HEAD = discoveryHeadBoxOf({ width: WIDTH, height: HEIGHT })!;
+const HEAD_BOX = { frame: { width: WIDTH, height: HEIGHT }, box: HEAD };
 /* The two halves are different colours, so the fake can tell which side of
    the midline a half-frame question is about from the picture alone — the
    reader never says so in the request. */
@@ -71,27 +97,63 @@ async function frame(): Promise<Buffer> {
     .toBuffer();
 }
 
-/** A centred rectangle covering `share` of each axis, as a mask data URI. */
-async function blob(width: number, height: number, share: number): Promise<string> {
+/** One solid rectangle in the picture's own pixels, as a mask data URI — the
+ *  one place this fake draws, so three answer shapes cannot disagree about
+ *  what a mask is (working law 4). `x1` and `y1` are past the last pixel. */
+async function rect(
+  width: number, height: number, x0: number, x1: number, y0: number, y1: number,
+): Promise<string> {
   const data = Buffer.alloc(width * height, 0);
-  const x0 = Math.floor(width * (0.5 - share / 2));
-  const x1 = Math.floor(width * (0.5 + share / 2));
-  const y0 = Math.floor(height * (0.5 - share / 2));
-  const y1 = Math.floor(height * (0.5 + share / 2));
   for (let y = y0; y < y1; y += 1) data.fill(255, y * width + x0, y * width + x1);
   const png = await sharp(data, { raw: { width, height, channels: 1 } }).png().toBuffer();
   return `data:image/png;base64,${png.toString("base64")}`;
 }
 
+/** A centred rectangle covering `share` of each axis, as a mask data URI. */
+async function blob(width: number, height: number, share: number): Promise<string> {
+  return rect(
+    width, height,
+    Math.floor(width * (0.5 - share / 2)), Math.floor(width * (0.5 + share / 2)),
+    Math.floor(height * (0.5 - share / 2)), Math.floor(height * (0.5 + share / 2)),
+  );
+}
+
 /** A mask covering one x band over the middle third of the height — a pair
  *  answer that sits wholly on one side of her midline. */
 async function band(width: number, height: number, x0: number, x1: number): Promise<string> {
-  const data = Buffer.alloc(width * height, 0);
-  for (let y = Math.floor(height / 3); y < Math.floor((height * 2) / 3); y += 1) {
-    data.fill(255, y * width + x0, y * width + x1);
-  }
-  const png = await sharp(data, { raw: { width, height, channels: 1 } }).png().toBuffer();
-  return `data:image/png;base64,${png.toString("base64")}`;
+  return rect(width, height, x0, x1, Math.floor(height / 3), Math.floor((height * 2) / 3));
+}
+
+/**
+ * THE FACE READ, AND WHETHER IT LANDS ON THE HEAD (#2895).
+ *
+ * The x extent is the same in all three — the frame's middle half, so the
+ * midline every pair is cut at and the two edges the ear rule measures from
+ * are identical whichever of these the fake answers. **What differs is the
+ * row it sits on, which is the only thing `judgedFace` reads.**
+ *
+ *   on the head    inside the head box, inset a tenth of its height at each
+ *                  end: rows 30–269, centre row 149.5 against a box that ends
+ *                  at 300. On the head by 150 rows, not by a rounding — which
+ *                  matters, because the answer this replaced was centred at
+ *                  299.5 and passed the box by HALF A PIXEL.
+ *   off the head   the same rectangle moved into the bottom half: rows
+ *                  330–569, centre row 449.5, which is 149.5 rows outside the
+ *                  box. Every piece is dropped, so the read is refused and the
+ *                  head crop is asked alone. It is the founder's round-10 and
+ *                  round-11 shape — a face tattooed on an arm (#2885).
+ *   the head crop  the inset rectangle again, in the CROP's own pixels. The
+ *                  box is at the frame's corner, so placed back in the frame
+ *                  it is the very rectangle `onTheHead` draws — which is what
+ *                  makes the fourth policy differ from the first in READS and
+ *                  in nothing else.
+ */
+async function faceMask(where: "onTheHead" | "offTheHead" | "theHeadCrop"): Promise<string> {
+  const inset = Math.round(HEAD.height * 0.1);
+  const height = where === "theHeadCrop" ? HEAD.height : HEIGHT;
+  const y0 = where === "offTheHead" ? HEAD.height + inset : inset;
+  const y1 = where === "offTheHead" ? HEIGHT - inset : HEAD.height - inset;
+  return rect(WIDTH, height, Math.floor(WIDTH * 0.25), Math.floor(WIDTH * 0.75), y0, y1);
 }
 
 /**
@@ -116,6 +178,18 @@ type Policy = {
    * why the two old policies below need no `pair` entry.
    */
   pair?: (n: number) => "both" | "one" | "none";
+  /**
+   * THE FACE READ LANDS SOMEWHERE THAT IS NOT THE HEAD — the re-ask #2887
+   * added and this suite could not see (#2895).
+   *
+   * Absent or false, the face read is on the head and is believed as it came.
+   * True, every piece of it is centred below the head box, so `judgedFace`
+   * drops the lot and asks the HEAD CROP alone — one more segmenter read,
+   * about half a cent, on the refused frames only. That read is the call both
+   * ceilings below were missing, and the reason nothing went red when #2887
+   * landed is that this drive built its reader with no head box at all.
+   */
+  faceOffTheHead?: boolean;
 };
 
 const FINDS_EVERYTHING: Policy = { whole: () => true, side: () => true };
@@ -148,6 +222,33 @@ const HALF_THEN_FOUND: Policy = {
   pair: (n) => (n > 1 ? "both" : "one"),
 };
 
+/**
+ * THE FOURTH POLICY — the face read on an arm (#2895).
+ *
+ * Every question answered first time, exactly as `FINDS_EVERYTHING`, and the
+ * face read landing off the head. So the ONE thing it adds to either ceiling
+ * is the head crop's read.
+ *
+ * ⚠ **Why the sums below may take it per prompt beside the other three.** The
+ * ceiling is a max per prompt summed across policies, which is only legitimate
+ * while each question's re-asks depend on that question's own answers. The
+ * face re-ask depends on the face answer alone; and because the head crop puts
+ * back the very rectangle the other three are given, **the face that every
+ * OTHER question is judged by is the same face in all four runs** — so no
+ * other prompt's count can move under this policy, which the arm below asserts
+ * rather than assumes.
+ *
+ * The road where the head crop answers nothing either is deliberately NOT a
+ * policy here: it buys the same one extra read, so it moves no figure, and its
+ * behaviour — read on without a face, never without the eyes — belongs to
+ * `server/castingV2/faceSpanOnTheHead.test.ts`.
+ */
+const FACE_OFF_THE_HEAD: Policy = {
+  whole: () => true,
+  side: () => true,
+  faceOffTheHead: true,
+};
+
 /** Every question the scan reads a side at a time — the catalogue's own fact,
  *  so a new pair joins the pair-road arms below by itself. */
 const PAIR_QUESTIONS = new Set(
@@ -156,10 +257,20 @@ const PAIR_QUESTIONS = new Set(
     .map((definition) => definition.question as string),
 );
 
-type Wire = { sam3ByPrompt: Map<string, number>; birefnet: number; other: string[] };
+type Wire = {
+  sam3ByPrompt: Map<string, number>;
+  birefnet: number;
+  other: string[];
+  /* A picture the fake could not NAME (#2895). Answering one as a guess is how
+     a cost figure stops being a derivation: the head crop is the frame's full
+     width at half its height, so the old `width === WIDTH` test called it the
+     whole frame and would have answered it with the very read it was sent to
+     replace. Every arm holds this empty. */
+  unknown: string[];
+};
 
 async function drive(policy: Policy, pairInOneRead = false): Promise<Wire & { describer: number }> {
-  const wire: Wire = { sam3ByPrompt: new Map(), birefnet: 0, other: [] };
+  const wire: Wire = { sam3ByPrompt: new Map(), birefnet: 0, other: [], unknown: [] };
   const asked = new Map<string, number>();
 
   vi.stubGlobal("fetch", async (url: unknown, init?: { body?: unknown }) => {
@@ -190,15 +301,51 @@ async function drive(policy: Policy, pairInOneRead = false): Promise<Wire & { de
     const prompt = String(body.prompt);
     wire.sam3ByPrompt.set(prompt, (wire.sam3ByPrompt.get(prompt) ?? 0) + 1);
 
-    const whole = width === WIDTH;
-    let side: "left" | "right" | null = null;
-    if (!whole) {
+    /*
+      WHICH PICTURE THIS IS — named by BOTH its dimensions (#2895).
+
+      `width === WIDTH` was enough while the only two pictures a scan asked
+      about were the frame and a half of it. The head crop the refused face
+      read is asked again of is the frame's FULL WIDTH at half its height, so
+      that test would have called it the whole frame. A half-picture is cut at
+      the face's own midline, so its width is read as "narrower than the
+      frame" rather than as a number.
+    */
+    const nameOfPicture = async (): Promise<"frame" | "head" | "left" | "right" | null> => {
+      if (width === WIDTH && height === HEIGHT) return "frame";
+      if (width === HEAD.width && height === HEAD.height) return "head";
+      if (height !== HEIGHT || width >= WIDTH) return null;
       const { data } = await sharp(image).raw().toBuffer({ resolveWithObject: true });
-      side = data[0] > data[2] ? "left" : "right";
+      return data[0] > data[2] ? "left" : "right";
+    };
+    const picture = await nameOfPicture();
+    if (picture === null) {
+      wire.unknown.push(`${prompt} asked of a ${width}x${height} picture`);
+      return reply({ masks: [] });
     }
-    const key = `${prompt}|${side ?? "whole"}`;
+    const whole = picture === "frame";
+    const side: "left" | "right" | null = picture === "left" || picture === "right" ? picture : null;
+    const key = `${prompt}|${picture}`;
     const n = (asked.get(key) ?? 0) + 1;
     asked.set(key, n);
+
+    /*
+      THE FACE READ IS ANSWERED BY ITS OWN GEOMETRY, never by a policy's
+      `whole` (#2895). It is the one question whose ANSWER decides whether
+      another read is bought, and the box it is judged against is geometry — so
+      where it lands is the whole of what this policy says. It is asked of two
+      pictures and no others; a third would be a cost nobody has priced.
+    */
+    if (prompt === FACE) {
+      if (picture !== "frame" && picture !== "head") {
+        wire.unknown.push(`${FACE} asked of the ${picture} half-picture`);
+        return reply({ masks: [] });
+      }
+      const where = picture === "head"
+        ? "theHeadCrop"
+        : policy.faceOffTheHead === true ? "offTheHead" : "onTheHead";
+      return reply({ masks: [{ url: await faceMask(where) }] });
+    }
 
     /*
       A PAIR ASKED OF THE WHOLE FRAME is the `pairInOneRead` road, and the fake
@@ -215,10 +362,7 @@ async function drive(policy: Policy, pairInOneRead = false): Promise<Wire & { de
       return reply({ masks: [{ url }] });
     }
 
-    /* The face is always found: it is the midline and the head, and an empty
-       one would only take the composed row away, never add a call. */
-    const found = prompt === "face"
-      || (side === null ? policy.whole(n) : policy.side(n, side));
+    const found = side === null ? policy.whole(n) : policy.side(n, side);
     return reply({ masks: found ? [{ url: await blob(width, height, side === null ? 0.5 : 0.6) }] : [] });
   });
 
@@ -226,7 +370,7 @@ async function drive(policy: Policy, pairInOneRead = false): Promise<Wire & { de
   const bytes = await frame();
   await scanFace({
     frame: { bytes, width: WIDTH, height: HEIGHT },
-    reader: createFalRegionReader({ apiKey: "test-key", pairInOneRead }),
+    reader: createFalRegionReader({ apiKey: "test-key", pairInOneRead, headBox: HEAD_BOX }),
     describe: async () => {
       describer += 1;
       return { build: null, skin: null, teeth: null };
@@ -237,6 +381,50 @@ async function drive(policy: Policy, pairInOneRead = false): Promise<Wire & { de
 
 const total = (byPrompt: Map<string, number>) => [...byPrompt.values()].reduce((sum, n) => sum + n, 0);
 
+/** The worst each prompt was asked across a set of runs, summed — the ceiling,
+ *  stated once because four arms want it (working law 4). */
+function ceilingOf(runs: Wire[]): number {
+  const prompts = new Set(runs.flatMap((run) => [...run.sam3ByPrompt.keys()]));
+  let most = 0;
+  for (const prompt of prompts) most += Math.max(...runs.map((run) => run.sam3ByPrompt.get(prompt) ?? 0));
+  return most;
+}
+
+/**
+ * EVERY ARM'S CONTROL: the fake answered only pictures it could NAME (#2895).
+ *
+ * A picture it cannot name is answered as an empty read, which silently buys a
+ * re-ask the ceiling then prices — so a figure derived past this is a
+ * measurement of some other fake, not of this scan. It is the control the head
+ * crop needed: that crop is the frame's full width at half its height, so the
+ * single-dimension test this drive used would have answered it as the whole
+ * frame and the re-ask would have priced the wrong read.
+ */
+function onlyKnownPictures(wire: Wire): void {
+  expect(wire.unknown, "only the pictures a scan is known to ask about").toEqual([]);
+}
+
+/**
+ * WHAT A SCAN REACHES BESIDES SAM 3 AND THE CUTOUT, STATED RATHER THAN LEFT
+ * SILENT — and one of the three is NOT PRICED by `FACE_SCAN_FAL_CALLS`.
+ *
+ * ⚠ The floor arms assert `other` is EMPTY and are right to: on a face that
+ * answers everything first time a scan calls two endpoints. But a worn pair
+ * that comes back half-answered buys the other-ear look (#2800) — ONE
+ * `moondream3-preview/detect` call on the whole frame, about 0.16¢ — and
+ * `FACE_SCAN_FAL_CALLS` has no term for it: it prices SAM 3 reads, one
+ * cutout and one describer. **That gap is #2902 and is deliberately not
+ * closed here**, because a new cost term is its own card and not a thing to
+ * fold into a ceiling correction (his ruling, 2026-09-24).
+ *
+ * This says so out loud so the fact cannot go quiet again: a FOURTH endpoint
+ * appearing reddens here rather than being averaged into nothing.
+ */
+function onlyTheDetectorBesides(wire: Wire): void {
+  expect(new Set(wire.other), "the only unpriced fal endpoint a scan reaches is #2902's detector")
+    .toEqual(new Set(wire.other.length === 0 ? [] : ["fal-ai/moondream3-preview/detect"]));
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -244,12 +432,19 @@ afterEach(() => {
 describe("what one scan asks of fal, counted at the wire", () => {
   it("makes the fewest SAM 3 reads when every question is answered first time", async () => {
     const wire = await drive(FINDS_EVERYTHING);
+    onlyKnownPictures(wire);
     expect(wire.other, "only the two fal endpoints a scan is known to call").toEqual([]);
     expect(total(wire.sam3ByPrompt)).toBe(FACE_SCAN_FAL_CALLS.sam3.fewest);
+    /* ⚠ AND THE FLOOR IS NOT THE FLOOR BY ACCIDENT (#2895). With a head box in
+       the reader, a fake whose correct face happened to land off the head would
+       add a read to every run — floor included — and both figures would
+       re-derive one higher with nothing anywhere saying why. The floor's face
+       is asked ONCE, which is the whole of that control. */
+    expect(wire.sam3ByPrompt.get(FACE), "the face read is on the head and is believed").toBe(1);
   }, 60_000);
 
   it("makes one body cutout and one describer call, however the reads go", async () => {
-    for (const policy of [FINDS_EVERYTHING, BOTH_EMPTY_THEN_HALF, HALF_THEN_FOUND]) {
+    for (const policy of [FINDS_EVERYTHING, BOTH_EMPTY_THEN_HALF, HALF_THEN_FOUND, FACE_OFF_THE_HEAD]) {
       const wire = await drive(policy);
       expect(wire.birefnet).toBe(FACE_SCAN_FAL_CALLS.cutouts);
       expect(wire.describer).toBe(FACE_SCAN_FAL_CALLS.describer);
@@ -261,18 +456,86 @@ describe("what one scan asks of fal, counted at the wire", () => {
       await drive(FINDS_EVERYTHING),
       await drive(BOTH_EMPTY_THEN_HALF),
       await drive(HALF_THEN_FOUND),
+      await drive(FACE_OFF_THE_HEAD),
     ];
+    runs.forEach(onlyKnownPictures);
+    runs.forEach(onlyTheDetectorBesides);
     /* Each question's re-asks depend on that question's answers alone, so the
        worst per prompt is reachable on one face; the sum is the ceiling. */
-    const prompts = new Set(runs.flatMap((run) => [...run.sam3ByPrompt.keys()]));
-    let most = 0;
-    for (const prompt of prompts) {
-      most += Math.max(...runs.map((run) => run.sam3ByPrompt.get(prompt) ?? 0));
-    }
+    const most = ceilingOf(runs);
     expect(most).toBe(FACE_SCAN_FAL_CALLS.sam3.most);
     /* And the re-asks are real: a fake that fired none would make the ceiling
        equal the floor and this suite would prove nothing about them. */
     expect(most).toBeGreaterThan(FACE_SCAN_FAL_CALLS.sam3.fewest);
+  }, 120_000);
+});
+
+/**
+ * WHAT A REFUSED FACE READ COSTS — the call #2887 added and this suite could
+ * not see until it was given the head box (#2895).
+ *
+ * The scan hands its reader the rectangle the discovery's head crop is cut
+ * from, and a face read with no piece inside it is not the cast's face: it is
+ * asked again of the head crop alone. On the founder's round-10 and round-11
+ * casts that read was a face TATTOOED ON AN ARM. One more segmenter read, about
+ * half a cent, on the refused frames only.
+ *
+ * ⚠ **Both ceilings above were one read low for the two days between #2887
+ * landing and this arm existing, and NOTHING went red — the drive built its
+ * reader with `createFalRegionReader({ apiKey, pairInOneRead })` and no head
+ * box, so the re-ask could not fire in a drive whose reader was never told
+ * where the head is.** The ceiling priced a reader the scan no longer builds.
+ *
+ * This arm is the price alone. The BEHAVIOUR — the refusal, the union sibling,
+ * the head crop answering nothing, a chin past the box's edge, the earrings
+ * back on their own ears — is `server/castingV2/faceSpanOnTheHead.test.ts`'s,
+ * driven there against the same reader with its own negative controls.
+ */
+describe("a face read that lands off the head buys one more read, on either road", () => {
+  it("asks the head crop once, and moves no other question's count", async () => {
+    for (const pairInOneRead of [false, true]) {
+      const road = pairInOneRead ? "pair-in-one-read" : "crop";
+      const believed = await drive(FINDS_EVERYTHING, pairInOneRead);
+      const refused = await drive(FACE_OFF_THE_HEAD, pairInOneRead);
+      onlyKnownPictures(refused);
+      onlyTheDetectorBesides(refused);
+      /* The face asked TWICE — the frame, then the head crop — and twice for
+         the whole scan however many readers of that frame's face there are,
+         because the reader memoises it. */
+      expect(refused.sam3ByPrompt.get(FACE), `${road}: the frame then the head crop`).toBe(2);
+      expect(believed.sam3ByPrompt.get(FACE), `${road}: a face on the head is read once`).toBe(1);
+      /* ⚠ AND IT IS EXACTLY ONE READ, not one read plus whatever moved when the
+         face moved. The head crop puts back the very rectangle the believed
+         face is given, so every question judged BY the face is judged by the
+         same face in both runs — which is what makes the ceiling above
+         legitimate in taking this policy's worst per prompt beside the other
+         three. Asserted per prompt, because a total can hide two changes that
+         cancel. */
+      expect(total(refused.sam3ByPrompt) - total(believed.sam3ByPrompt), `${road}: one more read`).toBe(1);
+      for (const prompt of believed.sam3ByPrompt.keys()) {
+        if (prompt === FACE) continue;
+        expect(refused.sam3ByPrompt.get(prompt), `${road}: ${prompt} asked the same number of times`)
+          .toBe(believed.sam3ByPrompt.get(prompt));
+      }
+      /* And the read it buys is a SAM 3 read, not a second cutout or a second
+         describer — the two parts priced per scan rather than per read. */
+      expect(refused.birefnet).toBe(FACE_SCAN_FAL_CALLS.cutouts);
+      expect(refused.describer).toBe(FACE_SCAN_FAL_CALLS.describer);
+    }
+  }, 120_000);
+
+  it("is in the ceiling of the road being priced, and the floor is untouched by it", async () => {
+    /* The figure a cost reader quotes, read through the one declaration that
+       says which road production is on — so this arm follows a flip rather
+       than being rewritten by one. */
+    const { fewest, most } = faceScanSam3Reads();
+    const believed = await drive(FINDS_EVERYTHING, FACE_SCAN_PAIR_ONE_READ_POSITION === "true");
+    const refused = await drive(FACE_OFF_THE_HEAD, FACE_SCAN_PAIR_ONE_READ_POSITION === "true");
+    expect(total(believed.sam3ByPrompt), "a face on the head is the floor").toBe(fewest);
+    expect(total(refused.sam3ByPrompt), "a refused face is one above the floor").toBe(fewest + 1);
+    /* ⚠ The ceiling must leave room for it. Before #2895 it did not: the worst
+       a scan could cost was one more than the number every reader quoted. */
+    expect(most).toBeGreaterThanOrEqual(total(refused.sam3ByPrompt));
   }, 120_000);
 });
 
@@ -293,6 +556,7 @@ describe("what one scan asks of fal, counted at the wire", () => {
 describe("what one scan asks of fal on the pair-in-one-read road", () => {
   it("brings the floor down by one read per pair, and nothing else moves", async () => {
     const wire = await drive(FINDS_EVERYTHING, true);
+    onlyKnownPictures(wire);
     expect(wire.other, "only the two fal endpoints a scan is known to call").toEqual([]);
     expect(total(wire.sam3ByPrompt)).toBe(FACE_SCAN_FAL_CALLS.sam3.pairInOneRead.fewest);
     /* The saving is exactly the pairs — five regions, one read each instead of
@@ -314,12 +578,11 @@ describe("what one scan asks of fal on the pair-in-one-read road", () => {
       await drive(FINDS_EVERYTHING, true),
       await drive(BOTH_EMPTY_THEN_HALF, true),
       await drive(HALF_THEN_FOUND, true),
+      await drive(FACE_OFF_THE_HEAD, true),
     ];
-    const prompts = new Set(runs.flatMap((run) => [...run.sam3ByPrompt.keys()]));
-    let most = 0;
-    for (const prompt of prompts) {
-      most += Math.max(...runs.map((run) => run.sam3ByPrompt.get(prompt) ?? 0));
-    }
+    runs.forEach(onlyKnownPictures);
+    runs.forEach(onlyTheDetectorBesides);
+    const most = ceilingOf(runs);
     expect(most).toBe(FACE_SCAN_FAL_CALLS.sam3.pairInOneRead.most);
     /* Both controls, and the second is the one that could hide a cost: a
        ceiling equal to the floor would mean no re-ask fired, and a ceiling that
