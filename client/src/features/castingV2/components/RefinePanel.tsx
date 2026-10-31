@@ -6,12 +6,14 @@ import type { InkProvenance } from "@shared/inkProvenance";
 import { REFINE_INSTRUCTION_MAX_LENGTH } from "@shared/refineLimits";
 
 import { Button } from "@/foundation";
+import { useFileDropTarget } from "@/foundation/useFileDropTarget";
 import {
   ATTACHED_PICTURE_LABEL,
   ATTACHED_PICTURE_NOTE,
   ATTACH_ACTION_LABEL,
   ATTACH_BUSY_LABEL,
   ATTACH_CLAIM_QUESTION,
+  ATTACH_DROP_WORD,
   ATTACH_FAILED_FALLBACK,
   ATTACH_REMOVE_LABEL,
   SHOWN_CUT_LABEL,
@@ -475,6 +477,25 @@ export function RefinePanel({
   const [attaching, setAttaching] = useState(false);
   const [attachRefusal, setAttachRefusal] = useState<string | null>(null);
   /*
+    THE BOX IS A DROP TARGET (#2912) — one hook call for this one zone, and the
+    counting is NOT this file's to own.
+
+    `foundation/useFileDropTarget` already counts enter against leave, which is
+    what makes the over-state survive the pointer crossing onto the field, the
+    `+` or the priced button — every one of them a CHILD of the box. A
+    `useState` boolean here would flicker off over each of them (card 1087's
+    finding), and a fourth hand-rolled copy of that counting is exactly the
+    drift working law 4 is about: two live copies already sit on the casting
+    page, and they are a finding recorded on this card rather than a sweep taken
+    inside it.
+  */
+  const boxZone = useFileDropTarget((files) => acceptFile(files?.[0]));
+  /* Is there a door at all? The `+` is ABSENT rather than disabled outside the
+     scope, and so is the drop — a box that claimed a file it has nowhere to send
+     would eat her photograph in silence. A boolean rather than the function, so
+     the guard below is not re-armed by a new closure on every render. */
+  const hasAttachDoor = Boolean(attachPicture);
+  /*
     THE PREVIEW IS A LIVE OBJECT URL, so it is released — on replacement and on
     removal below, and here for the case neither of those happens: she closes
     the viewer, or walks to the next face, with a photograph still attached.
@@ -486,6 +507,38 @@ export function RefinePanel({
   useEffect(() => () => {
     if (liveUrl.current) URL.revokeObjectURL(liveUrl.current);
   }, []);
+
+  /*
+    ⚠ A MISSED DROP NAVIGATES THE TAB TO THE FILE, and takes her typed ask and
+    her place in the viewer with it. That is the browser's default for a drop
+    anywhere the page has not claimed — and the moment this box invites a
+    photograph, a near miss is one hand's width away. Nothing invited one
+    before: the sheet page claims no drop at all today.
+
+    It is the same guard the concept card mounts on the casting page, for the
+    same reason — `ConceptUploadCard` carries the long version of why, and this
+    is the second surface to need it. ⚠ **FILES ONLY**: a bare `preventDefault`
+    here cancels EVERY drop on the page, which once took dragging selected TEXT
+    into a textarea away from everyone inside that flag. Mounted only where the
+    door exists, so an account outside the scope keeps the browser's own
+    behaviour exactly.
+
+    The box she aimed at correctly is unaffected: the hook stops that drop
+    propagating, so this listener never sees it.
+  */
+  useEffect(() => {
+    if (!hasAttachDoor) return;
+    const swallow = (event: Event) => {
+      if (!(event as DragEvent).dataTransfer?.types?.includes("Files")) return;
+      event.preventDefault();
+    };
+    window.addEventListener("dragover", swallow);
+    window.addEventListener("drop", swallow);
+    return () => {
+      window.removeEventListener("dragover", swallow);
+      window.removeEventListener("drop", swallow);
+    };
+  }, [hasAttachDoor]);
 
   /*
     THE SPOTLIGHT ON THAT PICTURE (#14 slice 3b) — held beside the picture it
@@ -590,6 +643,36 @@ export function RefinePanel({
   function letGo(key: string): void {
     setTaken((held) => held.filter((piece) => piece.key !== key));
     setSpotNote(null);
+  }
+
+  /*
+    ONE ACCEPTANCE, TWO DOORS ONTO IT — his word, 2026-10-31, verbatim: *"also
+    allow drag an drop of reference images into the refine box"* (#2912).
+
+    The `+` picker and a dropped file arrive at the SAME function, so the two
+    doors cannot answer differently: the old preview is released, the refusal is
+    cleared, what was taken from the LAST picture is forgotten, the bytes are
+    read, the picture appears. A second copy of this body under the drop handler
+    is working law 4 with a UI accent, and the half that would have drifted
+    first is `resetSpot()` — the only reason a piece taken off the previous
+    photograph does not ride the next ask.
+
+    It refuses the three states in which the `+` is not there to be pressed —
+    no door inside this scope, a render in flight, an attach already going up —
+    because a drop door has no `disabled` of its own and a hand holding a file
+    cannot read a button's state. The picker could never reach them anyway (its
+    button carries `disabled`), so nothing about that road changes.
+  */
+  function acceptFile(file: File | null | undefined): void {
+    if (!file || !attachPicture || busy || attaching) return;
+    if (picture) URL.revokeObjectURL(picture.url);
+    setAttachRefusal(null);
+    /* A new picture is a new reading; nothing taken from the last one carries
+       over to it. */
+    resetSpot();
+    void asBase64(file).then((imageBase64) => {
+      setPicture({ url: URL.createObjectURL(file), imageBase64, referenceId: null });
+    }).catch(() => setAttachRefusal(ATTACH_FAILED_FALLBACK));
   }
 
   function dropPicture(): void {
@@ -1144,7 +1227,33 @@ export function RefinePanel({
           the composer is a single thing under the picture rather than a field
           with controls hung either side of it.
         */}
-        <div className="dpc-refine__box">
+        <div
+          /*
+            ⚠ THE OVER-STATE IS A *CHANGE*, NOT A PRESENCE. This box has carried
+            a border and a focus border since #2533, so an arm asking only "does
+            it have a border while a file is over it" would have passed against
+            the state that drew nothing. The class below takes the line past even
+            the focused one, and THE FIELD'S OWN WORD changes with it — card
+            1118's measured lesson on the ink panel next door: a wash on a
+            control that already carries an edge is easy to miss.
+          */
+          className={boxZone.over ? "dpc-refine__box dpc-refine__box--drop" : "dpc-refine__box"}
+          /* Absent where there is no door, exactly like the `+` itself — see
+             `hasAttachDoor`. */
+          {...(hasAttachDoor ? boxZone.handlers : {})}
+        >
+        {/*
+          THE SENTENCE IS LAID OVER THE BOX, never swapped into the field's
+          placeholder — the start page's brief box settled this shape
+          (`dpc-hero__dropsay`) and the reason is the ordinary case, not an edge
+          one: a placeholder is on screen only while the field is EMPTY, and a
+          customer reaching for a photograph has usually already typed what to
+          take from it. `aria-hidden` like its sibling: a hand dragging a file is
+          a pointer, and the door it is aiming at is announced by the `+`.
+        */}
+        {hasAttachDoor && boxZone.over ? (
+          <span className="dpc-refine__dropsay" aria-hidden="true">{ATTACH_DROP_WORD}</span>
+        ) : null}
         <textarea
           ref={fieldRef}
           className="dpc-refine__field"
@@ -1204,15 +1313,9 @@ export function RefinePanel({
                 /* Cleared before anything else, so choosing the SAME file twice
                    fires again — a picker that ignores a repeat looks broken. */
                 event.target.value = "";
-                if (!file) return;
-                if (picture) URL.revokeObjectURL(picture.url);
-                setAttachRefusal(null);
-                /* A new picture is a new reading; nothing taken from the last
-                   one carries over to it. */
-                resetSpot();
-                void asBase64(file).then((imageBase64) => {
-                  setPicture({ url: URL.createObjectURL(file), imageBase64, referenceId: null });
-                }).catch(() => setAttachRefusal(ATTACH_FAILED_FALLBACK));
+                /* The drop door's own function, never a second copy of it —
+                   see `acceptFile`. */
+                acceptFile(file);
               }}
             />
             <button

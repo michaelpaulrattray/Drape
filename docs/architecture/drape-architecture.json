@@ -13129,6 +13129,10 @@
       "path": "client/src/features/castingV2/referenceSpotlightCopy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/refineBoxDrop2912.test.ts",
+      "path": "client/src/features/castingV2/refineBoxDrop2912.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/refineBusy.test.ts",
       "path": "client/src/features/castingV2/refineBusy.test.ts"
     },
@@ -21297,6 +21301,11 @@
     {
       "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "to": "module:client/src/foundation/index.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "to": "module:client/src/foundation/useFileDropTarget.ts",
       "kind": "imports"
     },
     {

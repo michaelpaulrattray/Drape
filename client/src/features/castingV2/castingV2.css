@@ -3884,6 +3884,9 @@
 .dpc-refine__box {
   display: flex;
   flex-direction: column;
+  /* The anchor for `.dpc-refine__dropsay`, which is laid over this box while a
+     file is in the air (#2912). Nothing else in here is positioned. */
+  position: relative;
   gap: 6px;
   width: 100%;
   min-width: 0;
@@ -3899,6 +3902,42 @@
 /* No inner focus ring on the text field — the box's border carries the state. */
 .dpc-refine__box:focus-within {
   border-color: color-mix(in srgb, var(--onScrim) 52%, transparent);
+}
+
+/*
+  A PICTURE IS IN THE AIR OVER THE BOX (#2912, his word: *"also allow drag an
+  drop of reference images into the refine box"*).
+
+  ⚠ The border is a CHANGE and not a presence: this box has worn a border since
+  #2533 and a stronger one on focus, so the drop line has to go past both or it
+  says nothing — 24% at rest, 52% focused, solid here. The contents dim behind
+  the sentence rather than the sentence sitting beside them, which is the brief
+  box's own answer on the start page (`dpc-hero__field--drop`) and reads the
+  same whether she has typed into the field or not.
+
+  `--onScrim`, not `--ink`: this composer lives over the viewer's scrim and
+  every other colour in the block above is already from that family.
+*/
+.dpc-refine__box--drop {
+  border-color: var(--onScrim);
+  background: color-mix(in srgb, var(--onScrim) 16%, transparent);
+}
+
+.dpc-refine__box--drop > :not(.dpc-refine__dropsay) {
+  opacity: 0.25;
+}
+
+/* Over the box, not in it — see the block above. `pointer-events: none` so the
+   sentence cannot become the thing that swallows her drop. */
+.dpc-refine__dropsay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font: 500 13px/1.4 var(--font-sans);
+  color: var(--onScrim);
+  z-index: 1;
 }
 
 .dpc-refine__field {
