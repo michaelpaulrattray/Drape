@@ -3702,6 +3702,153 @@
 .dpc-refine__attachedOff:disabled { opacity: 0.25; cursor: default; }
 
 /*
+  THE ATTACHED PICTURE, OPEN — #14 slice 3b, the spotlight.
+
+  His proposal is the whole spec: the piece under the pointer lights and the
+  rest darkens. So the frame carries nothing but the picture and one canvas of
+  light over it — no border chrome, no labels, no outlines. The darkening and
+  the glow are drawn on the canvas (the prototype's own values, carried over),
+  which is why no colour below is a theme colour: the picture is the only
+  colour here, in either theme.
+
+  IT OPENS LARGE BY TAKING THE FACE'S PLACE (§3 item 1: *"The picture opens
+  large the moment it is attached"*). While it is open, the viewer's own
+  picture steps aside and this one stands where it stood, with the chips and
+  the box under it as before — one subject at a time. Sending the ask folds it
+  back into its chip and the face returns; the chip opens it again.
+
+  ⚠ WHY IT DOES NOT SHARE THE COLUMN WITH THE FACE — measured, twice. This
+  panel is the face picture's width (`--dpc-plate-w`, #2533), and that width
+  comes from a picture whose height is whatever this panel leaves it.
+  (1) Sized by its width, the open picture and the face fed each other through
+  the viewer's resize observer and never settled: driven, the open picture
+  flipped between 229 and 182 px wide between two reads, and the pointer lit
+  whatever had been under it a moment before. (2) With a fixed height the loop
+  stopped, and both pictures shrank to 159 px wide at a 900 px window — too
+  small to point at an earring. So the open picture takes the face's room
+  instead of half of it, and its height is FIXED so nothing it does can move
+  the box it sits in.
+*/
+.dpc-spot {
+  --dpc-spot-h: max(220px, min(calc(100vh - 330px), 720px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--dpc-spot-h);
+}
+
+.dpc-spot__frame {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  cursor: pointer;
+  /* A finger's first tap lights rather than zooming, and a drag never lifts
+     the photograph out as an image. */
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.dpc-spot[data-state="reading"] .dpc-spot__frame,
+.dpc-spot[data-taking="true"] .dpc-spot__frame { cursor: progress; }
+
+.dpc-spot__picture {
+  display: block;
+  max-width: 100%;
+  max-height: var(--dpc-spot-h);
+  width: auto;
+  height: auto;
+  background: var(--media);
+}
+
+.dpc-spot__light {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* The only words on the picture while it is read — what is happening to it,
+   in the viewer's own chrome, never what is doing it. */
+.dpc-spot__reading {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--viewerScrim);
+  color: var(--onScrim);
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+/* While the picture is open, it stands where the face stood. */
+.dpc-viewer__column:has(> .dpc-refine .dpc-spot) > .dpc-viewer__frame { display: none; }
+.dpc-viewer__column:has(> .dpc-refine .dpc-spot) > .dpc-refine { width: min(100%, 560px); }
+
+/* The picture's own chip opens it again — the same 32px frame, so nothing
+   about the chip changes but that it answers a tap. */
+.dpc-refine__thumb--opens {
+  padding: 0;
+  cursor: pointer;
+}
+
+.dpc-refine__thumb--opens[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--onScrim) 60%, transparent);
+}
+
+/* The row wraps once taps add to it; with nothing taken it is the one line it
+   always was. */
+.dpc-refine__attachedRow { flex-wrap: wrap; }
+
+/* WHAT WAS TAKEN — the cut and its name, in the answer chips' quiet clothes. */
+.dpc-refine__taken {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px 0 0;
+}
+
+/* A cut has no background of its own, so it is set on a mid grey that a black
+   jacket and a white shirt both read against — the same neutral the cut is
+   named on. Measured: on the panel's usual 6% the black jacket all but
+   vanished in the dark theme. */
+.dpc-refine__takenThumb {
+  background: color-mix(in srgb, var(--onScrim) 34%, transparent);
+}
+
+.dpc-refine__takenThumb > img { object-fit: contain; }
+
+.dpc-refine__takenName {
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+  font-size: 12px;
+  color: var(--onScrim);
+  white-space: nowrap;
+}
+
+/* A tap being taken: the empty chip it will become, breathing. */
+.dpc-refine__taking {
+  animation: dpc-spot-taking 1.2s ease-in-out infinite;
+}
+
+@keyframes dpc-spot-taking {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.8; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dpc-refine__taking { animation: none; opacity: 0.6; }
+}
+
+/*
   WHERE THE PICTURE CAME FROM — the fence's own question, wearing the answer
   chips' clothes (D-180) because it is the same kind of thing: a question in
   conversation, answered by tapping or by nothing at all.

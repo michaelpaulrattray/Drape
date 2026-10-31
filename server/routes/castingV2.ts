@@ -1277,6 +1277,17 @@ export const castingV2Router = router({
     */
     attachReferenceEnabled: captureCastingReferenceAttachEnabled(ctx.user.id),
     /*
+      AND WHETHER AN ATTACHED PICTURE OPENS INTO THE SPOTLIGHT (#14 slice 3b).
+
+      The same law as the gate above it, one road along: `openSpotlight` and
+      `tapSpotlight` answer NOT_FOUND outside `CASTING_REFERENCE_SELECTOR_SCOPE`,
+      so a picture that opened and waited on them there would be a control that
+      can only refuse. The client asks; the server's own predicate answers —
+      the one both procedures read, so the drawing and the door cannot
+      disagree. Named for the capability, not the flag.
+    */
+    referenceSelectorEnabled: captureCastingReferenceSelectorEnabled(ctx.user.id),
+    /*
       AND WHETHER SHE MAY UPLOAD A CONCEPT (#185). Same law as every gate above
       it: the scope is server-owned and the client asks rather than decides, so
       the start page draws a live upload only where the door would admit it —

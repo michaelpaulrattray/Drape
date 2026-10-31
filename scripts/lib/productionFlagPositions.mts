@@ -410,7 +410,12 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "map (slice 3b) AND the hover set is usable: the entrance's first real "
       + "split measured 26-29 pieces surviving out of 32 on all three court "
       + "fixtures, where the court's own harness deduplicated to 8-18 before it "
-      + "scored anything. It is a child of CASTING_REFERENCE_ATTACH_SCOPE in "
+      + "scored anything. ** BOTH CONDITIONS ARE MET AS OF 2026-10-31 AND THE "
+      + "POSITION DID NOT MOVE WITH THEM: #2876 brought the hover set to 6-12 "
+      + "pieces on the court's fixtures, and slice 3b draws the surface (the "
+      + "client asks castingV2.config's referenceSelectorEnabled). It stays off "
+      + "on this record until the relay sets users:1 for his eye on the built "
+      + "surface. It is a child of CASTING_REFERENCE_ATTACH_SCOPE in "
       + "the boot chain and can never reach past the door that keeps the "
       + "picture it reads.",
   },
