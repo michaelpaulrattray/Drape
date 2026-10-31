@@ -1005,12 +1005,20 @@ const referenceRouter = router({
 
       const frame = await loadOwnedReferenceFrame(ctx.user.id, input.referenceId);
       const reader = spotlightRegionReader();
-      if (reader === null) return { lit: false as const, why: "no-reader" };
+      /* #2902: the pieces come from a READING now, so the open needs the text
+         engine the tap already needed. No engine is the same answer as no
+         reader — the picture does not light and the attach is untouched. */
+      const engine = cutNameEngine();
+      if (reader === null || engine === null) return { lit: false as const, why: "no-reader" };
 
       const opened = await openSpotlight({
         apiKey: process.env.FAL_KEY ?? "",
         frame: frame.bytes,
+        /* The attachment row's own pixels — the loader read them already, so
+           the reading road needs no second `sharp` pass to learn them. */
+        size: { width: frame.width, height: frame.height },
         reader,
+        engine,
         /* From the session, never from input (invariant 3). For the log only. */
         about: { userId: ctx.user.id, attachmentPublicId: input.referenceId },
       });

@@ -116,12 +116,24 @@
  *   repair — exempting hair from the subtraction, or trimming the box to the
  *   face's mask — is a change to the likeness fence and is **his**, never a
  *   builder's.
+ *   ⚠ **HE RULED IT ON 2026-10-31 AND THE SECOND OF THOSE TWO REPAIRS IS NOW
+ *   THE ROAD — #2902.** His eye on the live picker: *"i should also be able to
+ *   select her hair"*, and his card's own clause, **"Hair is a piece. The face
+ *   still never lights."** So `cleanSplit` takes an optional `faceMask` and
+ *   subtracts THAT from a kept piece when it has one, falling back to the
+ *   rectangle when it does not. **The reserved decision was which of the two
+ *   repairs, and he chose the mask rather than an exemption** — an exemption
+ *   would have been a list of names deciding where a fence applies, which his
+ *   2026-09-24 ruling forbids. The paragraph above is kept unaltered because
+ *   the 0.503 is still exactly what the rectangle road costs, and the
+ *   rectangle road is still what runs whenever the mask cannot be read.
  * - The small jewellery is unchanged and still absent from the split (the
  *   necklace has no piece of its own at all now that the person piece is gone),
  *   which is §0's hazard 1: a tap finds it, hover cannot.
  */
 import { closeHoles } from "./cutQuality";
 import { keepPiecesWhere } from "./falRegionReader";
+import { subtractMask } from "./inkReferenceCrop";
 import type { Mask } from "./maskedComposite";
 import type { PointerBox } from "./maskedRefine";
 import { subtractFaces } from "./referenceTake";
@@ -484,8 +496,18 @@ function depthWithin(
  * photograph, and a mismatch is a bug upstream rather than something to
  * resample, which is `cutOutPixels`' rule applied one road along. The caller's
  * masks are never mutated.
+ *
+ * `faces` are the detected rectangles and decide BOTH halves of §6's rule.
+ * `faceMask` is the face's own pixels when the caller was able to buy them, and
+ * it refines only the second half — the subtraction off a piece that stays. See
+ * the call site inside for his ruling on why, and `referenceSpotlightPieces.ts`
+ * for the fail-closed property. Passing no mask is today's behaviour exactly.
  */
-export function cleanSplit(pieces: readonly Mask[], faces: readonly PointerBox[] = []): CleanedSplit {
+export function cleanSplit(
+  pieces: readonly Mask[],
+  faces: readonly PointerBox[] = [],
+  faceMask: Mask | null = null,
+): CleanedSplit {
   const out: CleanedSplit = {
     duplicatesDropped: 0,
     personPiecesDropped: 0,
@@ -586,9 +608,42 @@ export function cleanSplit(pieces: readonly Mask[], faces: readonly PointerBox[]
         continue;
       }
       if (held > 0) {
-        out.facePixelsRemoved += held;
-        const bare = subtractFaces(mask, faces);
-        if (pixelsOf(bare) === 0) {
+        /*
+          ⚠ THE SUBTRACTION IS THE FACE'S OWN MASK WHEN THERE IS ONE, AND ITS
+          RECTANGLE WHEN THERE IS NOT — #2902, and it is HIS ruling rather
+          than a builder's choice.
+
+          This module's header records the old fence's one cost and reserved
+          the repair to him: *"the HAIR's hover region shrinks, 0.935 → 0.503
+          … the tempting repair — exempting hair from the subtraction, or
+          trimming the box to the face's mask — is a change to the likeness
+          fence and is **his**, never a builder's."* His card says *"i should
+          also be able to select her hair"* and **"Hair is a piece. The face
+          still never lights."** — which is the second of those two repairs
+          and not the first. The first would have been a list of exempt
+          names, and a fixed list deciding where a fence applies is the thing
+          his 2026-09-24 ruling forbids. A mask knows no names and applies to
+          every piece equally.
+
+          **The person-drop test above is UNCHANGED and still reads the
+          rectangle**, on purpose: it asks *is this piece the person?*, which
+          is a question about coverage of where the face IS, and a box is the
+          honest instrument for it. Only the pixels taken OFF a kept piece get
+          finer.
+
+          ⚠ **IT FAILS CLOSED.** `faceMask` is null whenever the mask could
+          not be read, and then this is byte-for-byte the subtraction that
+          shipped — so the worst case of the finer fence is the measured
+          behaviour of the coarser one.
+        */
+        const bare = faceMask === null ? subtractFaces(mask, faces) : subtractMask(mask, faceMask);
+        const left = pixelsOf(bare);
+        /* The pixels actually taken off, counted rather than assumed equal to
+           `held`. On the rectangle road the two are identical — `subtractFaces`
+           zeroes exactly the pixels `held` counted — so this number does not
+           move for any caller that passes no mask. */
+        out.facePixelsRemoved += pixelsOf(mask) - left;
+        if (left === 0) {
           out.dropped.push({ at, reason: "empty" });
           continue;
         }

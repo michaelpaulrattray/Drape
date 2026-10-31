@@ -48,14 +48,16 @@
  */
 
 import { cleanCut, FILL_MEASURED_NOT_REFUSED } from "./cutQuality";
-import { createFalRegionReader, cutAtPoint, splitAtPoints } from "./falRegionReader";
+import { createFalRegionReader, cutAtPoint } from "./falRegionReader";
 import { interpreterTextQueue } from "./interpreter";
 import { createModuleLogger } from "../logging/logger";
 import { createOpenRouterTextEngine, DEFAULT_INTERPRETER_MODEL } from "../providers/openrouterText";
 import type { Mask } from "./maskedComposite";
+import { unionMasks } from "./maskGeometry";
 import type { PointerBox, RegionReader } from "./maskedRefine";
 import type { TextEngine } from "../providers/types";
 import { nameTheCut } from "./referenceCutName";
+import { piecesFromTheReading, type PiecesTally } from "./referenceSpotlightPieces";
 import { cleanSplit, type CleanedSplit } from "./referenceSplitCleanup";
 import { encodeSpotlightMap, spotlightMapOf, type SpotlightMapImage } from "./referenceSpotlightMap";
 import { subtractFaces, TAKE_FACE_NOUN } from "./referenceTake";
@@ -132,13 +134,38 @@ export type SpotlightTally = Omit<CleanedSplit, "pieces"> & {
   pieces: number;
   /** How many face boxes the detector found. */
   faces: number;
+  /** Whether the face's own pixels were read, or the rectangle stood in (#2902). */
+  faceMaskRead: boolean;
+  /** What the reading, the boxer and the cuts each cost — {@link PiecesTally}. */
+  reading: PiecesTally;
   splitMs: number;
   facesMs: number;
   totalMs: number;
 };
 
 export type SpotlightOpened =
-  | { ok: true; map: SpotlightMapImage; tally: SpotlightTally }
+  | {
+      ok: true;
+      map: SpotlightMapImage;
+      /**
+       * WHAT EACH PIECE OF THE MAP IS, IN THE READING'S OWN WORDS — #2902.
+       *
+       * One name per piece, in the map's own id order, so `names[id - 1]` is
+       * the thing piece `id` holds. It is carried because it was BOUGHT: the
+       * pieces exist only because the picture was read, and discarding the
+       * names would be the law's clause 4 failure (*read what the engine
+       * already gives you*) in the one place the whole road turns on them.
+       *
+       * ⚠ **NOTHING ON THE SURFACE READS IT YET AND THAT IS DELIBERATE.** His
+       * card keeps the map's contract so the client's hover and tap code is
+       * reused rather than rewritten, and the tap still names its own cut on
+       * its own road. This is the server's record of which piece is which —
+       * the log quotes it, the measurement reads it, and a later slice that
+       * wants to show a name has it without buying anything.
+       */
+      names: readonly string[];
+      tally: SpotlightTally;
+    }
   | { ok: false; why: string };
 
 export type SpotlightTapped =
@@ -187,7 +214,11 @@ export type SpotlightTapped =
 export async function openSpotlight(input: {
   apiKey: string;
   frame: Buffer;
+  /** The frame's own pixels, from the attachment row the loader already read. */
+  size: { width: number; height: number };
   reader: RegionReader;
+  /** The reading's engine — #2902. A picture with no engine does not light. */
+  engine: TextEngine;
   signal?: AbortSignal;
   /** For the log alone — never part of any question asked of a provider. */
   about: { userId: number; attachmentPublicId: string };
@@ -202,8 +233,14 @@ export async function openSpotlight(input: {
   let facesMs = 0;
   const splitAt = Date.now();
   const facesAt = Date.now();
-  const [pieces, faces] = await Promise.all([
-    splitAtPoints({ apiKey: input.apiKey, image: input.frame, signal: input.signal }).then((answer) => {
+  const [read, faces] = await Promise.all([
+    piecesFromTheReading({
+      frame: { bytes: input.frame, width: input.size.width, height: input.size.height },
+      reader: input.reader,
+      engine: input.engine,
+      signal: input.signal,
+      about: input.about,
+    }).then((answer) => {
       splitMs = Date.now() - splitAt;
       return answer;
     }),
@@ -221,9 +258,60 @@ export async function openSpotlight(input: {
   ]);
 
   if (faces === null) return { ok: false, why: "no-faces-read" };
-  if (pieces.length === 0) return { ok: false, why: "empty-split" };
+  if (!read.ok) return { ok: false, why: read.why };
 
-  const cleaned = cleanSplit(pieces, faces);
+  /*
+    THE FACE'S OWN PIXELS, SO HAIR CAN BE A PIECE — #2902, and the fence stays.
+
+    His ruling is quoted at `cleanSplit`'s subtraction and in
+    `referenceSpotlightPieces.ts`: the rectangle ate the hair that frames a
+    face, so what is subtracted off a KEPT piece is now the face's own mask.
+
+    ⚠ **IT IS BOUGHT HERE AND NOT INSIDE `cleanSplit`, because that module
+    takes no network and must not start.** Its header's own promise is *"masks
+    in, masks out, no network, no provider, no clock"*.
+
+    ⚠ **AND IT CANNOT RUN BESIDE THE DETECT, which is why it is a third read
+    rather than a third arm of the `Promise.all` above**: the rectangle to cut
+    inside is the detect's own answer, so it does not exist until that resolves.
+    One cut per detected face, all started in the same turn, through the same
+    `FAL_CONCURRENCY` pool — no new allowance.
+
+    A failure is not a refusal: `null` means the rectangle stands in, which is
+    exactly the fence that shipped. **Fail-closed, never fail-open.**
+  */
+  let faceMask: Mask | null = null;
+  const { regionInBox } = input.reader;
+  if (faces.length > 0 && regionInBox !== undefined) {
+    const cut = await Promise.all(
+      faces.map(async (box) => {
+        try {
+          return await regionInBox.call(input.reader, {
+            image: input.frame,
+            name: TAKE_FACE_NOUN,
+            box,
+            signal: input.signal,
+          });
+        } catch (cause) {
+          log.warn(
+            { ...input.about, cause: String(cause) },
+            "a face's own pixels could not be read — its rectangle stands in",
+          );
+          return null;
+        }
+      }),
+    );
+    const read_ = cut.filter((mask): mask is Mask => mask !== null);
+    /* EVERY face must have answered, or the rectangles stand in for ALL of
+       them. A union of two faces' masks and one face's rectangle would be a
+       fence with a hole in it exactly where a read failed, which is the one
+       shape worse than the coarse fence. */
+    if (read_.length === faces.length && read_.length > 0) {
+      faceMask = unionMasks(...read_);
+    }
+  }
+
+  const cleaned = cleanSplit(read.pieces.map((piece) => piece.mask), faces, faceMask);
   if (cleaned.pieces.length === 0) return { ok: false, why: "nothing-left-to-light" };
 
   let map: SpotlightMapImage;
@@ -238,17 +326,50 @@ export async function openSpotlight(input: {
   }
 
   const { pieces: survivors, ...rest } = cleaned;
+
+  /*
+    WHICH NAME EACH SURVIVING PIECE CARRIES — DERIVED, NEVER MIRRORED (law 4).
+
+    `cleanSplit` returns its survivors in ARRIVAL ORDER and lists every arriving
+    piece that did not survive in `dropped[].at`. So the survivors are exactly
+    the arriving indices that are not in `dropped`, in ascending order — read
+    off the answer rather than tracked in a second list alongside it.
+
+    ⚠ **AND IT IS CHECKED RATHER THAN TRUSTED.** If that derivation and the
+    returned piece count ever disagree, the mapping from a map id to a name is
+    wrong — which would show up as the wrong word on the right shape, the
+    quietest defect available here. So it is asserted, and a mismatch makes the
+    picture not light rather than light with the names shuffled.
+  */
+  const droppedAt = new Set(cleaned.dropped.map((one) => one.at));
+  const names = read.pieces
+    .map((piece, at) => ({ name: piece.name, at }))
+    .filter(({ at }) => !droppedAt.has(at))
+    .map(({ name }) => name);
+  if (names.length !== survivors.length) {
+    log.error(
+      { ...input.about, derived: names.length, survivors: survivors.length },
+      "the surviving pieces and their names do not line up — the picture will not light",
+    );
+    return { ok: false, why: "names-do-not-line-up" };
+  }
+
   const tally: SpotlightTally = {
     ...rest,
-    rawPieces: pieces.length,
+    rawPieces: read.pieces.length,
     pieces: survivors.length,
     faces: faces.length,
+    faceMaskRead: faceMask !== null,
+    reading: read.tally,
     splitMs,
     facesMs,
     totalMs: Date.now() - started,
   };
-  log.info({ ...input.about, ...tally, mapBytes: map.bytes.byteLength }, "[referenceSpotlight] opened a picture");
-  return { ok: true, map, tally };
+  log.info(
+    { ...input.about, ...tally, names, mapBytes: map.bytes.byteLength },
+    "[referenceSpotlight] opened a picture",
+  );
+  return { ok: true, map, names, tally };
 }
 
 /**

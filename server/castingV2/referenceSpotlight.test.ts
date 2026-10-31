@@ -109,123 +109,418 @@ function namer(answer: string | null): TextEngine & { calls: number } {
 /** A face box in the top-left quarter, in the normalized shape the detector answers with. */
 const FACE_OBJECT = { x_min: 0, y_min: 0, x_max: 0.5, y_max: 0.5 };
 
+/**
+ * A READING, in the shape `parseDiscovery` reads — #2902.
+ *
+ * The pieces come from the picture being READ now, so every open-road arm needs
+ * an engine that names things. It is the real parser on the other side of this:
+ * the text goes through `parseDiscovery` exactly as a provider's would.
+ */
+function readingOf(
+  names: readonly { name: string; kind?: string }[],
+  personPresent = false,
+): TextEngine & { calls: number } {
+  const engine = {
+    calls: 0,
+    complete: async () => {
+      engine.calls += 1;
+      return {
+        text: JSON.stringify({
+          personPresent,
+          features: names.map((one) => ({
+            name: one.name,
+            count: 1,
+            about: "",
+            kind: one.kind ?? "clothing",
+            on: "",
+            coverage: "single",
+          })),
+          cannotSee: [],
+        }),
+        truncated: false,
+      };
+    },
+  } as unknown as TextEngine & { calls: number };
+  return engine;
+}
+
+/** A pixel rectangle as the detector would answer it on a W x H frame. */
+function normalized(box: { x: number; y: number; width: number; height: number }) {
+  return {
+    x_min: box.x / W,
+    y_min: box.y / H,
+    x_max: (box.x + box.width) / W,
+    y_max: (box.y + box.height) / H,
+  };
+}
+
+/** The key a SAM 3 `box_prompts` body carries, so a cut can be matched to its rectangle. */
+function boxKey(box: { x_min: number; y_min: number; x_max: number; y_max: number }): string {
+  return `${box.x_min},${box.y_min},${box.x_max},${box.y_max}`;
+}
+
+function rectKey(box: { x: number; y: number; width: number; height: number }): string {
+  return boxKey({ x_min: box.x, y_min: box.y, x_max: box.x + box.width, y_max: box.y + box.height });
+}
+
+type Rect = { x: number; y: number; width: number; height: number };
+
+/**
+ * THE WHOLE WIRE FOR THE READING ROAD, so every arm drives the real roads.
+ *
+ * A detect is keyed on its prompt — the face noun, or one of the reading's own
+ * names. A cut is keyed on the RECTANGLE in its body, which is the only thing
+ * `regionInBox` sends (its prompt goes out empty on purpose), and that is what
+ * tells a piece's cut apart from the face's own.
+ */
+function wire(input: {
+  faces?: readonly Rect[];
+  /** Which rectangle the detector puts round each name. */
+  boxes?: Readonly<Record<string, Rect>>;
+  /** Which pixels the segmenter answers inside a given rectangle. */
+  cuts?: readonly { box: Rect; on: (x: number, y: number) => boolean }[];
+  /** `undefined` leaves the face's own mask unread, so the rectangle stands in. */
+  faceCut?: (x: number, y: number) => boolean;
+}): (endpoint: string, body: any) => Promise<{ ok: boolean; status?: number; json?: unknown }> {
+  const byRect = new Map<string, (x: number, y: number) => boolean>();
+  for (const cut of input.cuts ?? []) byRect.set(rectKey(cut.box), cut.on);
+  if (input.faceCut !== undefined) {
+    for (const face of input.faces ?? []) byRect.set(rectKey(face), input.faceCut);
+  }
+  return async (endpoint, body) => {
+    if (endpoint === DETECT) {
+      if (body.prompt === TAKE_FACE_NOUN) {
+        return { ok: true, json: { objects: (input.faces ?? []).map(normalized) } };
+      }
+      const box = (input.boxes ?? {})[String(body.prompt)];
+      return { ok: true, json: { objects: box === undefined ? [] : [normalized(box)] } };
+    }
+    const asked = Array.isArray(body.box_prompts) ? body.box_prompts[0] : undefined;
+    const on = asked === undefined ? undefined : byRect.get(boxKey(asked));
+    if (on === undefined) return { ok: true, json: { masks: [] } };
+    return { ok: true, json: { masks: [await maskUri(on)] } };
+  };
+}
+
+/** Every rectangle a cut was asked inside, in the order they were asked. */
+function cutsAsked(): Rect[] {
+  return sent
+    .filter((one) => one.endpoint === SAM3 && Array.isArray(one.body.box_prompts))
+    .map((one) => {
+      const box = one.body.box_prompts[0];
+      return { x: box.x_min, y: box.y_min, width: box.x_max - box.x_min, height: box.y_max - box.y_min };
+    });
+}
+
+/** The frame these arms open, and the size the attachment row would carry. */
+const SIZE = { width: W, height: H };
+
+/* A top and a pair of pants, well clear of each other and of the frame's edges. */
+const TOP: Rect = { x: 8, y: 8, width: 48, height: 20 };
+const PANTS: Rect = { x: 8, y: 36, width: 48, height: 20 };
+
 describe("opening a picture", () => {
   it("does not light a picture when the reader cannot detect at all, and buys nothing", async () => {
     reply = async () => ({ ok: true, json: {} });
     const bare = { ...reader(), pointer: undefined } as RegionReader;
 
-    const opened = await openSpotlight({ apiKey: KEY, frame: await picture(), reader: bare, about });
+    const opened = await openSpotlight({
+      apiKey: KEY, frame: await picture(), size: SIZE, reader: bare, engine: readingOf([]), about,
+    });
 
     expect(opened).toEqual({ ok: false, why: "no-pointer" });
     expect(sent).toHaveLength(0);
   });
 
+  it("does not light a picture when the reader cannot cut inside a rectangle", async () => {
+    reply = async () => ({ ok: true, json: {} });
+    /* The pieces come from named cuts now, so a reader with no `regionInBox`
+       has no road at all — and it must say so rather than falling back to a
+       grid, which is the shape #2902 replaced. */
+    const bare = { ...reader(), regionInBox: undefined } as RegionReader;
+
+    const opened = await openSpotlight({
+      apiKey: KEY, frame: await picture(), size: SIZE, reader: bare, engine: readingOf([{ name: "top" }]), about,
+    });
+
+    expect(opened).toEqual({ ok: false, why: "no-cutter" });
+  });
+
   /* ---- §6's FENCE, THE DIRECTION THAT MATTERS ---- */
   it("does not light a picture whose faces could not be read", async () => {
-    reply = async (endpoint) => {
-      if (endpoint === DETECT) return { ok: false, status: 500, json: { detail: "down" } };
-      return { ok: true, json: { masks: [await maskUri((x) => x > 40)] } };
+    reply = async (endpoint, body) => {
+      if (endpoint === DETECT && body.prompt === TAKE_FACE_NOUN) {
+        return { ok: false, status: 500, json: { detail: "down" } };
+      }
+      if (endpoint === DETECT) return { ok: true, json: { objects: [normalized(TOP)] } };
+      return { ok: true, json: { masks: [await maskUri((x, y) => y > 8 && y < 28)] } };
     };
 
-    const opened = await openSpotlight({ apiKey: KEY, frame: await picture(), reader: reader(), about });
+    const opened = await openSpotlight({
+      apiKey: KEY, frame: await picture(), size: SIZE, reader: reader(), engine: readingOf([{ name: "top" }]), about,
+    });
 
     expect(opened).toEqual({ ok: false, why: "no-faces-read" });
   });
 
   it("asks the detector for the face noun the take road already uses", async () => {
-    reply = async (endpoint) => {
-      if (endpoint === DETECT) return { ok: true, json: { objects: [] } };
-      return { ok: true, json: { masks: [await maskUri((x) => x > 40)] } };
-    };
+    reply = wire({ faces: [], boxes: { top: TOP }, cuts: [{ box: TOP, on: (_x, y) => y > 8 && y < 28 }] });
 
-    await openSpotlight({ apiKey: KEY, frame: await picture(), reader: reader(), about });
+    await openSpotlight({
+      apiKey: KEY, frame: await picture(), size: SIZE, reader: reader(), engine: readingOf([{ name: "top" }]), about,
+    });
 
-    const detect = sent.find((one) => one.endpoint === DETECT);
-    expect(detect?.body.prompt).toBe(TAKE_FACE_NOUN);
+    expect(sent.some((one) => one.endpoint === DETECT && one.body.prompt === TAKE_FACE_NOUN)).toBe(true);
   });
 
-  it("runs the split and the detect together rather than one after the other", async () => {
-    reply = async (endpoint) => {
-      /* The split answers slowly; the detect must have STARTED before it
-         finishes, which is the fact being held. */
-      if (endpoint === SAM3) {
-        await new Promise((resolve) => setTimeout(resolve, 40));
-        return { ok: true, json: { masks: [await maskUri((x) => x > 40)] } };
-      }
-      return { ok: true, json: { objects: [] } };
+  it("runs the reading road and the face detect together rather than one after the other", async () => {
+    const slow = wire({ faces: [], boxes: { top: TOP }, cuts: [{ box: TOP, on: (_x, y) => y > 8 && y < 28 }] });
+    reply = async (endpoint, body) => {
+      /* A piece's cut answers slowly; the face detect must have STARTED before
+         it finishes, which is the fact being held — not a wall time. */
+      if (endpoint === SAM3) await new Promise((resolve) => setTimeout(resolve, 40));
+      return slow(endpoint, body);
     };
 
-    await openSpotlight({ apiKey: KEY, frame: await picture(), reader: reader(), about });
+    await openSpotlight({
+      apiKey: KEY, frame: await picture(), size: SIZE, reader: reader(), engine: readingOf([{ name: "top" }]), about,
+    });
 
     expect(order.indexOf(`start:${DETECT}`)).toBeLessThan(order.indexOf(`end:${SAM3}`));
   });
 
-  it("reports an empty split as a picture that does not light", async () => {
-    reply = async (endpoint) =>
-      endpoint === DETECT ? { ok: true, json: { objects: [] } } : { ok: true, json: { masks: [] } };
+  it("does not light a picture it could not read, and buys no cut for it", async () => {
+    reply = wire({ faces: [] });
+    /* An engine that answers nothing usable: the reading fails, so there are no
+       names, so there is nothing to cut. The second half is the one worth
+       holding — a failed reading must not spend the segmenter. */
+    const mute = { complete: async () => ({ text: "", truncated: false }) } as unknown as TextEngine;
 
-    const opened = await openSpotlight({ apiKey: KEY, frame: await picture(), reader: reader(), about });
+    const opened = await openSpotlight({
+      apiKey: KEY, frame: await picture(), size: SIZE, reader: reader(), engine: mute, about,
+    });
 
-    expect(opened).toEqual({ ok: false, why: "empty-split" });
+    expect(opened.ok).toBe(false);
+    if (opened.ok) return;
+    expect(opened.why.startsWith("not-read:")).toBe(true);
+    expect(cutsAsked()).toEqual([]);
   });
 
-  it("hands back a map naming the pieces that survived", async () => {
-    reply = async (endpoint) => {
-      if (endpoint === DETECT) return { ok: true, json: { objects: [] } };
-      return {
-        ok: true,
-        json: { masks: [await maskUri((x) => x < 20), await maskUri((x) => x > 40)] },
-      };
-    };
+  /* ---- HIS FOUR COMPLAINTS, AS PROPERTIES OF THE CONSTRUCTION ---- */
+  it("cuts one whole thing per name the reading gave, and nothing it did not name", async () => {
+    reply = wire({
+      faces: [],
+      boxes: { top: TOP, pants: PANTS },
+      cuts: [
+        { box: TOP, on: (_x, y) => y >= 8 && y < 28 },
+        { box: PANTS, on: (_x, y) => y >= 36 && y < 56 },
+      ],
+    });
 
-    const opened = await openSpotlight({ apiKey: KEY, frame: await picture(), reader: reader(), about });
+    const opened = await openSpotlight({
+      apiKey: KEY,
+      frame: await picture(),
+      size: SIZE,
+      reader: reader(),
+      engine: readingOf([{ name: "top" }, { name: "pants" }]),
+      about,
+    });
 
     expect(opened.ok).toBe(true);
     if (!opened.ok) return;
+    /*
+      THE WHOLE OF HIS COMPLAINT, IN ONE ASSERTION PAIR. *"i select her pants
+      and only half her pants light up i select her shoe and only 1 shoes
+      lights up"* was a grid of 32 dots, each answering about its own dot. Here
+      the cuts bought are EXACTLY one per name, each asked inside that name's
+      own rectangle — so what comes back for `pants` is the pair, and nothing
+      the reading did not name has a piece at all.
+    */
+    expect(cutsAsked()).toEqual([TOP, PANTS]);
+    expect(opened.names).toEqual(["top", "pants"]);
     expect(opened.map.pieces).toBe(2);
     expect(opened.map.width).toBe(W);
     expect(opened.tally.rawPieces).toBe(2);
+    expect(opened.tally.reading.named).toBe(2);
+    expect(opened.tally.reading.cutsAnswered).toBe(2);
     expect(opened.tally.faces).toBe(0);
-    /* The whole point of the encoding: a photograph's worth of geometry in
-       kilobytes rather than the 4 KB per piece a raw mask would be. */
     expect(opened.map.bytes.byteLength).toBeGreaterThan(0);
+  });
+
+  it("buys no face-mask read when the picture holds no face", async () => {
+    reply = wire({ faces: [], boxes: { top: TOP }, cuts: [{ box: TOP, on: (_x, y) => y >= 8 && y < 28 }] });
+
+    const opened = await openSpotlight({
+      apiKey: KEY, frame: await picture(), size: SIZE, reader: reader(), engine: readingOf([{ name: "top" }]), about,
+    });
+
+    expect(opened.ok).toBe(true);
+    if (!opened.ok) return;
+    expect(opened.tally.faceMaskRead).toBe(false);
+    /* One cut, for the one name — no second SAM 3 call for a face that is not
+       there. The fence costs nothing on a hanger shot. */
+    expect(cutsAsked()).toEqual([TOP]);
   });
 
   /* ---- §6: A PERSON IS NOT A TAKEABLE THING ---- */
   it("drops the piece that covers a detected face, so a person never lights", async () => {
-    reply = async (endpoint) => {
-      if (endpoint === DETECT) return { ok: true, json: { objects: [FACE_OBJECT] } };
-      return {
-        ok: true,
-        json: {
-          masks: [
-            /* The whole-person piece: it holds the entire face box. */
-            await maskUri((x, y) => x < 32 && y < 32),
-            /* A garment well clear of it. */
-            await maskUri((x, y) => y > 48),
-          ],
-        },
-      };
-    };
+    const FACE: Rect = { x: 0, y: 0, width: 32, height: 32 };
+    const PERSON: Rect = { x: 0, y: 0, width: 32, height: 32 };
+    reply = wire({
+      faces: [FACE],
+      boxes: { person: PERSON, pants: PANTS },
+      cuts: [
+        /* The whole-person piece: it holds the entire face box. */
+        { box: PERSON, on: (x, y) => x < 32 && y < 32 },
+        { box: PANTS, on: (_x, y) => y >= 36 && y < 56 },
+      ],
+      /* The face's own pixels fill its rectangle here, so the person piece is
+         caught by the coverage rule exactly as it was before this card. */
+      faceCut: (x, y) => x < 32 && y < 32,
+    });
 
-    const opened = await openSpotlight({ apiKey: KEY, frame: await picture(), reader: reader(), about });
+    const opened = await openSpotlight({
+      apiKey: KEY,
+      frame: await picture(),
+      size: SIZE,
+      reader: reader(),
+      engine: readingOf([{ name: "person", kind: "anatomy" }, { name: "pants" }], true),
+      about,
+    });
 
     expect(opened.ok).toBe(true);
     if (!opened.ok) return;
     expect(opened.tally.personPiecesDropped).toBe(1);
     expect(opened.map.pieces).toBe(1);
     expect(opened.tally.dropped).toEqual([{ at: 0, reason: "covers-a-face" }]);
+    /* AND THE NAMES FOLLOW THE DROP. The derived mapping is the quiet defect
+       available here — the right shape with the wrong word — so the arm holds
+       the surviving name rather than only the count. */
+    expect(opened.names).toEqual(["pants"]);
   });
 
   it("says nothing is left to light when every piece was a person", async () => {
-    reply = async (endpoint) => {
-      if (endpoint === DETECT) return { ok: true, json: { objects: [FACE_OBJECT] } };
-      return { ok: true, json: { masks: [await maskUri((x, y) => x < 32 && y < 32)] } };
-    };
+    const FACE: Rect = { x: 0, y: 0, width: 32, height: 32 };
+    reply = wire({
+      faces: [FACE],
+      boxes: { person: FACE },
+      cuts: [{ box: FACE, on: (x, y) => x < 32 && y < 32 }],
+      faceCut: (x, y) => x < 32 && y < 32,
+    });
 
-    const opened = await openSpotlight({ apiKey: KEY, frame: await picture(), reader: reader(), about });
+    const opened = await openSpotlight({
+      apiKey: KEY,
+      frame: await picture(),
+      size: SIZE,
+      reader: reader(),
+      engine: readingOf([{ name: "person", kind: "anatomy" }], true),
+      about,
+    });
 
     expect(opened).toEqual({ ok: false, why: "nothing-left-to-light" });
+  });
+
+  /* ---- HAIR IS A PIECE, AND THE FACE STILL NEVER LIGHTS (#2902, his ruling) ---- */
+  describe("the face fence is the face's own pixels", () => {
+    /* A face rectangle in the middle, and a face that fills only its centre —
+       which is what a real face box looks like next to hair. */
+    const FACE_BOX: Rect = { x: 16, y: 16, width: 32, height: 32 };
+    const FACE_PIXELS = (x: number, y: number) => x >= 24 && x < 40 && y >= 24 && y < 40;
+    /* Hair as one connected band: half of it inside the face RECTANGLE but
+       clear of the face itself, half of it above the rectangle. */
+    const HAIR: Rect = { x: 16, y: 8, width: 32, height: 16 };
+    const HAIR_PIXELS = (x: number, y: number) => x >= 16 && x < 48 && y >= 8 && y < 24;
+
+    it("keeps the hair that frames a face when the face's own mask was read", async () => {
+      reply = wire({
+        faces: [FACE_BOX],
+        boxes: { hair: HAIR },
+        cuts: [{ box: HAIR, on: HAIR_PIXELS }],
+        faceCut: FACE_PIXELS,
+      });
+
+      const opened = await openSpotlight({
+        apiKey: KEY,
+        frame: await picture(),
+        size: SIZE,
+        reader: reader(),
+        engine: readingOf([{ name: "hair", kind: "anatomy" }], true),
+        about,
+      });
+
+      expect(opened.ok).toBe(true);
+      if (!opened.ok) return;
+      expect(opened.tally.faceMaskRead).toBe(true);
+      expect(opened.names).toEqual(["hair"]);
+      /*
+        THE NUMBER HIS RULING TURNS ON. The hair's band inside the face
+        rectangle is 32 x 8 = 256 pixels and the face's own pixels are nowhere
+        near it, so NOTHING is taken off the hair — where the rectangle fence
+        took all 256 (the arm below).
+      */
+      expect(opened.tally.facePixelsRemoved).toBe(0);
+    });
+
+    it("falls back to the rectangle when the face's own mask cannot be read, which is the old fence exactly", async () => {
+      /* THE NEGATIVE CONTROL, and it is the whole evidence for the arm above:
+         the same picture, the same hair, the same face rectangle — only the
+         mask read fails. 256 pixels of hair go, which is the behaviour that
+         shipped and is what `cleanSplit`'s header measured as 0.935 -> 0.503. */
+      reply = wire({ faces: [FACE_BOX], boxes: { hair: HAIR }, cuts: [{ box: HAIR, on: HAIR_PIXELS }] });
+
+      const opened = await openSpotlight({
+        apiKey: KEY,
+        frame: await picture(),
+        size: SIZE,
+        reader: reader(),
+        engine: readingOf([{ name: "hair", kind: "anatomy" }], true),
+        about,
+      });
+
+      expect(opened.ok).toBe(true);
+      if (!opened.ok) return;
+      expect(opened.tally.faceMaskRead).toBe(false);
+      expect(opened.tally.facePixelsRemoved).toBe(256);
+    });
+
+    it("stands the rectangle in for every face when one face's mask is missing", async () => {
+      /* TWO faces, one of which answers. A fence made of one face's mask and
+         one face's rectangle would have a hole exactly where a read failed, so
+         the road refuses the mix and subtracts rectangles for both. */
+      const SECOND: Rect = { x: 0, y: 48, width: 8, height: 8 };
+      const answered = new Set([rectKey(FACE_BOX)]);
+      reply = async (endpoint, body) => {
+        if (endpoint === DETECT) {
+          if (body.prompt === TAKE_FACE_NOUN) {
+            return { ok: true, json: { objects: [normalized(FACE_BOX), normalized(SECOND)] } };
+          }
+          return { ok: true, json: { objects: [normalized(HAIR)] } };
+        }
+        const asked = Array.isArray(body.box_prompts) ? body.box_prompts[0] : undefined;
+        if (asked !== undefined && boxKey(asked) === rectKey(HAIR)) {
+          return { ok: true, json: { masks: [await maskUri(HAIR_PIXELS)] } };
+        }
+        if (asked !== undefined && answered.has(boxKey(asked))) {
+          return { ok: true, json: { masks: [await maskUri(FACE_PIXELS)] } };
+        }
+        /* The second face's own pixels come back empty — a real outcome. */
+        return { ok: true, json: { masks: [] } };
+      };
+
+      const opened = await openSpotlight({
+        apiKey: KEY,
+        frame: await picture(),
+        size: SIZE,
+        reader: reader(),
+        engine: readingOf([{ name: "hair", kind: "anatomy" }], true),
+        about,
+      });
+
+      expect(opened.ok).toBe(true);
+      if (!opened.ok) return;
+      expect(opened.tally.faceMaskRead).toBe(false);
+      expect(opened.tally.facePixelsRemoved).toBe(256);
+    });
   });
 });
 

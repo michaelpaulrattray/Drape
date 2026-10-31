@@ -69,7 +69,7 @@ _Called as:_ `castingV2.refine`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `empty` | interpreter-refusal |  | server/castingV2/referenceSplitCleanup.ts:543<br>server/castingV2/referenceSplitCleanup.ts:592<br>(+3) | 5 test(s) | guard.empty |
+| `empty` | interpreter-refusal |  | server/castingV2/referenceSplitCleanup.ts:565<br>server/castingV2/referenceSplitCleanup.ts:647<br>(+3) | 5 test(s) | guard.empty |
 | `unreadable` | interpreter-refusal |  | server/castingV2/castingIntent.ts:1425<br>server/castingV2/castingIntent.ts:1462<br>(+14) | 9 test(s) | light.softer, guard.gibberish, guard.scope.ink.none |
 | `reader_outage` | interpreter-refusal |  | server/castingV2/refineDelta.ts:920<br>server/castingV2/refineInterpreter.ts:1263<br>(+1) | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `wall_likeness` | interpreter-refusal |  | server/castingV2/refineDelta.ts:500<br>server/castingV2/refineDelta.ts:2261<br>(+2) | 6 test(s) | guard.likeness |
