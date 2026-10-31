@@ -37,7 +37,7 @@
     {
       "id": "domain:castingV2",
       "name": "castingV2",
-      "moduleCount": 70
+      "moduleCount": 74
     },
     {
       "id": "domain:client-shared",
@@ -1495,6 +1495,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/components/SpotlightStage.tsx",
+      "path": "client/src/features/castingV2/components/SpotlightStage.tsx",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/components/VersionRail.tsx",
       "path": "client/src/features/castingV2/components/VersionRail.tsx",
       "domain": "castingV2",
@@ -1609,6 +1615,12 @@
       "lifecycle": "active"
     },
     {
+      "id": "module:client/src/features/castingV2/referenceSpotlightCopy.ts",
+      "path": "client/src/features/castingV2/referenceSpotlightCopy.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
       "id": "module:client/src/features/castingV2/refineBusy.ts",
       "path": "client/src/features/castingV2/refineBusy.ts",
       "domain": "castingV2",
@@ -1695,6 +1707,18 @@
     {
       "id": "module:client/src/features/castingV2/singleFlight.ts",
       "path": "client/src/features/castingV2/singleFlight.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/spotlightMap.ts",
+      "path": "client/src/features/castingV2/spotlightMap.ts",
+      "domain": "castingV2",
+      "lifecycle": "active"
+    },
+    {
+      "id": "module:client/src/features/castingV2/spotlightSurface.ts",
+      "path": "client/src/features/castingV2/spotlightSurface.ts",
       "domain": "castingV2",
       "lifecycle": "active"
     },
@@ -8867,7 +8891,9 @@
       "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts",
-      "clientCallers": []
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.reference.tapSpotlight",
@@ -8878,7 +8904,9 @@
       "input": "strict",
       "rateLimited": true,
       "file": "server/routes/castingV2.ts",
-      "clientCallers": []
+      "clientCallers": [
+        "client/src/pages/CastingSheet.tsx"
+      ]
     },
     {
       "id": "route:castingV2.refine",
@@ -13097,6 +13125,10 @@
       "path": "client/src/features/castingV2/referenceReadCopy.test.ts"
     },
     {
+      "id": "test:client/src/features/castingV2/referenceSpotlightCopy.test.ts",
+      "path": "client/src/features/castingV2/referenceSpotlightCopy.test.ts"
+    },
+    {
       "id": "test:client/src/features/castingV2/refineBusy.test.ts",
       "path": "client/src/features/castingV2/refineBusy.test.ts"
     },
@@ -13191,6 +13223,14 @@
     {
       "id": "test:client/src/features/castingV2/singleFlight.test.ts",
       "path": "client/src/features/castingV2/singleFlight.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/spotlightMap.test.ts",
+      "path": "client/src/features/castingV2/spotlightMap.test.ts"
+    },
+    {
+      "id": "test:client/src/features/castingV2/spotlightSurface.test.ts",
+      "path": "client/src/features/castingV2/spotlightSurface.test.ts"
     },
     {
       "id": "test:client/src/features/castingV2/toastOwnership.test.ts",
@@ -21207,6 +21247,11 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "to": "module:client/src/features/castingV2/components/SpotlightStage.tsx",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "to": "module:client/src/features/castingV2/components/VersionRail.tsx",
       "kind": "imports"
     },
@@ -21227,7 +21272,17 @@
     },
     {
       "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "to": "module:client/src/features/castingV2/referenceSpotlightCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
       "to": "module:client/src/features/castingV2/refineBusy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/RefinePanel.tsx",
+      "to": "module:client/src/features/castingV2/spotlightSurface.ts",
       "kind": "imports"
     },
     {
@@ -21283,6 +21338,26 @@
     {
       "from": "module:client/src/features/castingV2/components/SignConfirm.tsx",
       "to": "module:shared/inputLimits.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/SpotlightStage.tsx",
+      "to": "module:client/src/features/castingV2/referenceAttachCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/SpotlightStage.tsx",
+      "to": "module:client/src/features/castingV2/referenceSpotlightCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/SpotlightStage.tsx",
+      "to": "module:client/src/features/castingV2/spotlightMap.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/components/SpotlightStage.tsx",
+      "to": "module:client/src/features/castingV2/spotlightSurface.ts",
       "kind": "imports"
     },
     {
@@ -21388,6 +21463,16 @@
     {
       "from": "module:client/src/features/castingV2/sheetState.ts",
       "to": "module:shared/castingVocabularies.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/spotlightSurface.ts",
+      "to": "module:client/src/features/castingV2/referenceSpotlightCopy.ts",
+      "kind": "imports"
+    },
+    {
+      "from": "module:client/src/features/castingV2/spotlightSurface.ts",
+      "to": "module:client/src/features/castingV2/spotlightMap.ts",
       "kind": "imports"
     },
     {

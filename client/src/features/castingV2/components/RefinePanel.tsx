@@ -19,6 +19,22 @@ import {
 } from "../referenceAttachCopy";
 import { ACCEPTED_PICTURE_FILES, asBase64 } from "../pictureBytes";
 import { READ_CAPTION, READ_USE, droppedNote } from "../referenceReadCopy";
+import {
+  SPOTLIGHT_NOTHING_THERE,
+  SPOTLIGHT_TAKING_LABEL,
+  SPOTLIGHT_UNNAMED_LABEL,
+  letGoLabel,
+} from "../referenceSpotlightCopy";
+import {
+  settleOpen,
+  settleTap,
+  withinStall,
+  type SpotlightOpenAnswer,
+  type SpotlightTapAnswer,
+  type SpotlightView,
+  type TakenPiece,
+} from "../spotlightSurface";
+import { SpotlightStage, cutThumbnail, pictureSize } from "./SpotlightStage";
 import { VersionRail } from "./VersionRail";
 import type { PendingStage } from "../refineBusy";
 import { waitExceeds } from "../waitNotice";
@@ -221,6 +237,7 @@ export function RefinePanel({
   offer = null,
   onAdopt,
   attachPicture = null,
+  spotlight = null,
 }: {
   variants: readonly RefineVariant[];
   /** Refinements still running, from server truth — survives remount (D-161). */
@@ -399,6 +416,27 @@ export function RefinePanel({
     imageBase64: string;
     provenance: InkProvenance;
   }) => Promise<{ referenceId: string }>) | null;
+
+  /**
+   * THE SPOTLIGHT ON AN ATTACHED PICTURE — #14 slice 3b.
+   *
+   * ABSENT rather than disabled outside `CASTING_REFERENCE_SELECTOR_SCOPE`,
+   * the same doctrine as `attachPicture` above it: both procedures answer
+   * NOT_FOUND there, so a picture that opened and waited would be a control
+   * that can only refuse. Absent, the attach looks and works exactly as it did
+   * before this slice — which is also what it does whenever a picture will not
+   * light (§3 item 1's fail-open).
+   *
+   * Two functions, owned by the page like every other call this panel makes:
+   * `open` reads the attached picture into pieces once, `tap` takes what is
+   * under a point and names it. Neither spends a credit, and nothing either
+   * one answers reaches the ask in this slice — the chip is where it ends
+   * (§9: the tap's cut rides the ask in slice 4).
+   */
+  spotlight?: {
+    open: (referenceId: string) => Promise<SpotlightOpenAnswer>;
+    tap: (referenceId: string, at: { x: number; y: number }) => Promise<SpotlightTapAnswer>;
+  } | null;
 }) {
   const instruction = draft;
   const setInstruction = onDraft;
@@ -449,10 +487,116 @@ export function RefinePanel({
     if (liveUrl.current) URL.revokeObjectURL(liveUrl.current);
   }, []);
 
+  /*
+    THE SPOTLIGHT ON THAT PICTURE (#14 slice 3b) — held beside the picture it
+    is about, because it has the picture's one door and dies with it.
+
+    `spot` is null whenever the picture is not lit: nothing attached, outside
+    the scope, a picture brought back by *Use*, or an open that failed or
+    stalled. Null draws exactly the attach this panel drew before the slice.
+
+    `spotFor` is the handle the live answers belong to. Every answer is checked
+    against it when it lands, so an answer for a picture she has since taken off
+    the ask — or swapped for another — is dropped rather than lighting the
+    wrong photograph.
+  */
+  const [spot, setSpot] = useState<{ referenceId: string; view: SpotlightView } | null>(null);
+  const [stageOpen, setStageOpen] = useState(true);
+  const [taken, setTaken] = useState<ReadonlyArray<TakenPiece & { thumb: string | null }>>([]);
+  const [taking, setTaking] = useState(false);
+  const [spotNote, setSpotNote] = useState<string | null>(null);
+  const spotFor = useRef<string | null>(null);
+  const takenCount = useRef(0);
+
+  function resetSpot(): void {
+    spotFor.current = null;
+    setSpot(null);
+    setTaken([]);
+    setTaking(false);
+    setSpotNote(null);
+    setStageOpen(true);
+  }
+
+  /*
+    OPEN IT — the moment the door has taken it (§3 item 1: *"The picture opens
+    large the moment it is attached"*).
+
+    Only for a picture chosen in THIS panel, whose pixels the browser holds: the
+    light is drawn from those pixels and the server never sends one back (§6).
+    A picture *Use* brought back is a projected address with no such copy, so
+    it stays the plain attach it has always been.
+  */
+  async function openSpot(referenceId: string, url: string): Promise<void> {
+    if (!spotlight) return;
+    spotFor.current = referenceId;
+    setTaken([]);
+    setSpotNote(null);
+    setStageOpen(true);
+    setSpot({ referenceId, view: { state: "reading" } });
+    const [answer, size] = await Promise.all([
+      withinStall(spotlight.open(referenceId)),
+      pictureSize(url),
+    ]);
+    const view = await settleOpen(answer, size);
+    if (spotFor.current !== referenceId) return;
+    /* FAIL-OPEN: an unlit picture is no stage at all, and nothing is said. */
+    if (view.state === "unlit") {
+      spotFor.current = null;
+      setSpot(null);
+      return;
+    }
+    setSpot({ referenceId, view });
+  }
+
+  /*
+    TAKE WHAT IS UNDER THE POINT, AND SHOW ITS CHIP.
+
+    The chip carries what was actually cut and the name read from that cut —
+    never the name of the piece that was lit, because a tap can land where
+    nothing is lit and a point can return a part of what was lit (§0 hazards
+    1 and 3). A null name is a chip with no words, never a guess.
+  */
+  async function takeAt(at: { x: number; y: number }): Promise<void> {
+    if (!spotlight || !spot || spot.view.state !== "lit" || taking) return;
+    const { referenceId } = spot;
+    const frame = { width: spot.view.map.width, height: spot.view.map.height };
+    const url = liveUrl.current;
+    setTaking(true);
+    setSpotNote(null);
+    try {
+      const settled = await settleTap(await spotlight.tap(referenceId, at), frame);
+      if (spotFor.current !== referenceId) return;
+      if (!settled.ok) {
+        setSpotNote(settled.note);
+        return;
+      }
+      const thumb = url ? await cutThumbnail(url, settled.taken) : null;
+      if (spotFor.current !== referenceId) return;
+      takenCount.current += 1;
+      const key = `taken-${takenCount.current}`;
+      setTaken((held) => [...held, { ...settled.taken, key, thumb }]);
+    } catch (error) {
+      if (spotFor.current !== referenceId) return;
+      /* The server's own sentence when it spoke one (a rate limit says when
+         to come back); ours when the failure never reached it. */
+      const spoken = typeof (error as { data?: { code?: unknown } } | null)?.data?.code === "string"
+        && error instanceof Error && error.message;
+      setSpotNote(spoken || SPOTLIGHT_NOTHING_THERE);
+    } finally {
+      if (spotFor.current === referenceId) setTaking(false);
+    }
+  }
+
+  function letGo(key: string): void {
+    setTaken((held) => held.filter((piece) => piece.key !== key));
+    setSpotNote(null);
+  }
+
   function dropPicture(): void {
     if (picture) URL.revokeObjectURL(picture.url);
     setPicture(null);
     setAttachRefusal(null);
+    resetSpot();
   }
 
   async function claimPicture(provenance: InkProvenance): Promise<void> {
@@ -462,6 +606,7 @@ export function RefinePanel({
     try {
       const { referenceId } = await attachPicture({ imageBase64: picture.imageBase64, provenance });
       setPicture((held) => (held ? { ...held, referenceId } : held));
+      void openSpot(referenceId, picture.url);
     } catch (error) {
       /* The server's own sentence, unchanged — every refusal this door has is
          spoken (too large, too small, not an image, the cap). A client that
@@ -496,6 +641,10 @@ export function RefinePanel({
        "no reference". */
     onRefine(trimmed, undefined, undefined, picture?.referenceId ?? undefined);
     setInstruction("");
+    /* The choosing is done once the ask is sent, so the open picture folds
+       back into its chip and the face they are refining has the room again.
+       The chip opens it, with everything taken still lit. */
+    setStageOpen(false);
   };
   /*
     THE BOX GROWS WITH THE SENTENCE, up to three lines, and scrolls past that.
@@ -822,6 +971,9 @@ export function RefinePanel({
               const supplied = selectedReferences[0];
               if (!selectedAskReferenceId || !supplied) return;
               if (picture) dropPicture();
+              /* No spotlight on a picture brought back: there is no local copy
+                 of its pixels to light (see `openSpot`). */
+              resetSpot();
               setPicture({ url: supplied.url, imageBase64: "", referenceId: selectedAskReferenceId });
             }}
           >
@@ -840,6 +992,22 @@ export function RefinePanel({
       */}
       {picture ? (
         <div className="dpc-refine__attached">
+          {/*
+            THE PICTURE, OPEN (#14 slice 3b) — above its own chip and the box,
+            so the picture, what was taken from it and the sentence about it
+            read top to bottom as one thing. Only while it is being read or is
+            lit; an unlit picture has no stage (fail-open).
+          */}
+          {spot && stageOpen ? (
+            <SpotlightStage
+              pictureUrl={picture.url}
+              view={spot.view}
+              taken={taken}
+              taking={taking}
+              onTake={(at) => void takeAt(at)}
+              onLetGo={letGo}
+            />
+          ) : null}
           <div className="dpc-refine__attachedRow">
             {/*
               AND THE SAME FOR A REPLAYED ONE. A picture she has just CHOSEN is
@@ -848,7 +1016,19 @@ export function RefinePanel({
               exists — so the tile is dropped rather than drawn broken, and the
               row still carries its remove button and its sentence.
             */}
-            {unshowable.includes(picture.url) ? null : (
+            {unshowable.includes(picture.url) ? null : spot ? (
+              /* While there is an open picture, its chip is the way back to it
+                 once the ask has folded it away — the same picture, so the same
+                 name, and its state is whether it is showing. */
+              <button
+                type="button"
+                className="dpc-refine__thumb dpc-refine__thumb--opens"
+                aria-expanded={stageOpen}
+                onClick={() => setStageOpen((open) => !open)}
+              >
+                <img src={picture.url} alt={ATTACHED_PICTURE_LABEL} />
+              </button>
+            ) : (
               <span className="dpc-refine__thumb">
                 <img
                   src={picture.url}
@@ -869,6 +1049,39 @@ export function RefinePanel({
             >
               <X size={12} strokeWidth={2} aria-hidden="true" />
             </button>
+            {/*
+              WHAT WAS TAKEN FROM IT — one chip per tap, in the row the picture's
+              own chip lives in (§3 item 3). The picture on each is the cut
+              itself, drawn from her own copy; the words are the name read off
+              that cut, or none. Slice 3b ends here: nothing in these chips
+              rides the ask yet (§9 — slice 4).
+            */}
+            {taken.map((piece) => (
+              <span key={piece.key} className="dpc-refine__taken">
+                {piece.thumb ? (
+                  <span className="dpc-refine__thumb dpc-refine__takenThumb">
+                    <img src={piece.thumb} alt={piece.name ? "" : SPOTLIGHT_UNNAMED_LABEL} />
+                  </span>
+                ) : null}
+                {piece.name ? <span className="dpc-refine__takenName">{piece.name}</span> : null}
+                <button
+                  type="button"
+                  className="dpc-refine__attachedOff"
+                  aria-label={letGoLabel(piece.name)}
+                  title={letGoLabel(piece.name)}
+                  onClick={() => letGo(piece.key)}
+                >
+                  <X size={12} strokeWidth={2} aria-hidden="true" />
+                </button>
+              </span>
+            ))}
+            {taking ? (
+              <span
+                className="dpc-refine__thumb dpc-refine__taking"
+                role="status"
+                aria-label={SPOTLIGHT_TAKING_LABEL}
+              />
+            ) : null}
           </div>
 
           {/*
@@ -901,6 +1114,9 @@ export function RefinePanel({
 
           {attachRefusal ? (
             <p className="dpc-refine__readNote">{attachRefusal}</p>
+          ) : null}
+          {spotNote ? (
+            <p className="dpc-refine__readNote" role="status">{spotNote}</p>
           ) : null}
         </div>
       ) : null}
@@ -991,6 +1207,9 @@ export function RefinePanel({
                 if (!file) return;
                 if (picture) URL.revokeObjectURL(picture.url);
                 setAttachRefusal(null);
+                /* A new picture is a new reading; nothing taken from the last
+                   one carries over to it. */
+                resetSpot();
                 void asBase64(file).then((imageBase64) => {
                   setPicture({ url: URL.createObjectURL(file), imageBase64, referenceId: null });
                 }).catch(() => setAttachRefusal(ATTACH_FAILED_FALLBACK));

@@ -539,6 +539,15 @@ export default function CastingSheet() {
     here — she attaches, and the ask comes afterwards in her own sentence.
   */
   const attachReference = trpc.castingV2.reference.attach.useMutation();
+  /*
+    AND THE SPOTLIGHT ON AN ATTACHED PICTURE (#14 slice 3b) — owned here for
+    the same two reasons: the panel stays presentational, and every call the
+    viewer makes belongs to this page. Neither spends a credit and neither
+    stores anything; both are behind `CASTING_REFERENCE_SELECTOR_SCOPE`, which
+    the config read below answers as `referenceSelectorEnabled`.
+  */
+  const openSpotlight = trpc.castingV2.reference.openSpotlight.useMutation();
+  const tapSpotlight = trpc.castingV2.reference.tapSpotlight.useMutation();
   const session = trpc.castingV2.getSession.useQuery(
     { sessionId },
     {
@@ -3994,6 +4003,25 @@ export default function CastingSheet() {
                       imageBase64,
                     });
                     return { referenceId: attached.referenceId };
+                  }
+                  : null
+              }
+              /*
+                THE SPOTLIGHT — handed down only where its road serves this
+                account, the attach door's doctrine one step on: outside the
+                scope both procedures answer NOT_FOUND, so the panel is given
+                nothing and the attach looks exactly as it did.
+
+                It needs the attach door too, because a spotlight opens on a
+                picture that door took; the server's scope chain already says
+                so (a child may not reach past its parent), and asking for both
+                here keeps a misconfigured read from drawing half a road.
+              */
+              spotlight={
+                config.data?.referenceSelectorEnabled && config.data?.attachReferenceEnabled
+                  ? {
+                    open: (referenceId) => openSpotlight.mutateAsync({ referenceId }),
+                    tap: (referenceId, at) => tapSpotlight.mutateAsync({ referenceId, x: at.x, y: at.y }),
                   }
                   : null
               }
