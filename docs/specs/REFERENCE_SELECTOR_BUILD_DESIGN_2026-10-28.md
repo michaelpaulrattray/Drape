@@ -367,6 +367,19 @@ none of which exists in the tree tonight:
 | cut the tapped spot | SAM 3, ONE point prompt at the tap | **UNBUILT** as a reader shape; measured in the court at 8 of 9 garment-level, 1.1–3.8 s |
 | name the tapped cut | today's reader, one call on the cut on flat grey, the bare-noun contract (`isBareNoun`) | prompt shape **measured** in the slice-1 and spotlight courts (8 of 8 on whole-thing cuts); the production call site is slice 3a's |
 
+⚠ **THAT 8-OF-8 WAS MEASURED ON A FRAMING THE PRODUCT DID NOT USE, AND SINCE
+#2875 IT IS (2026-10-31).** The courts named each piece on a tight crop of
+itself — bounding box, 8% margin, enlarged to a 384-px longer side, grey 150 —
+and `pieceOnGrey` shipped the whole photograph greyed out at 128 instead, so
+the figure quoted here described a method the code did not run. Re-measured on
+the court's own nine tap cuts, 300 reader calls, $0.42: the two framings SCORE
+the same (82 of 96 either way), the seven garment-sized pieces are 12 of 12 in
+both, and the crop wins on the two things that are not the score — it is
+**2.1× cheaper a name** and it is **stable**, where the whole frame answered
+one 0.2% piece six different ways including *"Table leg"*. `pieceOnGrey` now
+crops, so this row's figure and the shipped road are the same road. ⚠ **It
+costs about half a second a name** (p50 2.10 s against 1.64 s, interleaved).
+
 Rows 5–10 of the table above (clean/judge, person-free bytes, the mint, the
 ask, the render, the re-cut) are **unchanged** — the tap's cut enters the same
 pipeline whatever drew it.
