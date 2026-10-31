@@ -367,6 +367,19 @@ none of which exists in the tree tonight:
 | cut the tapped spot | SAM 3, ONE point prompt at the tap | **UNBUILT** as a reader shape; measured in the court at 8 of 9 garment-level, 1.1–3.8 s |
 | name the tapped cut | today's reader, one call on the cut on flat grey, the bare-noun contract (`isBareNoun`) | prompt shape **measured** in the slice-1 and spotlight courts (8 of 8 on whole-thing cuts); the production call site is slice 3a's |
 
+⚠ **THAT 8-OF-8 WAS MEASURED ON A FRAMING THE PRODUCT DID NOT USE, AND SINCE
+#2875 IT IS (2026-10-31).** The courts named each piece on a tight crop of
+itself — bounding box, 8% margin, enlarged to a 384-px longer side, grey 150 —
+and `pieceOnGrey` shipped the whole photograph greyed out at 128 instead, so
+the figure quoted here described a method the code did not run. Re-measured on
+the court's own nine tap cuts, 300 reader calls, $0.42: the two framings SCORE
+the same (82 of 96 either way), the seven garment-sized pieces are 12 of 12 in
+both, and the crop wins on the two things that are not the score — it is
+**2.1× cheaper a name** and it is **stable**, where the whole frame answered
+one 0.2% piece six different ways including *"Table leg"*. `pieceOnGrey` now
+crops, so this row's figure and the shipped road are the same road. ⚠ **It
+costs about half a second a name** (p50 2.10 s against 1.64 s, interleaved).
+
 Rows 5–10 of the table above (clean/judge, person-free bytes, the mint, the
 ask, the render, the re-cut) are **unchanged** — the tap's cut enters the same
 pipeline whatever drew it.
@@ -656,6 +669,15 @@ reads this document and the mock verdict first):
      of a hair piece takes the hair inside the rectangle with it. That is §6
      working as written; **changing it is a change to the likeness fence and
      is HIS, not a builder's.**
+     ⚠ **BOTH FIGURES ABOVE WERE TAKEN ON THE COURT'S DEDUPLICATED MASKS, AND
+     #2873 IS WHAT MAKES THEM TRUE OF THE PRODUCT — read that card's note on
+     3a-2 below before quoting either.** They were never wrong about the
+     pipeline they describe; the pipeline simply did not exist until the court's
+     own near-duplicate step was ported. On the shipped road, measured
+     2026-10-31 on a real raw grid: **6 of 9 garment-level, which is this
+     slice's own "after" figure exactly**, and **the hair stands at 0.653
+     rather than 0.503** — still the one real cost, still below the 0.75 bar,
+     still his decision and not a builder's.
    - **(3a-2) THE ENTRANCE — NOT BUILT.** The service that reads the
      attachment's bytes, gates on `CASTING_REFERENCE_SELECTOR_SCOPE`, and
      calls split → clean → face-detect, then cut → name on a tap. ⚠ **The two
@@ -668,10 +690,24 @@ reads this document and the mock verdict first):
    - ⚠ **One thing 3a-1 did NOT measure, declared rather than implied:** the
      clean-up was measured on the court's **deduplicated** pieces, because
      that is what the court saved. A live 32-point grid returns the same
-     garment from many points, and the arbitration's tie rule collapses
-     duplicates by itself (measured: 18 pieces → 13, 8 → 5) — but *on a raw
+     garment from many points, and ~~the arbitration's tie rule collapses
+     duplicates by itself (measured: 18 pieces → 13, 8 → 5)~~ — but *on a raw
      grid* that is reasoning, not a reading. **3a-2's first act is one real
      split on his own account, and the figure to watch is the piece count.**
+     ⚠ **IT WAS BOUGHT (3a-2) AND THE STRUCK CLAUSE WAS WRONG IN THE WORST
+     DIRECTION — #2873, closed 2026-10-31.** The contest does not collapse
+     duplicates, it **CARVES** them: every contested pixel goes to exactly one
+     winner, so thirty-two near-identical masks become thirty-two slivers of one
+     another. Measured on a real raw grid: **26 / 26 / 28 pieces, and 2 of the 9
+     things garment-level** — pointing at the middle of a tank top lit 20% of it
+     and a sweater 21%. **The cause is that the court's own near-duplicate step
+     (`court.mjs:67`) never left the harness**, so every figure here was taken on
+     a set the shipped road did not produce. The step is ported with its
+     threshold measured rather than inherited
+     (`SPLIT_SAME_THING_IOU` = 0.5, the court used 0.85): the shipped road
+     now gives **11 / 6 / 8 pieces and 6 of 9**, and the per-thing hover numbers
+     are 0.978 tank top, 0.991 jacket, 0.994 scarf, 0.981 sweater, 0.954 belt,
+     0.986 sneaker, 0.653 hair.
    **(3b) The surface:** the picture opens large, *"Reading your picture…"*,
    the spotlight hover (tap-to-light on touch), tap → cut → chip with the
    cut's own name, tap again to let go, fail-open to words — behind the flag,

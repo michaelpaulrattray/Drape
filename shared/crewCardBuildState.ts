@@ -303,6 +303,43 @@ export function pullRequestBuildsCard(
 }
 
 /**
+ * WHICH OPEN PULL REQUEST IS BUILDING THIS CARD — the lowest-numbered one, or
+ * `null`. The ONE owner of that selection (#2866).
+ *
+ * ⚠ **THE LOWEST NUMBER, so a card with a replacement pull request and its
+ * predecessor both still open names one of them deterministically.** Two
+ * readers answering this in different orders would disagree about which pull
+ * request a row names, and this family's whole job is to agree about what is
+ * still on offer.
+ *
+ * ⚠ **IT IS EXTRACTED RATHER THAN LEFT INLINE BECAUSE A SECOND READER NEEDS IT
+ * AND CANNOT IMPORT IT.** `planUnheldDecisions` (`shared/crewNextUpHold.ts`)
+ * printed a band claiming *"every seat is still offered them"* about cards an
+ * open pull request already holds off offer, and repairing that means asking
+ * this question from a module **this one already imports** (`./crewNextUpHold`,
+ * line 92) — so the import cannot be returned without a cycle. That caller is
+ * handed the ANSWER instead, computed here, so neither side keeps a copy of the
+ * rule.
+ *
+ * An empty board answers `null` for every card, which is also what a board
+ * holding nothing relevant answers. ⚠ **Whether the board was READ AT ALL is
+ * the caller's fact and is never inferred here** — a reader treating "no pull
+ * requests given" as "nothing is building this" would turn an unread board into
+ * a positive claim, which is the direction this whole family refuses to fail in.
+ */
+export function openPullRequestBuilding(
+  openPullRequests: readonly CrewBuildPullRequest[],
+  card: number,
+): CrewBuildPullRequest | null {
+  let lowest: CrewBuildPullRequest | null = null;
+  for (const pr of openPullRequests) {
+    if (pullRequestBuildsCard(pr, card).length === 0) continue;
+    if (lowest === null || pr.number < lowest.number) lowest = pr;
+  }
+  return lowest;
+}
+
+/**
  * ⚠ **THE ORDER IS THE DESIGN.** A draft is first because an unfinished pull
  * request is unfinished whatever else is true of it. A FRESH VERDICT then
  * outranks the review label, and that is the whole of the 2026-09-26 desk
@@ -1233,13 +1270,14 @@ export function crewCardBuildState(input: {
 }): CrewCardBuildState | null {
   const { card, openPullRequests, facts, nowMs } = input;
   const labelled = input.notBuilt?.has(card) === true;
-  const building = openPullRequests
-    .filter((pr) => pullRequestBuildsCard(pr, card).length > 0)
-    /* The lowest number, so a card with a replacement PR and its predecessor
-       still open names one of them deterministically. */
-    .sort((a, b) => a.number - b.number);
-  const pr = building[0];
-  if (pr !== undefined) {
+  /* ⚠ CALLED, NEVER REPEATED (#2866). The sweep's unheld-decision band has to
+     ask the same question about a card it holds no comment facts for, so the
+     selection is {@link openPullRequestBuilding} and both sides derive from it
+     — three lines of filter-and-sort copied into a second reader is the mirror
+     working law 4 names, in the one family whose whole job is to agree about
+     what is still on offer. */
+  const pr = openPullRequestBuilding(openPullRequests, card);
+  if (pr !== null) {
     const stage = prStage(pr);
     /* The note rides ONLY on the stage it belongs to. Carrying it on every row
        would let a reassurance written on an older finding survive a repair and

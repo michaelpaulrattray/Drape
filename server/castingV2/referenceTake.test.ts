@@ -451,7 +451,13 @@ describe("mintTakeCut", () => {
     width: 10,
     height: 10,
     noun: "jacket",
-    verdict: { use: true, fill: 0.5, claimed: 50, insideBox: 50, why: "used" as const },
+    /* One clean shape — `pieces` and `largestPieceShare` are measured and
+       refuse nothing (#2841), so a fixture carries the honest pair rather than
+       omitting them. */
+    verdict: {
+      use: true, fill: 0.5, claimed: 50, insideBox: 50, why: "used" as const,
+      pieces: 1, largestPieceShare: 1,
+    },
     facesRemoved: 0,
     /* Evidence the mint does not read, carried because a `TakenThing` has it
        (#2842). The mint's own arms assert the key, the manifest and the digest;
