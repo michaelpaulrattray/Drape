@@ -68,6 +68,7 @@ import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import type { FeatureSlot } from "./recipeAssembler";
 import { captureCastingFaceDiscoveryEnabled, captureCastingScanTableEnabled } from "./castingV2Scope";
+import { pointerBoxerFor } from "./pointerBoxer";
 import { discoverFeatures, discoveryCropsOf, type FaceDiscovery, type FeatureKind } from "./faceDiscovery";
 import { keepScan, serveKeptScan, type KeptScanShape } from "./keptFaceScan";
 import { coversAFaceCut } from "./maskCoverage";
@@ -485,9 +486,20 @@ export function pairInOneReadEnabled(): boolean {
   return process.env[PAIR_ONE_READ_ENV] === "true";
 }
 
-function defaultRegionReader(): RegionReader | null {
+/**
+ * The scan's reader, for THIS account: `userId` decides only who draws the box
+ * round a found name (`CASTING_POINTER_ENGINE_SCOPE`, #2863). Off, the reader
+ * is exactly the one every scan has been read with.
+ */
+function defaultRegionReader(userId: number): RegionReader | null {
   const apiKey = process.env.FAL_KEY;
-  return apiKey ? createFalRegionReader({ apiKey, pairInOneRead: pairInOneReadEnabled() }) : null;
+  if (!apiKey) return null;
+  const boxer = pointerBoxerFor(userId);
+  return createFalRegionReader({
+    apiKey,
+    pairInOneRead: pairInOneReadEnabled(),
+    ...(boxer === undefined ? {} : { boxer }),
+  });
 }
 
 /**
@@ -807,7 +819,7 @@ export async function scannedFace(input: {
     const readBytes = input.dependencies?.readBytes ?? storageReadBytes;
     const publicUrl = input.dependencies?.publicUrl ?? storagePublicUrl;
     const reader = input.dependencies?.reader === undefined
-      ? defaultRegionReader()
+      ? defaultRegionReader(input.userId)
       : input.dependencies.reader;
     if (reader === null) {
       /* No transport, no reading. It refuses rather than returning an empty
