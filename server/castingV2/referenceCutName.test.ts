@@ -14,6 +14,9 @@ import { JUDGE_FRAME_LONG_EDGE } from "./judgeFrame";
 import type { Mask } from "./maskedComposite";
 import {
   CUT_NAME_BACKDROP,
+  CUT_NAME_CROP_MIN_LONG_EDGE,
+  CUT_NAME_CROP_PAD_FLOOR_PX,
+  CUT_NAME_CROP_PAD_FRACTION,
   CUT_NAME_PROMPT,
   nameTheCut,
   pieceOnGrey,
@@ -50,30 +53,97 @@ function engineSaying(text: string): { engine: TextEngine; asked: TextRequest[] 
   return { engine, asked };
 }
 
+/**
+ * A BIG frame with a BIG cut, sized so the crop needs no enlarging.
+ *
+ * ⚠ The 8x8 `frame`/`square` pair cannot carry the pixel assertions any more
+ * (#2875): a 2x2 cut crops to 7x7 and is then enlarged to the 384-px floor, and
+ * enlarging RESAMPLES — the boundary pixels come back as blends of red and
+ * grey, so "count the pixels that are exactly 200" would be measuring sharp's
+ * interpolator rather than this function. At 400x400 in 512x512 the crop is
+ * 472x472, over the floor, and every pixel is still exactly what was written.
+ */
+const BIG = 512;
+const CUT_FROM = 64;
+const CUT_TO = 463;
+async function bigFrame(): Promise<Buffer> {
+  const sharp = (await import("sharp")).default;
+  return sharp({ create: { width: BIG, height: BIG, channels: 3, background: { r: 200, g: 20, b: 20 } } })
+    .png()
+    .toBuffer();
+}
+function bigSquare(): Mask {
+  const data = Buffer.alloc(BIG * BIG, 0);
+  for (let y = CUT_FROM; y <= CUT_TO; y += 1) {
+    for (let x = CUT_FROM; x <= CUT_TO; x += 1) data[y * BIG + x] = 255;
+  }
+  return { data, width: BIG, height: BIG };
+}
+/* The margin this crop is owed, from the constants rather than from a number
+   typed twice: round(399 * 0.08) + 4 = 36. */
+const BIG_PAD =
+  Math.round((CUT_TO - CUT_FROM) * CUT_NAME_CROP_PAD_FRACTION) + CUT_NAME_CROP_PAD_FLOOR_PX;
+const BIG_SIDE = Math.min(BIG - 1, CUT_TO + BIG_PAD) - Math.max(0, CUT_FROM - BIG_PAD) + 1;
+
 describe("the piece on flat grey", () => {
   it("REPLACES every pixel outside the cut, so no photograph leaves the building", async () => {
     const sharp = (await import("sharp")).default;
 
-    const piece = await pieceOnGrey({ frame: await frame(), mask: square() });
+    const piece = await pieceOnGrey({ frame: await bigFrame(), mask: bigSquare() });
 
     const raw = await sharp(piece.bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    const { channels } = raw.info;
+    const { width, channels } = raw.info;
     const px = (x: number, y: number): number[] => {
-      const at = (y * W + x) * channels;
+      const at = (y * width + x) * channels;
       return [raw.data[at]!, raw.data[at + 1]!, raw.data[at + 2]!];
     };
+    /* Where the cut sits once the margin is cropped away. */
+    const inset = CUT_FROM - Math.max(0, CUT_FROM - BIG_PAD);
     /* Inside the cut: the real photograph. */
-    expect(px(1, 1)).toEqual([200, 20, 20]);
-    expect(px(2, 2)).toEqual([200, 20, 20]);
+    expect(px(inset, inset)).toEqual([200, 20, 20]);
+    expect(px(inset + 399, inset + 399)).toEqual([200, 20, 20]);
     /* Outside it: grey, and NOT the photograph under an alpha channel. */
     expect(px(0, 0)).toEqual([CUT_NAME_BACKDROP.r, CUT_NAME_BACKDROP.g, CUT_NAME_BACKDROP.b]);
-    expect(px(5, 5)).toEqual([CUT_NAME_BACKDROP.r, CUT_NAME_BACKDROP.g, CUT_NAME_BACKDROP.b]);
-    /* Four pixels of the picture survive and sixty do not. */
+    expect(px(BIG_SIDE - 1, BIG_SIDE - 1)).toEqual([
+      CUT_NAME_BACKDROP.r,
+      CUT_NAME_BACKDROP.g,
+      CUT_NAME_BACKDROP.b,
+    ]);
+    /* Exactly the cut's own pixels survive, and not one more. */
     let photograph = 0;
-    for (let y = 0; y < H; y += 1) {
-      for (let x = 0; x < W; x += 1) if (px(x, y)[0] === 200) photograph += 1;
+    for (let y = 0; y < raw.info.height; y += 1) {
+      for (let x = 0; x < width; x += 1) if (px(x, y)[0] === 200) photograph += 1;
     }
-    expect(photograph).toBe(4);
+    expect(photograph).toBe(400 * 400);
+  });
+
+  it("crops to the piece's own extent plus the measured margin (#2875)", async () => {
+    const sharp = (await import("sharp")).default;
+
+    const piece = await pieceOnGrey({ frame: await bigFrame(), mask: bigSquare() });
+
+    const meta = await sharp(piece.bytes).metadata();
+    /* 400 wide plus 36 each side = 472, and emphatically not the frame's 512. */
+    expect(BIG_PAD).toBe(36);
+    expect(meta.width).toBe(BIG_SIDE);
+    expect(meta.height).toBe(BIG_SIDE);
+    expect(meta.width).toBeLessThan(BIG);
+  });
+
+  it("enlarges a piece under the floor rather than posting a speck (#2875)", async () => {
+    const sharp = (await import("sharp")).default;
+
+    /* The 2x2 cut in an 8x8 frame: a crop of 7x7, far under the floor. */
+    const piece = await pieceOnGrey({ frame: await frame(), mask: square() });
+
+    const meta = await sharp(piece.bytes).metadata();
+    expect(Math.max(meta.width!, meta.height!)).toBe(CUT_NAME_CROP_MIN_LONG_EDGE);
+    /* THE CONTROL: the big piece is over the floor and is NOT touched, so the
+       arm above is measuring the floor and not a resize that always happens. */
+    const big = await pieceOnGrey({ frame: await bigFrame(), mask: bigSquare() });
+    const bigMeta = await sharp(big.bytes).metadata();
+    expect(bigMeta.width).toBe(BIG_SIDE);
+    expect(bigMeta.width).toBeGreaterThan(CUT_NAME_CROP_MIN_LONG_EDGE);
   });
 
   it("refuses a cut that is not the picture's size rather than resampling", async () => {
@@ -81,6 +151,17 @@ describe("the piece on flat grey", () => {
 
     await expect(pieceOnGrey({ frame: await frame(), mask: wrong })).rejects.toThrow(
       /refusing rather than resampling/,
+    );
+  });
+
+  it("refuses an EMPTY cut rather than naming a blank grey field (#2875)", async () => {
+    /* Before the crop this was harmless — an empty mask greyed the whole frame
+       and the reader said something useless about nothing. Cropping makes it a
+       negative box, so it is now refused by name. */
+    const empty: Mask = { data: Buffer.alloc(W * H, 0), width: W, height: H };
+
+    await expect(pieceOnGrey({ frame: await frame(), mask: empty })).rejects.toThrow(
+      /the cut is empty/,
     );
   });
 });
@@ -98,7 +179,22 @@ describe("naming the cut", () => {
     expect(asked[0]!.system).toContain("bare noun phrase of one to three words");
     expect(asked[0]!.about).toBe("reference.cutName");
     expect(asked[0]!.images).toHaveLength(1);
-    expect(asked[0]!.images![0]!.contentType).toBe("image/png");
+    /*
+      ⚠ THIS ASSERTED `image/png` UNTIL #2875 AND IT WAS PINNING THE WRONG
+      THING. `pieceOnGrey` still emits PNG — that contract is pinned on its own
+      below — but what LEAVES is whatever `boundForJudge` kept, and the crop
+      changed that answer: a cropped piece re-encodes SMALLER as JPEG, so the
+      bound now keeps the JPEG where it used to keep the PNG. The content type
+      was never the property worth pinning at the wire; the DIMENSIONS are,
+      because they are what says the crop happened at all.
+    */
+    const sharp = (await import("sharp")).default;
+    const piece = await pieceOnGrey({ frame: await frame(), mask: square() });
+    expect(piece.contentType).toBe("image/png");
+    const posted = await sharp(asked[0]!.images![0]!.bytes).metadata();
+    const cropped = await sharp(piece.bytes).metadata();
+    expect(posted.width).toBe(cropped.width);
+    expect(posted.width).not.toBe(W);
   });
 
   it("tidies a quoted or stopped answer without inventing one", async () => {
