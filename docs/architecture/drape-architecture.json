@@ -11236,6 +11236,11 @@
       "valueRecorded": false
     },
     {
+      "id": "env:CASTING_CONCEPT_RICH_LOOK_SCOPE",
+      "name": "CASTING_CONCEPT_RICH_LOOK_SCOPE",
+      "valueRecorded": false
+    },
+    {
       "id": "env:CASTING_CONCEPT_UPLOAD_SCOPE",
       "name": "CASTING_CONCEPT_UPLOAD_SCOPE",
       "valueRecorded": false
@@ -11645,6 +11650,11 @@
     {
       "id": "flag:CASTING_BRIEF_FIDELITY_SCOPE",
       "name": "CASTING_BRIEF_FIDELITY_SCOPE",
+      "grammar": "off|all|users:<ids>"
+    },
+    {
+      "id": "flag:CASTING_CONCEPT_RICH_LOOK_SCOPE",
+      "name": "CASTING_CONCEPT_RICH_LOOK_SCOPE",
       "grammar": "off|all|users:<ids>"
     },
     {
@@ -14571,6 +14581,18 @@
     {
       "id": "test:server/castingV2/conceptReaderModel.test.ts",
       "path": "server/castingV2/conceptReaderModel.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/conceptReaderWire.test.ts",
+      "path": "server/castingV2/conceptReaderWire.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/conceptRichLook.test.ts",
+      "path": "server/castingV2/conceptRichLook.test.ts"
+    },
+    {
+      "id": "test:server/castingV2/conceptRichLookScope.test.ts",
+      "path": "server/castingV2/conceptRichLookScope.test.ts"
     },
     {
       "id": "test:server/castingV2/conceptUploadScope.test.ts",

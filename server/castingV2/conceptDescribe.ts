@@ -502,9 +502,51 @@ export function conceptReaderEngine(): TextEngine | null {
   return readerEngine;
 }
 
-/** Test seam: drops the memoized reader engine. */
+/**
+ * THE RICH-LOOK READER'S MODEL (#2911) — Gemini 4 Argon, his bench's winner.
+ *
+ * His words, 2026-10-31 (chat, verbatim on the card): *"id like to also run a
+ * test on the cast brief image analyzer currently i think we use claude sonet id
+ * like to bench mark against argon 4 and claude opus 5.5"*, then *"argon is the
+ * winner so stop testing the others now"*. Measured on his own concept picture
+ * the same evening: 0.6–0.8 cents a read against today's 2.1, at about the same
+ * ten seconds.
+ *
+ * ⚠ **IT IS A SECOND CONSTANT, NOT AN EDIT TO {@link CONCEPT_READER_MODEL}.**
+ * The swap ships behind `CASTING_CONCEPT_RICH_LOOK_SCOPE` together with the
+ * rules it was benched with, and an account outside that flag keeps today's
+ * reader byte for byte. The model and the rules move TOGETHER because that is
+ * what he looked at: the winning reading was Argon on the rich-look rules, and
+ * neither half alone has been in front of his eye.
+ */
+export const CONCEPT_RICH_LOOK_MODEL = "google/gemini-4-argon";
+
+let richLookEngine: TextEngine | null = null;
+
+/**
+ * The rich-look reader's engine: its own model, the SAME one allowance.
+ *
+ * The queue argument is the whole of this function, exactly as it is for
+ * {@link conceptReaderEngine}: a second engine handed no queue builds a second
+ * `ProviderQueue`, which would quietly double what the product may have in
+ * flight at OpenRouter (`conceptReaderModel.test.ts`).
+ */
+export function conceptRichLookReaderEngine(): TextEngine | null {
+  if (richLookEngine) return richLookEngine;
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return null;
+  richLookEngine = createOpenRouterTextEngine({
+    apiKey,
+    model: CONCEPT_RICH_LOOK_MODEL,
+    queue: interpreterTextQueue(),
+  });
+  return richLookEngine;
+}
+
+/** Test seam: drops both memoized reader engines. */
 export function resetConceptReaderForTests(): void {
   readerEngine = null;
+  richLookEngine = null;
 }
 
 /**
@@ -627,6 +669,41 @@ export const CONCEPT_DESCRIPTION_TARGET = { low: 150, high: 250 } as const;
  * language, over a floor his ruling never made hard, is over-enforcement.
  */
 export const CONCEPT_DESCRIPTION_MIN = 100;
+
+/**
+ * THE RICH LOOK'S BOUNDS (#2911) — 700 on the way in, 800 on the re-ask, and
+ * ~400–650 announced. Today's three numbers above are untouched.
+ *
+ * The card read them at the code: the winning reading of his concept picture
+ * was **602 characters** (measured off the bench's own file), so today's 300
+ * would have sent it back as `long` and the 400 re-ask ceiling would then have
+ * refused it — the reading he picked could not have reached him. The same
+ * reader on the same picture with the hair line taken out came back at **716**,
+ * over 700, which is why the re-ask gets the extra hundred: it is the #1073
+ * shape again (*"the first read still has to come in"* at its ceiling, and only
+ * the read we have already sent back once gets room).
+ *
+ * ⚠ **THE ANTI-CLONE ARGUMENT IS NOT GIVEN UP, IT IS MOVED.** Today's ceiling
+ * exists because every detail named is locked onto all eight faces. On this
+ * reading the FACE AND THE HAIR are never named at all — that is the rule, and
+ * it is the part of the anti-clone control that was ever about faces — so what
+ * the extra length buys is pieces, markings, hardware and wardrobe, which is
+ * what he asked for (*"give it details to imagine"*). It stays a fifth of the
+ * entrance's author-road cap (`BRIEF_TEXT_MAX_AUTHOR_ROAD`, 4,000), so a
+ * description alone still never reaches a bound the customer did not write.
+ *
+ * The floor is shared: {@link CONCEPT_DESCRIPTION_MIN} still means "a shrug
+ * wearing a description", whichever reading it is. A thin rich look is still a
+ * description; a hundred characters is still not one.
+ */
+export const CONCEPT_RICH_LOOK_MAX = 700;
+export const CONCEPT_RICH_LOOK_MAX_RETRY = 800;
+export const CONCEPT_RICH_LOOK_TARGET = { low: 400, high: 650 } as const;
+
+/** The rich look's ceiling for this attempt — {@link ceilingForAttempt}'s shape, its own numbers. */
+function richLookCeilingForAttempt(attempt: number): number {
+  return attempt === 1 ? CONCEPT_RICH_LOOK_MAX : CONCEPT_RICH_LOOK_MAX_RETRY;
+}
 
 /**
  * WORDS ABOUT THE PICTURE, NOT ABOUT THE PERSON — swept out of the reply.
@@ -1034,12 +1111,185 @@ const RULES = [
 
 const ASK = "Describe the person or creature in this picture.";
 
+/**
+ * ⚠ THE RICH LOOK, THE FACE AND HAIR LEFT FREE — the second reading, his pick
+ * on his own bench (#2911, 2026-10-31). {@link RULES} above is untouched and is
+ * still what every account outside `CASTING_CONCEPT_RICH_LOOK_SCOPE` is read
+ * with; the two live side by side and the flag chooses.
+ *
+ * # WHAT HE SAID, AND WHAT HE LOOKED AT
+ *
+ * The direction, verbatim: *"i think we need to loosen things up to get more
+ * detailed casts"*, *"we still need to let the image engine imagine its own
+ * version but still give it details to imagine"*. The pick: *"this result was
+ * best based on our reference image"*, of the bench reading written under the
+ * relay's face-free rules. Then the hair, verbatim and settled: *"IF we dont
+ * specify hair it will default to most likley from hertiage . i think we just
+ * settle on that."* And his own edit to the reading he picked: *"the only change
+ * i made was her eye color to get ot varying i said "unusal colored eyes" i
+ * didnt want to say green because on an east asian women green eyes are unusual
+ * but its also non specific. you might come up with somthing better"*.
+ *
+ * So the job moves from TYPE to INGREDIENTS. The same being, read for what an
+ * artist needs to imagine their own version: species facts first, signature
+ * pieces, markings and where they live, fitted hardware as features, wardrobe as
+ * materials and silhouette — and NOTHING about the face or the hair, because
+ * those are the two things that turn eight different people into one. His eye
+ * change is generalised as the STANDOUT rule: a direction, never a value, and
+ * only where the trait is genuinely unusual for the type.
+ *
+ * # KEPT FROM TODAY'S RULES, CLAUSE BY CLAUSE
+ *
+ * Beings and not only people (#204, and the same object/vehicle/landscape line
+ * the roll road's wall draws); never a character's name or a likeness; fitted
+ * hardware is a feature (his reply 28); the four refused words with their
+ * reason; nothing about the light, the set or the camera; never an absence; the
+ * build only where it is the type, from {@link BUILD_FAMILIES} and never a size;
+ * the surface rule (*"never invent fur"*, #231) and the creature checklist; the
+ * species-over-styling precedence; and the JSON envelope. The two sweeps below
+ * ({@link notAboutThePersonIn}, {@link absenceClaimIn}) run on this reading
+ * exactly as on today's.
+ *
+ * # THE THREE JUDGEMENT CALLS, DECLARED
+ *
+ * 1. **NEVER NAME A BARE BODY AREA is an instruction, not a sweep.** Measured
+ *    the night of the bench: Argon's *"tattoos on the face, torso and arms"*
+ *    was refused at the image engine's request stage 5 of 10 times with
+ *    *torso* and 0 of 6 without. The tempting build is a word ban, and this file
+ *    has refused that four times on one test — a ban is admissible only where
+ *    the word has no second sense — and *torso* has one on this very road: a
+ *    robot's chrome torso is its anatomy. He ruled the same way on the drop
+ *    list (*"Hard ban — Don't … Proof is the output, not a word list."*), so
+ *    the rule carries its REASON and the proof is the renders.
+ * 2. **THE HAIR IS NOT SWEPT EITHER**, for the sharper reason that *hairless*
+ *    is a species fact this same instruction requires (#231: *"If skin is bare,
+ *    write hairless"*). A ban on `hair` would refuse the sphynx he ruled on.
+ * 3. **THE SPECIMENS ARE THE GOTH WOMAN, NOT HIS CONCEPT PICTURE.** The card
+ *    asks for {@link INVENTORY_NOTE}'s failing example to be rewritten to show
+ *    the new line — rich in pieces and wrong only on the face and the hair. It
+ *    is built on the subject his own styled line describes, and deliberately
+ *    NOT on the picture the acceptance read uses: a specimen of that picture in
+ *    the instruction would make the read measure recall rather than reading
+ *    (the specimen-joins-the-vocabulary trap, which this file already records).
+ */
+export const RICH_LOOK_NOTES = {
+  /** RIGHT — rich in ingredients, nothing about the face, nothing about the hair. */
+  right:
+    "A woman in her twenties, dark-fashion / cyber-goth model type with pale skin. A fitted "
+    + "mechanical eye is set into the face as part of the being, not as a prop. Facial piercings "
+    + "and fine-line markings across the face, with script tattoos running down both arms. "
+    + "Signature pieces are a high structured collar at the throat and long lace gloves. The "
+    + "wardrobe is black lace, leather and metal accents in a fitted, layered silhouette that "
+    + "sweeps to the floor.",
+  /**
+   * WRONG — the same woman, and wrong ONLY on the face and the hair. The card's
+   * own instruction for it: the old failing box *"is now closer to right on
+   * items; rewrite it to show the new line, which is no face and no hair, not no
+   * items."* So its pieces, markings and wardrobe are deliberately the right
+   * note's, and an arm holds them there.
+   */
+  faceAndHair:
+    "A woman in her twenties, dark-fashion / cyber-goth model type with pale skin, pale green "
+    + "eyes, heavy winged eyeliner, dark plum lips and sharply arched brows, and long straight "
+    + "platinum hair with blunt bangs. A fitted mechanical eye is set into the face. Facial "
+    + "piercings and fine-line markings across the face, with script tattoos running down both "
+    + "arms. The wardrobe is black lace, leather and metal accents in a fitted, layered silhouette.",
+} as const;
+
+/**
+ * The rich look's instruction. Its wording is the relay's bench rules
+ * (`_concept-bench-facefree-disposable.mts`, with the hair line of the
+ * `-nohair` variant) carried over, with three repairs and today's kept rules:
+ * the standout rule is his eye edit generalised; the bench's own hardware
+ * example said *"an implant plate in the abdomen"* two lines above its ban on
+ * naming the abdomen, so it says *"fitted at the waist"* here; and the specimens
+ * above are added, which the bench had none of — declared, because it is a
+ * difference from what he looked at, and the acceptance read is what measures it.
+ */
+const RICH_LOOK_RULES = [
+  "You are a casting director's reader. You are shown one picture of a being, and you write a RICH",
+  "CASTING NOTE that an image artist will use to imagine their OWN version of this being. Give the artist",
+  "the INGREDIENTS that make this being who they are, in enough detail that their version is",
+  "unmistakably of the same kind, while leaving them free to compose it: eight artists given your note",
+  "should paint eight different takes that a viewer would say all came from this picture.",
+  "",
+  "THIS STUDIO CASTS BEINGS, not people only: photoreal humans first, and equally sci-fi humans,",
+  "creatures, monsters, aliens, robots and androids, drawn or photographed. A creature gets the same",
+  "note a person does.",
+  "There is NOBODY in the picture only when there is no being in it at all: an object, a vehicle, a",
+  "landscape, a building, a product, food, a pattern, an empty room.",
+  "",
+  "IF THE BEING IS A RECOGNIZABLE CHARACTER from a film, game, comic or show, write its TYPE and",
+  "NEVER its name, its franchise, or so much exact detail that your words rebuild that character.",
+  "A drawing or a render is a picture OF somebody: describe the being, never the medium or its style.",
+  "",
+  "WRITE, in flowing sentences: apparent sex; an age BAND, never an exact age; the heritage family, but",
+  "ONLY if it is genuinely visible — never guess one; the build ONLY where it is part of the type, from",
+  `this closed list and nothing else — ${BUILD_FAMILIES.join(", ")} — and never a body size such as`,
+  "\"slight\", \"slender\", \"petite\" or \"curvy\"; the type itself; and then the INGREDIENTS:",
+  "- SPECIES FACTS FIRST: the kind of being, and its tail, ears, horns, wings, scales, whiskers and mouth",
+  "  anatomy (\"short tusks\", \"non-human dentition\"). IF IT IS IN THE FRAME, WRITE IT. Name what the",
+  "  skin, hide, scale or plating actually is: if the skin is bare, write it (\"hairless\", \"bare grey",
+  "  hide\"), and never invent fur, a coat or a mane on a being that has none.",
+  "- SIGNATURE PIECES: up to four defining pieces worn or carried, by look and material, never by brand.",
+  "- MARKINGS AND MOTIFS: what they are, roughly where they live, and their style.",
+  "- HARDWARE: anything fitted into the body is a FEATURE of the being, described with where it sits",
+  "  (\"a mechanical eye set into the face\", \"a metal collar fused at the throat\", \"a core plate",
+  "  fitted at the waist\").",
+  "- WARDROBE: its materials, palette and silhouette, as a look rather than a packing list.",
+  "",
+  "THE FACE STAYS FREE. Never describe the face itself: no eye colour, no eyeliner or makeup, no lips,",
+  "no brows, no face shape, nose, jaw or cheekbones. Those turn eight different people into one person,",
+  "and each artist must cast a different face. Hardware fitted into the face and markings on it are not",
+  "the face: they stay, as a style and never as a layout. Nor is HERITAGE the face: where the heritage",
+  "family is genuinely visible, NAME IT, because each artist builds the face and the hair from it.",
+  "THE HAIR IS NOT MENTIONED AT ALL — not its colour, its length, its cut or its style; each artist",
+  "chooses it. A creature's hide, scales or fur is its SURFACE rather than its hair, and the species rule",
+  "above governs it.",
+  "A STANDOUT TRAIT IS A DIRECTION, NEVER A VALUE. Only where a trait is genuinely unusual for this type",
+  "of being, name the direction and leave the value to the artist: \"an unusual eye colour\", \"striking",
+  "freckling\", \"a prominent scar\" — never \"green eyes\". A trait that is ordinary for the type goes",
+  "unmentioned.",
+  "NEVER NAME A BARE BODY AREA: no torso, chest, belly, ribs, abdomen or midriff. Say where a thing is",
+  "worn or fitted instead (\"fitted at the waist\", \"down the arms\", \"across the shoulders\"), because",
+  "the image engine refuses notes that name them.",
+  "",
+  "INGREDIENTS, NEVER A BLUEPRINT: no measurements, exact layouts, stitch-level construction or the",
+  "precise design of a tattoo — give the artist something to imagine, not something to trace.",
+  "Never use the words spiked, studded, buckled or chained, or anything like them: a note carrying them",
+  "is REFUSED OUTRIGHT by the image engine. Describe metal as metal accents or hardware instead.",
+  "NEVER mention: the lighting, the background or set, the framing, crop or pose direction, the camera,",
+  "lens, focus or depth of field, the resolution or quality of the picture, or the picture itself.",
+  "Never name a real person or character, and never say who the subject looks like or resembles.",
+  "Never say what the being does NOT have — no \"no tattoos\", no \"no jewellery\", no \"no makeup\".",
+  "Do not write a prompt, a list, a heading or a preamble — write the note and nothing else.",
+  "",
+  "THIS IS THE LINE TO HOLD. A note that is RIGHT:",
+  `  "${RICH_LOOK_NOTES.right}"`,
+  "And the same woman written WRONG:",
+  `  "${RICH_LOOK_NOTES.faceAndHair}"`,
+  "It is wrong ONLY where it describes the face and the hair — the eye colour, the eyeliner, the lips,",
+  "the brows and the haircut fix one face, and all eight are forced to share it. Its pieces, its",
+  "markings and its wardrobe are right.",
+  "",
+  "A VISIBLE SPECIES FACT OUTRANKS EVERYTHING ELSE WHEN IT WILL NOT ALL FIT. If the note is getting too",
+  "long, CUT THE STYLING AND KEEP THE ANATOMY — never the other way round.",
+  `Write about ${CONCEPT_RICH_LOOK_TARGET.low}–${CONCEPT_RICH_LOOK_TARGET.high} characters in total.`,
+  'Reply with JSON: {"description": "..."} — or {"description": null} if there is no BEING in the picture at all, only an object, a place or a thing.',
+].join("\n");
+
 export type ConceptDescribeInput = {
   bytes: Buffer;
   contentType: string;
   /** `undefined` takes the house transport; `null` is "no transport", for the arms. */
   engine?: TextEngine | null;
   signal?: AbortSignal;
+  /**
+   * Read it as the RICH LOOK (#2911) rather than today's type note. Captured at
+   * the door from `CASTING_CONCEPT_RICH_LOOK_SCOPE` and never decided here;
+   * absent or false is today's reader byte for byte.
+   */
+  richLook?: boolean;
 };
 
 /**
@@ -1179,6 +1429,32 @@ function reAsk(fault: Fault): string {
 }
 
 /**
+ * The rich look's second ask. A word about the PICTURE and an ABSENCE claim
+ * are the same fault on either reading and take {@link reAsk}'s own sentence;
+ * the two length faults are this reading's own, for two reasons.
+ *
+ * Its numbers are the rich look's, and **its `long` sentence never calls the
+ * read an inventory** — a 750-character rich look is the job done at length,
+ * not a packing list, and #1067 is this file's record of what calling prose a
+ * list cost. Its keep list is the rich look's ingredients rather than today's
+ * hair and marking worlds, and it ends by restating the two things the reading
+ * never says, because a re-ask is exactly where a model that has just been
+ * corrected drops a rule (the envelope finding, #231).
+ */
+function richLookReAsk(fault: Fault): string {
+  const target = `${CONCEPT_RICH_LOOK_TARGET.low}–${CONCEPT_RICH_LOOK_TARGET.high}`;
+  switch (fault.kind) {
+    case "picture":
+    case "absence":
+      return reAsk(fault);
+    case "long":
+      return `Your previous answer was ${fault.length} characters, which is longer than this note may be. Write it again in about ${target} characters. KEEP every visible species fact — the surface (hairless, scaled, furred), a tail, ears, horns, non-human dentition, the kind of being it is — and keep sex, age band, heritage if visible, the type, the signature pieces, the markings and where they live, fitted hardware, and the wardrobe's materials and silhouette. Cut the least defining styling first, never the anatomy, and still say nothing about the face or the hair.`;
+    case "brief":
+      return `Your previous answer was only ${fault.length} characters and says too little to cast from. Write it again at about ${target} characters, with the signature pieces, the markings, any fitted hardware and the wardrobe, and still nothing about the face or the hair.`;
+  }
+}
+
+/**
  * The first fault in a read, in the order a customer would care about them.
  *
  * `ceiling` is passed rather than read from the module because it is not the
@@ -1194,6 +1470,58 @@ function faultIn(description: string, ceiling: number): Fault | null {
   if (phrase) return { kind: "absence", phrase };
   return null;
 }
+
+/**
+ * ONE READING, NAMED — everything that differs between today's type note and
+ * the rich look, and nothing else (#2911).
+ *
+ * The door, the picture bound, the parse, both sweeps, the floor, the re-read
+ * of a reply that never arrived and every refusal are SHARED, so the two
+ * readings cannot drift apart on any of them. What a reading owns is its model
+ * (through its engine), its instruction, its two ceilings, its re-ask wording
+ * and its token ceiling. {@link describeConcept} picks one, once, from the flag
+ * the door captured.
+ */
+type ConceptReading = {
+  /** For the logs only: which reading a sent-back read was judged as. */
+  readonly name: "type_note" | "rich_look";
+  readonly rules: string;
+  readonly ceiling: (attempt: number) => number;
+  readonly reAsk: (fault: Fault) => string;
+  readonly maxOutputTokens: number;
+  readonly engine: () => TextEngine | null;
+};
+
+/** Today's reader. Every value here is the one the module held before #2911. */
+const TYPE_NOTE: ConceptReading = {
+  name: "type_note",
+  rules: RULES,
+  ceiling: ceilingForAttempt,
+  reAsk,
+  /* The describer's own preamble is spent before the object — the face
+     scan measured an EMPTY completion at 200 on a two-field ask. This
+     read is longer than that one, so the ceiling is larger. Unused
+     ceiling costs nothing; billing is per token produced. */
+  maxOutputTokens: 900,
+  engine: conceptReaderEngine,
+};
+
+/**
+ * The rich look. `maxOutputTokens` is the bench's own 1,400 rather than
+ * today's 900, and that is a measured choice rather than headroom for its own
+ * sake: the ceiling is a budget for everything the model emits, reasoning first
+ * (`openrouterText.ts`, #1220), and this reading's answer alone is two to three
+ * times today's. The bench read that produced his pick ran at 1,400. Unused
+ * ceiling costs nothing; billing is per token produced.
+ */
+const RICH_LOOK: ConceptReading = {
+  name: "rich_look",
+  rules: RICH_LOOK_RULES,
+  ceiling: richLookCeilingForAttempt,
+  reAsk: richLookReAsk,
+  maxOutputTokens: 1400,
+  engine: conceptRichLookReaderEngine,
+};
 
 /**
  * THREE ANSWERS, NOT TWO (review of #187, finding 1).
@@ -1240,7 +1568,9 @@ function parse(raw: string): Parsed {
  * handed over as though it had been written that way.
  */
 export async function describeConcept(input: ConceptDescribeInput): Promise<ConceptDescribeOutcome> {
-  const engine = input.engine === undefined ? conceptReaderEngine() : input.engine;
+  /* ONE choice, made once, from what the door captured (#2911). */
+  const reading = input.richLook === true ? RICH_LOOK : TYPE_NOTE;
+  const engine = input.engine === undefined ? reading.engine() : input.engine;
   if (!engine) return { ok: false, reason: "no_transport", attempts: 0 };
 
   /*
@@ -1271,7 +1601,7 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
     try {
       reply = await engine.complete({
         about: "describe",
-        system: RULES,
+        system: reading.rules,
         /* THE ENVELOPE IS RESTATED ON THE RE-ASK, and it is not belt-and-braces.
            Driven on his own feline fixture (#231): the first read faulted `long`,
            the re-ask produced a SHORTER AND CORRECT note — "bare violet-blue
@@ -1283,16 +1613,13 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
            turn that is actually being corrected costs nothing and is the only
            place a re-ask can lose an answer it had already got right. */
         user: previous
-          ? `${ASK} ${reAsk(previous)} Reply with JSON in the same shape as before: {"description": "..."}.`
+          ? `${ASK} ${reading.reAsk(previous)} Reply with JSON in the same shape as before: {"description": "..."}.`
           : ASK,
         images: [frame],
         json: true,
         temperature: 0,
-        /* The describer's own preamble is spent before the object — the face
-           scan measured an EMPTY completion at 200 on a two-field ask. This
-           read is longer than that one, so the ceiling is larger. Unused
-           ceiling costs nothing; billing is per token produced. */
-        maxOutputTokens: 900,
+        /* Each reading's own ceiling, and why, is on the reading itself. */
+        maxOutputTokens: reading.maxOutputTokens,
         ...(input.signal ? { signal: input.signal } : {}),
       });
     } catch (error) {
@@ -1334,9 +1661,12 @@ export async function describeConcept(input: ConceptDescribeInput): Promise<Conc
       return { ok: "retry", fault: null };
     }
     const { description } = parsed;
-    const fault = faultIn(description, ceilingForAttempt(attempt));
+    const fault = faultIn(description, reading.ceiling(attempt));
     if (!fault) return { ok: true, description, attempts: attempt };
-    log.warn({ attempt, fault, length: description.length }, "[conceptDescribe] the read was sent back");
+    log.warn(
+      { attempt, fault, length: description.length, reading: reading.name },
+      "[conceptDescribe] the read was sent back",
+    );
     /* NEVER truncated and never stripped — re-asked, naming the fault. */
     return { ok: "retry", fault };
   };
