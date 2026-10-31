@@ -115,3 +115,17 @@ The two kinds behind it are the same pattern and a different picture: `marks`
 folds into the `skin` slot and would need its own phrase and its own reading;
 `ink` has no slot at all until the tattoo studio gives it one (D-138). Neither
 is promoted by this run, per fable-531 §4c.
+
+⚠ **THE `ink` HALF OF THAT SENTENCE IS STALE ON BOTH OF ITS HALVES — stamped
+2026-10-31 (`foreman-20261031-1825`, card #65, working law 7's sweep), read at
+the code rather than inferred.** (1) **Ink HAS slots.** The slot catalogue
+carries `{ perPlacement: "ink" }` and records the facet leaving its `notASlot`
+reason *"until the ink lane was built"*
+(`server/castingV2/referenceSlotCatalogue.ts:1191, :1214`); the body group holds
+every delivered tattoo (`ink:neck`, `:498`). (2) **The studio did not give them
+to it, and never will:** he retired the tattoo studio on 2026-09-24 (Crew reply
+#208, verbatim and entire: *"It retires with N2"*), `CASTING_INK_STUDIO_SCOPE`
+is `off` and unset on the service. **The slots arrived by a different road**, so
+the conditional was overtaken rather than met. What this run decided — that
+neither kind is promoted by it — is untouched; only the reason given for `ink`'s
+state has expired.
