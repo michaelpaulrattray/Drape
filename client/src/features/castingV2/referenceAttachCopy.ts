@@ -74,6 +74,25 @@ export const ATTACH_FAILED_FALLBACK = "That picture couldn't be attached.";
 export const ATTACHED_PICTURE_NOTE = "Now say what to take from it — this picture rides with your next ask.";
 
 /**
+ * WHILE A PICTURE IS IN THE AIR OVER THE BOX — his word, 2026-10-31, verbatim:
+ * *"also allow drag an drop of reference images into the refine box"* (#2912).
+ *
+ * The box already had one door, the `+`, and a hand holding a photograph is
+ * the other half of the same act. A strengthened border is not enough on its
+ * own — card 1118's measured lesson on the ink panel next door: a wash on a
+ * control that already carries an edge is easy to miss, so the WORD changes
+ * with it. This sentence stands in for the field's own placeholder for exactly
+ * as long as the file is over the box, which is why it is as short as the
+ * placeholder it replaces.
+ *
+ * It names what happens to HER PICTURE and never what carries it (the
+ * disappearing-technology law, clause 6). *Attach* is this door's own word
+ * everywhere else on the surface, so the word she reads mid-drag is the word
+ * she reads after; there is no file name, no format, no size and no "upload".
+ */
+export const ATTACH_DROP_WORD = "Drop your picture to attach it";
+
+/**
  * WHERE THE PICTURE CAME FROM — the fence's own question, in her words.
  *
  * `attach` takes `synthetic | consented` and **has no default, by ruling**: a
