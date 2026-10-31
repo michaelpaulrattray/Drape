@@ -720,7 +720,25 @@ export type ReadPurpose =
    * Not `classify` either: that is a kind or key decision from a closed set,
    * and the whole point of this read is that its answers are not from a set.
    */
-  | "discover";
+  | "discover"
+  /**
+   * NAMING ONE CUT TAKEN FROM A CUSTOMER'S OWN PHOTOGRAPH (#14 slice 3a).
+   *
+   * One read, one piece on flat grey, one bare noun back
+   * (`referenceCutName.ts`). It is its own purpose and not folded into any
+   * neighbour, for the reason the rung's cost question makes sharp: this is
+   * the only text read on the reference road, it is bought **once per TAP**
+   * rather than once per picture, and what the cost program has to be able to
+   * answer out loud is *what does a tap cost us* — a figure that disappears
+   * the moment it is pooled with a per-picture read.
+   *
+   * Not `describe`: that reads a whole frame of the product's own making.
+   * Not `classify`: the answer is deliberately not from a set — his word,
+   * *"nothing should be confined to a set list"*. Not `discover`: that names
+   * everything on a character in one read, where this names the one thing a
+   * finger landed on.
+   */
+  | "reference.cutName";
 
 /** Every member, for the pinned-enumeration test and for any reader that wants
  *  to know the set without importing the type. Frozen so a caller cannot grow
@@ -745,6 +763,7 @@ export const READ_PURPOSES = Object.freeze([
   "refine.describe",
   "follow.brief",
   "discover",
+  "reference.cutName",
 ] as const) satisfies readonly ReadPurpose[];
 
 /**

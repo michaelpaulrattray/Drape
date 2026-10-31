@@ -370,6 +370,12 @@ export async function cutThingFromPicture(input: CutThingFromPictureInput): Prom
           why: judged.verdict.why,
           fill: judged.verdict.fill,
           floor: CUT_FILL_FLOOR,
+          /* #2841: how many separate pieces it came back in, and how big the
+             biggest was. The floor beside them cannot see either — a ring-shaped
+             necklace cut and a shattered one are the same number to it. Nothing
+             refuses on these. */
+          pieces: judged.verdict.pieces,
+          largestPieceShare: judged.verdict.largestPieceShare,
         },
         "[referenceTake] the cut was refused — the edit rides on words",
       );
@@ -389,6 +395,25 @@ export async function cutThingFromPicture(input: CutThingFromPictureInput): Prom
       height: raster.height,
       mask: faceless,
     });
+    /*
+      AND A KEPT CUT'S TWO NUMBERS GO IN THE LOG TOO (#2841) — the refusal above
+      had nowhere else to say them and this road had NO line at all for a cut it
+      kept, which is the half of the population a bar would most need. The
+      measured specimen that found this defect was a KEPT cut: a leather
+      jacket's collar in 29 scraps, judged `used`.
+    */
+    log.info(
+      {
+        ...input.about,
+        noun: input.noun,
+        fill: judged.verdict.fill,
+        pieces: judged.verdict.pieces,
+        largestPieceShare: judged.verdict.largestPieceShare,
+        holeCount: judged.holeCount,
+        holePixels: judged.holePixels,
+      },
+      "[referenceTake] the cut is kept — how full it was, how many pieces it came in, and what was closed",
+    );
     const bounds = tightBoundsOf(faceless);
     if (bounds === null) {
       log.info(

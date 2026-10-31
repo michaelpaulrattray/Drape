@@ -70,6 +70,7 @@
  * the founder.
  */
 import { capitalize, type CastPronouns } from "./castPronouns";
+import { onTheFace, type FaceExtent } from "./faceExtent";
 import type { FeatureKind } from "./faceDiscovery";
 import { catalogueWordsOf, normalisedName, type NamedNotCut } from "./pointerCut";
 import type { FeatureSlot } from "./recipeAssembler";
@@ -278,6 +279,26 @@ export type PanelScan = {
     on: string;
     box: PanelBox;
     maskUrl: string;
+    /**
+     * DOES THIS SHAPE LIE OVER THE FACE'S OWN CUTS — his check 1 (#2856,
+     * 2026-10-30), measured at the pixels by `faceScanService` and carried.
+     *
+     * ⚠ **This panel cannot ask it and that is why the fact travels.** A
+     * `facePanel` is a pure projection — *"rows in, rows out: no database, no
+     * storage, no clock"* — and by the time a row reaches here its shape is a
+     * base64 PNG. The one moment both this shape and the scan's face cuts are
+     * raw bytes is inside the scan service, so that is where it is answered.
+     *
+     * ⚠ **And it is the BOX that is not the question, which is his own
+     * correction**: *"im not worried about the box covering the neck that sort
+     * of normal if its the outfit or whatever"*. A rag cloth or a high collar
+     * has a rectangle reaching the chin and is still outfit.
+     *
+     * Optional, and absent means *not covering* — a reading kept before the
+     * check existed, and the live preview a scan serves while it is still
+     * running, both arrive without it and both draw today's panel exactly.
+     */
+    coversFace?: boolean;
   }[];
   /**
    * WHAT THE READING NAMED AND NOTHING CUT — words with no picture (#2566
@@ -415,6 +436,35 @@ export type PanelRegion = {
    * the mirror working law 4 is about.
    */
   prefill: string | null;
+  /**
+   * DOES THIS RECTANGLE COVER THE WHOLE ROW, RATHER THAN ONE THING IN IT
+   * (his word, 2026-10-30, #2845).
+   *
+   * His complaint, verbatim: *"why cant i select his outfit box as a whole its
+   * selecting individual pieces? like shouldnt there be a box for the whole
+   * outfit with the individual pieces inside it"* — and, again, *"also outfit
+   * should be selectablke as a whole"*.
+   *
+   * ⚠ **WHAT WAS WRONG WAS THE PICTURE, NOT THE EDIT — read at the code before
+   * anything moved.** The Outfit row's `slots` has carried every piece since
+   * #2566 slice 2, so tapping it already meant the whole outfit. What it DREW
+   * was one rectangle per PIECE and none for the outfit, so the photograph said
+   * *"these five separate things"* while the ask said *"all of it"*. That is
+   * the rule {@link FaceRegions} already states in the other direction — *the
+   * picture may never claim what the ask does not say* — and this is its
+   * mirror: the ask meant everything and the picture claimed less.
+   *
+   * So a `whole` rectangle is the row's own extent, and the pieces stay real
+   * underneath it. `false` on every instance rectangle, which is what every
+   * rectangle before this one was.
+   *
+   * ⚠ **IT IS A FIELD AND NOT A KEY TEST IN THE BROWSER, for the reason its
+   * siblings here already carry twice over**: the client would otherwise ask
+   * whether a slot `=== "discovered:outfit"`, which is a second copy of a
+   * server fact and wrong the first time a second collection row exists
+   * (working law 4). The side that knows the fact states it.
+   */
+  whole: boolean;
 };
 
 export type PanelRow = {
@@ -1119,6 +1169,7 @@ export function facePanel(input: {
                scope naming the whole face is the silent whole-face render the
                server's door refuses. */
             scopable: definition.instance !== null,
+            whole: false,
           }]
           : [],
         /* There is only one of it, so there is nothing to open. */
@@ -1238,6 +1289,7 @@ export function facePanel(input: {
           /* A catalogued instance, which is exactly what the scope door
              admits. */
           scopable: side.definition.instance !== null,
+          whole: false,
         })),
         /*
           THE TWO CHILDREN (founder, fable-452) — both, whether or not they
@@ -1550,6 +1602,7 @@ export function facePanel(input: {
            other two are one-of-it, so a sided ink rectangle narrows and a
            sideless one has nothing to narrow to (fable-1291 §3). */
         scopable: definition.instance !== null,
+        whole: false,
       }],
       instances: [],
     });
@@ -1628,6 +1681,7 @@ export function facePanel(input: {
     prefill: null,
     slot,
     scopable: false,
+    whole: false,
   });
 
   for (const filed of Array.from(openFiled.values())) {
@@ -1954,21 +2008,91 @@ export function facePanel(input: {
   };
 
   /**
+   * THE FACE THIS SCAN ITSELF DREW — the span of the catalogue face rows it
+   * actually cut, or null when it cut none.
+   *
+   * This is the measuring stick for *is a found body part on the face*, and it
+   * is the scan's OWN answer rather than a list of face words: whatever the
+   * catalogue groups as `face` (eye, brow, lashes, nose, lips, teeth,
+   * cheekbone, jaw, chin, ear, horns), and only those of them this cast turned
+   * out to have. A creature whose single drawn face row is its horns is
+   * measured by its horns — the right answer for that creature, and one no word
+   * list could give. That is N3's own principle (*"we really cannot be working
+   * from fixed lists in a fluid editing application"*).
+   *
+   * ⚠ **Only boxes sharing the asking thing's frame are unioned.** *A box
+   * without its frame is a rectangle in an unknown space* ({@link PanelBox}'s
+   * own header), so a slot measured on another frame is skipped rather than
+   * mixed into the span. Memoised per frame because every found row on one scan
+   * asks the same question.
+   */
+  const faceExtents = new Map<string, FaceExtent | null>();
+  const faceExtentOn = (frame: PanelBox["frame"]): FaceExtent | null => {
+    const key = `${frame.width}x${frame.height}`;
+    const held = faceExtents.get(key);
+    if (held !== undefined) return held;
+    let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity;
+    const drawnSlots = input.scan?.slots;
+    if (drawnSlots !== undefined) {
+      drawnSlots.forEach((drawn, slot) => {
+        if (slotDefinition(slot)?.group !== "face") return;
+        if (drawn.box.frame.width !== frame.width || drawn.box.frame.height !== frame.height) return;
+        left = Math.min(left, drawn.box.x);
+        right = Math.max(right, drawn.box.x + drawn.box.width);
+        top = Math.min(top, drawn.box.y);
+        bottom = Math.max(bottom, drawn.box.y + drawn.box.height);
+      });
+    }
+    /* The centre of what was drawn is the honest midline here. The reader's own
+       comes off the face read the side-splitting already used; a span built
+       from rectangles has no better answer, and {@link FaceExtent} says so. */
+    const extent = left <= right && top <= bottom
+      ? { left, right, top, bottom, midline: (left + right) / 2, middle: (top + bottom) / 2 }
+      : null;
+    faceExtents.set(key, extent);
+    return extent;
+  };
+
+  /**
    * The section a found thing's OWN row lists in: a worn thing is an
-   * accessory, by his ruling above; a BODY PART lists under Face; a mark on the
-   * skin is also on this character.
+   * accessory, by his ruling above; a mark on the skin is also on this
+   * character; a BODY PART lists under Face when it is ON the face, and under
+   * Body when it is not.
    *
    * ⚠ **Body parts moved out of *Also on this character* on 2026-10-29 (#2801)**,
    * on his eye on the first creature: a found *Tusks* row sat beside the
    * tattoos. His ruling above puts marks in that section; a tusk, a snout or a
-   * third eye is the body. ⚠ **A body part that is not on the face (a tail, a
-   * wing) also lists under Face**, because nothing on the reading says which is
-   * which without a word list; that limit is declared on the card.
+   * third eye is the body.
+   *
+   * ⚠ **AND FACE IS NO LONGER WHERE EVERY BODY PART LANDS — #2840, his eye
+   * rounds 9 and 10.** This docblock used to close *"a body part that is not on
+   * the face (a tail, a wing) also lists under Face, because nothing on the
+   * reading says which is which without a word list; that limit is declared on
+   * the card"*, and #2807 part 1 named the day that limit would end: *"a
+   * reading holding a body part the scan's face cuts do not touch is the day
+   * this becomes one branch plus one frame for his eye"*. His round 9 drew
+   * **two Shoulders rows under Face**, and his round 10 a **Collarbone** —
+   * *"no idea why collarbone is showing up?"*. Those are the instance.
+   *
+   * **The branch reads PLACE, not words**: a found body part whose box is not
+   * centred on {@link faceExtentOn}'s span lists under Body. `Body` is already
+   * declared in {@link PANEL_GROUPS} between Hair and Outfit, and an empty
+   * section filters itself out — so this needs no panel design and adds no
+   * heading to a cast that has no body rows. His own placement ruling (#2789)
+   * is what it serves: *"the body rows hold the body alone"*.
+   *
+   * ⚠ **It fails toward today's panel.** A scan that drew no face row at all
+   * has no span to measure against, and every body part stays under Face
+   * exactly as it does now — a missing measurement never moves a row.
    */
-  const ownSectionOf = (kind: FeatureKind): PanelSection => {
-    if (kind === "accessory") return "accessories";
-    if (kind === "anatomy") return "face";
-    return "open";
+  const ownSectionOf = (found: { kind: FeatureKind; box: PanelBox }): PanelSection => {
+    if (found.kind === "accessory") return "accessories";
+    if (found.kind !== "anatomy") return "open";
+    const face = faceExtentOn(found.box.frame);
+    if (face === null) return "face";
+    const centreX = found.box.x + found.box.width / 2;
+    const centreY = found.box.y + found.box.height / 2;
+    return onTheFace(centreX, centreY, face) ? "face" : "body";
   };
 
   /** One found thing as a child of whatever it sits on. */
@@ -2012,6 +2136,9 @@ export function facePanel(input: {
       prefill: prefillFor(spokenName),
       slot: found.slot,
       scopable: false,
+      /* A PIECE, never the collection — the Outfit row's own whole rectangle is
+         built beside the row itself (#2845). */
+      whole: false,
     };
   };
 
@@ -2126,7 +2253,33 @@ export function facePanel(input: {
     *Lips* is not a collection of a lip and a ring.
   */
   if (outfitPieces.length > 0) {
-    const boxes = outfitPieces.map((piece) => piece.box);
+    /*
+      THE OUTLINE IS BUILT FROM THE PASSING PIECES ONLY — his ruling of
+      2026-10-30 (#2856, point 4): *"The whole-Outfit outline must never be
+      built from a failed piece."*
+
+      ⚠ **A PIECE THAT FAILS STILL KEEPS ITS OWN RECTANGLE AND ITS OWN ROW
+      HERE, and that is deliberately NOT the whole of his ruling.** Point 3
+      says a failed piece gets no row at all; that is #2845's defect 2 and sits
+      beside his other three checks (a shared box, its own place, a real
+      feature), none of which this panel can answer yet. Taking one of the four
+      and dropping rows on it would hide pieces for one reason while the other
+      three still drew theirs — so what moves here is exactly what the relay's
+      finding asked for: **the WHOLE-outfit outline is protected**, and the
+      failing piece is lit only when it is itself the subject.
+
+      ⚠ **AND WHEN NO PIECE PASSES, THE ROW DRAWS NO WHOLE RECTANGLE AT ALL**
+      rather than inventing one: `whole` is simply absent, which is the branch
+      every other row on the panel takes, and the picture falls back to one
+      rectangle per piece — the panel as it was before this card. A row with
+      nothing to outline must not outline the wrong thing.
+    */
+    const outlined = outfitPieces.filter((piece) => piece.coversFace !== true);
+    /* The thumbnail still needs a window even when nothing may be outlined, and
+       the honest window is the one this row has always had — every piece. It is
+       the only value in this block that is ever taken from a failing piece, and
+       no rectangle is drawn from it. */
+    const boxes = (outlined.length > 0 ? outlined : outfitPieces).map((piece) => piece.box);
     const union: PanelBox = {
       x: Math.min(...boxes.map((box) => box.x)),
       y: Math.min(...boxes.map((box) => box.y)),
@@ -2162,9 +2315,67 @@ export function facePanel(input: {
         maskUrl: null,
         crop: union,
       }],
-      /* One rectangle per PIECE rather than the union: a union rectangle over a
-         dressed figure is the whole figure, which points at nothing. */
-      regions: outfitPieces.map(foundChildRegion),
+      /*
+        THE WHOLE OUTFIT FIRST, THEN ITS PIECES — his word, 2026-10-30 (#2845):
+        *"also outfit should be selectablke as a whole"*, and *"shouldnt there
+        be a box for the whole outfit with the individual pieces inside it"*.
+
+        ⚠ **THE CLAUSE THAT STOOD HERE IS STRUCK RATHER THAN DELETED, because
+        its reasoning is exactly what he overruled and the next hand should see
+        what it cost:** ~~"One rectangle per PIECE rather than the union: a
+        union rectangle over a dressed figure is the whole figure, which points
+        at nothing."~~ The sentence is true of a rectangle drawn ALONE — and
+        drawn alone was never what he asked for. What he saw instead was five
+        lit rectangles and read it, correctly, as the panel editing pieces one
+        at a time: *"why cant i select his outfit box as a whole its selecting
+        individual pieces?"*
+
+        ⚠ **AND THE EDIT ALREADY MEANT ALL OF IT — only the picture disagreed.**
+        `slots` above has carried every piece since #2566 slice 2, so a tap on
+        this row has always sent one ask about the whole outfit. So nothing
+        about what an edit MEANS moves here; what moves is that the photograph
+        now says the same thing the ask says.
+
+        The union is the row's extent and is the same rectangle the thumbnail
+        above is already cropped to — so it is one value used twice rather than
+        a second measurement that can disagree with the picture beside it. The
+        pieces stay real underneath, each with its own rectangle and its own
+        child row, which is his *"with the individual pieces inside it"*.
+
+        Largest-first paint order (`FaceRegions`'s own smallest-wins rule) puts
+        this rectangle UNDERNEATH every piece it was built from, because a
+        union can never be smaller than what it unions — so a point over such a
+        piece still belongs to that piece and nothing had to be told about
+        z-order.
+
+        ⚠ **THAT SENTENCE READ *"underneath every piece"* UNTIL #2856's CHECK 1
+        LANDED, AND IT IS NARROWED RATHER THAN LEFT STANDING.** A piece left
+        OUT of the union is not bounded by it, so a failing piece bigger than
+        the passing ones paints first and the whole rectangle sits on top of
+        the part of it they overlap. That is the right way round and not a
+        regression: a garment whose shape lies over the face is exactly the one
+        that must not swallow the points inside the outfit's own outline, and
+        it is still reachable on every pixel of itself the outline does not
+        cover, plus its own child row in the panel.
+      */
+      regions: [
+        ...(outlined.length > 0 ? [{
+          box: union,
+          /* NAMED NOTHING, which on this panel means *it covers what the row
+             says it does* — the row says Outfit and this is the outfit. A name
+             here would be the product inventing a noun for all-of-these-pieces
+             that no reading gave, which {@link OUTFIT_SLOT} forbids. */
+          name: null,
+          spoken: null,
+          prefill: null,
+          slot: OUTFIT_SLOT,
+          /* Not a narrowing: tapping the whole outfit is the ROW's ask, which
+             is every piece. A scope would say the opposite of what it is. */
+          scopable: false,
+          whole: true,
+        }] : []),
+        ...outfitPieces.map(foundChildRegion),
+      ],
       instances: outfitPieces.map(foundChild),
     }, ["outfit"]);
   }
@@ -2242,7 +2453,7 @@ export function facePanel(input: {
     const row: PanelRow = {
       state: "settled",
       slots: [found.slot],
-      group: ownSectionOf(found.kind),
+      group: ownSectionOf(found),
       name: capitalize(noun),
       spoken: spokenName,
       /*
@@ -2296,7 +2507,7 @@ export function facePanel(input: {
         push({
           state: "settled",
           slots: [child.slot],
-          group: ownSectionOf(child.kind),
+          group: ownSectionOf(child),
           name: capitalize(noun),
           spoken: spokenName,
           words: [],
