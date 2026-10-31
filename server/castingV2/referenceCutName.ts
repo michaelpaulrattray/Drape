@@ -27,11 +27,20 @@
  *
  * # WHAT IT REFUSES, AND WHY A REFUSAL COSTS THE CUSTOMER NOTHING
  *
- * A name is kept only if it passes {@link isBareNoun} — the same contract every
- * other name on this road obeys, because a name here becomes a chip and later a
- * prompt. Anything else answers `null`, and `null` means *the chip shows no
- * name*, never a failure: the cut is still the customer's to use, and the words
- * road is untouched. A provider's bad minute must never make a tap look broken.
+ * A name is kept only if it passes {@link isBareNoun} — the same shape rules
+ * every other name on this road obeys (no list, no positional clause, no
+ * caption), because a name here becomes a chip and later a prompt. Anything
+ * else answers `null`, and `null` means *the chip shows no name*, never a
+ * failure: the cut is still the customer's to use, and the words road is
+ * untouched. A provider's bad minute must never make a tap look broken.
+ *
+ * ⚠ **The WORD bound is this road's own and is not shared — corrected here
+ * 2026-10-31 (#2877), because the sentence above read as though it were.** It
+ * is {@link CUT_NAME_MAX_WORDS} (three), which is what {@link CUT_NAME_PROMPT}
+ * asks for; the discovery roads pass two, which is what theirs ask for. While
+ * the cap lived inside `isBareNoun` as a single hard two, this road's prompt
+ * invited a third word and the gate threw the answer away — **8 of 300
+ * measured readings showed no name, 7 of them correct.**
  */
 import { isBareNoun } from "./faceDiscovery";
 import { boundForJudge } from "./judgeFrame";
@@ -77,6 +86,30 @@ export const CUT_NAME_PROMPT =
   + "and replaced with flat grey. What is the piece? Answer with a bare noun "
   + "phrase of one to three words (for example: hat, glove, wristwatch). Answer "
   + "with the name only.";
+
+/**
+ * THE WORD BOUND {@link CUT_NAME_PROMPT} ITSELF ASKS FOR — three (#2877).
+ *
+ * It sits here, under the prompt whose own sentence says *"one to three
+ * words"*, because the gate that enforces it lives in another module and the
+ * two had drifted: `isBareNoun` capped every name at TWO, so the prompt's own
+ * upper bound was refused and the customer was shown **no name at all**.
+ *
+ * Measured before it moved (#2875, 300 reader calls on the court's nine tap
+ * cuts): 8 readings showed no name, 7 of them had named the piece correctly,
+ * and all 8 were exactly three words — *"Gold hoop earring"* five times of
+ * twelve on the hoop earring alone. No other rejection fired in 300 readings.
+ *
+ * ⚠ **The prompt was NOT re-worded to say two, and that is this header's own
+ * rule rather than a preference**: it is copied byte-for-byte from the court
+ * and a paraphrase invalidates the 8-of-8 figure above. The bound moved to the
+ * caller instead; `isBareNoun`'s docblock carries the full argument, and
+ * `faceDiscovery`'s own two-word roads are untouched.
+ *
+ * `referenceCutName.test.ts` holds this number to the prompt's own words, so a
+ * re-worded prompt or a moved cap reddens rather than drifting quietly.
+ */
+export const CUT_NAME_MAX_WORDS = 3;
 
 /** How long one naming read may take. 4.1 s was the court's slowest; this is ~4x it. */
 export const CUT_NAME_TIMEOUT_MS = 16_000;
@@ -285,7 +318,7 @@ export async function nameTheCut(input: {
        here. */
     const name = raw.trim().split(/\r?\n/)[0]?.replace(/^["'`]+|["'`.!]+$/g, "").trim() ?? "";
     if (name.length === 0) return null;
-    if (!isBareNoun(name)) {
+    if (!isBareNoun(name, CUT_NAME_MAX_WORDS)) {
       log.warn({ length: name.length }, "the cut's name was not a bare noun — no name is shown");
       return null;
     }
