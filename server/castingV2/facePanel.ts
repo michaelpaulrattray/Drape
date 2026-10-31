@@ -267,7 +267,9 @@ export type PanelScan = {
      *
      * `kind: "clothing"` is the ONLY thing that may enter the Outfit row,
      * `kind: "accessory"` lists under Accessories (his ruling of 2026-10-29,
-     * #2789), and `on` is what chains a buckle to its strap. Both are the
+     * #2789), and `on` is what chains a buckle to its strap. (A worn thing
+     * whose `on` chain ends at a garment is inside the outfit too, and since
+     * #2862 it draws no row there: only `clothing` is a piece row.) Both are the
      * reading's own
      * answer about the picture, which is the whole point: his ⚠ on the finding
      * was that the body implants were labelled *Collar*, so any rule keyed on
@@ -1945,7 +1947,10 @@ export function facePanel(input: {
 
       So an UNCUT host is consulted for the one destination that needs no row
       to exist: if the reading says it is a garment (or sits on one), what sits
-      on it is part of the Outfit, and keeps its own picture there as a piece.
+      on it is part of the Outfit. ~~and keeps its own picture there as a
+      piece~~ — since #2862 only a garment is a piece row there (his word on
+      drawstrings, quoted at the Outfit block), so a buckle and a ring on an
+      uncut harness are in the outfit and draw nothing of their own.
       ⚠ **Only the Outfit, never a fold under the uncut thing**: a child of a
       thing with no picture would hang a visible row under an invisible one,
       and the design says a thing that cannot be cut gets no row. Anything else
@@ -1987,7 +1992,10 @@ export function facePanel(input: {
 
       ON A GARMENT   a worn thing whose chain ends in the outfit stays there — a
                      buckle on a strap on a coat is part of the coat (#2752), and
-                     *"clothing stays in the Outfit"* is the same sentence.
+                     *"clothing stays in the Outfit"* is the same sentence. Since
+                     #2862 it is IN the outfit without a row of its own: only a
+                     garment is a piece row (his round 11: the chain on her
+                     harness *"is apart of her outfit"*).
       ON A WORN ROW  a charm on a chain, a chain on a choker, a charm on the
                      catalogue's Earrings: a worn thing on a worn thing is not
                      on a body part, so it stays that thing's child.
@@ -2225,7 +2233,99 @@ export function facePanel(input: {
     included its lodgers would send an edit meaning both. The child carries its
     own tap and its rectangle carries its own name.
   */
+  /*
+    ---- HAIR IS ONE ROW AND ONE OUTLINE (his ruling, #2862, 2026-10-31) ----
+
+    His eye, round 11, verbatim: *"why is the hair compartmantizilied? even if
+    i make an edit to her right bun by selecting it (i tested this) it edits her
+    whole hair anyway. Should hair just be one whole box?"* The panel drew
+    `Bun`, `Bun` and `Fringe` as children of Hair, each with its own outline,
+    and every one of them promised an edit the product does not make. The noun
+    also wandered between his scans — `fringe` on one, `bangs` on the next —
+    which one row hides and sub-rows put on show.
+
+    So a body part the reading says sits ON a hair row becomes part of that
+    row: no child, no rectangle of its own, and the row keeps the one outline
+    the scan cut for the hair. A bun is changed the way his ruling says, by
+    words ("shorter bangs", "make the buns bigger") on the Hair row.
+
+    ⚠ **THIS IS NOT THE TWO-INSTANCE RULE BEING BROKEN, AND THE DIFFERENCE IS
+    HIS OWN TEST.** The paragraph above forbids merging two of a thing *because
+    they share a noun*, and two buns share one. That rule protects things that
+    are each an item in their own right and can each be edited as themselves —
+    the two earrings of a pair, whose sides the scope door narrows to, or two
+    piercings, each its own row. A bun is not an item: it is the hairstyle, and
+    the product edits the whole hair whichever bun is tapped. A sub-row there
+    is a promise the product cannot keep, which is a different defect from the
+    one #2565 §6 guards. **Everything else keeps the rule exactly**: two
+    dimples on Lips are still two children, two piercings still two rows, a
+    charm on the catalogue's Earrings still its child.
+
+    ⚠ **WHICH ROWS, AND WHY IT IS NOT A WORD LIST.** A row that holds no parts
+    is one the CATALOGUE declares as a single slot in its `hair` group — its
+    hair and its facial hair today, read off `slotDefinition` every time. The
+    horns share that heading and are deliberately outside it: they are a
+    left-and-right pair whose sides are scopable, which is the two-instance
+    rule's own population. Facial hair is the one sibling this sweep took in
+    (law 7) — the same single-slot hair edit, so a goatee on a beard is the
+    beard — and it is named here so the next reader meets it as a decision.
+
+    ⚠ **WHAT IT DOES NOT CATCH, declared.** It reads the reading's own `on`. On
+    every reading kept on disk for his casts every hair part — bangs, bun,
+    buns, fringe, hair bun, space buns — is `kind: anatomy, on: hair`, so the
+    rule reaches all of them; a part the reading ever files `on: head` instead
+    would still draw its own row, because nothing here judges by pixels. The
+    cut for each part is still bought by the pointer road: a found thing sitting
+    on a bun is judged against the bun's own cut there, so the cut is evidence
+    even where the panel draws no row from it.
+  */
+  const holdsNoParts = (row: PanelRow): boolean =>
+    row.slots.length > 0 && row.slots.every((slot) => {
+      const definition = slotDefinition(slot);
+      return definition !== null && definition.group === "hair" && definition.instance === null;
+    });
   for (const [parent, children] of Array.from(foldedUnder.entries())) {
+    if (holdsNoParts(parent)) {
+      /* The scan cut the hair, so its own outline is the hair's and the parts
+         add nothing to the picture. */
+      if (parent.regions.length > 0) continue;
+      /*
+        AND WHEN THE SCAN CUT NO HAIR BUT THE READING CUT ITS PARTS, the parts
+        give the one row its one outline rather than taking the hair off the
+        panel: the union of their boxes, a window on the frame with no stencil
+        — the Outfit row's own shape, for the same reason. Without this the
+        rule above would delete a Hair row that today shows its buns.
+
+        `absent` is cleared because a box means the hair IS on this frame,
+        which is `absentSays`'s own fourth condition: a row may not say
+        *bald* over an outline of somebody's buns.
+      */
+      const boxes = children.map((child) => child.box);
+      const union: PanelBox = {
+        x: Math.min(...boxes.map((box) => box.x)),
+        y: Math.min(...boxes.map((box) => box.y)),
+        width: Math.max(...boxes.map((box) => box.x + box.width)) - Math.min(...boxes.map((box) => box.x)),
+        height: Math.max(...boxes.map((box) => box.y + box.height)) - Math.min(...boxes.map((box) => box.y)),
+        frame: boxes[0]!.frame,
+      };
+      replaceRow(parent, {
+        ...parent,
+        absent: null,
+        cutouts: parent.cutouts.length > 0
+          ? parent.cutouts
+          : [{ contentUrl: input.scan?.frameUrl ?? "", maskUrl: null, crop: union }],
+        regions: [{
+          box: union,
+          name: null,
+          spoken: null,
+          prefill: null,
+          slot: parent.slots[0]!,
+          scopable: false,
+          whole: false,
+        }],
+      });
+      continue;
+    }
     replaceRow(parent, {
       ...parent,
       regions: [...parent.regions, ...children.map(foundChildRegion)],
@@ -2252,7 +2352,40 @@ export function facePanel(input: {
     ask about all of it and lighting every piece on the photograph is the truth.
     *Lips* is not a collection of a lip and a ring.
   */
-  if (outfitPieces.length > 0) {
+  /*
+    ---- ONLY A GARMENT IS A PIECE OF THE OUTFIT ON THE PANEL (his word,
+    #2862, 2026-10-31) ----
+
+    His question on round 11, verbatim: *"the outfit picked up draw strings
+    which is fine but is it neccesary?"* — and, answering the relay's
+    recommendation of garments only, *"on your question about drawstrings
+    yes"*. The same round: *"it thought the chain which is apart of her outfit
+    was a necklace"*.
+
+    So under Outfit a piece row is a GARMENT's — what the reading itself calls
+    `clothing`: a hoodie, a top, a harness, a jacket. Anything else whose chain
+    ends in the outfit — a chain, a buckle, a zip, a stud, a drawstring the
+    reading calls a worn thing — is part of the Outfit and draws no row and no
+    rectangle of its own. It is still IN the outfit: its slot rides on the row's
+    `slots` (tapping Outfit is an ask about all of it), the scattered words of
+    it still land on this row, and it is changed by words ("remove the chain").
+
+    ⚠ **The line is the reading's `kind`, never the noun**, which is the same
+    reason `kind` and not the word decides what may enter this row at all (his
+    ⚠ about the implants labelled *Collar*). That has a cost said out loud: a
+    strap the reading calls an accessory gets no row here, and a drawstring it
+    calls clothing still gets one. Telling a garment's built-in part from a
+    second garment worn over it (a collar of a top against a corset over it)
+    is a question about the picture, and it is #2856's boxes, not this rule.
+
+    ⚠ **AND THE OUTLINE AND THE THUMBNAIL ARE THE GARMENTS'.** A row whose only
+    pieces were trims would outline a buckle and call it the outfit, so there
+    is no Outfit row unless a garment was cut — the trims are then edited by
+    words, which is #2856's cautious panel: a missing row costs nothing, a
+    wrong outline costs a paid edit painted on the wrong thing.
+  */
+  const garments = outfitPieces.filter((piece) => piece.kind === "clothing");
+  if (garments.length > 0) {
     /*
       THE OUTLINE IS BUILT FROM THE PASSING PIECES ONLY — his ruling of
       2026-10-30 (#2856, point 4): *"The whole-Outfit outline must never be
@@ -2274,12 +2407,12 @@ export function facePanel(input: {
       rectangle per piece — the panel as it was before this card. A row with
       nothing to outline must not outline the wrong thing.
     */
-    const outlined = outfitPieces.filter((piece) => piece.coversFace !== true);
+    const outlined = garments.filter((piece) => piece.coversFace !== true);
     /* The thumbnail still needs a window even when nothing may be outlined, and
-       the honest window is the one this row has always had — every piece. It is
-       the only value in this block that is ever taken from a failing piece, and
-       no rectangle is drawn from it. */
-    const boxes = (outlined.length > 0 ? outlined : outfitPieces).map((piece) => piece.box);
+       the honest window is the one this row has always had — every garment. It
+       is the only value in this block that is ever taken from a failing piece,
+       and no rectangle is drawn from it. */
+    const boxes = (outlined.length > 0 ? outlined : garments).map((piece) => piece.box);
     const union: PanelBox = {
       x: Math.min(...boxes.map((box) => box.x)),
       y: Math.min(...boxes.map((box) => box.y)),
@@ -2374,9 +2507,11 @@ export function facePanel(input: {
           scopable: false,
           whole: true,
         }] : []),
-        ...outfitPieces.map(foundChildRegion),
+        /* The garments' own rectangles, and nothing else's — see the block
+           above this one: a trim is in the outfit and draws no rectangle. */
+        ...garments.map(foundChildRegion),
       ],
-      instances: outfitPieces.map(foundChild),
+      instances: garments.map(foundChild),
     }, ["outfit"]);
   }
 
