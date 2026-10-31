@@ -463,3 +463,102 @@ describe("the scan hands the head box in — `faceScanService`, its own reader, 
     expect(wire.faceAsks.map((one) => one.whole)).toEqual([true]);
   }, 30_000);
 });
+
+/**
+ * EVERY READER SAYS WHERE THE HEAD IS — the derived answer (#2888).
+ *
+ * #2887 gave the SCAN a head box and left every other reader on today's road,
+ * named in its own commit rather than shipped silently. Those readers are the
+ * paid refine's (ten call sites), the take's, the ink mint's and the ink
+ * upload's, and all four are built BEFORE any frame is in hand — so they say
+ * `"topHalfOfEachPicture"` and the box is derived from the bytes each read
+ * actually gets, through the same `discoveryHeadBoxOf` the scan's measured box
+ * came from.
+ *
+ * The contrast arm is the one that earns the second answer: on a picture the
+ * scan's measured box declines to judge (another size), the derived answer
+ * judges it — which is exactly the position a refine is in, reading one
+ * picture after another through one reader.
+ */
+describe("the derived head box — every reader but the scan's (#2888)", () => {
+  const DERIVED = "topHalfOfEachPicture" as const;
+
+  it("the founder's round-11 shape, on a reader that measured nothing: the arm's face is refused and the head is asked again", async () => {
+    const wire = stubFal({ whole: [[TATTOO_FACE]], head: [[REAL_FACE]] });
+    const reader = createFalRegionReader({ apiKey: "k", headBox: DERIVED });
+    const image = await frame();
+    const { eyes, brows, ears } = await eyesBrowsEars(reader, image);
+    expect(boundsOf(eyes.left)).toEqual(LEFT_EYE);
+    expect(boundsOf(eyes.right)).toEqual(RIGHT_EYE);
+    expect(boundsOf(brows.left)).toEqual(LEFT_BROW);
+    expect(boundsOf(brows.right)).toEqual(RIGHT_BROW);
+    expect(boundsOf(ears.left)).toEqual(LEFT_EAR);
+    expect(boundsOf(ears.right)).toEqual(RIGHT_EAR);
+    /* The whole frame once, then the head crop once — one extra read, as the
+       measured road buys. */
+    expect(wire.faceAsks.map((one) => one.whole)).toEqual([true, false]);
+  });
+
+  it("judges a picture the scan's MEASURED box declines to judge — which is the whole reason for a second answer", async () => {
+    /* The arm above in "POSITIVE CONTROLS" drives the measured half of this
+       comparison: the same frame, a box measured on another size, the arm's
+       face returned untouched and no re-ask. Here the only thing that differs
+       is which answer the caller gave. */
+    const measured = stubFal({ whole: [[TATTOO_FACE]], head: [[REAL_FACE]] });
+    const declines = createFalRegionReader({
+      apiKey: "k", headBox: { frame: { width: W * 2, height: H * 2 }, box: HEAD },
+    });
+    expect(boundsOf(await declines.region({ image: await frame(), name: "face", absentIsAnswer: true })))
+      .toEqual(TATTOO_FACE);
+    expect(measured.faceAsks.map((one) => one.whole)).toEqual([true]);
+
+    vi.unstubAllGlobals();
+    const derived = stubFal({ whole: [[TATTOO_FACE]], head: [[REAL_FACE]] });
+    const reader = createFalRegionReader({ apiKey: "k", headBox: DERIVED });
+    expect(boundsOf(await reader.region({ image: await frame(), name: "face", absentIsAnswer: true })))
+      .toEqual(REAL_FACE);
+    expect(derived.faceAsks.map((one) => one.whole)).toEqual([true, false]);
+  });
+
+  it("agrees with the scan's measured box on the frames the product reads — one geometry, two ways of asking", async () => {
+    for (const scenario of [
+      { whole: [[REAL_FACE]] },
+      { whole: [[LOW_FACE]] },
+      { whole: [[TATTOO_FACE]], head: [[REAL_FACE]] },
+      { whole: [[REAL_FACE, TATTOO_FACE]] },
+    ]) {
+      const readings: Array<{ bounds: Rect | null; asks: boolean[] }> = [];
+      for (const headBox of [HEAD_BOX, DERIVED] as const) {
+        vi.unstubAllGlobals();
+        const wire = stubFal(scenario);
+        const reader = createFalRegionReader({ apiKey: "k", headBox });
+        const bounds = boundsOf(await reader.region({ image: await frame(), name: "face", absentIsAnswer: true }));
+        readings.push({ bounds, asks: wire.faceAsks.map((one) => one.whole) });
+      }
+      expect(readings[1], JSON.stringify(scenario)).toEqual(readings[0]);
+    }
+  }, 30_000);
+
+  it("a picture too small to cut a head crop is read as today — no judging, no second request", async () => {
+    /* `discoveryHeadBoxOf` answers `null` under 64px, which is the same answer
+       the discovery gives such a frame: it asks about it at all. */
+    expect(discoveryHeadBoxOf({ width: 60, height: 60 })).toBeNull();
+    const LOW_ON_A_TINY_FRAME: Rect = { x: 5, y: 40, width: 10, height: 10 };
+    const wire = stubFal({ whole: [], head: [[LOW_ON_A_TINY_FRAME]] });
+    const reader = createFalRegionReader({ apiKey: "k", headBox: DERIVED });
+    const face = await reader.region({ image: await frame(60, 60), name: "face", absentIsAnswer: true });
+    expect(boundsOf(face)).toEqual(LOW_ON_A_TINY_FRAME);
+    expect(wire.faceAsks).toHaveLength(1);
+  });
+
+  it("POSITIVE CONTROL: a face on the head is returned as it came, with no second request", async () => {
+    const wire = stubFal({ whole: [[REAL_FACE]] });
+    const reader = createFalRegionReader({ apiKey: "k", headBox: DERIVED });
+    const image = await frame();
+    expect(boundsOf(await reader.region({ image, name: "face", absentIsAnswer: true }))).toEqual(REAL_FACE);
+    const { eyes } = await eyesBrowsEars(reader, image);
+    expect(boundsOf(eyes.left)).toEqual(LEFT_EYE);
+    expect(boundsOf(eyes.right)).toEqual(RIGHT_EYE);
+    expect(wire.faceAsks.map((one) => one.whole)).toEqual([true]);
+  });
+});
