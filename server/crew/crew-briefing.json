@@ -1,7 +1,7 @@
 {
-  "edition": 794,
-  "updatedAt": "2026-10-31T03:10:00.000Z",
-  "shift": "Nothing went to the live site tonight, and the reason is worth two minutes.\n\nYour tattoo scan tonight was not a new problem. The fix for it is already written, measured and finished — it has been sitting in a finished job for a day, unable to go in. I checked tonight that it really does fix your case, not just one that looks like it: your sleeve was thrown away for being 'scattered ink', and that is exactly the sentence this fix changes. It does not matter what the reader calls the tattoo, which was the one thing that could have made it not apply.\n\nThe other thing I did was check three jobs on the board before anyone built them — and all three asked for something the code refuses for a reason somebody measured earlier. One asked us to pick the person's real face out of several; the code is built to never ask for several faces, because when it did once, it split one face into two and quietly moved every measurement taken from it. One asked us to delete machinery that six of our own measuring tools still use. One asked for your hair to be a single box — which is right, you tested it yourself — but written carelessly it looks exactly like a rule we are not allowed to break, so it needs one sentence to explain itself or it gets rejected.\n\nNone of those three would have been found until somebody had spent a night building the wrong thing. They are all written down on their own jobs now, with the line of code that disagrees, so the next shift starts where I stopped rather than where the job description started.\n\nI also wrote the full list of what can safely be deleted for the dead-code job you asked about, and found a second dead piece nobody had noticed — which was only visible because it was the thing making a third piece look alive.",
+  "edition": 795,
+  "updatedAt": "2026-10-31T04:50:00.000Z",
+  "shift": "Two jobs are in and live, and the night's real value was three things nobody had to spend money on.\n\nThe first was a question about your character panel that has been impossible to answer. When the studio reads a face, it names everything it can see - and if it names something the panel already has its own question for, it hands that thing over and trusts the panel's question to draw it. When that question comes back with nothing, the thing vanishes: no row, no picture, no mention. Nobody could tell how often that happens, because the words the reading handed over were never written down anywhere. They are now. The studio records them from tonight, so in a week we can say whether anything is actually being lost.\n\nWhat I could measure already: every single one of the 86 face readings the studio has kept has at least one question that came back empty - but almost all of those are honest, because no character has horns and nobody is wearing glasses. Looking for a question that came back empty for something the studio itself had drawn on the same character minutes earlier, there is exactly ONE in the whole record - and it is your scan from tonight, the one that lost the eyes, brows and ears. Its cause was fixed and shipped this morning.\n\nThe second was your tattoo-arm scan. The fix for it went in at quarter past four. One number was missing before anyone could trust it - how tall your pictures actually are - and it turned out to be sitting in the studio's own records all along: 1536 tall, so the fix catches your case with a wide margin, and it does not interfere with a face that is in the right place.\n\nThe third I was not looking for. Checking that the same fix is safe to use everywhere else, I measured where every face sits in every picture the studio has read. No real face has ever been low in the frame - but NINE eye outlines are: one sits at the waist, and one from yesterday is a box covering a quarter of the whole picture, labelled Left eye. Pressing that row to change an eye would aim a paid edit at the wrong place. It is filed with every number, and the first thing to check is whether this morning's fix already closes it.\n\nNothing was spent tonight: no credits, no pictures generated, no settings changed.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-31T02:56:25.060Z",
+      "readAt": "2026-10-31T04:37:24.431Z",
       "items": [
         {
           "issueNumber": 30,
@@ -11236,7 +11236,7 @@
       "title": "A tattoo sleeve is one piece of ink, so it gets a row you can pick (#2848)",
       "status": "in-review",
       "prNumber": 2852,
-      "note": "⚠ STILL STUCK — and tonight it cost you something real. Your scan at 02:50 was this exact problem: a character with full tattoo sleeves and no Tattoo row on the panel. The fix for it is finished, measured and sitting in this job. I checked tonight that it does fix your case — the sleeve was thrown away for being 'scattered ink', and this is the change that stops that, whatever the reader happens to call it. The measurement the review asked for was delivered twice yesterday. What is left is one command and one word, both the same hand's. Ten shifts have now been sent here and left it alone."
+      "note": "STUCK, and not on the crew. The job is finished and correct; it clashes with the main line and only Fable can clear it, because clearing it would wipe the note Fable left on it and the job would then go in unread. Two separate shifts have re-checked that this is really the only road. Your tattoo rows wait on it."
     },
     {
       "id": "cut-fragmentation-2841",
@@ -11258,6 +11258,13 @@
       "status": "merged",
       "prNumber": 2865,
       "note": "Stuck eleven hours on a clash that was only the generated map; measured, one command, re-gated and merged on the gate alone. The other half of two Tattoo rows is still in #2852."
+    },
+    {
+      "id": "catalogue-road-nouns-2793",
+      "title": "The studio now writes down the words it hands to the panel's own questions, so a thing that quietly goes missing can be found (#2793)",
+      "status": "merged",
+      "prNumber": 2889,
+      "note": "Measured over all 86 kept readings; the pairing it needs becomes readable from tonight's readings onward. Merged on the gate alone - server logs only, nothing a customer sees."
     }
   ],
   "problems": [
@@ -11827,7 +11834,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-31T02:56:25.060Z",
+    "readAt": "2026-10-31T04:37:24.431Z",
     "items": [
       {
         "issueNumber": 14,
@@ -12023,12 +12030,25 @@
       {
         "issueNumber": 2863,
         "title": "His ruling: the face panel's box step moves to Gemini 4 Argon with Qwen3-VL as fallback, behind a new flag on his account first",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — your eye on your next panel scan. Built, live at `users:1`, nothing owed from the crew (see the comment below)."
+        }
       },
       {
         "issueNumber": 2885,
         "title": "N3 face reader, his eye round 11: on a version made by taking an outfit from a photo, Eyes, Brows and Ears come back empty on both sides",
         "urgent": false
+      },
+      {
+        "issueNumber": 2888,
+        "title": "N3 face reader: the refine, ink and reference readers still trust a face read that can land on a tattoo (the scan is fixed by #2887)",
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "PR #2887 merging. This card builds on its `headBox` reader option."
+        }
       }
     ]
   }

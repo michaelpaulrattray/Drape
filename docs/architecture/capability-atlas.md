@@ -198,7 +198,7 @@ _Called as:_ `castingV2.ink.remove`
 
 ### References — attach a picture, take a feature
 
-Attach stores the customer's picture unchanged (a copy, ours to purge; the digest means byte identity later) and hands back a handle — nothing is read, cut, or charged at attach. A refine carrying the handle routes the take: hair colour as words she adopts, style and whole-look as a crop; a pointed-at tattoo documents the design. One reference at a time by ruling; the Pinterest-style selector is the road's next build.
+Attach stores the customer's picture unchanged (a copy, ours to purge; the digest means byte identity later) and hands back a handle — nothing is read, cut, or charged at attach. A refine carrying the handle routes the take: hair colour as words she adopts, style and whole-look as a crop; a pointed-at tattoo documents the design. One reference at a time by ruling. ⚠ THIS SUMMARY SAID THE PINTEREST-STYLE SELECTOR WAS ‘the road’s next build’ UNTIL 2026-10-31: its server road is BUILT and dark behind `CASTING_REFERENCE_SELECTOR_SCOPE` — see the `reference-spotlight` road — and what is left is the surface.
 
 _Entrances:_ `server/castingV2/referenceAttachDoor.ts` · `server/castingV2/hairReferenceTake.ts` · `server/castingV2/inkReferenceTake.ts`  ·  _Flags:_ `CASTING_REFERENCE_ATTACH_SCOPE` · `CASTING_HAIR_REFERENCE_SCOPE` · `CASTING_INK_REFERENCE_SCOPE`
 
@@ -207,6 +207,23 @@ _Called as:_ `castingV2.reference.attach`
 > The attach/take doors are their own vocabulary; a reference-attached census state exists in the corpus and is the next fixture to build.
 
 - What returns to a caller is the storage KEY, never a URL — the server fetches bytes itself; the address is the only thing between a photograph of a person and a stranger.
+
+### The spotlight — the attached picture lights under the pointer, a tap takes a piece
+
+OPEN splits the attached picture once (one 32-point SAM 3 read) while a face detect runs beside it, cleans the pieces by his three rules plus the face fence, and hands back a HIT-TEST MAP — one byte per pixel saying which piece owns it, as a greyscale PNG. Hover is then a pixel read in the browser and costs nothing. TAP cuts whatever is under the finger (one point read, honoured lit or not), judges and cleans it, subtracts the faces in the bytes, and names it in the customer’s own vocabulary — one text call on the cut. Geometry and a name travel; never a pixel of the photograph, because the browser already holds the picture it attached. Nothing is stored and nothing is charged on either road — a tap is not a render, and the first crop mint is slice 4’s.
+
+_Entrances:_ `server/castingV2/referenceSpotlight.ts` · `server/castingV2/referenceSpotlightMap.ts`  ·  _Flags:_ `CASTING_REFERENCE_SELECTOR_SCOPE` · `CASTING_REFERENCE_ATTACH_SCOPE`
+
+_Called as:_ `castingV2.reference.openSpotlight` · `castingV2.reference.tapSpotlight`
+
+> Both entrances answer NOT_FOUND outside the flag — the capability does not exist there, and a code saying ‘not yet’ would advertise one. Every other refusal is FAIL-OPEN rather than a door: an unreadable split, an unread face set, a tap that found nothing, a cut the judge refused and a reader that would not give a bare noun each answer with a reason the surface reads as ‘this picture does not light’ or ‘that tap took nothing’, leaving the attach exactly as it looks today and the words road untouched. None of them is a sentence a customer is shown, so none is declared copy; the surface slice is where those words are written and judged.
+
+- THE FACE FENCE BINDS THE HOVER SET, NOT ONLY THE CUT (design §6, amended on his eye): every surviving piece has the detected face boxes subtracted in its mask, and a piece that COVERS a face — the whole-person piece both split methods produce on a worn photograph — leaves the hover set entirely, because a person is not a takeable thing. Both acts run inside `cleanSplit` and BEFORE its arbitration: slice 3a-1 measured what happens otherwise, the person piece containing the garment and therefore sitting deeper at every one of its pixels, taking the tank top from 0.992 to 0.358.
+- THE FACES ARE RE-DETECTED ON EVERY TAP AND THE SAVING IS DECLINED ON PURPOSE: carrying the open read’s boxes over would save about half a cent and ~1.8 s, and it would mean a rectangle around a customer’s face travelling to a browser and being accepted back as input — which is also a client-supplied way to switch the fence off, since handing back no boxes makes the subtraction do nothing.
+- THE HIT-TEST MAP IS GREYSCALE BY MEASUREMENT, NOT BY TASTE (`referenceSpotlightMap.ts`): on the spotlight court’s own saved masks, greyscale colour type 0 was 16.8 KB, a palette 17.0 KB and truecolour 22.1 KB, with run-length at 42.7 KB — so greyscale is both the smallest AND the only one whose stored byte IS the piece id by the PNG format’s definition. A palette is sharp’s default and its byte is an index into a table sharp composes, which would make ‘the decoded value is the piece id’ a claim about a library’s optimiser; a permuted palette would mislight pieces in a way that reads exactly like a geometry bug.
+- THE MAP IS LOSSLESS ONLY BECAUSE `cleanSplit` ARBITRATES: its rule 2 gives every contested pixel to the single piece it sits deepest inside and zeroes it in all the others, so the surviving pieces are pairwise disjoint and one byte can name the owner. That is an upstream invariant rather than a hope, so the encoder THROWS on a second claim instead of picking a winner — a silent resolution would be a lit shape that disagrees with the cut the tap takes.
+- ⚠ IT IS OFF FOR A MEASURED REASON AS WELL AS AN UNBUILT ONE. The entrance’s first real split (2026-10-31, through the real service on the court’s three fixtures, at the court’s own resolution) left 26–29 pieces surviving out of 32 on every one — where the court’s own harness ran `dedupe(masks, 0.85)` down to 8–18 BEFORE it scored anything. So every garment-level figure §8 quotes was taken on a set the shipped road does not produce, and the hover set is far busier than the design reasoned about. Filed rather than tuned away: a fourth clean-up rule is a measured decision and his 2026-09-24 ruling makes a capability found missing its own card.
+- THE SPLIT’S MASK DOWNLOADS OVERLAP SINCE 2026-10-31, AND THAT WAS TWO THIRDS OF THE WAIT: measured on the worn fixture, the one provider call 14,973 ms and the 32 mask downloads 32,710 ms one at a time against 1,025 ms overlapped — 47.7 s to 16.0 s for one `Promise.all`. The court never paid for those round trips at all; its 4.3–6.6 s is the provider call alone, so §8’s latency band was never a reading of this function. Order is preserved because a piece’s index is its id in the map.
 
 ### The panel and the scan — what a cast shows about itself
 
@@ -307,7 +324,7 @@ _Called as:_ `castingV2.concept.describe`
 - `concept.no_being` is the twin of the roll road's `not_a_being`, and it reached the map FIRST while its sibling stayed invisible — the pair is the reason both entrances' copy tables are now the declared source rather than a grep.
 - A READER OUTAGE IS NOT A BAD PICTURE (#2686). Measured on production 2026-10-27: from 03:09Z the text account key was disabled, the provider answered 401 to every call, and every upload met `concept.unreadable` — 'I couldn't read that picture just now. Try again in a moment.' The sentence blamed the picture and asked for a retry no retry could satisfy. `concept.reader_outage` now answers it, sharing `concept.no_transport`'s words because the two are one fact to the customer: the studio cannot read pictures right now, and it is not theirs. Its stated limit is the breaker: after five consecutive failures the queue refuses as `capability` for 30 s, which is also a malformed request and a cancel, so those attempts still get the transient sentence.
 
-## Every way in — the 44 procedures the casting entrance exposes
+## Every way in — the 46 procedures the casting entrance exposes
 
 Derived from the architecture Atlas's own extractor. A procedure with no road is an error finding, not a blank cell — the map is held to what EXISTS, not only to what it cites (#1203).
 
@@ -339,6 +356,8 @@ Derived from the architecture Atlas's own extractor. A procedure with no road is
 | `castingV2.openSessions` | life-of-a-cast |
 | `castingV2.redoPackage` | sign-views |
 | `castingV2.reference.attach` | references |
+| `castingV2.reference.openSpotlight` | reference-spotlight |
+| `castingV2.reference.tapSpotlight` | reference-spotlight |
 | `castingV2.refine` | refine-money, refine-reading, refine-ink |
 | `castingV2.reimagine` | reimagine |
 | `castingV2.removeCastsFromCampaign` | campaigns |

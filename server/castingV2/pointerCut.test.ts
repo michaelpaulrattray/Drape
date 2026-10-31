@@ -19,6 +19,7 @@
  * pass on the wrong row.
  */
 import sharp from "sharp";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -34,6 +35,7 @@ import {
   normalisedName,
   offListFeatures,
   placeNames,
+  catalogueRoadFeatures,
   pointerFeatures,
   productWordFor,
   settleByPlace,
@@ -286,6 +288,102 @@ describe("offListFeatures — a name the scan already buys never reaches this ro
       feature("hair"), feature("jacket"), feature("eyes", 2), feature("sash"),
     ]);
     expect(kept.map((one) => one.name)).toEqual(["jacket", "sash"]);
+  });
+});
+
+describe("catalogueRoadFeatures — the fourth road's nouns, so the loss direction is readable (#2793)", () => {
+  /*
+    WHY THIS EXISTS AT ALL. `coveredByCatalogue` is a spelling test, so a found
+    name the catalogue covers never reaches the pointer road — the catalogue's
+    own question is trusted to draw it. If that question comes back EMPTY on
+    this frame, the thing has no road at all and no row; and until this function
+    those nouns were kept NOWHERE, so the loss could not be measured after the
+    fact. Measured over all 86 kept readings on production the day this landed,
+    every one has at least one empty catalogue question, so the opportunity is
+    not rare — what was missing was the other half of the pair.
+  */
+  it("returns the covered names and nothing else, in the reading's own order", () => {
+    const took = catalogueRoadFeatures([
+      feature("hair"), feature("jacket"), feature("eyes", 2), feature("sash"), feature("ears"),
+    ]);
+    expect(took.map((one) => one.name)).toEqual(["hair", "eyes", "ears"]);
+  });
+
+  /*
+    ⚠ THE ARM THAT MAKES IT A QUARTER RATHER THAN A NEW RULE, and the only one
+    that can go red when somebody adds a fifth road: every name a reading
+    produces takes EXACTLY ONE of the four roads `foundRoadOf` declares, so the
+    three reported populations plus this one are the whole reading. Written as a
+    partition over a mixed reading rather than as four separate counts, because
+    four counts that each look right can still lose a name between them.
+  */
+  it("completes the partition — every name takes exactly one road, and the four cover the reading", () => {
+    const reading = [
+      /* catalogue: a question the scan sends. */
+      feature("eyes", 2), feature("hair"),
+      /* place: anatomy something else says it sits on. */
+      feature("arm", 1, { kind: "anatomy", on: "" }),
+      /* words: makeup, and a thing with no outline to cut. */
+      feature("eyeliner", 1, { kind: "makeup" }),
+      feature("freckles", 1, { coverage: "scattered" }),
+      /* pointer: a worn thing with an outline. */
+      feature("jacket", 1, { kind: "clothing" }),
+      feature("tattoo", 1, { kind: "marking", on: "arm" }),
+    ];
+    const roads = {
+      catalogue: catalogueRoadFeatures(reading),
+      words: wordsOnlyFeatures(reading).map((one) => ({ name: one.noun })),
+      pointer: pointerFeatures(reading),
+      /* The place road is the remainder by construction — it is the one road
+         that produces nothing at all, so it is named here rather than left as
+         an unexplained shortfall. */
+    };
+    const named = [...roads.catalogue, ...roads.words, ...roads.pointer].map((one) => one.name);
+    const places = [...placeNames(reading)];
+    expect(places).toEqual(["arm"]);
+    /* DISJOINT: no name is on two roads. */
+    expect(new Set(named).size).toBe(named.length);
+    /* EXHAUSTIVE: the four roads are the whole reading. */
+    expect([...named, ...places].sort()).toEqual(reading.map((one) => one.name).sort());
+    /* And each road got what it should, so a partition that is merely tidy
+       cannot pass this. */
+    expect(roads.catalogue.map((one) => one.name)).toEqual(["eyes", "hair"]);
+    expect(roads.words.map((one) => one.name)).toEqual(["eyeliner", "freckles"]);
+    expect(roads.pointer.map((one) => one.name)).toEqual(["jacket", "tattoo"]);
+  });
+
+  /* A covered name that is ALSO a place stays on the catalogue road, because
+     `foundRoadOf` asks the catalogue first. `hair` is both — the scan has a
+     question for it and `bangs` sits on it — and a reading that reported it as
+     a place would be reporting the scaffolding instead of the loss. */
+  it("keeps a name that is both covered and a place on the catalogue road", () => {
+    const reading = [feature("hair"), feature("bangs", 1, { on: "hair" })];
+    expect(placeNames(reading).has("hair")).toBe(true);
+    expect(catalogueRoadFeatures(reading).map((one) => one.name)).toEqual(["hair"]);
+  });
+
+  /*
+    ⚠ AND THE FIELD MUST SURVIVE, which is a different claim from the function
+    being right. #2809 is the standing warning one road over: a number written
+    into this module's summary log for a stated purpose, read by nobody for
+    three weeks. The census this function exists for reads `catalogueNouns` off
+    the `pointer road` line and pairs it with the kept row's own `empty` list,
+    so a later edit that drops the field takes the measurement with it and
+    leaves every arm above green. Read at the module's own source because the
+    log goes out through a pino transport in a worker and cannot be captured
+    here; it is a DELETION guard and claims nothing more.
+  */
+  it("is reported on the summary log line, beside the other three roads", () => {
+    const source = readFileSync(
+      new URL("./pointerCut.ts", import.meta.url),
+      "utf8",
+    );
+    const line = source.slice(source.indexOf("const named: NamedNotCut[]"));
+    const summary = line.slice(0, line.indexOf('"pointer road"'));
+    expect(summary).toContain("catalogueNouns: catalogueRoadFeatures(input.features)");
+    for (const road of ["wordsOnly:", "rows:", "gated:"]) {
+      expect(summary, road).toContain(road);
+    }
   });
 });
 

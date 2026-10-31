@@ -455,6 +455,47 @@ export const RATE_LIMITS = {
     keyPrefix: 'casting_reference_attach',
   },
   /*
+    OPENING AN ATTACHED PICTURE INTO A SPOTLIGHT (#14 slice 3a-2) — its own
+    bucket, and SIZED FROM THE COURT'S MEASUREMENT rather than copied from the
+    attach door beside it.
+
+    One open buys two fal calls: the 32-point split (≈0.5¢, 4.3–6.6 s) and one
+    face detect for §6's fence (≈0.5¢ — the court's four detects did not move
+    the balance at cent resolution). So about a cent an open, and 36 an hour
+    ceilings the house near 36¢ an hour per account.
+
+    ⚠ **It is deliberately LOOSER than the attach door's 24, which is the
+    opposite of the obvious choice, and the reason is that nothing is stored.**
+    An open is recomputed every time the picture is opened — a reload re-splits,
+    because persistence is explicitly not this slice's (design §10) — so a
+    customer who attaches once and reloads twice has legitimately opened three
+    times. A cap at or under the attach cap would refuse the third on a picture
+    they were allowed to attach.
+  */
+  castingReferenceSpotlightOpen: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 36,
+    keyPrefix: 'casting_reference_spotlight_open',
+  },
+  /*
+    TAPPING ONE (#14 slice 3a-2) — generous on purpose, because HIS OWN SPEC
+    SENTENCE IS A SEQUENCE OF TAPS: *"i click the hair and earrings"*, and §3
+    makes several taps on one picture the first ship.
+
+    A tap buys one point cut (≈0.5¢, 1.1–3.8 s) and one naming call
+    (0.05–0.23¢, 1.5–4.1 s) — about 0.7¢. Somebody exploring a busy photograph
+    reasonably taps ten or twenty times, so this is 120 an hour: a ceiling near
+    84¢ an hour per account, which bounds a loop without ever being a number a
+    customer could feel. **A tap costs no credits** (§3 — a tap is not a
+    render), so this bucket is the only thing standing between house money and
+    a held-down pointer.
+  */
+  castingReferenceSpotlightTap: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 120,
+    keyPrefix: 'casting_reference_spotlight_tap',
+  },
+  /*
     UPLOAD A CONCEPT (#185). Its own bucket, not the attach door's: this one
     spends HOUSE money on every call (one describer read with the picture
     inline) while the attach door spends none, so sharing a window would let a

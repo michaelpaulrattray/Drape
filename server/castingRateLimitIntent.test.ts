@@ -217,6 +217,17 @@ describe("which bucket each casting procedure was handed", () => {
          shared bucket would let either road spend the other's allowance while
          nobody could tell from the counter which had done it. */
       attach: "castingReferenceAttach",
+      /* THE SPOTLIGHT'S TWO ACTS (#14 slice 3a-2) — a bucket each, and NOT the
+         attach door's. The attach spends nothing; opening buys a 32-point split
+         plus a face detect (about a cent) and a tap buys a point cut plus a
+         naming call (about 0.7 cents), so a shared window would let the free
+         write exhaust the paid reads. They are apart from EACH OTHER for the
+         same reason read the other way: his own spec sentence is a sequence of
+         taps (*"i click the hair and earrings"*), so the tap's allowance is
+         generous where the open's is near the attach cap, and one window would
+         make a busy picture cost somebody their next upload. */
+      openSpotlight: "castingReferenceSpotlightOpen",
+      tapSpotlight: "castingReferenceSpotlightTap",
       /* UPLOAD A CONCEPT (#185) — its OWN bucket, and NOT the attach door's
          beside it. That door keeps bytes and spends nothing; this one keeps
          nothing and spends HOUSE MONEY on every call (one describer read with
