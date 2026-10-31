@@ -1,5 +1,5 @@
 /**
- * THE SPOTLIGHT'S ENTRANCE — #14 slice 3a-2.
+ * THE SPOTLIGHT'S ENTRANCE — #14 slice 3a-2, re-pointed by #2902.
  *
  * Slice 3a-1 built four roads and gave them no way in: `splitAtPoints`,
  * `cutAtPoint`, `cleanSplit` and `nameTheCut` all exist, are tested, and
@@ -7,13 +7,28 @@
  * the whole of what 3a-2 owes: **open** a photograph into a hit-test map, and
  * **tap** a point in it for a named cut.
  *
+ * ⚠ **THE OPEN ROAD NO LONGER SPLITS AT A GRID — #2902, HIS EYE ON THE LIVE
+ * PICKER.** `splitAtPoints` was 32 point prompts, so a piece was *whatever
+ * surrounds this dot*: the background was selectable, half a pair of pants lit,
+ * one shoe of two lit. **The pieces come from the picture's own READING now** —
+ * named, boxed, and cut whole by name — which is `referenceSpotlightPieces.ts`,
+ * and his words and the whole argument live in that module's header. `cutAtPoint`
+ * is UNTOUCHED and still right: a tap's question genuinely is a point.
+ * ⚠ **So `splitAtPoints` has no production caller as of this card.** Its
+ * disposition is a card of its own and not folded in here, on his 2026-09-24
+ * ruling — a retirement taken inside a feature build ships under the wrong
+ * name. It and `referenceSplitWire.test.ts` are left exactly as they are.
+ *
  * ## The two acts, and why they are two
  *
- * They are two spends with two latencies, measured in the spotlight court:
- * opening is ONE 32-point SAM 3 read, 4.3–6.6 s and ≈0.5¢ (52.3 s once, on the
- * provider's bad minute); a tap is one point read at 1.1–3.8 s plus one text
- * call at 1.5–4.1 s. Putting them behind one entrance would make every tap pay
- * the split again.
+ * They are two spends with two latencies. ⚠ **The open road's numbers below are
+ * the GRID's and are superseded by #2902** — kept here because they are what
+ * the design's §8 band was taken on, and the reading road's own figures live on
+ * `PiecesTally` and in the card: opening was ONE 32-point SAM 3 read, 4.3–6.6 s
+ * and ≈0.5¢ (52.3 s once, on the provider's bad minute); a tap is one point read
+ * at 1.1–3.8 s plus one text call at 1.5–4.1 s. Putting them behind one entrance
+ * would make every tap pay the open again — which is MORE true of the reading
+ * road, not less, since it buys a text call before it buys any geometry.
  *
  * ## What goes back, and what deliberately does not
  *

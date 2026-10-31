@@ -1,13 +1,23 @@
 /**
- * THE SPOTLIGHT'S ENTRANCE, DRIVEN — #14 slice 3a-2.
+ * THE SPOTLIGHT'S ENTRANCE, DRIVEN — #14 slice 3a-2, re-pointed by #2902.
  *
  * The FETCH is stubbed rather than the modules, so every arm here runs the real
- * `splitAtPoints`, the real `cutAtPoint`, the real `cleanSplit` and the real
- * detector parsing. A suite that mocked the roads would prove the entrance
- * calls functions, which is not the thing in doubt.
+ * reading road, the real `markReferenceThings`, the real `regionInBox`, the real
+ * `cutAtPoint`, the real `cleanSplit` and the real detector parsing. ⚠ **Only
+ * the TEXT engine is a fake**, and it answers in the shape `parseDiscovery`
+ * reads, so the parser under it is real too. A suite that mocked the roads would
+ * prove the entrance calls functions, which is not the thing in doubt.
  *
- * Three arms are the ones worth keeping, and none of them is about a happy
- * path:
+ * ⚠ **#2902's OWN ARMS ARE THE LAST THREE GROUPS, AND EACH CARRIES A CONTROL
+ * THAT RUNS THE OTHER WAY** — his four complaints are properties of the
+ * construction, so each is held by asserting what was BOUGHT (one cut per name,
+ * inside that name's own rectangle, and none for anything unnamed), and the
+ * face fence is held by a pair: the mask read taking nothing off the hair, and
+ * the same picture with the mask read FAILING taking all 256 pixels, which is
+ * the fence that shipped.
+ *
+ * Three arms are the ones worth keeping from 3a-2, and none of them is about a
+ * happy path:
  *
  * 1. **§6's fence refuses rather than degrades.** A detector that falls over
  *    means the face boxes are unknown, and a spotlight that might light a face
@@ -15,10 +25,13 @@
  *    does not light and a tap that is not taken — and on the tap road the
  *    refusal must come BEFORE the cut is bought, which is asserted by counting
  *    what left the machine.
- * 2. **The split and the detect are in flight together.** Sequentially they
- *    are a 4.3–6.6 s road plus ~1.8 s for nothing, since neither answer feeds
- *    the other. The arm holds the overlap rather than the wall time, because a
- *    duration is a clock and this is a fact about ordering.
+ * 2. **The reading road and the face detect are in flight together.**
+ *    Sequentially they are a multi-stage road plus ~1.8 s for nothing, since
+ *    neither answer feeds the other. The arm holds the overlap rather than the
+ *    wall time, because a duration is a clock and this is a fact about
+ *    ordering. ⚠ The face's OWN MASK cannot join them and is bought after —
+ *    the rectangle to cut inside is the detect's own answer, so it does not
+ *    exist until that resolves.
  * 3. **The face noun is the one `referenceTake.ts` already uses.** Asserted on
  *    the OUTGOING detect body (invariant 5): a paraphrase here would be a
  *    second vocabulary for the same question, and the fence would quietly ask
@@ -28,7 +41,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import sharp from "sharp";
 
-import type { Mask } from "./maskedComposite";
 import type { RegionReader } from "./maskedRefine";
 import type { TextEngine } from "../providers/types";
 import { createFalRegionReader } from "./falRegionReader";

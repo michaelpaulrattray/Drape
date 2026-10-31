@@ -43531,10 +43531,10 @@
       "message": "Names 3 of DiscoveryCrop's 3 fields (server/castingV2/faceDiscovery.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
-      "id": "finding:redeclared-shape:server/castingV2/referenceSpotlight.ts:176",
+      "id": "finding:redeclared-shape:server/castingV2/referenceSpotlight.ts:191",
       "severity": "warn",
       "kind": "redeclared-shape",
-      "subject": "server/castingV2/referenceSpotlight.ts:176",
+      "subject": "server/castingV2/referenceSpotlight.ts:191",
       "message": "Names 4 of PointerBox's 4 fields (server/castingV2/maskedRefine.ts), 4 of SegmentBox's 4 fields (server/castingV2/segmentCuts.ts) — a module that imports a shape and re-lists its fields has written a copy, and a copy drifts by losing a field nothing can see. Reference it, or narrow it with Pick/Omit."
     },
     {
