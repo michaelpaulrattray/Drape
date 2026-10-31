@@ -2390,8 +2390,14 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
     const panel = panelOf({
       catalogued: ["eye@left", "eye@right", "skin", "teeth", "lips"],
       found: [
-        { noun: "third eye", kind: "anatomy", on: "forehead" },
-        { noun: "jaw hardware", kind: "anatomy", on: "jaw" },
+        /* ON THE FACE, and said in the geometry rather than only in the noun
+           (#2840). The helper otherwise lays found boxes out on a diagonal far
+           below the drawn face rows, which since #2840 is a real answer — a
+           body part down there is a Body row. This cast's third eye is on its
+           forehead and its jaw hardware is on its jaw, so the fixture places
+           them there and the assertion below is the positive control. */
+        { noun: "third eye", kind: "anatomy", on: "forehead", x: 15, y: 0 },
+        { noun: "jaw hardware", kind: "anatomy", on: "jaw", x: 15, y: 40 },
         { noun: "neck hardware", kind: "accessory", on: "neck" },
         { noun: "scarf", kind: "clothing", on: "" },
         { noun: "shoulder armor", kind: "accessory", on: "shoulder" },
@@ -2410,9 +2416,105 @@ describe("the grouping — the outfit, the folds, and the words with no picture"
       "Scarf", "Pendant", "Strap", "Charm", "Robe",
     ]);
     expect(rowNames(panel, "accessories")).toEqual(["Neck hardware", "Shoulder armor"]);
-    /* Body parts list under Face since #2801. */
+    /* Body parts list under Face since #2801 — and since #2840 that holds
+       because they are ON the face, not because every body part lands there.
+       Neither FOUND body part fell through to Body: the only row there is the
+       catalogue's own Skin, which has always sat in that section. */
     expect(rowNames(panel, "face").slice(-2)).toEqual(["Third eye", "Jaw hardware"]);
+    expect(rowNames(panel, "body")).toEqual(["Skin"]);
     expect(sectionOf(panel, "open")).toBeNull();
+  });
+  /* ---- #2840 / #2807 part 1: a body part lists where it actually IS ---- */
+
+  /*
+    His eye, rounds 9 and 10. Round 9's panel drew TWO rows both called
+    Shoulders under FACE; round 10 drew a Collarbone there — *"no idea why
+    collarbone is showing up?"*. #2807 part 1 named the day this would be
+    built: *"a reading holding a body part the scan's face cuts do not touch
+    is the day this becomes one branch plus one frame for his eye"*.
+
+    The face these arms measure against is the one the HELPER draws:
+    catalogued slots land at x 10+10n, y 20+10n, 50×40, so four face rows span
+    x10–90, y20–90 — midline 50, middle row 55. A found box is 80×60 at
+    x 100+100n, y 200+50n unless the arm places it. Nothing here is tuned; the
+    allowances fall out of that span.
+  */
+  it("lists a found body part that is not on the face under Body, not Face", () => {
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right", "teeth", "lips"],
+      found: [{ noun: "collarbone", kind: "anatomy", on: "" }],
+    });
+    /* The face section holds the face and nothing else. */
+    expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth"]);
+    expect(rowNames(panel, "body")).toEqual(["Collarbone"]);
+  });
+  it("sends a body part DIRECTLY below the face to Body, where only the down axis can decide", () => {
+    /* The arm the first one cannot be: a collarbone sits under the chin, so it
+       is well within the face's span ACROSS (centre x 50, the face's own
+       midline) and outside it only DOWN. Without this, a rule that had quietly
+       lost its vertical half would still pass every arm above, because a box on
+       the helper's default diagonal is outside the face on both axes at once. */
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right", "teeth", "lips"],
+      found: [{ noun: "collarbone", kind: "anatomy", on: "", x: 10, y: 170 }],
+    });
+    expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth"]);
+    expect(rowNames(panel, "body")).toEqual(["Collarbone"]);
+  });
+
+  it("draws his round-9 pair of Shoulders under Body rather than twice under Face", () => {
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right", "teeth", "lips"],
+      found: [
+        { noun: "shoulders", kind: "anatomy", on: "", instance: 1 },
+        { noun: "shoulders", kind: "anatomy", on: "", instance: 2 },
+      ],
+    });
+    expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth"]);
+    /* Still two rows — this card moves them, and whether a pair folds into one
+       row is the other half of #2840 and is not decided here. */
+    expect(rowNames(panel, "body")).toEqual(["Shoulders", "Shoulders"]);
+  });
+
+  it("keeps a body part that IS on the face under Face", () => {
+    /* The positive control, and the reason the rule reads place rather than
+       the noun: a third eye is as much a body part as a collarbone. Centre
+       (50, 55) is the middle of the drawn face. */
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right", "teeth", "lips"],
+      found: [{ noun: "third eye", kind: "anatomy", on: "forehead", x: 10, y: 25 }],
+    });
+    expect(rowNames(panel, "face")).toEqual(["Eyes", "Lips", "Teeth", "Third eye"]);
+    expect(sectionOf(panel, "body")).toBeNull();
+  });
+
+  it("leaves every body part under Face when the scan drew no face row to measure against", () => {
+    /* The fail-safe: a missing measurement never moves a row, so a scan with
+       nothing of the face cut behaves exactly as the panel did before #2840.
+       The catalogue puts `skin` in its BODY group, so this cast has no face
+       span at all. */
+    const panel = panelOf({
+      catalogued: ["skin"],
+      found: [{ noun: "collarbone", kind: "anatomy", on: "" }],
+    });
+    expect(rowNames(panel, "face")).toEqual(["Collarbone"]);
+    expect(rowNames(panel, "body")).toEqual(["Skin"]);
+  });
+
+  it("routes by place only for the body — a worn thing and a mark are unmoved", () => {
+    /* His #2789 placement ruling is untouched: the branch added here is inside
+       the anatomy arm, so an accessory and a marking in the very same place
+       still land where that ruling put them. */
+    const panel = panelOf({
+      catalogued: ["eye@left", "eye@right", "teeth", "lips"],
+      found: [
+        { noun: "shoulder armor", kind: "accessory", on: "" },
+        { noun: "tattoo", kind: "marking", on: "" },
+      ],
+    });
+    expect(rowNames(panel, "accessories")).toEqual(["Shoulder armor"]);
+    expect(rowNames(panel, "open")).toEqual(["Tattoo"]);
+    expect(sectionOf(panel, "body")).toBeNull();
   });
 
   /*
