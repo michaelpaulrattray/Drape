@@ -20,8 +20,11 @@
  * # Why it costs no vision call
  *
  * The crop's box comes from a region the harvest **already** segmented for its
- * own work, carried on `MaskedRefineResult.evidence.masterRegions` — the same
- * evidence the inherited-verdict design was built to use. When the step being
+ * own work, carried on `HarvestEvidence.masterRegions` — the same
+ * evidence the inherited-verdict design was built to use. ⚠ That harvest is
+ * deleted (#2859) and the repaint brings no region map, so in production this
+ * box has nothing to come from; `refineService.ts` carries that note at its
+ * call site, and the restoration is carded there. When the step being
  * rendered never segmented a suitable region, there is simply no detail, and
  * verification is exactly what it is today. A silent partial is the honest
  * failure here: sending nothing loses nothing, and buying a segmentation on the

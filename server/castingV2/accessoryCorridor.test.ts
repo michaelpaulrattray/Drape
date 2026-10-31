@@ -1,22 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import sharp from "sharp";
 
-/* The store's own front door opens a transaction and registers a cleanup
-   manifest. Both are seams this suite has no business reaching — the subject is
-   which GROUND a segment is cut from, not how the rows commit. */
-vi.mock("../db/connection", () => ({
-  withTransaction: async (fn: (tx: unknown) => Promise<unknown>) => fn({}),
-}));
-vi.mock("../db/storageCleanup", () => ({
-  createStorageCleanupManifestIn: async () => undefined,
-  /* The manifest is BORN HELD, so the writer asks this module for the hold as
-     well. A double that omits it does not make the writer fail loudly — it
-     throws inside the writer's own catch and reports `failed`, which is how it
-     read here: as a segment that was silently not kept. */
-  storageCleanupManifestHeldUntil: () => new Date("2031-01-01T00:00:00.000Z"),
-}));
-
-import { harvestRefinement, regionNameOf, type RegionReader } from "./maskedRefine";
 import { cutSegments, encodeCut } from "./segmentCuts";
 import { readRaster, type Mask } from "./maskedComposite";
 import { facetOfSubject } from "./refineFacets";
@@ -27,40 +11,22 @@ import {
 } from "../../scripts/lib/carriedAdjudicator.mts";
 
 /**
- * THE ACCESSORY CORRIDOR — the geography that was built, used, and never named.
+ * A KEPT ACCESSORY, JUDGED BY ARITHMETIC — what is left of the accessory
+ * corridor suite (#2859).
  *
- * # The census this suite exists to change
+ * This file was written for the masked-edit harvest's addition corridor: on
+ * 2026-08-09 not one accessory pixel had ever been kept, because the harvest
+ * built the corridor at both earlobes and then filed it under no name the
+ * segment cutter could look up. That harvest was retired with the paste road
+ * (#1577 slice 4b) and deleted on his word *"delete dead code"*, and every arm
+ * that drove it went with it.
  *
- * Every segment row in production, on 2026-08-09, by facet:
- *
- *     6 edit_patch marks · 4 edit_patch makeup · 3 edit_patch hairWorn
- *     1 edit_patch eye.colour                                    total 14
- *     statedAccessories:  ZERO
- *
- * Not one accessory pixel had ever been kept, on any face, on any render this
- * campaign paid for — so an earring was re-rolled from words on every later
- * render, which is why the founder's single gold hoop appeared on her LEFT ear
- * on v#156 and on her RIGHT on v#157.
- *
- * The cause was not a missing capability. `additionDestination` has built the
- * corridor at both earlobes since the addition path was wired; the harvest
- * unions it into the zone and the paint is governed by it. But the segment
- * cutter looks a facet's ground up in `evidence.masterRegions` **by name**, and
- * the corridor went into an anonymous `owned` list. A mask nobody can name is a
- * mask nobody can cut against.
- *
- * # What each test here is holding shut
- *
- * The controls matter more than the affirmatives, because every one of them is a
- * way this fix could pass its own suite while filing nothing:
- *
- * - the corridor could be filed under the WRONG kind (an earring ask harvesting
- *   at her eyes — the defect `LANDMARK_OF_ACCESSORY` was born to kill);
- * - the master's own read of the same name — EMPTY for a genuine addition, and
- *   made on every addition — could overwrite it, which is the original defect
- *   one layer deeper and the version this build very nearly shipped;
- * - the delivered thing could hang past the corridor and be clipped;
- * - and the cutter could be reading a name the service never sends.
+ * Two blocks stay, because their subjects still have readers: the carried-fact
+ * adjudicator (`scripts/lib/carriedAdjudicator.mts`, run by the drive scripts)
+ * and its feather allowance. No other suite drives either. Their fixture used to
+ * come out of the harvest; it is now drawn directly — the hoops' own pixels as
+ * both the applied ground and the earring region — which is what the harvest
+ * handed the cutter on this face anyway, so the verdicts are the same verdicts.
  */
 
 const W = 64;
@@ -81,28 +47,7 @@ async function png(fill: (x: number, y: number) => [number, number, number]): Pr
   return sharp(data, { raw: { width: W, height: H, channels: 3 } }).png().toBuffer();
 }
 
-const box = (x0: number, y0: number, x1: number, y1: number): Mask => {
-  const data = Buffer.alloc(W * H, 0);
-  for (let y = y0; y < y1; y += 1) for (let x = x0; x < x1; x += 1) data[y * W + x] = 255;
-  return { data, width: W, height: H };
-};
-
-const empty = (): Mask => ({ data: Buffer.alloc(W * H, 0), width: W, height: H });
-
-const coverageOf = (mask: Mask | undefined): number => {
-  if (!mask) return 0;
-  let count = 0;
-  for (let at = 0; at < mask.data.length; at += 1) if (mask.data[at] > 0) count += 1;
-  return count;
-};
-
-const claimsAt = (mask: Mask | undefined, x: number, y: number): boolean =>
-  Boolean(mask && mask.data[y * W + x]! > 0);
-
-/**
- * The lobes this suite hangs everything from — the reader's landmark answer, in
- * pixels, so a test can ask whether the corridor really landed on the ear.
- */
+/** The lobes this suite hangs everything from, in pixels. */
 const LOBES = [{ x: 0.25, y: 0.5 }, { x: 0.75, y: 0.5 }];
 const LEFT_LOBE = { x: Math.round(LOBES[0].x * W), y: Math.round(LOBES[0].y * H) };
 const RIGHT_LOBE = { x: Math.round(LOBES[1].x * W), y: Math.round(LOBES[1].y * H) };
@@ -115,15 +60,7 @@ const hoopedFace = () => png((x, y) => {
   return near(LEFT_LOBE) || near(RIGHT_LOBE) ? METAL : SKIN;
 });
 
-/**
- * WHERE THE DELIVERED HOOPS ARE, read off the painted frame.
- *
- * Not decoration on the fixture. An addition's harvest asks the PAINTED frame
- * where the thing is now, and a reader that finds nothing there refuses the
- * render outright ("the skin region selects nothing") — so a landed accessory
- * render always has a delivered extent, and a fixture without one is testing a
- * render that could not exist.
- */
+/** Where the hoops are, as a mask — the same discs `hoopedFace` paints. */
 const deliveredHoops = (): Mask => {
   const data = Buffer.alloc(W * H, 0);
   for (const lobe of [LEFT_LOBE, RIGHT_LOBE]) {
@@ -137,400 +74,32 @@ const deliveredHoops = (): Mask => {
 };
 
 /**
- * A reader that answers each question honestly for a genuine addition.
- *
- * `onMaster` is what she is wearing NOW — empty for an addition, and the answer
- * that overwrote the corridor before the union rule. `onPainted` is the
- * delivered extent, which is what makes the ground true rather than merely
- * plausible.
- */
-function readerFor(input: {
-  master: Buffer;
-  onMaster?: (name: string) => Mask;
-  onPainted?: (name: string) => Mask;
-  seen?: string[];
-}): RegionReader {
-  return {
-    region: async ({ image, name }) => {
-      const which = Buffer.compare(image, input.master) === 0 ? "master" : "painted";
-      input.seen?.push(`${which}:${name}`);
-      return which === "master"
-        ? (input.onMaster?.(name) ?? empty())
-        : (input.onPainted?.(name) ?? empty());
-    },
-    subject: async () => box(0, 0, W, H),
-    landmark: async () => LOBES,
-  };
-}
-
-async function harvestHoops(overrides: Partial<Parameters<typeof harvestRefinement>[0]> = {}) {
-  const master = await bareFace();
-  const painted = await hoopedFace();
-  return harvestRefinement({
-    master: { bytes: master, contentType: "image/png" },
-    painted: { bytes: painted, contentType: "image/png" },
-    facets: [facetOfSubject("statedAccessories")],
-    reader: readerFor({ master, onPainted: () => deliveredHoops() }),
-    userId: 1,
-    described: "small gold hoops",
-    ...overrides,
-  });
-}
-
-describe("the corridor an addition is painted into is named, so it can be cut against", () => {
-  it("files the destination under the kind the instruction named", async () => {
-    const result = await harvestHoops();
-
-    const ground = result.evidence?.masterRegions.get("earring");
-    expect(coverageOf(ground), "an earring ask leaves earring ground behind").toBeGreaterThan(0);
-    /*
-      And it is the LOBES, not merely something non-empty. A corridor filed at
-      the wrong anatomy would still satisfy a coverage assertion, which is how a
-      geometry test passes while the picture is wrong.
-    */
-    expect(claimsAt(ground, LEFT_LOBE.x, LEFT_LOBE.y), "her left lobe").toBe(true);
-    expect(claimsAt(ground, RIGHT_LOBE.x, RIGHT_LOBE.y), "and her right — a pair is both").toBe(true);
-    expect(claimsAt(ground, 32, 4), "and nothing at the top of her head").toBe(false);
-  });
-
-  it("CONTROL — asks the segmenter for that kind and never for another", async () => {
-    /* The founding defect of this table: a `names[0]` harvest with a literal
-       `"earring"` fallback, so an ask about GLASSES harvested wherever her
-       earrings were. The name on the mask and the name in the question come
-       from one entry or they will drift. */
-    const master = await bareFace();
-    const seen: string[] = [];
-    const result = await harvestRefinement({
-      master: { bytes: master, contentType: "image/png" },
-      painted: { bytes: await hoopedFace(), contentType: "image/png" },
-      facets: [facetOfSubject("statedAccessories")],
-      reader: readerFor({ master, onPainted: () => deliveredHoops(), seen }),
-      userId: 1,
-      described: "round tortoiseshell glasses",
-    });
-
-    expect(coverageOf(result.evidence?.masterRegions.get("glasses"))).toBeGreaterThan(0);
-    expect(result.evidence?.masterRegions.has("earring"), "her ears were never the subject").toBe(false);
-    expect(seen.some((question) => question.endsWith(":earring"))).toBe(false);
-  });
-
-  it("CONTROL — an edit about nothing worn files no accessory ground at all", async () => {
-    /* The instrument has to be able to say NO. A map that gained an `earring`
-       key on a hair edit would pass every affirmative above while filing a slab
-       of her head as jewellery. */
-    const master = await png((x) => (x < 30 ? [40, 30, 25] : SKIN));
-    const result = await harvestRefinement({
-      master: { bytes: master, contentType: "image/png" },
-      painted: { bytes: await png((x) => (x < 20 ? [40, 30, 25] : SKIN)), contentType: "image/png" },
-      facets: ["hair.cut"],
-      reader: readerFor({
-        master,
-        onMaster: () => box(0, 0, 30, H),
-        onPainted: () => box(0, 0, 20, H),
-      }),
-      userId: 1,
-    });
-
-    expect(coverageOf(result.evidence?.masterRegions.get("hair"))).toBeGreaterThan(0);
-    expect(result.evidence?.masterRegions.has("earring")).toBe(false);
-    expect(result.evidence?.masterRegions.has("glasses")).toBe(false);
-  });
-
-  it("keeps BOTH grounds when she is already wearing a pair — arrived and departed", async () => {
-    /*
-      THE BUG THIS BUILD NEARLY SHIPPED, pinned.
-
-      An addition asks the master for its own region too, with `absentIsAnswer`,
-      so that "nowhere" is a legitimate answer. That read files `earring` into
-      the very map the corridor is filed in — so a precedence rule letting the
-      READ win (the instinct: a read is evidence, a corridor is a guess) puts an
-      EMPTY mask over the corridor and files zero accessory segments, silently,
-      with this suite green.
-
-      The union is not a compromise between them. They are two different grounds
-      and a swap needs both: the corridor is where the new hoop ARRIVED, and the
-      master's own extent is where the studs she had on DEPARTED from.
-    */
-    const master = await bareFace();
-    const wornNow = box(4, 30, 10, 36);
-    const result = await harvestHoops({
-      reader: readerFor({
-        master,
-        onMaster: (name) => (name === "earring" ? wornNow : empty()),
-        onPainted: () => deliveredHoops(),
-      }),
-    });
-
-    const ground = result.evidence?.masterRegions.get("earring");
-    expect(claimsAt(ground, 6, 32), "the ground the old studs are vacating").toBe(true);
-    expect(claimsAt(ground, LEFT_LOBE.x, LEFT_LOBE.y), "and the ground the new hoops arrive on").toBe(true);
-  });
-
-  it("reaches a drop that hangs past the corridor, because the delivered read is unioned in", async () => {
-    /*
-      The corridor errs SMALL on purpose — the founder's rider is that
-      boundary-contact expansion catches an under-estimate. So a cut from the
-      corridor alone would saw the bottom off a long drop earring. The harvest
-      already asks the painted frame where the thing is now, for its own content
-      gate; unioning that answer in costs no vision call and makes the ground the
-      DELIVERED thing's own extent, which is the whole thesis of the design.
-    */
-    const master = await bareFace();
-    const hangsLow = box(LEFT_LOBE.x - 2, LEFT_LOBE.y + 12, LEFT_LOBE.x + 3, LEFT_LOBE.y + 20);
-    const result = await harvestHoops({
-      described: "long gold drop earrings",
-      painted: {
-        bytes: await png((x, y) => (
-          x >= LEFT_LOBE.x - 2 && x < LEFT_LOBE.x + 3 && y >= LEFT_LOBE.y + 12 && y < LEFT_LOBE.y + 20
-            ? METAL
-            : SKIN
-        )),
-        contentType: "image/png",
-      },
-      reader: readerFor({ master, onPainted: (name) => (name === "earring" ? hangsLow : empty()) }),
-    });
-
-    const ground = result.evidence?.masterRegions.get("earring");
-    expect(claimsAt(ground, LEFT_LOBE.x, LEFT_LOBE.y + 18), "the bottom of the drop").toBe(true);
-    /*
-      AND THE LOBE ITSELF, which only the corridor claims — the painted read here
-      found the drop and not the fitting. Both halves are asserted in one place
-      on purpose: an assertion that only proves the union's non-empty is passed
-      by either side alone, which is how a two-source rule comes to have one
-      source and a green suite.
-    */
-    expect(claimsAt(ground, LEFT_LOBE.x, LEFT_LOBE.y), "and the fitting at the lobe").toBe(true);
-    expect(
-      claimsAt(result.evidence?.masterRegions.get("earring"), RIGHT_LOBE.x, RIGHT_LOBE.y),
-      "on both ears, because the corridor is bilateral even when the paint is not",
-    ).toBe(true);
-  });
-
-  it("CONTROL — a painted read for an ORDINARY region is not smuggled in as ground", async () => {
-    /*
-      `painted:<name>` means "where is this thing NOW", and for a hair shrink the
-      honest answer is the SHORTER hair. Unioning that into the master geography
-      would quietly widen every region in the map, and the consumers of this map
-      — the cutter, the verification detail crop — all read it as master
-      geography. Only a name the corridor placed takes its painted answer.
-    */
-    const master = await png((x) => (x < 30 ? [40, 30, 25] : SKIN));
-    const result = await harvestRefinement({
-      master: { bytes: master, contentType: "image/png" },
-      painted: { bytes: await png((x) => (x < 20 ? [40, 30, 25] : SKIN)), contentType: "image/png" },
-      facets: ["hair.cut"],
-      reader: readerFor({
-        master,
-        onMaster: () => box(0, 0, 30, H),
-        /* The painted answer claims a band the master's hair never occupied. */
-        onPainted: () => box(0, 0, 50, H),
-      }),
-      userId: 1,
-    });
-
-    expect(claimsAt(result.evidence?.masterRegions.get("hair"), 45, 32), "not widened by the painted read").toBe(false);
-  });
-
-  /**
-   * AND THE PAIR ARRIVES AS TWO THINGS, out of the same call.
-   *
-   * A pair of hoops read whole is one mask with two hoops in it, and every
-   * per-instance library slot filed WORDS because of that — `earring@left` cut
-   * from it is a picture of both, scoring 100% against the union it came from.
-   *
-   * The two assertions that matter are the labelling (her left is the image's
-   * RIGHT half, the subject's own laterality, as everywhere else in the product)
-   * and the ACCOUNTING: the whole-frame answer is derived from this split rather
-   * than read again, so a bilateral region still costs exactly what it cost
-   * yesterday. If `region` were ever called for the same name as well, the pair
-   * would be paid for twice and the two answers could disagree about where the
-   * midline was.
-   */
-  it("keeps the two sides of a pair apart, out of the reads it was already making", async () => {
-    const master = await bareFace();
-    const wholeFrameAsks: string[] = [];
-    const sideAsks: string[] = [];
-    const half = (mask: Mask, keep: (x: number) => boolean): Mask => {
-      const data = Buffer.alloc(W * H, 0);
-      for (let y = 0; y < H; y += 1) {
-        for (let x = 0; x < W; x += 1) if (keep(x)) data[y * W + x] = mask.data[y * W + x]!;
-      }
-      return { data, width: W, height: H };
-    };
-    const base = readerFor({ master, onPainted: () => deliveredHoops(), seen: wholeFrameAsks });
-    const reader: RegionReader = {
-      ...base,
-      regionSides: async ({ image, name }) => {
-        /* Only a bilateral name has sides — everything else answers null, and
-           the caller falls back to the whole-frame question. */
-        if (name !== "earring") return null;
-        const which = Buffer.compare(image, master) === 0 ? "master" : "painted";
-        sideAsks.push(`${which}:${name}`);
-        const whole = which === "master" ? empty() : deliveredHoops();
-        /* Her left is the image's right half. One mapping, the reader's. */
-        return { left: half(whole, (x) => x >= W / 2), right: half(whole, (x) => x < W / 2) };
-      },
-    };
-
-    /* THE CONTROL: the same render read by the same reader WITHOUT the
-       capability, so the accounting below is a comparison and not a guess. */
-    const controlAsks: string[] = [];
-    await harvestHoops({
-      reader: readerFor({ master, onPainted: () => deliveredHoops(), seen: controlAsks }),
-    });
-
-    const result = await harvestHoops({ reader });
-
-    const delivered = result.evidence?.deliveredSideRegions?.get("earring");
-    expect(claimsAt(delivered?.left, RIGHT_LOBE.x, RIGHT_LOBE.y), "her left hoop").toBe(true);
-    expect(claimsAt(delivered?.left, LEFT_LOBE.x, LEFT_LOBE.y), "and only hers").toBe(false);
-    expect(claimsAt(delivered?.right, LEFT_LOBE.x, LEFT_LOBE.y), "her right hoop").toBe(true);
-
-    /*
-      And the pair is cuttable, which for an ADDITION is the whole question: her
-      master wears no earrings, so the corridor is the only master ground there
-      is — and the same predicate that unions a placed name's delivered read into
-      `masterRegions` puts its two sides here.
-    */
-    expect(result.evidence?.masterSideRegions?.has("earring")).toBe(true);
-
-    /*
-      THE ACCOUNTING, against the control: every earring question the plain
-      reader was asked whole-frame, the sided reader was asked once — as a side
-      read. Not one extra, and the whole-frame question was not asked at all.
-    */
-    const earringAsks = (asks: string[]) => asks.filter((ask) => ask.endsWith(":earring"));
-    expect(earringAsks(controlAsks).length, "the fixture asks about her earrings at all").toBeGreaterThan(0);
-    expect(sideAsks).toEqual(earringAsks(controlAsks));
-    expect(earringAsks(wholeFrameAsks)).toEqual([]);
-    /* Yet the whole-frame map is still right — it is the union of the two. */
-    expect(claimsAt(result.evidence?.deliveredRegions?.get("earring"), LEFT_LOBE.x, LEFT_LOBE.y)).toBe(true);
-    expect(claimsAt(result.evidence?.deliveredRegions?.get("earring"), RIGHT_LOBE.x, RIGHT_LOBE.y)).toBe(true);
-  });
-
-  it("hands the SAME painted read out under its own name — the silhouette's arrived ground", async () => {
-    /*
-      The other half of the control above, and the two are deliberately in one
-      place: the painted answer is not smuggled into the master map, AND it is
-      not thrown away. It comes out under `deliveredRegions`, where a consumer
-      has to name what it is asking for.
-
-      Until this map existed the harvest computed this answer for its own
-      content gate, used it once and dropped it — which is why a segment could
-      only ever keep the ground the thing used to occupy.
-    */
-    const master = await png((x) => (x < 30 ? [40, 30, 25] : SKIN));
-    const result = await harvestRefinement({
-      master: { bytes: master, contentType: "image/png" },
-      painted: { bytes: await png((x) => (x < 20 ? [40, 30, 25] : SKIN)), contentType: "image/png" },
-      facets: ["hair.cut"],
-      reader: readerFor({
-        master,
-        onMaster: () => box(0, 0, 30, H),
-        /* The delivered hair reaches ground the master's never did — her
-           shoulders, on the real face this design is written about. */
-        onPainted: () => box(0, 0, 50, H),
-      }),
-      userId: 1,
-    });
-
-    expect(claimsAt(result.evidence?.deliveredRegions?.get("hair"), 45, 32), "the arrived ground").toBe(true);
-    /* And the two maps disagree, which is the entire point of there being two. */
-    expect(claimsAt(result.evidence?.masterRegions.get("hair"), 45, 32)).toBe(false);
-  });
-});
-
-describe("an accessory segment is cut, kept and carried like any other facet", () => {
-  it("cuts a statedAccessories segment from the ground the corridor named", async () => {
-    const harvested = await harvestHoops();
-    const composite = await readRaster(harvested.bytes);
-
-    const { cuts } = cutSegments({
-      composite,
-      applied: harvested.evidence!.applied,
-      /* Exactly what the service sends: the facet has no `REGION_OF_FACET`
-         entry, so the placement override is the only thing naming its ground. */
-      facetRegions: new Map([[facetOfSubject("statedAccessories"), "earring"]]),
-      regionMasks: harvested.evidence!.masterRegions,
-    });
-
-    expect(cuts.map((cut) => cut.facet)).toEqual([facetOfSubject("statedAccessories")]);
-    expect(cuts[0].region).toBe("earring");
-    expect(cuts[0].pixels, "the delivered metal, not an empty promise").toBeGreaterThan(0);
-  });
-
-  it("CONTROL — files nothing at all without the placement, which is the production census", async () => {
-    /*
-      THE NEGATIVE CONTROL FOR THE WHOLE FIX (working law 2).
-
-      This is the state of the product before this change, driven directly: the
-      cutter is asked for `statedAccessories` with no override, `regionNameOf`
-      returns null, and the answer is silence. If this test ever goes green
-      alongside the one above, the override stopped being load-bearing and the
-      one above is measuring something else.
-    */
-    expect(regionNameOf(facetOfSubject("statedAccessories")), "there is no facet-only answer").toBeNull();
-
-    const harvested = await harvestHoops();
-    const { cuts, dropped } = cutSegments({
-      composite: await readRaster(harvested.bytes),
-      applied: harvested.evidence!.applied,
-      facetRegions: new Map(),
-      regionMasks: harvested.evidence!.masterRegions,
-    });
-    expect(cuts).toEqual([]);
-    /* And nothing was DROPPED either, which is the distinction #64 item (3)
-       bought: the facet was never asked for, so there is no facet to report
-       having lost. A drop row here would mean the corridor had named ground
-       after all. */
-    expect(dropped).toEqual([]);
-  });
-
-  /*
-    ⚠ ONE ARM LEFT THIS BLOCK WITH THE SEGMENT STORE (#1160 slice 2): *"keeps it
-    through the store’s own front door, verdict and all"*, which drove
-    `keepSegmentsFromRender` and asserted the recorded bbox spanned BOTH lobes.
-
-    It is deleted rather than re-pointed, because there is no door left to keep
-    it through — his ruling of 2026-09-24 retired the store.
-
-    **The PAIR LAW it also touched is untouched and is still driven here**, at
-    the ground and at the delivered regions rather than at the row: a pair is
-    both lobes (§"her left lobe" / "and her right"), the delivered halves are
-    told apart, and `deliveredRegions` claims both. Those run on `cutSegments`,
-    which survives. What was lost with the arm is the STORE’s acceptance of the
-    cut, which is the thing being retired.
-  */
-
-});
-
-/**
  * AND THE ADJUDICATOR COVERS IT FROM THE FIRST CUT (fable-120's condition 1).
  *
  * The byte adjudicator is facet-agnostic by construction — it asks "are these
  * the same pixels she already paid for", which is a question about a mask and a
  * frame and knows nothing about jewellery. That is an argument, though, and
  * this program has been wrong about exactly this kind of argument before:
- * `bornWornCatalogue` is built, tested and has no callers, so a capability
- * everybody believed in files no rows at all.
+ * `bornWornCatalogue` was built, tested and had no callers, so a capability
+ * everybody believed in filed no rows at all.
  *
- * So the first accessory segment the product can cut is driven through the real
- * adjudicator here, on its real encoded bytes, with the two controls that make
- * the verdict mean something: a frame that kept it, and a frame that did not.
+ * So an accessory-sized segment is driven through the real adjudicator here,
+ * on its real encoded bytes, with the two controls that make the verdict mean
+ * something: a frame that kept it, and a frame that did not.
  */
 describe("a kept accessory is judged by arithmetic like every other carried fact", () => {
   const CARRIED = facetOfSubject("statedAccessories");
 
   const carriedCandidate = async () => {
-    const harvested = await harvestHoops();
+    const frame = await hoopedFace();
     const { cuts: [cut] } = cutSegments({
-      composite: await readRaster(harvested.bytes),
-      applied: harvested.evidence!.applied,
+      composite: await readRaster(frame),
+      applied: deliveredHoops(),
       facetRegions: new Map([[CARRIED, "earring"]]),
-      regionMasks: harvested.evidence!.masterRegions,
+      regionMasks: new Map([["earring", deliveredHoops()]]),
     });
     const encoded = await encodeCut(cut);
-    return { harvested, cut, encoded };
+    return { frame, cut, encoded };
   };
 
   const run = async (input: {
@@ -564,10 +133,20 @@ describe("a kept accessory is judged by arithmetic like every other carried fact
     ),
   });
 
+  it("cuts a pair of hoops as ONE accessory segment spanning both lobes", async () => {
+    /* The precondition the three verdicts below rest on, asserted rather than
+       assumed: one cut, filed as the accessory facet, holding both lobes. */
+    const { cut } = await carriedCandidate();
+    expect(cut.facet).toBe(CARRIED);
+    expect(cut.region).toBe("earring");
+    expect(cut.box.x, "it starts at her right lobe").toBeLessThanOrEqual(LEFT_LOBE.x);
+    expect(cut.box.x + cut.box.width, "and reaches her left").toBeGreaterThan(RIGHT_LOBE.x);
+  });
+
   it("says KEPT when the hoops are byte-identical in the later frame", async () => {
-    const { harvested, cut, encoded } = await carriedCandidate();
+    const { frame, cut, encoded } = await carriedCandidate();
     const { verdicts, unadjudicable } = await run({
-      frame: harvested.bytes, cut, encoded, intersections: [],
+      frame, cut, encoded, intersections: [],
     });
 
     expect(unadjudicable, "an accessory is not a fact this instrument skips").toEqual([]);

@@ -14305,6 +14305,10 @@
       "path": "server/castingV2/accessoryCorridor.test.ts"
     },
     {
+      "id": "test:server/castingV2/accessoryKinds.test.ts",
+      "path": "server/castingV2/accessoryKinds.test.ts"
+    },
+    {
       "id": "test:server/castingV2/aestheticRetry.test.ts",
       "path": "server/castingV2/aestheticRetry.test.ts"
     },
@@ -31061,22 +31065,7 @@
     },
     {
       "from": "module:server/castingV2/maskedRefine.ts",
-      "to": "module:server/castingV2/accessoryKinds.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/maskedRefine.ts",
       "to": "module:server/castingV2/castingV2Scope.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/maskedRefine.ts",
-      "to": "module:server/castingV2/compositeIntegrity.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/maskedRefine.ts",
-      "to": "module:server/castingV2/diagnosticCapture.ts",
       "kind": "imports"
     },
     {
@@ -31097,26 +31086,6 @@
     {
       "from": "module:server/castingV2/maskedRefine.ts",
       "to": "module:server/castingV2/refineFacets.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/maskedRefine.ts",
-      "to": "module:server/castingV2/regionCards.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/maskedRefine.ts",
-      "to": "module:server/castingV2/zoneScope.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/maskedRefine.ts",
-      "to": "module:server/logging/logger.ts",
-      "kind": "imports"
-    },
-    {
-      "from": "module:server/castingV2/maskedRefine.ts",
-      "to": "module:server/providers/types.ts",
       "kind": "imports"
     },
     {
