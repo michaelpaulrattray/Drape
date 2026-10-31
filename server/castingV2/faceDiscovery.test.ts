@@ -21,11 +21,15 @@ import {
   isBareNoun,
   mergeDiscoveries,
   parseDiscovery,
+  DISCOVERY_NAME_MAX_WORDS,
   DISCOVERY_SCHEMA,
   DISCOVERY_SYSTEM_PROMPT,
   type DiscoveredFeature,
   type FaceDiscovery,
 } from "./faceDiscovery";
+/* #2877: the cut-naming road's own bound, read from the module that declares it
+   beside its prompt rather than copied as a number into this file. */
+import { CUT_NAME_MAX_WORDS, CUT_NAME_PROMPT } from "./referenceCutName";
 import type { TextEngine, TextRequest, TextResult } from "../providers/types";
 
 /** An engine that says exactly what it is told to, once per call. */
@@ -66,21 +70,76 @@ const ONE_FEATURE = JSON.stringify({
 describe("isBareNoun — the contract a cutter downstream depends on", () => {
   it("accepts the shapes the measured prompt returns", () => {
     for (const name of ["hair", "eyes", "jaw hardware", "third eye", "shoulder plates"]) {
-      expect(isBareNoun(name), name).toBe(true);
+      expect(isBareNoun(name, DISCOVERY_NAME_MAX_WORDS), name).toBe(true);
     }
   });
 
   it("rejects the three shapes measured to make a cutter return nothing", () => {
     /* A parenthetical, a positional clause, and a caption — the real bench
        output from #2532 arm 2, quoted rather than invented. */
-    expect(isBareNoun("normal eyes (pale blue-gray, deep-set)")).toBe(false);
-    expect(isBareNoun("small mole on left cheek near nose")).toBe(false);
-    expect(isBareNoun("dark hair styled in a high bun with loose face-framing strands")).toBe(false);
+    expect(isBareNoun("normal eyes (pale blue-gray, deep-set)", DISCOVERY_NAME_MAX_WORDS)).toBe(false);
+    expect(isBareNoun("small mole on left cheek near nose", DISCOVERY_NAME_MAX_WORDS)).toBe(false);
+    expect(isBareNoun("dark hair styled in a high bun with loose face-framing strands", DISCOVERY_NAME_MAX_WORDS)).toBe(false);
   });
 
   it("rejects an empty name", () => {
-    expect(isBareNoun("")).toBe(false);
-    expect(isBareNoun("   ")).toBe(false);
+    expect(isBareNoun("", DISCOVERY_NAME_MAX_WORDS)).toBe(false);
+    expect(isBareNoun("   ", DISCOVERY_NAME_MAX_WORDS)).toBe(false);
+  });
+
+  /*
+    #2877 — THE WORD CAP IS THE CALLER'S, AND THESE ARE THE ARMS THAT SAY SO.
+
+    There was no arm driving the word bound at all before this card, which is
+    why 300 paid readings found the defect and the suite did not. The three
+    SHAPE rules are bound-independent and are asserted at both bounds, so a
+    future caller passing a third number inherits proven behaviour rather than
+    a guess.
+  */
+  it("holds a three-word name to the bound its CALLER passes, not to one of its own", () => {
+    /* The exact answers #2875 measured being thrown away — quoted, not invented. */
+    for (const name of ["gold hoop earring", "leather belt strap"]) {
+      expect(isBareNoun(name, DISCOVERY_NAME_MAX_WORDS), name).toBe(false);
+      expect(isBareNoun(name, CUT_NAME_MAX_WORDS), name).toBe(true);
+    }
+  });
+
+  it("keeps refusing the shape rules at the WIDER bound, so three words is not a way round them", () => {
+    /* The negative control for the arm above: if widening the cap also let a
+       caption or a positional clause through, the repair would have traded one
+       defect for a worse one. Each of these is <= 3 words on purpose. */
+    expect(isBareNoun("eyes (deep-set)", CUT_NAME_MAX_WORDS)).toBe(false);
+    expect(isBareNoun("mole on cheek", CUT_NAME_MAX_WORDS)).toBe(false);
+    expect(isBareNoun("hair, loose", CUT_NAME_MAX_WORDS)).toBe(false);
+    expect(isBareNoun("", CUT_NAME_MAX_WORDS)).toBe(false);
+  });
+
+  it("refuses a FOURTH word even at the cut-naming bound", () => {
+    expect(isBareNoun("gold hoop drop earring", CUT_NAME_MAX_WORDS)).toBe(false);
+  });
+
+  /*
+    DERIVED FROM THE PROMPT'S OWN WORDS RATHER THAN MIRRORING ITS NUMBER
+    (working law 4). Each bound is stated in prose inside the prompt that asks
+    for it, and a constant beside a sentence is exactly the pair that drifts —
+    it is what #2877 WAS. So the number is read back out of the prompt text.
+  */
+  it("each bound equals the number its own prompt asks for, in words", () => {
+    const WORD_FOR = new Map([[1, "one"], [2, "two"], [3, "three"], [4, "four"]]);
+
+    const discoveryWord = WORD_FOR.get(DISCOVERY_NAME_MAX_WORDS);
+    expect(discoveryWord, "no spelling for the discovery bound").toBeDefined();
+    expect(
+      DISCOVERY_SYSTEM_PROMPT,
+      "the discovery prompt no longer asks for " + discoveryWord + " words",
+    ).toContain("one or " + discoveryWord + " plain words");
+
+    const cutWord = WORD_FOR.get(CUT_NAME_MAX_WORDS);
+    expect(cutWord, "no spelling for the cut-naming bound").toBeDefined();
+    expect(
+      CUT_NAME_PROMPT,
+      "the cut-naming prompt no longer asks for " + cutWord + " words",
+    ).toContain("one to " + cutWord + " words");
   });
 });
 
