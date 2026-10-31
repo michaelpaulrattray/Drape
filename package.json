@@ -125,7 +125,8 @@
       "fast-uri": "^3.1.9",
       "proxy-addr": "^2.0.8",
       "source-map-js": "^1.2.2",
-      "body-parser": "^1.20.9"
+      "body-parser": "^1.20.9",
+      "@sentry/bundler-plugins>glob": "^14.0.2"
     },
     "onlyBuiltDependencies": [
       "@tailwindcss/oxide",
