@@ -72,7 +72,7 @@
 import { capitalize, type CastPronouns } from "./castPronouns";
 import { onTheFace, type FaceExtent } from "./faceExtent";
 import type { FeatureKind } from "./faceDiscovery";
-import { catalogueWordsOf, normalisedName, type NamedNotCut } from "./pointerCut";
+import { catalogueWordsOf, isPlainAnatomy, normalisedName, type NamedNotCut } from "./pointerCut";
 import type { FeatureSlot } from "./recipeAssembler";
 import { liveReferences, type StoredReference } from "./referenceLibrary";
 import {
@@ -1817,13 +1817,29 @@ export function facePanel(input: {
     A customer surface should not have one unreadable field as a single point of
     failure for every row on it.
   */
+  /*
+    ⚠ **AND THE ORDINARY BODY NEVER COMES IN AT ALL (#2840, his word of
+    2026-10-30).** *"no idea why collarbone is showing up?"* and *"Her shoulders
+    were picked up randomly no idea why."* A body part every person has, named
+    as plain anatomy, is where things sit and not a thing on this cast:
+    {@link isPlainAnatomy} says which, and its block says why it is a noun
+    test and why a narrow one. It is dropped HERE, at the door, so it is
+    neither a row nor a host: a body feature the reading put on a shoulder —
+    a creature's spikes there — is placed as if it sat on nothing and keeps a
+    row of its own, rather than being hung under a row that is not drawn. (A
+    tattoo, a scar or a strap on it never folded under a body part at all, by
+    his ruling of 2026-10-29: marks and worn things keep their own row. That
+    is the half of his word that says marks on a shoulder still list, and an
+    arm holds it.)
+  */
   const foundRows = (input.scan?.discovered ?? [])
     .filter((found) => typeof found.noun === "string" && found.noun.trim() !== "")
     .map((found) => ({
       ...found,
       kind: found.kind ?? "anatomy",
       on: typeof found.on === "string" ? found.on : "",
-    }));
+    }))
+    .filter((found) => !isPlainAnatomy(found));
 
   /**
    * THE ROW ONE HOST NOUN NAMES, or null.
@@ -2092,6 +2108,14 @@ export function facePanel(input: {
    * ⚠ **It fails toward today's panel.** A scan that drew no face row at all
    * has no span to measure against, and every body part stays under Face
    * exactly as it does now — a missing measurement never moves a row.
+   *
+   * ⚠ **AND THE TWO ROWS THAT OPENED THIS BRANCH ARE NO ROWS AT ALL NOW** —
+   * the second half of #2840, his word of 2026-10-30: *no* to collarbone and
+   * shoulders being rows, *yes* to a Body section for real features. They are
+   * dropped at the door ({@link isPlainAnatomy}), so what lists under Body is
+   * what he agreed it is for: a tail, wings, an implant off the face. His
+   * lizard's tail is the measured one — named, boxed and cut on his account's
+   * road, and drawn here.
    */
   const ownSectionOf = (found: { kind: FeatureKind; box: PanelBox }): PanelSection => {
     if (found.kind === "accessory") return "accessories";
