@@ -1,7 +1,7 @@
 {
-  "edition": 796,
-  "updatedAt": "2026-10-31T06:05:00.000Z",
-  "shift": "One job is finished and in review, and it is the other half of the problem you found this morning.\n\nWhen the studio reads a face it finds the face itself first, and everything else hangs off that: which side is the left one, which is the right, and whether an eye it found belongs to this character at all. On your last two characters that first read landed on a face tattooed on an arm - so the real eyes, brows and ears were found and then thrown away as not being on the face, and both earrings were put on one ear.\n\nThat was fixed this morning for the panel's own scan. It was not fixed for the paid edit, and that is the half that costs you money: a paid edit of an eye, a brow or an ear could aim at the wrong part of the picture. All four paid roads now check that first read against where a head actually is - the top half of the picture in front of them - and ask again if it is somewhere else. Across every face the studio has ever read, all 86 of them, a correct face has never once been in the bottom half, and this check would have caught nine wrong eye boxes, the most recent from yesterday. A picture whose face is where a face should be costs nothing extra.\n\nTwo things came out of doing it rather than out of looking for them. The check I wrote so that no reader can be missed again found a fifth one the job description could not have named, because it was built three hours earlier the same morning. And a job another agent is building right now was being offered to every other agent as free work, for forty minutes, because of three extra words in the note that claims it - I re-wrote their note in the words the board reads, so nobody duplicates them.\n\nNothing was spent tonight: no credits, no picture bought, no setting moved.",
+  "edition": 797,
+  "updatedAt": "2026-10-31T08:15:00.000Z",
+  "shift": "The reference picker picks whole things now, and your hair is one of them. It is in review, not live yet.\n\nYou told me this morning the picker was bad: half a pair of pants would light, one shoe of two, only the bra part of a top, and you could not pick the hair at all. You guessed the image analyser was bad. It was not — it was never involved. The picker was dropping thirty-two dots across your photograph and lighting whatever shape happened to surround each dot, which is why everything came out in compartments. It now READS the picture first, gets back a list of what is in it, and cuts each of those things out whole by name. So pants are a pair, shoes are both shoes, and hair is a thing you can point at.\n\nHair needed your ruling and you gave it. The studio hides a person's face from this picker on purpose, and it was doing that by blanking out a RECTANGLE round the face — which ate the hair framing it. It now blanks out the face itself, pixel for pixel, so the hair survives and the face still never lights. If that finer read ever fails, it goes straight back to the old rectangle, so the face is never the thing that goes missing.\n\nTwo things are NOT fixed and I measured both rather than hoping. A plant behind you, and the clothes rail a jacket hangs on, can still be picked — the picture's reading names them, even though it is asked not to. And a photograph now takes thirty to eighty-five seconds to light, where it used to take about twenty. That is slow enough to read as a hang and it is almost entirely down to the size of the photograph. Both are written up with their numbers so nobody has to measure them again.\n\nOne thing worth saying because it nearly shipped quietly: my own first version broke a picture that used to work. The studio asks where the faces are, and that question was competing with the fifteen new ones — on the jacket photograph it lost, and the picture went completely dark. It now asks that one question on its own first. The test I wrote to stop it happening again did not actually work until I tried to break it on purpose.\n\nSpent tonight: about fifty cents of house money on measuring both versions against each other on three real photographs. No credits, no setting moved.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-31T05:54:05.859Z",
+      "readAt": "2026-10-31T07:31:38.195Z",
       "items": [
         {
           "issueNumber": 30,
@@ -11272,6 +11272,13 @@
       "status": "in-review",
       "prNumber": 2896,
       "note": "Money path, so it waits for the relay's verdict and no shift merges it."
+    },
+    {
+      "id": "picker-pieces-from-reading-2902",
+      "title": "The picker picks whole things, and hair is one of them - pieces come from the picture's own reading instead of a grid of dots (#2902)",
+      "status": "in-review",
+      "prNumber": 2906,
+      "note": "Changes what you see on a live surface, so it waits for the relay's eye and no shift merges it."
     }
   ],
   "problems": [
@@ -11533,6 +11540,20 @@
       "state": "open",
       "title": "Three finished pieces of work still cannot be merged, and the thing blocking them is still not real (#2848, #2863, #14)",
       "detail": "This is the crew's own machinery, not the product — nothing a customer sees is affected.\n\nUnchanged from last night, and re-measured tonight against the newer main line, because\na measurement taken yesterday is not a fact about today: all three still clash on the\ngenerated map alone and nothing else. Three of three. We have a tool that merges that\nfile by itself, which GitHub does not use, so the clash reads as real on the page and is\na ghost. It is one command each.\n\nAll three are deliberately the relay's hand and not a shift's, and each says why on\nitself: one adds rate limits and is money work, one needs a key put on the service\nfirst, and one carries a review note that any push — even a harmless one — would make\nread as already dealt with. Seven shifts have now been sent at that third one and every\none of them was right to leave it alone.\n\nNothing is waiting on you here."
+    },
+    {
+      "id": "picker-background-still-pickable-2907",
+      "severity": "warning",
+      "state": "open",
+      "title": "You can still pick a plant or a clothes rail in the picker (#2907)",
+      "detail": "Half of what you asked for this morning. The picker reads your photograph and names what is in it; it is asked to name only you and what you are wearing, and it does not always obey. Measured on your own three photographs: the worn shot named a plant and a chair, the hanger shot named the rail and the hanger, and three of those four ended up pickable.\n\nIt is not a missing instruction - the instruction is already there - so the fix is a measured change to how the picture is read, not a one-line edit. The card carries the before numbers so whoever takes it does not pay to find them again. The fix is NOT a list of banned words: you ruled against fixed lists in September and the first photograph with an unexpected word in it would defeat one anyway."
+    },
+    {
+      "id": "picker-slow-to-light-2908",
+      "severity": "warning",
+      "state": "open",
+      "title": "A photograph now takes 30 to 85 seconds to light in the picker, against about 20 before (#2908)",
+      "detail": "This is the price of picking whole things and it is stated rather than buried. Measured on your three photographs through the real services: 30 seconds for the smallest and 82 to 85 for the two large ones, against 17 to 20 seconds for the old dot-grid version.\n\nAlmost all of it is the SIZE of the photograph - the studio sends whatever you attached, so a large picture costs 35 seconds to measure and 28 more to cut. Shrinking the picture before this work starts is the repair, it was already on the record as owed, and it is deliberately not in tonight's job: it changes the size of the map your browser uses to know what is under your pointer, so it wants eyes on the real screen rather than a late-night guess."
     }
   ],
   "acknowledgedReplyIds": [
@@ -11841,7 +11862,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-31T05:54:05.859Z",
+    "readAt": "2026-10-31T07:31:38.194Z",
     "items": [
       {
         "issueNumber": 14,
@@ -12064,6 +12085,11 @@
       {
         "issueNumber": 2892,
         "title": "N3 face reader: a thing found on both sides gets a side in its row name and in its sentence, so an edit to one hits the right one (his ruling)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2902,
+        "title": "#14 picker, his eye on the live surface: pieces come from the reading (whole pants, both shoes, hair; never the background), it opens as an overlay, and attach stops asking where the picture came from",
         "urgent": false
       }
     ]
