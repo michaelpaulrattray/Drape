@@ -868,6 +868,9 @@ export function settleByPlace(regions: readonly DiscoveredRegion[]): {
   samePlace: { noun: string; into: string }[];
   /** Every accessory the picture put on a garment, by noun. */
   onGarment: { noun: string; onto: string }[];
+  /** Every thing whose host joined another's place, and the survivor it now
+   *  sits on (#2862) — see {@link hostsOfMerged}. */
+  onMerged: { noun: string; from: string; onto: string }[];
 } {
   const placed: Placed[] = regions.map((region, at) => ({
     region,
@@ -893,9 +896,21 @@ export function settleByPlace(regions: readonly DiscoveredRegion[]): {
     merged.push({ noun: one.region.noun, into: home.region.noun });
   }
 
-  const garments = kept.filter((one) => one.region.kind === "clothing");
+  /* A host that joined another's place hands what sits on it to the survivor
+     — before the garment rule below, so a thing whose own pixels lie on a
+     garment is still moved by the picture, which is the stronger answer. */
+  const repoint = hostsOfMerged(merged, kept.map((one) => one.region.noun));
+  const onMerged: { noun: string; from: string; onto: string }[] = [];
+  const lodged = kept.map((one): Placed => {
+    const onto = repoint(one.region.on, one.region.noun);
+    if (onto === one.region.on) return one;
+    onMerged.push({ noun: one.region.noun, from: one.region.on, onto });
+    return { ...one, region: { ...one.region, on: onto } };
+  });
+
+  const garments = lodged.filter((one) => one.region.kind === "clothing");
   const rehosted: { noun: string; onto: string }[] = [];
-  const settled = kept.map((one): Placed => {
+  const settled = lodged.map((one): Placed => {
     if (one.region.kind !== "accessory" || one.pixels === 0) return one;
     let best: { garment: Placed; shared: number } | null = null;
     for (const garment of garments) {
@@ -916,6 +931,65 @@ export function settleByPlace(regions: readonly DiscoveredRegion[]): {
     regions: settled.sort((a, b) => a.at - b.at).map((one) => one.region),
     samePlace: merged,
     onGarment: rehosted,
+    onMerged,
+  };
+}
+
+/**
+ * A HOST THAT JOINED ANOTHER'S PLACE TAKES ITS LODGERS WITH IT (#2862, his
+ * eye round 11).
+ *
+ * His words, verbatim: *"it thought the chain which is apart of her outfit was
+ * a necklace"*. The rule he set the same day is that a thing on a garment is
+ * part of the Outfit, and the panel reads that off `on`. But the place rules
+ * above can REMOVE the noun an `on` names: when two nouns' cuts are one place,
+ * the second one is dropped from the reading and logged under the survivor
+ * (`samePlace`) — it is in neither the rows nor `named`. So a chain the
+ * reading said sits on `harness`, where `harness` and `top` were cut onto one
+ * halter top (the card's own example of two names for one garment), points
+ * at a noun that is no longer anywhere, the panel finds no host, and the chain
+ * becomes a row of its own under Accessories. The measured pair in this
+ * module's own block is the same shape: `collar` joined `jacket` at 0.605, so
+ * a pin on the collar would have lost its garment the same way.
+ *
+ * ⚠ **IT IS NOT CONFIRMED TO BE WHAT HAPPENED ON ROUND 11.** That reading is
+ * on production and was not read for this card. What this closes is a road
+ * by which a thing on a garment can lose its garment, proven on the shape
+ * above; whether round 11 took this road or another (`mergeDiscoveries`
+ * resolving two crops' different hosts to `""` is the other one in the code)
+ * is not known here, and that is said rather than implied.
+ *
+ * The answer is the place rule's own: the dropped noun WAS the survivor's
+ * place, so whatever sat on it sits on the survivor. Two guards, each with
+ * its case on the far side:
+ *
+ *   A NOUN STILL STANDING   when another instance of the merged noun kept its
+ *                           own row (`strap#1` joined the harness, `strap#2`
+ *                           did not), `on: strap` may mean the one that stands,
+ *                           so it is left exactly as the reading wrote it.
+ *   ONTO ITSELF             a thing is never re-pointed onto its own noun: a
+ *                           host that joined the very thing sitting on it says
+ *                           nothing about where that thing sits.
+ *
+ * Returned as a function so `named` — the words with no picture — is
+ * re-pointed by the same answer as the rows (`cutDiscovered`).
+ */
+export function hostsOfMerged(
+  merged: readonly { noun: string; into: string }[],
+  standing: readonly string[],
+): (on: string, noun: string) => string {
+  const stands = new Set(standing.map((noun) => normalisedName(noun)));
+  const into = new Map<string, string>();
+  for (const one of merged) {
+    const key = normalisedName(one.noun);
+    if (stands.has(key) || into.has(key)) continue;
+    into.set(key, one.into);
+  }
+  return (on, noun) => {
+    if (on.trim() === "") return on;
+    const onto = into.get(normalisedName(on));
+    if (onto === undefined || normalisedName(onto) === normalisedName(noun)) return on;
+    return onto;
   };
 }
 
@@ -2544,6 +2618,15 @@ export async function cutDiscovered(input: {
     under the place it joined rather than written into `named`.
   */
   const settled = settleByPlace(regions);
+  /* The words with no picture name hosts too — rivets on a harness that
+     joined the top — so they are re-pointed by the same answer as the rows,
+     or a scattered trim's words would lose the Outfit row the rows found
+     (#2862, `hostsOfMerged`). */
+  const repointNamed = hostsOfMerged(settled.samePlace, settled.regions.map((region) => region.noun));
+  const namedSettled = named.map((one) => {
+    const onto = repointNamed(one.on, one.noun);
+    return onto === one.on ? one : { ...one, on: onto };
+  });
 
   /*
     ⚠ `found` IS ROWS, NOT CALLS, AND THE DIFFERENCE IS THE COST (the relay's
@@ -2659,6 +2742,9 @@ export async function cutDiscovered(input: {
          the pixels that decided it rather than looking like a lost one. */
       samePlace: settled.samePlace,
       onGarment: settled.onGarment,
+      /* What sat on a host that joined another's place, and the survivor it
+         now sits on (#2862) — nouns only, like every field here. */
+      onMerged: settled.onMerged,
       /*
         THE FOURTH ROAD'S NOUNS (#2793) — what the reading named and handed to
         the catalogue, which until now was the one road that reported nothing.
@@ -2673,5 +2759,5 @@ export async function cutDiscovered(input: {
     },
     "pointer road",
   );
-  return { regions: settled.regions, asked, declined, failed, named };
+  return { regions: settled.regions, asked, declined, failed, named: namedSettled };
 }
