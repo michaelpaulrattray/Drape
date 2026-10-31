@@ -103,14 +103,19 @@ const RICH_SCENARIOS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = 
   ["unparseable", ["not json at all", said(RICH_CLEAN)]],
 ];
 
-/** The rich look's bytes, taken the day it was written (#2911). */
+/**
+ * The rich look's bytes. First taken the day it was written (#2911); moved
+ * once, on purpose, when the founder's "quality bar dropped" put the bench's
+ * own text back (the follow-up to #2915). `TODAY` above did not move in that
+ * change, which is the proof it left the off reader alone.
+ */
 const RICH_LOOK: Record<string, string> = {
-  clean: "d5110d2ac78c74ac456eb814a3bb7f112de390f79fa763fb86e46d77d2ceaff9",
-  long: "64717f087f22dab437d9242d4cf44618072fe11861ee720445ddd045b3d6d00a",
-  brief: "9f3a30a327c8091b68e9e4e71c37361e024f759f06911ea74782e14e6e0c5bca",
-  picture: "bcd585f09ba5506e7e76b269625b6bc64f3a79cab7a59cfeb5aa45b290696190",
-  absence: "894205d886b9abb03bc75e227ae6cf8dc3b1bd299ecefbc4d264f519db01ee2c",
-  unparseable: "231ab2faca83d3ee0200646521082a81f5a482b6f625e61e522c4c5f7a3f4d70",
+  clean: "c2372d184d6c7aa47cdd819de0c8930993e9a14269b06a46842a4c0d1e776072",
+  long: "27bed555ae2bcfd10291eb69cd214f6fe02627a5f050b3f1fa9e7f4549c3dc15",
+  brief: "0e77fe70a5dc7381828230711d7912e3fe1070d37bfa547e2c880f1856fa3238",
+  picture: "8d7af28ea24dfb25ae8ba586eb932de9ef0f42a090aee3d95ee069929a416921",
+  absence: "cbff0bb835c9a61e65bc44cd3f8edaedb6d54d2370df95a9c683d9262d64d57c",
+  unparseable: "d1faf94b6f447fe261a2808c9f62f74484892ed452ef209a5e6de341aee3d1bc",
 };
 
 let replies: string[] = [];

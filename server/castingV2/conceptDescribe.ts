@@ -1164,47 +1164,58 @@ const ASK = "Describe the person or creature in this picture.";
  * 2. **THE HAIR IS NOT SWEPT EITHER**, for the sharper reason that *hairless*
  *    is a species fact this same instruction requires (#231: *"If skin is bare,
  *    write hairless"*). A ban on `hair` would refuse the sphynx he ruled on.
- * 3. **THE SPECIMENS ARE THE GOTH WOMAN, NOT HIS CONCEPT PICTURE.** The card
- *    asks for {@link INVENTORY_NOTE}'s failing example to be rewritten to show
- *    the new line — rich in pieces and wrong only on the face and the hair. It
- *    is built on the subject his own styled line describes, and deliberately
- *    NOT on the picture the acceptance read uses: a specimen of that picture in
- *    the instruction would make the read measure recall rather than reading
- *    (the specimen-joins-the-vocabulary trap, which this file already records).
- */
-export const RICH_LOOK_NOTES = {
-  /** RIGHT — rich in ingredients, nothing about the face, nothing about the hair. */
-  right:
-    "A woman in her twenties, dark-fashion / cyber-goth model type with pale skin. A fitted "
-    + "mechanical eye is set into the face as part of the being, not as a prop. Facial piercings "
-    + "and fine-line markings across the face, with script tattoos running down both arms. "
-    + "Signature pieces are a high structured collar at the throat and long lace gloves. The "
-    + "wardrobe is black lace, leather and metal accents in a fitted, layered silhouette that "
-    + "sweeps to the floor.",
-  /**
-   * WRONG — the same woman, and wrong ONLY on the face and the hair. The card's
-   * own instruction for it: the old failing box *"is now closer to right on
-   * items; rewrite it to show the new line, which is no face and no hair, not no
-   * items."* So its pieces, markings and wardrobe are deliberately the right
-   * note's, and an arm holds them there.
-   */
-  faceAndHair:
-    "A woman in her twenties, dark-fashion / cyber-goth model type with pale skin, pale green "
-    + "eyes, heavy winged eyeliner, dark plum lips and sharply arched brows, and long straight "
-    + "platinum hair with blunt bangs. A fitted mechanical eye is set into the face. Facial "
-    + "piercings and fine-line markings across the face, with script tattoos running down both "
-    + "arms. The wardrobe is black lace, leather and metal accents in a fitted, layered silhouette.",
-} as const;
-
-/**
- * The rich look's instruction. Its wording is the relay's bench rules
- * (`_concept-bench-facefree-disposable.mts`, with the hair line of the
- * `-nohair` variant) carried over, with three repairs and today's kept rules:
- * the standout rule is his eye edit generalised; the bench's own hardware
- * example said *"an implant plate in the abdomen"* two lines above its ban on
- * naming the abdomen, so it says *"fitted at the waist"* here; and the specimens
- * above are added, which the bench had none of — declared, because it is a
- * difference from what he looked at, and the acceptance read is what measures it.
+ * 3. **THERE ARE NO SPECIMENS IN THIS INSTRUCTION, AND THAT WAS MEASURED.**
+ *    The bench the founder picked had none. The first shipping (#2915) added a
+ *    RIGHT and a WRONG note; they are gone again, for the reason below.
+ *
+ * # THE FIRST SHIPPING LOST THE BENCH'S EXAMPLES — "QUALITY BAR DROPPED"
+ *
+ * The founder's eye on #2915's reader, verbatim: *"okay nope quality bar
+ * dropped we need to bring it to the ruleset that gets us this type of
+ * result"*. The cause was this instruction, not the model. #2915 carried the
+ * bench's rules over but dropped the concrete examples inside its ingredient
+ * bullets (the WARDROBE bullet lost *"black leather, fishnet mesh, matte
+ * armour, cropped and strapped"*), and its RIGHT specimen gave the wardrobe as
+ * a materials-and-mood line (*"black lace, leather and metal accents in a
+ * fitted, layered silhouette"*). Argon wrote to that level: *"The wardrobe
+ * combines matte black leather, mesh, and dark metal hardware in a fitted
+ * tactical silhouette."*
+ *
+ * So the instruction below IS the bench text he picked
+ * (`_concept-bench-facefree-disposable.mts`, a local disposable): every
+ * ingredient bullet keeps its examples. Only these are layered on:
+ * - the hair is not mentioned at all (his later ruling), in place of the
+ *   bench's *"Give the hair only as a world (long dark hair)"*;
+ * - the standout rule (his eye edit, generalised);
+ * - heritage is NAMED where visible (the first #2915 read dropped "East Asian");
+ * - the bare-body rule carries its reason, and the bench's hardware example
+ *   *"an implant plate in the abdomen"* says *"fitted at the waist"*;
+ * - the clauses #2915 kept from today's rules (listed above), each folded into
+ *   the bench's own line for it rather than added as a block of its own.
+ *
+ * Measured on his concept picture through the real {@link describeConcept},
+ * three reads each, all on the PR for this change:
+ * - this instruction: 3 of 3 taken on the first read, 600–636 characters,
+ *   about 0.62¢ each, at the level of his favourite (named garments with
+ *   texture, textured hardware, armour detail), with no hair, the eye only as
+ *   "an unusual eye colour", and "East Asian" named every time;
+ * - the same with a concrete RIGHT and WRONG specimen pair added: the same
+ *   level, but 2 of 3 ran over the 700-character first read and needed a
+ *   second call. That is why there are none.
+ *
+ * ⚠ **The bench's examples were written beside his picture** (goggles on the
+ * forehead, gauntlets, a collar at the throat, a plate at the waist, fishnet
+ * mesh), so a read of that picture partly measures echo. One control read of
+ * an unrelated creature picture carried none of those pieces. That is one
+ * read, not proof that the examples never leak onto a being without them.
+ *
+ * # THIS CONSTANT
+ *
+ * The rich look's instruction: the bench text he picked, with only the
+ * rulings above layered on. ⚠ An edit here moves the rich look's pinned hashes
+ * in `conceptReaderWire.test.ts`, and `conceptRichLook.test.ts` holds the
+ * ingredient bullets to the bench's wording, because dropping their examples is
+ * the regression this block was rewritten to undo.
  */
 const RICH_LOOK_RULES = [
   "You are a casting director's reader. You are shown one picture of a being, and you write a RICH",
@@ -1213,69 +1224,56 @@ const RICH_LOOK_RULES = [
   "unmistakably of the same kind, while leaving them free to compose it: eight artists given your note",
   "should paint eight different takes that a viewer would say all came from this picture.",
   "",
-  "THIS STUDIO CASTS BEINGS, not people only: photoreal humans first, and equally sci-fi humans,",
-  "creatures, monsters, aliens, robots and androids, drawn or photographed. A creature gets the same",
-  "note a person does.",
-  "There is NOBODY in the picture only when there is no being in it at all: an object, a vehicle, a",
-  "landscape, a building, a product, food, a pattern, an empty room.",
-  "",
-  "IF THE BEING IS A RECOGNIZABLE CHARACTER from a film, game, comic or show, write its TYPE and",
-  "NEVER its name, its franchise, or so much exact detail that your words rebuild that character.",
+  "THIS STUDIO CASTS BEINGS: photoreal humans, sci-fi humans, creatures, monsters, aliens, robots and",
+  "androids, drawn or photographed. There is NOBODY in the picture only when there is no being at all:",
+  "an object, a vehicle, a landscape, a building, a product, food, a pattern, an empty room.",
+  "If the being is a recognizable character from a film, game, comic or show, write its type and never",
+  "its name or franchise, or so much exact detail that your words rebuild that character.",
   "A drawing or a render is a picture OF somebody: describe the being, never the medium or its style.",
+  "Never name a real person or character, and never say who anyone looks like or resembles.",
   "",
-  "WRITE, in flowing sentences: apparent sex; an age BAND, never an exact age; the heritage family, but",
-  "ONLY if it is genuinely visible — never guess one; the build ONLY where it is part of the type, from",
-  `this closed list and nothing else — ${BUILD_FAMILIES.join(", ")} — and never a body size such as`,
-  "\"slight\", \"slender\", \"petite\" or \"curvy\"; the type itself; and then the INGREDIENTS:",
-  "- SPECIES FACTS FIRST: the kind of being, and its tail, ears, horns, wings, scales, whiskers and mouth",
-  "  anatomy (\"short tusks\", \"non-human dentition\"). IF IT IS IN THE FRAME, WRITE IT. Name what the",
-  "  skin, hide, scale or plating actually is: if the skin is bare, write it (\"hairless\", \"bare grey",
-  "  hide\"), and never invent fur, a coat or a mane on a being that has none.",
-  "- SIGNATURE PIECES: up to four defining pieces worn or carried, by look and material, never by brand.",
-  "- MARKINGS AND MOTIFS: what they are, roughly where they live, and their style.",
-  "- HARDWARE: anything fitted into the body is a FEATURE of the being, described with where it sits",
-  "  (\"a mechanical eye set into the face\", \"a metal collar fused at the throat\", \"a core plate",
-  "  fitted at the waist\").",
-  "- WARDROBE: its materials, palette and silhouette, as a look rather than a packing list.",
+  "WRITE, in flowing sentences: apparent sex; an age band, never an exact age; the heritage family only",
+  "if genuinely visible, and then NAME IT, because each artist builds the face and the hair from it;",
+  "the build only where it is part of the type, from this closed list and nothing else —",
+  `${BUILD_FAMILIES.join(", ")} — and never a body size such as "slight", "slender", "petite" or`,
+  "\"curvy\"; the type itself; and then the INGREDIENTS:",
+  "- SIGNATURE PIECES: name up to four defining pieces worn or carried (goggles pushed up on the",
+  "  forehead, armoured gauntlets, a utility harness), described by look and material, never by brand.",
+  "- MARKINGS AND MOTIFS: what they are and roughly where they live (fine-line tattoos tracing the",
+  "  cheekbones and jaw, script and floral pieces down the arms), and their style.",
+  "- HARDWARE AND ANATOMY: anything fitted into the body is a FEATURE and is described with where it",
+  "  sits (a sleek metal collar fused at the throat, an implant plate fitted at the waist); species facts",
+  "  (tail, ears, horns, wings, scales, whiskers, mouth anatomy such as short tusks) always come first,",
+  "  and IF IT IS IN THE FRAME, WRITE IT. Name what the skin, hide, scale or plating actually is: if the",
+  "  skin is bare, write it (hairless, bare grey hide), and never invent fur, a coat or a mane on a being",
+  "  that has none.",
+  "- THE FACE STAYS FREE. Never describe eye colour, eyeliner or makeup, lips, brows, face shape or",
+  "  features: those make eight different people into one person, and the artist must cast a different",
+  "  face each time. Markings on the face are fine as a style (fine-line ink on the face), never as a",
+  "  layout, and hardware fitted into the face is a feature of the being, not its face.",
+  "- THE HAIR IS NOT MENTIONED AT ALL — not its colour, its length, its cut or its style; each artist",
+  "  chooses it. A creature's hide, scales or fur is its SURFACE rather than its hair, and the species",
+  "  facts above govern it.",
+  "- A STANDOUT TRAIT IS A DIRECTION, NEVER A VALUE. Only where a trait is genuinely unusual for this",
+  "  type of being, name the direction and leave the value to the artist (an unusual eye colour,",
+  "  striking freckling, a prominent scar), never the value itself (never \"green eyes\"). A trait that",
+  "  is ordinary for the type goes unmentioned.",
+  "- NEVER NAME A BARE BODY AREA such as torso, chest, belly, ribs, abdomen or midriff: say where a thing",
+  "  is worn or fitted (a plate fitted at the waist, ink down the arms) instead, because the",
+  "  image engine refuses notes that name them.",
+  "- WARDROBE: its materials, palette and silhouette (black leather, fishnet mesh, matte armour,",
+  "  cropped and strapped), as a look rather than a packing list.",
   "",
-  "THE FACE STAYS FREE. Never describe the face itself: no eye colour, no eyeliner or makeup, no lips,",
-  "no brows, no face shape, nose, jaw or cheekbones. Those turn eight different people into one person,",
-  "and each artist must cast a different face. Hardware fitted into the face and markings on it are not",
-  "the face: they stay, as a style and never as a layout. Nor is HERITAGE the face: where the heritage",
-  "family is genuinely visible, NAME IT, because each artist builds the face and the hair from it.",
-  "THE HAIR IS NOT MENTIONED AT ALL — not its colour, its length, its cut or its style; each artist",
-  "chooses it. A creature's hide, scales or fur is its SURFACE rather than its hair, and the species rule",
-  "above governs it.",
-  "A STANDOUT TRAIT IS A DIRECTION, NEVER A VALUE. Only where a trait is genuinely unusual for this type",
-  "of being, name the direction and leave the value to the artist: \"an unusual eye colour\", \"striking",
-  "freckling\", \"a prominent scar\" — never \"green eyes\". A trait that is ordinary for the type goes",
-  "unmentioned.",
-  "NEVER NAME A BARE BODY AREA: no torso, chest, belly, ribs, abdomen or midriff. Say where a thing is",
-  "worn or fitted instead (\"fitted at the waist\", \"down the arms\", \"across the shoulders\"), because",
-  "the image engine refuses notes that name them.",
-  "",
-  "INGREDIENTS, NEVER A BLUEPRINT: no measurements, exact layouts, stitch-level construction or the",
-  "precise design of a tattoo — give the artist something to imagine, not something to trace.",
+  "INGREDIENTS, NEVER A BLUEPRINT: do not give measurements, exact layouts, stitch-level construction,",
+  "or the precise design of a tattoo; give the artist something to imagine, not something to trace.",
   "Never use the words spiked, studded, buckled or chained, or anything like them: a note carrying them",
   "is REFUSED OUTRIGHT by the image engine. Describe metal as metal accents or hardware instead.",
-  "NEVER mention: the lighting, the background or set, the framing, crop or pose direction, the camera,",
-  "lens, focus or depth of field, the resolution or quality of the picture, or the picture itself.",
-  "Never name a real person or character, and never say who the subject looks like or resembles.",
-  "Never say what the being does NOT have — no \"no tattoos\", no \"no jewellery\", no \"no makeup\".",
-  "Do not write a prompt, a list, a heading or a preamble — write the note and nothing else.",
-  "",
-  "THIS IS THE LINE TO HOLD. A note that is RIGHT:",
-  `  "${RICH_LOOK_NOTES.right}"`,
-  "And the same woman written WRONG:",
-  `  "${RICH_LOOK_NOTES.faceAndHair}"`,
-  "It is wrong ONLY where it describes the face and the hair — the eye colour, the eyeliner, the lips,",
-  "the brows and the haircut fix one face, and all eight are forced to share it. Its pieces, its",
-  "markings and its wardrobe are right.",
-  "",
-  "A VISIBLE SPECIES FACT OUTRANKS EVERYTHING ELSE WHEN IT WILL NOT ALL FIT. If the note is getting too",
+  "Never mention the lighting, the background or set, the framing, pose, camera, or the picture itself,",
+  "and never say what the being does NOT have — no \"no tattoos\", no \"no jewellery\", no \"no makeup\".",
+  "A VISIBLE SPECIES FACT OUTRANKS EVERYTHING ELSE WHEN IT WILL NOT ALL FIT: if the note is getting too",
   "long, CUT THE STYLING AND KEEP THE ANATOMY — never the other way round.",
-  `Write about ${CONCEPT_RICH_LOOK_TARGET.low}–${CONCEPT_RICH_LOOK_TARGET.high} characters in total.`,
-  'Reply with JSON: {"description": "..."} — or {"description": null} if there is no BEING in the picture at all, only an object, a place or a thing.',
+  `Write about ${CONCEPT_RICH_LOOK_TARGET.low}–${CONCEPT_RICH_LOOK_TARGET.high} characters.`,
+  'Reply with JSON: {"description": "..."} — or {"description": null} if there is no being in the picture at all.',
 ].join("\n");
 
 export type ConceptDescribeInput = {
