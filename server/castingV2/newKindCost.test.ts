@@ -28,12 +28,7 @@ import {
   facetTableOf,
   type FacetCard,
 } from "./facetCards";
-import {
-  REGION_CARDS,
-  REGION_CARD_ENTRIES,
-  regionTableOf,
-  type RegionCard,
-} from "./regionCards";
+import { REGION_CARD_ENTRIES } from "./regionCards";
 
 /** A kind nobody has catalogued, answering all eight questions. */
 const SCAFFOLD: SubjectCard = {
@@ -53,7 +48,6 @@ const SCAFFOLD_FACET: FacetCard = {
   zone: "fullFrame",
   slot: { notASlot: "a scaffold has no home in the library" },
   region: null,
-  movesItsEdge: { moves: false, why: "a scaffold moves nothing" },
   naming: { shape: "hers" },
   preservation: { category: "boneStructure", phrase: "the same scaffold" },
 };
@@ -109,7 +103,6 @@ describe("one card is enough", () => {
 
     expect(deriveFacet((card) => card.zone).scaffold).toBe("fullFrame");
     expect(deriveFacet((card) => card.slot).scaffold).toEqual(SCAFFOLD_FACET.slot);
-    expect(deriveFacet((card) => card.movesItsEdge).scaffold.moves).toBe(false);
     /* `region: null` is an answer: no masked path, stated rather than absent. */
     expect(deriveFacet((card) => card.region).scaffold).toBeNull();
   });
@@ -155,33 +148,12 @@ describe("one card is enough", () => {
  * again with a scaffold kind — a `choker` — the suite named exactly TWO source
  * sites, and both were facts about the REGION rather than the kind: whether its
  * material has fringe at the edge, and which regions its boundary is confused
- * with. Both are on the region card now, so a new kind is its accessory entry
- * plus its region card.
+ * with. Both moved onto the region card, and both were then deleted with the
+ * masked-edit harvest that was their only reader (#2859). Two arms here drove
+ * them through a scaffold region and went with them. What the region card still
+ * holds is a measured phrasing, so that is what is left to assert.
  */
 describe("an accessory kind is its entry and its region", () => {
-  const SCAFFOLD_REGION: RegionCard = {
-    fringe: { at: false, why: "a scaffold has a solid edge" },
-    neighbours: { with: ["hair"], why: "hair falls over everything" },
-  };
-
-  it("answers both region tables for a region nothing else has heard of", () => {
-    const regions = { ...REGION_CARDS, scaffold: SCAFFOLD_REGION };
-    const entries = Object.entries(regions) as ReadonlyArray<readonly [string, RegionCard]>;
-    const derive = <T>(read: (card: RegionCard) => T) =>
-      Object.fromEntries(entries.map(([region, card]) => [region, read(card)])) as Record<string, T>;
-
-    expect(derive((card) => card.fringe.at).scaffold).toBe(false);
-    expect(derive((card) => card.neighbours.with).scaffold).toEqual(["hair"]);
-    /* And the phrasing is OPTIONAL — a region whose key is already the words
-       sent carries no `askedAs`, which is every region but one. */
-    expect(derive((card) => card.askedAs).scaffold).toBeUndefined();
-  });
-
-  it("CAN FAIL — the shipped regions know no scaffold", () => {
-    expect((regionTableOf((card) => card.fringe) as Record<string, unknown>).scaffold)
-      .toBeUndefined();
-  });
-
   it("keeps a MEASURED phrasing wherever one was bought", () => {
     /* The lips reading is the only one so far, and it is data rather than a
        comment precisely so this can be asserted rather than read. */

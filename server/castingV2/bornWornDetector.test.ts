@@ -50,7 +50,8 @@ const IMAGE = Buffer.from("master");
 
 describe("the born-worn catalogue's vocabulary", () => {
   /*
-    The closure test, in the shape `FRINGE_AT_EDGE` already uses: a new kind of
+    The closure test, in the shape the masked harvest's fringe table used
+    until #2859 deleted it: a new kind of
     accessory must be CONSIDERED here, even if the consideration is "nobody has
     measured this". Without it a new kind arrives silently uncatalogued and the
     product quietly stops naming a thing that is on her face.

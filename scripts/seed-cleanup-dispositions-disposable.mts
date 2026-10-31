@@ -140,8 +140,9 @@ const NAMED: Record<string, Seed> = {
 
 /** The derived-view family of §6a, named because a pattern cannot see it. */
 const DERIVED_VIEWS = new Set([
-  "axesOnShelf", "edgeTableNames", "fringeTableNames", "neighbourTableNames",
-  "segmentableRegionNames", "namingTableFacets", "exemptSubjects", "neighbourPairs",
+  /* Four of the masked harvest's table views stood here; they were deleted
+     with its tables (#2859), and their rows flipped to TAKEN in that commit. */
+  "axesOnShelf", "namingTableFacets", "exemptSubjects", "neighbourPairs",
   "arrangementsWithPrecedent", "unmeasuredAmplitudes", "unprotectedFacets",
   "facetsWithUnreliabilityPrior", "unreadFacts", "splitByInheritance",
   "courtSeparationFor", "REFUSAL_REASONS", "VACANCY_KINDS", "FACET_KEYS",

@@ -32,7 +32,6 @@ import {
   openKindFilesAsIdentity,
   openKindHeading,
   openKindIsPlural,
-  openKindMovesItsEdge,
   openKindQualifier,
   openKindSegmenterQuestion,
   openKindUnfiledReason,
@@ -120,10 +119,12 @@ describe("every table that decides something about a subject has an open-kind an
       A MIRROR, DELIBERATELY, AND ONLY AS A FLOOR. The authority is the
       subset check below; this exists so a scan that came back empty — a moved
       directory, a changed declaration style — cannot pass that check by finding
-      nothing. It pins the eight total tables the design note itself named.
+      nothing. It pins the total tables the design note itself named — seven
+      now: the eighth was the masked-edit harvest's edge table, deleted with it
+      (#2859).
     */
     for (const table of [
-      "CHANGE_AMPLITUDE", "MOVES_ITS_EDGE", "FACET_SLOTS", "SHARED_HEADINGS",
+      "CHANGE_AMPLITUDE", "FACET_SLOTS", "SHARED_HEADINGS",
       "FREE_SUBJECT_KIND", "SUBJECT_NOUNS", "SUBJECT_QUALIFIER", "ZONE_SCOPE",
     ]) {
       expect(scanned.has(table), `the scan lost ${table}`).toBe(true);
@@ -188,9 +189,8 @@ describe("the answers themselves", () => {
     expect(openKindBinds()).toBe("presence");
   });
 
-  it("takes the whole frame, claims no reveal, and is one thing", () => {
+  it("takes the whole frame, and is one thing", () => {
     expect(openKindZoneScope()).toBe("fullFrame");
-    expect(openKindMovesItsEdge()).toBe(false);
     expect(openKindIsPlural()).toBe(false);
     expect(openKindFilesAsIdentity()).toBe(true);
   });

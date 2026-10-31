@@ -155,7 +155,8 @@ export const EARRING_SIDE_COVERAGE_FLOOR = 0.00009;
 /**
  * The floor for each kind of thing the accessory table can name, and its
  * provenance — every entry filled in, because a kind nobody has considered is
- * exactly the silent gap `FRINGE_AT_EDGE`'s closure test exists to forbid. A
+ * exactly the silent gap a closure test exists to forbid (the shape the masked
+ * harvest's fringe table used, until #2859 deleted it with the harvest). A
  * new accessory kind arrives here as `null` and inert rather than as a guess.
  *
  * **A provenance sentence is not a citation, it is the court.** It names both
