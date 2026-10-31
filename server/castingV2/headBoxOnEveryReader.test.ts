@@ -26,11 +26,16 @@
  * tree arm carries a floor: the five production factories are named, and a walk
  * that found fewer than five calls reddens rather than passing vacuously.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { CONTENDED_TEST_TIMEOUT_MS } from "../testing/contendedTestTimeout";
 import { repoPath, sourcesUnder } from "../testing/sourceTree";
 import { codeOnly } from "../testing/withoutComments";
+
+/* This suite reads the whole `server/` tree, so it declares the class's clock
+   rather than running inside vitest's 5s default — `contendedTestTimeouts`
+   derives its population from the walk and reddens without this line. */
+vi.setConfig({ testTimeout: CONTENDED_TEST_TIMEOUT_MS });
 
 const FACTORY = "createFalRegionReader(";
 
@@ -165,7 +170,7 @@ describe("every production reader is told where the head is", () => {
     /* The exemption is still an exemption: the file is in the population, and
        it is the only one the filter above lets through. */
     expect(found.map((one) => one.file)).toContain(EXEMPT.file);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 
   it("the exempt reader still asks for nothing the head box would govern", () => {
     const [source] = sourcesUnder(repoPath("server", "castingV2"), { tests: "exclude" })
@@ -178,5 +183,5 @@ describe("every production reader is told where the head is", () => {
       `${EXEMPT.file} is exempt from the head box only while \`${EXEMPT.allowed}\` is all it asks of a reader`
       + " — any other member reads the segmenter's face span, so the exemption has to be decided again",
     ).toEqual([EXEMPT.allowed]);
-  }, CONTENDED_TEST_TIMEOUT_MS);
+  });
 });
