@@ -502,16 +502,18 @@ export type MatteRequest = {
  *
  * It was written as *"the one way to get a mask from a model, with all the
  * guards in the contract rather than in the callers"*, and that sentence was
- * true of the design and never of the code. The paid path is
- * `maskedRefine.harvestRefinement`, which reads regions straight off a
- * `RegionReader` and has never called this. A module describing itself as the
+ * true of the design and never of the code. The paid path it was written for
+ * was the masked-edit harvest, which read regions straight off a `RegionReader`
+ * and never called this — and that harvest is itself gone: retired with the
+ * paste road (#1577 slice 4b) and deleted under #2859. Every refine repaints
+ * now, with no edit mask at all. A module describing itself as the
  * only door, with nobody walking through it, is invariant 7 exactly — a control
  * that is not invoked does not exist — and D-231's sibling: **spec'd-but-never-
  * implemented is the invoked-but-inert class wearing better paperwork.**
  *
  * It is kept, deliberately, rather than deleted or wired:
  *
- *   `present` (D-213)      **a live gap on the product path.** Nothing gates the
+ *   `present` (D-213)      **a gap on the paste road, which is retired.** Nothing gated the
  *                          question before it is asked, so an ADD of an absent
  *                          distributed facet — "give him a beard" on a clean-
  *                          shaven man — segments "facial hair" on a face that
@@ -521,12 +523,13 @@ export type MatteRequest = {
  *                          honest refund — but does not close it: when the
  *                          painter draws the beard it was asked for, the guess
  *                          and the paint agree and the edit lands on a face that
- *                          has no beard. QUEUED, NAMED, NOT CLOSED; marked by a
- *                          current-behaviour test in `maskedRefine.test.ts`.
+ *                          has no beard. It was never closed; its current-
+ *                          behaviour marker test went with the harvest (#2859).
  *   `changesSilhouette`    **measured, and it does not bite on this path.** The
  *                          predicted defect was that fuller lips would be
  *                          clipped at her current lip line. Driven on a real
- *                          render (`scripts/calibration/fuller-lips.mts`): the
+ *                          render (`scripts/calibration/fuller-lips.mts`, deleted
+ *                          with the harvest, #2859): the
  *                          boundary-contact auto-expand grew the scoped zone
  *                          23.6x and 1,905 px were delivered beyond it — the
  *                          fuller lip is there in the picture. `expandUntilClear`

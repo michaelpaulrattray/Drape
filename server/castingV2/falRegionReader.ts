@@ -2870,7 +2870,7 @@ export function createFalRegionReader(input: {
        addition and none of them has a deadline. */
     async landmark({ image, name }) {
       assertPicture(image, name);
-      /* `name` here is `landmarkNameOf`'s / the removal table's own fixed
+      /* `name` here is the accessory table's / the removal table's own fixed
          word, not a reading's noun — the closed vocabulary, as before. */
       const json = await post(apiKey, POINT, { image_url: dataUri(image), prompt: name }, signal, "theClosedVocabularyPrompt");
       const points: any[] = Array.isArray(json.points) ? json.points : [];

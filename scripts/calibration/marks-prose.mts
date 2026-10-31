@@ -3,8 +3,9 @@
  *
  * Walk five, on the right face and a stable build: `statedAccessories` 100%,
  * `marks` 33%. The reader was accurate both times — I looked, and the freckles
- * were not there. But `scripts/calibration/freckles-layers.mts` DID freckle the
- * same master through the same compositor, using rich anatomical prose.
+ * were not there. But `scripts/calibration/freckles-layers.mts` (deleted with the
+ * masked-edit harvest, #2859) DID freckle the same master through the same
+ * compositor, using rich anatomical prose.
  *
  * # The structural half, which costs nothing at all
  *
@@ -24,13 +25,26 @@
  * That is a correlation across three classes with single-digit samples, which
  * is not a finding — it is a reason to run the control.
  *
- * # The control: one master, one compositor, two sets of words
+ * # The control: one master, one engine, two sets of words
  *
- * Same face, same engine, same harvest. Only the clause differs. Each render is
+ * Same face, same engine. Only the clause differs. Each render is
  * then read by the SAME vision reader the product uses to decide whether
  * someone gets charged, so the verdict is the product's own, not mine.
  *
  * Not free — two fal renders — but it spends no credits and no founder time.
+ *
+ * # What it reads since #2859, and why it was kept when its five neighbours went
+ *
+ * Until 2026-10-31 each arm was put through the masked-edit harvest and the
+ * COMPOSITE was measured, because the harvest was the delivery road. #1577
+ * slice 4b retired that road — every refine repaints, so the delivered picture
+ * IS the frame the engine returns — and #2859 deleted the harvest on his word
+ * *"delete dead code"*. This bench was kept because its question is about the
+ * WORDS, and its shipped arm is built by the live composer (`composeEditPrompt`,
+ * the edits lane `composeRenderPrompt` builds the paid refine's prompt from).
+ * So it now reads the painted
+ * frame directly. **A reading taken before #2859 measured a composite and is
+ * not comparable to one taken after.**
  *
  *   npx tsx scripts/calibration/marks-prose.mts
  */
@@ -40,8 +54,6 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 import { createFalMaskedEditEngine } from "../../server/providers/falImages";
 import { createFalRegionReader } from "../../server/castingV2/falRegionReader";
-import { harvestRefinement } from "../../server/castingV2/maskedRefine";
-import { facetOfSubject } from "../../server/castingV2/refineFacets";
 import { amplitudeFor } from "../../server/castingV2/changeAmplitude";
 import { composeEditPrompt } from "../../server/castingV2/refineDelta";
 
@@ -105,20 +117,11 @@ async function arm(label: string, prompt: string) {
   });
   writeFileSync(`${OUT}/${label}-painted.png`, painted.bytes);
 
-  const composed = await harvestRefinement({
-    master: { bytes: master, contentType: "image/png" },
-    painted: { bytes: painted.bytes, contentType: painted.contentType },
-    facets: [facetOfSubject("marks")],
-    reader,
-    userId: 1,
-    described: "a beauty mark, freckles",
-  });
-  writeFileSync(`${OUT}/${label}-composed.png`, composed.bytes);
-
   /* This class's OWN amplitude, from `changeAmplitude` rather than a literal
      here — a freckle is worth about four levels and the program's habitual 25
      would report nothing. The table is the one place that decides. */
-  const B = await raw(composed.bytes);
+  /* The painted frame is the delivered picture on today's road (see header). */
+  const B = await raw(painted.bytes);
   let moved = 0;
   for (let p = 0; p < W * H; p += 1) {
     if (skin.data[p] <= 127) continue;
@@ -130,7 +133,7 @@ async function arm(label: string, prompt: string) {
     `${label.padEnd(10)} ${((Date.now() - began) / 1000).toFixed(0)}s · `
     + `${((moved / skinPx) * 100).toFixed(1)}% of her face skin moved at freckle amplitude`,
   );
-  return { label, moved, bytes: composed.bytes };
+  return { label, moved, bytes: painted.bytes };
 }
 
 const shippedArm = await arm("shipped", shipped);

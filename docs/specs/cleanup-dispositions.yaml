@@ -425,29 +425,36 @@
     does, and the model-pin arms cannot run twice without dropping it; NAME says test-only
   argued: 6c/13a
 
+- symbol: writeMaskPng
+  file: server/castingV2/maskedComposite.ts
+  verdict: HELD
+  why: "encodes a mask as a PNG. Its only production importer was the masked-edit harvest, deleted under #2859; nothing else in the product or its suites calls it now (two comments cite its scar). Not taken here: it is one of the ring this row's blocker names, not one of the manifest's fifteen"
+  argued: "#2859"
+  blocker: "the harvest's NEXT RING (#2859). Deleting the masked-edit harvest took the only production importer of sixteen exports across maskedComposite, maskGeometry, compositeIntegrity and zoneScope (the importer differ, read over that commit's own window). #2859's manifest read maskedRefine.ts's exports only and scoped maskedComposite out as its own question, so the ring needs its own reading: several of the sixteen are still imported by tracked calibration scripts, and those scripts are part of the same decision"
+
 - symbol: neighbourTableNames
   file: server/castingV2/maskedRefine.ts
-  verdict: KEEP
-  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
-  argued: 6a
+  verdict: TAKEN
+  why: "the territory rule's key list (`CONFUSABLE_NEIGHBOURS`). KEPT under 6a as a derived view a test asserted the table through — and that argument assumed the TABLE stays. #2859 deleted the table: the masked-edit harvest was its only reader and had no production caller after #1577 slice 4b, and his word was *\"delete dead code\"*. A view of a deleted table has nothing to derive, and its two suites (the totality arm and the golden pin) went with the table rather than onto a hardcoded list."
+  argued: "6a/#2859"
 
 - symbol: edgeTableNames
   file: server/castingV2/maskedRefine.ts
-  verdict: KEEP
-  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
-  argued: 6a
+  verdict: TAKEN
+  why: "the edge table's key list (`MOVES_ITS_EDGE`). KEPT under 6a for the same reason as its siblings, and the same deletion dissolved it: #2859 took the table with the masked-edit harvest, its only reader. ⚠ It had ONE job that outlived the table: `vocabularyPin.test.ts` used its keys as the FACET population for two live pins (REGION_OF_FACET and ZONE_SCOPE membership). That population now comes from `FACET_KEYS`, where the edge table's keys came from, so the two pins kept their subject rather than being lost with this view."
+  argued: "6a/#2859"
 
 - symbol: segmentableRegionNames
   file: server/castingV2/maskedRefine.ts
-  verdict: KEEP
-  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
-  argued: 6a
+  verdict: TAKEN
+  why: "every region the masked harvest could ask a segmenter about — the domain its fringe table had to cover. KEPT under 6a as the other half of that closure test. #2859 deleted the fringe table with the harvest (no production caller after #1577 slice 4b; his word *\"delete dead code\"*), so there is no table left for this domain to close."
+  argued: "6a/#2859"
 
 - symbol: fringeTableNames
   file: server/castingV2/maskedRefine.ts
-  verdict: KEEP
-  why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
-  argued: 6a
+  verdict: TAKEN
+  why: "the fringe table's key list (`FRINGE_AT_EDGE`). KEPT under 6a as a derived view; #2859 deleted the table with the masked-edit harvest, its only reader, and the region card's `fringe` field that fed it went in the same commit. Nothing is left to view."
+  argued: "6a/#2859"
 
 - symbol: rasterise
   file: server/castingV2/maskGeometry.ts
@@ -491,6 +498,13 @@
   why: the declared fixture facility for tests that must not cost a credit; its vocabulary tests live algebra
   argued: 15d
 
+- symbol: attachedTo
+  file: server/castingV2/maskGeometry.ts
+  verdict: HELD
+  why: "the connected-piece filter the masked-edit harvest used to keep only the part of a claim touching the thing it was about. Its only production importer was that harvest, deleted under #2859; its own suite in maskGeometry.test.ts still drives it. Not taken here: it is one of the ring this row's blocker names, not one of the manifest's fifteen"
+  argued: "#2859"
+  blocker: "the harvest's NEXT RING (#2859). Deleting the masked-edit harvest took the only production importer of sixteen exports across maskedComposite, maskGeometry, compositeIntegrity and zoneScope (the importer differ, read over that commit's own window). #2859's manifest read maskedRefine.ts's exports only and scoped maskedComposite out as its own question, so the ring needs its own reading: several of the sixteen are still imported by tracked calibration scripts, and those scripts are part of the same decision"
+
 - symbol: openKindQualifier
   file: server/castingV2/openKindPolicy.ts
   verdict: KEEP
@@ -511,9 +525,9 @@
 
 - symbol: openKindMovesItsEdge
   file: server/castingV2/openKindPolicy.ts
-  verdict: KEEP
-  why: the open lane's written answer sheet, quoted by the code that implements it independently
-  argued: 7b/10
+  verdict: TAKEN
+  why: "the open lane's answer to the masked harvest's edge table — may an open kind claim a reveal. KEPT under 7b/10 as an answer sheet quoted by the code that implements it. #2859 deleted that table and every reveal with the harvest, so nothing implements the question any more and the policy's own arm (`answers nothing that does not exist`) would have refused the entry beside it. Taken with the entry."
+  argued: "7b/10/#2859"
 
 - symbol: openKindUnfiledReason
   file: server/castingV2/openKindPolicy.ts
@@ -726,6 +740,13 @@
   verdict: KEEP
   why: a derived view the test asserts the TABLE through; deleting it pushes its test onto a hardcoded list
   argued: 6a
+
+- symbol: hasRegion
+  file: server/castingV2/zoneScope.ts
+  verdict: HELD
+  why: "whether a facet has a region to edit at all (anything but fullFrame). Its only production importer was the masked-edit harvest, deleted under #2859; zoneScope.test.ts and the carried totality arm in maskedRefine.test.ts still read it. Not taken here: it is one of the ring this row's blocker names, not one of the manifest's fifteen"
+  argued: "#2859"
+  blocker: "the harvest's NEXT RING (#2859). Deleting the masked-edit harvest took the only production importer of sixteen exports across maskedComposite, maskGeometry, compositeIntegrity and zoneScope (the importer differ, read over that commit's own window). #2859's manifest read maskedRefine.ts's exports only and scoped maskedComposite out as its own question, so the ring needs its own reading: several of the sixteen are still imported by tracked calibration scripts, and those scripts are part of the same decision"
 
 - symbol: removeEdgesForItems
   file: server/db/boardEdges.ts

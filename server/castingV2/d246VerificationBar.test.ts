@@ -108,10 +108,24 @@ describe("D-246 — only the catastrophic classes may refuse a paid render", () 
     expect(amplitude).toContain("isSurfaceFacet");
     expect(amplitude).not.toMatch(/amplitude[\s\S]{0,80}throw/i);
 
-    const masked = readFileSync("server/castingV2/maskedRefine.ts", "utf8");
-    /* The seam's `coherence` statistic is recorded and acted on by nothing. */
-    expect(masked).toContain("coherence");
-    expect(masked).not.toMatch(/coherence[\s\S]{0,200}throw new ProviderError/);
+    /*
+      The seam's `coherence` statistic is computed and acted on by nothing.
+
+      This read `maskedRefine.ts`, where the masked-edit harvest RECORDED the
+      statistic on every composite. That harvest is deleted (#2859, his word
+      *"delete dead code"*), so the arm now reads the one place the number is
+      still COMPUTED, and the never-thrown-on half is asked of every
+      render-path file rather than one, so a refusal cannot grow back in a
+      module this line was not looking at.
+    */
+    const seam = readFileSync("server/castingV2/compositeIntegrity.ts", "utf8");
+    expect(seam).toContain("coherence");
+    for (const root of ROOTS) {
+      for (const file of sourceFiles(path.resolve(root))) {
+        expect(readFileSync(file, "utf8"), file)
+          .not.toMatch(/coherence[\s\S]{0,200}throw new ProviderError/);
+      }
+    }
 
     /* fable-166 §2's neon-iris refusal was never built, and D-246 supersedes it
        before it could be: neon green is subtle, so it ships and the user

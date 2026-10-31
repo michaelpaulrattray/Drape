@@ -28,15 +28,8 @@ import { CHANGE_AMPLITUDE } from "./changeAmplitude";
 import { FACET_SLOTS } from "./referenceSlotCatalogue";
 import { SUBJECT_QUALIFIER } from "./subjectQualifiers";
 import { ZONE_SCOPE } from "./zoneScope";
-import {
-  anyFacetMovesAnEdge,
-  confusableNeighboursOf,
-  edgeTableNames,
-  fringeTableNames,
-  hasFringeAtEdge,
-  neighbourTableNames,
-  regionNameOf,
-} from "./maskedRefine";
+import { regionNameOf } from "./maskedRefine";
+import { FACET_KEYS } from "./facetCards";
 import {
   DEPARTABLE_SUBJECTS,
   FREE_SUBJECTS,
@@ -103,6 +96,26 @@ const CHANGED_FACET_SLOTS: Record<string, unknown> = {
      the change was authorised, and that answer must not be one scroll away. */
   ink: { perPlacement: "ink" },
 };
+
+/**
+ * THREE PINS CAME OUT WITH THE TABLES THEY PINNED — #2859, and they were
+ * REMOVED, never regenerated.
+ *
+ * `MOVES_ITS_EDGE`, `FRINGE_AT_EDGE` and `CONFUSABLE_NEIGHBOURS` were the
+ * masked-edit harvest's own tables — whether a facet may claim a reveal, whether
+ * a region's harvest may reach past its outline, and which regions its edge is
+ * confused with. The harvest had no production caller after #1577 slice 4b and
+ * was deleted on his word *"delete dead code"*, and the three tables went with
+ * it because nothing else ever read them. Their golden entries were deleted from
+ * `vocabularyPin.json` in the same commit; every other entry in that file is
+ * byte for byte what it was, so the rest of the pin still answers *did the
+ * contents MOVE, or did they CHANGE?*
+ *
+ * One thing the edge table did for this file survives it: its keys were the
+ * facet population two arms below walked. That population is now read from the
+ * facet registry itself, which is where the edge table's keys came from.
+ */
+const ALL_FACETS = [...FACET_KEYS].sort();
 
 /** The pinned part of a table: what the golden actually has an opinion about. */
 function pinnedPart(
@@ -236,21 +249,12 @@ describe("the four that decide by absence", () => {
       would show up in a table's own diff.
     */
     const regions = Object.fromEntries(
-      edgeTableNames().map((facet) => [facet, regionNameOf(facet as never)]));
+      ALL_FACETS.map((facet) => [facet, regionNameOf(facet as never)]));
     expect(pinnedPart(regions, ADDED_FACETS)).toEqual(pin.REGION_OF_FACET);
     /* And the added one's answer, written out rather than inherited: horns has
        NO region, which is a decision about the cutting vocabulary and not a
        statement that the segmenter cannot see them. */
     expect(regions.horns).toBeNull();
-  });
-});
-
-describe("the edge table", () => {
-  it("moves exactly the edges it moved before V1 began", () => {
-    const edges = Object.fromEntries(
-      edgeTableNames().map((facet) => [facet, anyFacetMovesAnEdge([facet as never])]));
-    expect(pinnedPart(edges, ADDED_FACETS)).toEqual(pin.MOVES_ITS_EDGE);
-    expect(edges.horns).toBe(true);
   });
 });
 
@@ -262,13 +266,13 @@ describe("the pin itself", () => {
     expect(Object.keys(pin.ZONE_SCOPE).length).toBe(29);
     expect(Object.keys(pin.FREE_SUBJECTS)).toEqual(
       Object.keys(FREE_SUBJECTS).filter((subject) => !ADDED_SUBJECTS.includes(subject)));
-    /* Sorted on both sides: `edgeTableNames()` sorts and the zone table keeps
-       its authored order, and this is a question about MEMBERSHIP. */
+    /* Sorted on both sides: the facet registry is sorted above and the zone
+       table keeps its authored order, and this is a question about MEMBERSHIP. */
     expect(Object.keys(pin.ZONE_SCOPE).sort()).toEqual(
-      [...edgeTableNames()].filter((facet) => !ADDED_FACETS.includes(facet)).sort());
-    /* And the additions are present in the live table, so this check cannot
+      ALL_FACETS.filter((facet) => !ADDED_FACETS.includes(facet)).sort());
+    /* And the additions are present in the live registry, so this check cannot
        pass by the new facet being missing from both sides. */
-    for (const facet of ADDED_FACETS) expect([...edgeTableNames()]).toContain(facet);
+    for (const facet of ADDED_FACETS) expect(ALL_FACETS).toContain(facet);
   });
 
   it("CAN FAIL — the comparison, driven on a table with one value moved", () => {
@@ -277,36 +281,5 @@ describe("the pin itself", () => {
     const tampered = { ...pin.FREE_SUBJECTS, hairCut: "HAIRCUT" };
     expect(tampered).not.toEqual(pin.FREE_SUBJECTS);
     expect(FREE_SUBJECTS).not.toEqual(tampered);
-  });
-});
-
-describe("the region tables", () => {
-  /*
-    CAPTURED FROM THE PRE-MOVE SOURCE, not from the code that replaced it.
-
-    These two moved onto the region card after the pin file was first written,
-    so their entries were read out of `git show HEAD:maskedRefine.ts` — the
-    literal as it stood before the derivation — rather than from the derivation
-    itself. A golden captured from the thing it is meant to check is not one.
-
-    They matter behaviourally: a harvest reaches past its boundary only where
-    `fringe` is true, and the neighbour list decides what "territory nobody
-    asked about" means at a shared edge. A silent flip here is a paid render
-    tearing at an edge, which is run-6's own defect.
-  */
-  it("say what they said before the region card existed", () => {
-    const fringe = Object.fromEntries(
-      Object.keys(pin.FRINGE_AT_EDGE).map((region) => [region, hasFringeAtEdge(region)]));
-    expect(fringe).toEqual(pin.FRINGE_AT_EDGE);
-
-    const neighbours = Object.fromEntries(
-      Object.keys(pin.CONFUSABLE_NEIGHBOURS)
-        .map((region) => [region, [...confusableNeighboursOf(region)]]));
-    expect(neighbours).toEqual(pin.CONFUSABLE_NEIGHBOURS);
-  });
-
-  it("cover every region the tables declare — a pin over a subset is not a pin", () => {
-    expect(Object.keys(pin.FRINGE_AT_EDGE).sort()).toEqual([...fringeTableNames()].sort());
-    expect(Object.keys(pin.CONFUSABLE_NEIGHBOURS).sort()).toEqual([...neighbourTableNames()].sort());
   });
 });
