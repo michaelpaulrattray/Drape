@@ -71,6 +71,16 @@ refusal it gives today is the honest one.
    vocabulary** — 3 registrations' worth of work by V1's measure, plus a court
    at about $1.50.
 2. **ink stays where it is**, with its refusal, until the tattoo studio.
+   ⚠ **THAT TRIGGER CANNOT FIRE — stamped 2026-10-31 (`foreman-20261031-1825`,
+   card #65, working law 7's sweep).** He retired the tattoo studio on
+   2026-09-24 (Crew reply #208, verbatim and entire: *"It retires with N2"*);
+   `CASTING_INK_STUDIO_SCOPE` is `off` and the variable is gone from the
+   service. **The recommendation's SUBSTANCE is spent rather than waiting**: ink
+   did not stay where it was and did not wait for a studio — the ink lane was
+   built on another road, and ink has per-placement slots today
+   (`server/castingV2/referenceSlotCatalogue.ts`, `{ perPlacement: "ink" }`), a
+   live reference road at `users:1`, and a mint. **So read this line as history,
+   never as a thing still pending.**
 3. And a rider worth deciding once rather than per kind: a mark removal is a
    SURFACE removal, and the surface lesson is already on the record — *a tan can
    neither be held nor removed*. Freckles are the same class of fact. So the

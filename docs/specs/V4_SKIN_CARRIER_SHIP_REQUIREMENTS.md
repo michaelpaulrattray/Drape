@@ -10,6 +10,27 @@
 > than before it. His reasoning is sequence over complication, and shipping the
 > cutout first would have baked an ambiguity the studio would then inherit.
 >
+> ⚠ **THE TRIGGER IN THE RULING ABOVE CAN NO LONGER FIRE AS WRITTEN, AND THE
+> RULING IS KEPT UNALTERED BECAUSE IT IS HIS — read at the code 2026-10-31
+> (`foreman-20261031-1825`, card #65).** *"Until the tattoo studio is launched"*
+> is a condition on an event that is not coming: he RETIRED the tattoo studio on
+> 2026-09-24 (Crew reply #208, card `switch-10-ink-studio`, verbatim and entire:
+> *"It retires with N2"*). `CASTING_INK_STUDIO_SCOPE` stands at `off` and the
+> variable is **gone from the service** — *"it is not a narrow; there is nothing
+> behind it to narrow"* (`scripts/lib/productionFlagPositions.mts:271`) — and
+> #1158 slices 1–2 closed the entrance.
+>
+> **So what this ruling MEANS today is unchanged and its mechanism is not: skin
+> carries as words, and it does so INDEFINITELY rather than until an event.**
+> Re-deciding the carrier is now HIS WORD and nothing else; no shift may read a
+> studio launch as the thing that re-opens it, and none may read the studio's
+> retirement as having DECIDED it — the clauses below still stand in the record,
+> exactly as the ruling says, and they bind again unchanged if ink ever gets
+> first-class slots. ⚠ **This is working law 7's other half — when a ruling
+> closes a path, the sweep asks what was bolted to it** — and three things in
+> this file were: this trigger, §5's handoff and §7's gate. Each is stamped
+> where it sits rather than here.
+>
 > What it costs meanwhile is on the record and in the reliability watch: a paid
 > tan drifts ~ΔE 5 per subsequent edit under words. Honest state, not a
 > regression.
@@ -94,6 +115,13 @@ in three moved up to 3.0 ΔE for that reason alone.
   cutout and the ink references will cover the same pixels. Who owns what the
   cutout shows is a design section the studio work inherits — named here
   (fable-559 §4) so it is not discovered then.
+  ⚠ **THE INHERITOR IS GONE — the studio was retired on his word 2026-09-24
+  (the header's stamp).** So this section has nobody to hand to, and that is the
+  whole of what changed: it is **DORMANT, not discharged.** The question *who
+  owns what the cutout shows* is unanswered, and it binds again unchanged the
+  day ink gets first-class slots on any road. **Do not close it as moot** — a
+  retirement answers no design question, it only removes the thing that was
+  going to answer it.
 
 ## 7. The collision the studio must resolve first — and it is now the gate
 
@@ -121,6 +149,31 @@ The collision is measurable — ink crispness and tone hold, on the same frames,
 under both shapes — so it is a court, not a debate. **No ink references exist
 today, so the cutout currently collides with nothing**; the rule must exist
 before the STUDIO ships, and now also before the carrier is re-decided.
+
+⚠ **THE CONCLUSION STILL HOLDS AND ITS STATED REASON IS DEAD — read at the code
+2026-10-31, and this is the correction most worth having, because the reason is
+what a future reader would check.** *"No ink references exist today"* stopped
+being true: `CASTING_INK_REFERENCE_SCOPE` stands at **`users:1`** on production
+(`scripts/lib/productionFlagPositions.mts`), the whole ink-source branch of a
+refine is gated on it, and a design has reached a render through it since
+2026-08-20 — the design is filed and minted (`inkReferenceMint.ts`). **So ink
+references DO exist on his account.**
+
+**The cutout nevertheless collides with nothing, for the other reason this file
+is about: arm S DOES NOT SHIP.** One half of the collision — the skin cutout —
+is the thing §6 records as never built, so there is no second claimant to any
+patch of skin. ⚠ **The two readings are not interchangeable, and that is the
+point.** A reader who checks *"do ink references exist?"* now gets **yes** and
+would wrongly conclude the collision has arrived; a reader who notices the
+studio was retired would wrongly conclude the question is moot. **Neither is
+right: the collision is absent because the CUTOUT is absent, and it arrives the
+moment the cutout ships — whatever happened to the studio.**
+
+⚠ **And the gate's last clause is re-pointed rather than struck.** *"Before the
+STUDIO ships"* names a road his ruling closed, so that half can no longer be met
+or missed; *"and now also before the carrier is re-decided"* is untouched and is
+the half that still binds. **This rule must exist before the carrier is
+re-decided, and re-deciding is his word (the header's stamp).**
 
 ## 6. The verdict this is contingent on
 
