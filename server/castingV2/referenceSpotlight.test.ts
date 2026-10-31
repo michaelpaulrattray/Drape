@@ -345,30 +345,43 @@ describe("opening a picture", () => {
   });
 
   it("overlaps the face's own mask with the pieces, because neither of those failures is fatal", async () => {
-    /* The other half of the same rule: a failed mask falls back to the
-       rectangle and a failed cut is one missing piece, so these two may contend
-       — and they must, or the fence costs a customer a whole extra wait. */
+    /*
+      The other half of the rule above: a failed mask falls back to the
+      rectangle and a failed cut is one missing piece, so these two may contend
+      — and they must, or the fence costs a customer a whole extra wait.
+
+      ⚠ **THIS ARM IS A GATE AND NOT A SLEEP, AND THE FIRST VERSION WAS A SLEEP
+      THAT FAILED ON CI AND PASSED HERE.** It slowed the mask's reply by 40 ms
+      and compared positions in the call trace; green on this bench, RED on the
+      runner (`unit-tests-2`, run 41180788046). A timing margin is a clock
+      wherever it is written, and the comment on that version asserted it was
+      not one — which is the part worth remembering.
+
+      So the concurrency is proven by a DEADLOCK instead: the face's own mask
+      will not answer until the pieces road has asked the detector about one of
+      its names. If the two were serialized, that answer could never come —
+      the mask would wait for a question that is waiting for the mask — and the
+      arm fails on its own timeout rather than on a margin. Nothing here
+      measures time.
+    */
     const FACE: Rect = { x: 16, y: 16, width: 16, height: 16 };
-    const slow = wire({
+    const answer = wire({
       faces: [FACE],
       boxes: { pants: PANTS },
       cuts: [{ box: PANTS, on: (_x, y) => y >= 36 && y < 56 }],
       faceCut: (x, y) => x >= 16 && x < 32 && y >= 16 && y < 32,
     });
+    let theNameWasAsked = () => {};
+    const nameAsked = new Promise<void>((resolve) => {
+      theNameWasAsked = resolve;
+    });
     reply = async (endpoint, body) => {
+      if (endpoint === DETECT && body.prompt === "pants") theNameWasAsked();
       const asked = Array.isArray(body.box_prompts) ? body.box_prompts[0] : undefined;
-      /*
-        THE FACE'S OWN MASK answers slowly, and the pieces road must get on with
-        its work while it does. ⚠ **It is this way round on purpose**: slowing
-        the PIECE instead would make the arm depend on which fake resolves
-        first, which is a clock rather than a fact about the code. Slowing the
-        mask cannot pass if the two are serialized — the pieces road's own
-        detect could not start until the mask came back.
-      */
       if (endpoint === SAM3 && asked !== undefined && boxKey(asked) === rectKey(FACE)) {
-        await new Promise((resolve) => setTimeout(resolve, 40));
+        await nameAsked;
       }
-      return slow(endpoint, body);
+      return answer(endpoint, body);
     };
 
     const opened = await openSpotlight({
@@ -380,19 +393,13 @@ describe("opening a picture", () => {
       about,
     });
 
+    /* Reaching here at all is the proof: the mask's reply was released by the
+       pieces road's own question, so both were in flight. */
     expect(opened.ok).toBe(true);
     if (!opened.ok) return;
     expect(opened.tally.faceMaskRead).toBe(true);
-    /* Two SAM 3 calls were in flight at once: the first `end:` in the trace
-       comes after BOTH `start:`s. */
-    /* The pieces road was asking the detector about its own name while the
-       face's mask was still in flight. Serialize the two and this inverts. */
-    const maskDone = order.indexOf(`end:${SAM3}`);
-    const nameAsked = order.indexOf(`start:${DETECT}:pants`);
-    expect(maskDone).toBeGreaterThanOrEqual(0);
-    expect(nameAsked).toBeGreaterThanOrEqual(0);
-    expect(nameAsked).toBeLessThan(maskDone);
-  });
+    expect(opened.names).toEqual(["pants"]);
+  }, 10_000);
 
   it("does not light a picture it could not read, and buys no cut for it", async () => {
     reply = wire({ faces: [] });
