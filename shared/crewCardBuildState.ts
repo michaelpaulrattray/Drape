@@ -448,7 +448,51 @@ export type CrewCardCommentFact =
   leading asterisks would turn that silence into a different one.
 */
 const LEAD = String.raw`^[\s*_⚠]*`;
-const DASH = String.raw`[—–-]`;
+/*
+  ⚠ **THE TWO KINDS OF DASH, AND THEY ARE NOT ONE CHARACTER CLASS (#2898).**
+
+  They were one class, em-en-hyphen, until 2026-10-31, and the claim reader
+  required one IMMEDIATELY after the word — so a seat that said which slice it
+  was taking lost its claim entirely:
+
+    **CLAIMED for slice 3b — relay-agent-spotlight-surface** (2026-10-31)
+
+  **#14 read ON OFFER for the next forty minutes while that agent was building
+  it** — the one takeable card `queue-standing-exceptions.mts` offered in the
+  whole ordered band — until a later shift re-spelled the claim by hand.
+  `LEAD` already forgave the `**`, and a decorated claim read fine, so this was
+  never #1559's markdown class: it was the WORDS.
+
+  **Why generosity is the right direction HERE, and the measured sentence is
+  this file's own, eight paragraphs up:** *a missed release idles a seat, a
+  FALSE release cancels a live claim and two seats build the same card.* Read
+  for the CLAIM, that same asymmetry says the costly failure is a claim that
+  goes UNSEEN — it duplicates a live session — where a claim seen on a free
+  card idles one seat for twelve hours, in public, on a card anyone may
+  re-claim. So this reader may be generous where the release reader may not.
+  ⚠ The card that ordered this work states that bias BACKWARDS in one clause
+  (*"a card may read as free, never as taken"*) while drawing the right
+  conclusion from it; the sentence the artifacts support is the one above.
+
+  **The hyphen is why this is two rules and not a wider class.** Every seat is
+  named `relay-agent-…`, `seat-desk-2`, `foreman-20261031-1521`: a hyphen is a
+  LETTER in a seat's name. Allow words before any hyphen and
+  `CLAIMED for sub-slice, relay-agent-x` reads as a claim on a seat called
+  `slice` — a false claim carrying a name nobody holds, which is worse than
+  either honest answer, because the seat that wrote the line cannot recognise
+  its own claim in it. So: a dash separates from anywhere, and a hyphen
+  separates only where a separator can BE — at the start, or after whitespace.
+  {@link separatorAfterWord} is that distinction and nothing else.
+
+  ⚠ **The record says telling seats to write it right has been tried.** #1669
+  (0 of 5 refusals seen), #1580, #1877, #2265, #2680, #2773, #2775, #2808 —
+  and the line this repair is named after was written by a RELAY AGENT, which
+  is a seat nobody can re-brief mid-run. The instruction below still renders
+  ONE canonical spelling: a forgiving reader is not a reason to stop saying
+  what to write.
+*/
+/** The dashes a claim may separate its seat with, canonical FIRST. */
+const SEAT_DASHES = ["—", "–"] as const;
 
 /*
   ⚠ **THE THREE WORDS ARE DECLARED HERE AND THE READERS ARE BUILT FROM THEM,
@@ -536,7 +580,55 @@ export const CREW_CARD_RELEASE_WORD = "RELEASED";
  */
 export const CREW_CARD_REFUSAL_WORDS: readonly [string, ...string[]] = ["NOT BUILT", "NOT TAKEN"];
 
-const CLAIM_RE = new RegExp(`${LEAD}${CREW_CARD_CLAIM_WORD}\\s*${DASH}\\s*([^,\\n*]*)`, "i");
+/** A line that OPENS with the claim word, inline decoration and all. */
+const CLAIM_OPENING_RE = new RegExp(`${LEAD}${CREW_CARD_CLAIM_WORD}`, "i");
+
+/**
+ * WHERE THE SEPARATOR IS IN WHAT FOLLOWS THE WORD — or `null` when the line
+ * has none and is therefore not a claim (#2898).
+ *
+ * A dash wins wherever it sits and is looked for FIRST, which is what lets
+ * `CLAIMED for sub-slice 3b — relay-agent-x` name the right seat instead of
+ * stopping at the hyphen inside `sub-slice`. A hyphen counts only at the start
+ * or after whitespace, for the reason the block above gives. Returns the index
+ * one PAST the separator — where the seat begins.
+ */
+function separatorAfterWord(rest: string): number | null {
+  const dashes = SEAT_DASHES.map((dash) => rest.indexOf(dash)).filter((at) => at !== -1);
+  if (dashes.length > 0) return Math.min(...dashes) + 1;
+  for (let at = 0; at < rest.length; at += 1) {
+    if (rest[at] !== "-") continue;
+    /* `trim()` as the whitespace test, so a tab or a non-breaking space reads
+       the way the rest of this file's `LEAD` reads them. */
+    if (at === 0 || (rest[at - 1] ?? "").trim() === "") return at + 1;
+  }
+  return null;
+}
+
+/**
+ * THE SEAT A LINE CLAIMS A CARD FOR, or `null` when the line is not a claim.
+ *
+ * The line must still OPEN with the word — `LEAD` plus its `^` — and that is
+ * the one bound this repair does NOT loosen: it is what keeps a shift's prose
+ * ABOUT a claim from filing one, and this file's `PROSE_BODY` arm in
+ * `server/crewCardBuildState.test.ts` is its negative control.
+ */
+function claimOn(line: string): { readonly seat: string | null } | null {
+  const opened = line.match(CLAIM_OPENING_RE);
+  if (opened === null) return null;
+  /* From where the match ENDED, not from its length — the two are the same
+     only while `LEAD` keeps its `^`, and a reader that silently depends on an
+     anchor somewhere else is how the next widening goes wrong. */
+  const after = line.slice((opened.index ?? 0) + opened[0].length);
+  /* Up to the first comma or inline emphasis — the bound the old expression
+     carried inside its own capture class, kept exactly: the timestamp after the
+     comma was never part of the seat, and neither was a trailing `**`. */
+  const rest = (after.split(",")[0] ?? "").split("*")[0] ?? "";
+  const at = separatorAfterWord(rest);
+  if (at === null) return null;
+  const seat = rest.slice(at).trim();
+  return { seat: seat === "" ? null : seat.slice(0, 60) };
+}
 const RELEASE_RE = new RegExp(`${LEAD}${CREW_CARD_RELEASE_WORD}\\b`, "i");
 const REFUSAL_RE = new RegExp(`${LEAD}(?:${CREW_CARD_REFUSAL_WORDS.join("|")})\\b`, "i");
 
@@ -545,7 +637,7 @@ const REFUSAL_RE = new RegExp(`${LEAD}(?:${CREW_CARD_REFUSAL_WORDS.join("|")})\\
  * accepts, so the rendered examples are the spelling this reader prefers rather
  * than merely one it tolerates.
  */
-const CANONICAL_DASH = "—";
+const CANONICAL_DASH = SEAT_DASHES[0];
 
 /** `<WORD> — <seat>, <at>`, the one shape all three lines share. */
 function handbackLine(word: string, seat: string | null | undefined, at: string): string {
@@ -968,11 +1060,8 @@ export function crewCardCommentFact(comment: CrewCardComment): CrewCardCommentFa
   const lines = blockOpeningLines(body);
   if (lines.some((line) => REFUSAL_RE.test(line))) return { kind: "refusal", card, at: createdAt };
   if (lines.some((line) => RELEASE_RE.test(line))) return { kind: "release", card, at: createdAt };
-  const claim = lines.reduce<RegExpMatchArray | null>((found, line) => found ?? line.match(CLAIM_RE), null);
-  if (claim) {
-    const seat = (claim[1] ?? "").trim();
-    return { kind: "claim", card, seat: seat === "" ? null : seat.slice(0, 60), at: createdAt };
-  }
+  const claim = lines.reduce<ReturnType<typeof claimOn>>((found, line) => found ?? claimOn(line), null);
+  if (claim) return { kind: "claim", card, seat: claim.seat, at: createdAt };
   return null;
 }
 

@@ -235,6 +235,87 @@ describe("what a comment on a card says", () => {
   });
 });
 
+/**
+ * A WORD BETWEEN `CLAIMED` AND THE DASH USED TO MAKE A CLAIM INVISIBLE — #2898,
+ * and the first row is the line that cost it.
+ *
+ * `relay-agent-spotlight-surface` claimed #14's slice 3b at 05:11:41Z on
+ * 2026-10-31 and said which slice in the line. **The board read #14 as ON OFFER
+ * for the next forty minutes while that agent was building it** — the one
+ * takeable card `queue-standing-exceptions.mts` offered in the whole ordered
+ * band — until a later shift re-spelled the claim by hand.
+ *
+ * Every row below was driven at this reader BEFORE the repair, which is how the
+ * card's own table was produced; four of them are that table and the rest are
+ * the hyphen cases it did not reach. The two that stay `null` are the controls
+ * that matter: a line with no separator at all must not name a seat, and a
+ * hyphen INSIDE a word is not a separator — `relay-agent-x` is how every seat
+ * in this repository is spelled, so a rule that took any hyphen would file a
+ * claim on a seat called `slice`.
+ */
+describe("a claim that says what it is claiming", () => {
+  const seatOn = (body: string) => {
+    const fact = crewCardCommentFact({ card: 14, body, createdAt: "2026-10-31T05:11:41Z" });
+    return fact === null ? null : fact.kind === "claim" ? fact.seat : fact.kind;
+  };
+
+  it("⚠ reads the line that read ON OFFER for forty minutes", () => {
+    expect(seatOn("**CLAIMED for slice 3b — relay-agent-spotlight-surface** (2026-10-31)"))
+      .toBe("relay-agent-spotlight-surface");
+  });
+
+  it("still reads the canonical line, decorated or bare, exactly as before", () => {
+    expect(seatOn("CLAIMED — relay-agent-spotlight-surface, 2026-10-31T05:11:41Z"))
+      .toBe("relay-agent-spotlight-surface");
+    expect(seatOn("**CLAIMED — relay-agent-sides, 2026-10-31T05:11:41Z**")).toBe("relay-agent-sides");
+    /* The hyphen form a hand-written line sometimes takes, which the old
+       expression accepted and this must not have quietly dropped. */
+    expect(seatOn("CLAIMED - relay-agent-x, 2026-10-31T05:11:41Z")).toBe("relay-agent-x");
+  });
+
+  it("takes the seat from a SPACED hyphen too, words and all", () => {
+    expect(seatOn("CLAIMED for slice 3b - relay-agent-x")).toBe("relay-agent-x");
+  });
+
+  it("⚠ a dash wins over a hyphen inside a word, so the seat is the seat", () => {
+    /* Looked for first on purpose: a reader that stopped at the first hyphen
+       would answer `slice 3b — relay-agent-x` here. */
+    expect(seatOn("CLAIMED for sub-slice 3b — relay-agent-x")).toBe("relay-agent-x");
+  });
+
+  it("NEGATIVE CONTROL: no separator at all is not a claim, however it reads", () => {
+    expect(seatOn("**CLAIMED for slice 3b, relay-agent-spotlight-surface**")).toBeNull();
+  });
+
+  it("⚠ NEGATIVE CONTROL: a hyphen inside a word is a letter, not a separator", () => {
+    /* The false claim this rule exists to refuse: a seat called `slice`, which
+       nobody holds, on a card the real seat can no longer recognise. */
+    expect(seatOn("CLAIMED for sub-slice, relay-agent-x")).toBeNull();
+  });
+
+  it("NEGATIVE CONTROL: the line must still OPEN with the word — prose files nothing", () => {
+    /* The bound this repair deliberately does not loosen. The arm above with
+       `PROSE_BODY` is the same control on a real comment. */
+    expect(seatOn("I have not CLAIMED — anything here")).toBeNull();
+    expect(seatOn("the spelling is CLAIMED — <seat>, <UTC time>")).toBeNull();
+  });
+
+  it("a claim with a separator and nothing after it names no seat, as before", () => {
+    expect(seatOn("CLAIMED —")).toBeNull();
+    expect(crewCardCommentFact({ card: 14, body: "CLAIMED —", createdAt: "2026-10-31T05:11:41Z" }))
+      .toEqual({ kind: "claim", card: 14, seat: null, at: "2026-10-31T05:11:41Z" });
+  });
+
+  it("and a release still outranks a claim on the same body", () => {
+    /* Precedence is untouched by the widening — the one thing a generous claim
+       reader could have broken. */
+    const body = `CLAIMED for slice 3b — relay-agent-x
+
+RELEASED — relay-agent-x`;
+    expect(seatOn(body)).toBe("release");
+  });
+});
+
 const NOW = Date.parse("2026-09-26T02:30:00Z");
 const claim = (card: number, at: string, seat: string | null = "seat-desk") =>
   ({ kind: "claim", card, seat, at } as const);
