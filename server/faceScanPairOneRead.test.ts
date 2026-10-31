@@ -610,6 +610,19 @@ describe("what a whole scan draws on this road", () => {
       wire. What this arm holds is the other half of the card's done-when: the
       panel gets the same rows. Both sides of all five pairs land, so no row is
       lost to the saving.
+
+      ⚠ AND THIS DRIVE BUILDS ITS READER WITHOUT THE HEAD BOX THE SCAN HANDS IN
+      (#2895, the sweep of its own class). That is not a second copy of the bug
+      it was filed about, and the reason is measured rather than argued: the
+      head box only ever adds a read when the face read is REFUSED, so the
+      floor is the same 13 with it and without it — `faceScanSpend.test.ts`
+      re-derived 18 and 13 unchanged on the day the box went into that drive.
+      This fake's face is on the head by construction (`prompt === "face"`
+      above, "it is the midline and the head box"), so nothing here is refused.
+      What would be wrong is DERIVING a ceiling here: that figure moves with the
+      box, it belongs to the other suite, and both suites assert the same
+      constant, so a floor that ever became box-dependent reddens in one of them
+      rather than going quiet in both.
     */
     const wire = await driveScan(true, "spanning");
     for (const question of PAIR_QUESTIONS) {

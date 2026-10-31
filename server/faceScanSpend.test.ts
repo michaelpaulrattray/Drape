@@ -439,7 +439,17 @@ describe("what one scan asks of fal, counted at the wire", () => {
        the reader, a fake whose correct face happened to land off the head would
        add a read to every run — floor included — and both figures would
        re-derive one higher with nothing anywhere saying why. The floor's face
-       is asked ONCE, which is the whole of that control. */
+       is asked ONCE, which is the whole of that control: sabotaged by landing
+       every policy's frame face off the head, this arm reddens at 19 against 18
+       and the pair road's at 14 against 13.
+
+       ⚠ ITS STATED LIMIT, measured rather than reasoned: this does not tell a
+       face that is BELIEVED from one that came back EMPTY. A fake answering no
+       face at all also makes 18 reads — the midline falls to the frame's middle,
+       which is where this fake's face already puts it, and nothing is dropped so
+       nothing is re-asked — so that drift survives every arm in this file. It
+       changes no figure here, which is why it is named rather than instrumented;
+       what the no-face road DOES is `faceSpanOnTheHead.test.ts`'s. */
     expect(wire.sam3ByPrompt.get(FACE), "the face read is on the head and is believed").toBe(1);
   }, 60_000);
 
