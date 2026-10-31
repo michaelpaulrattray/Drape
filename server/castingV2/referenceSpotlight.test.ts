@@ -83,9 +83,13 @@ beforeEach(() => {
     const endpoint = String(url).replace("https://fal.run/", "");
     const body = JSON.parse(String(init.body));
     sent.push({ endpoint, body, at: Date.now() });
-    order.push(`start:${endpoint}`);
+    /* The PROMPT rides in the trace, because the arms below need the face
+       detect told apart from a name's detect — with the boxer off they are the
+       same endpoint, and #2902's ordering rule is about one of them only. */
+    const what = endpoint === DETECT ? `${endpoint}:${String(body.prompt)}` : endpoint;
+    order.push(`start:${what}`);
     const answer = await reply(endpoint, body);
-    order.push(`end:${endpoint}`);
+    order.push(`end:${what}`);
     return {
       ok: answer.ok,
       status: answer.status ?? (answer.ok ? 200 : 500),
@@ -285,20 +289,109 @@ describe("opening a picture", () => {
     expect(sent.some((one) => one.endpoint === DETECT && one.body.prompt === TAKE_FACE_NOUN)).toBe(true);
   });
 
-  it("runs the reading road and the face detect together rather than one after the other", async () => {
-    const slow = wire({ faces: [], boxes: { top: TOP }, cuts: [{ box: TOP, on: (_x, y) => y > 8 && y < 28 }] });
+  it("finishes the face detect BEFORE it buys a single cut, because that failure is the fatal one", async () => {
+    /*
+      ⚠ THIS ARM IS THE REGRESSION GUARD AND IT REPLACES AN OVERLAP ARM THAT
+      HAD STOPPED BEING ABLE TO FAIL — measured on his own fixtures (#2902).
+
+      The road used to run the split and the face detect together, correctly,
+      because neither answer feeds the other. The reading road changed the other
+      side of that race: one provider call became a gathered boxer request plus
+      up to twelve cuts, and on the hanger fixture the detect LOST — it fell
+      over, and a picture whose faces are unknown may not light, so a photograph
+      the grid road lit went dark.
+
+      So the rule is about consequence, not dependency: the read whose failure is
+      FATAL runs alone. The arm holds the ordering rather than a wall time,
+      because a duration is a clock.
+    */
+    const answer = wire({
+      faces: [],
+      boxes: { top: TOP, pants: PANTS },
+      cuts: [
+        { box: TOP, on: (_x, y) => y >= 8 && y < 28 },
+        { box: PANTS, on: (_x, y) => y >= 36 && y < 56 },
+      ],
+    });
+    /*
+      ⚠ THE FACE DETECT ANSWERS SLOWLY, AND WITHOUT THAT THIS ARM IS INERT —
+      found by sabotage rather than by review. With every fake answering
+      instantly, launching the pieces road before the detect still left
+      `end:detect` ahead of the first cut, so the arm passed under the very
+      shape it exists to refuse. A slow detect is what makes the ordering
+      observable: if the pieces road runs beside it, a cut lands first.
+    */
     reply = async (endpoint, body) => {
-      /* A piece's cut answers slowly; the face detect must have STARTED before
-         it finishes, which is the fact being held — not a wall time. */
-      if (endpoint === SAM3) await new Promise((resolve) => setTimeout(resolve, 40));
-      return slow(endpoint, body);
+      if (endpoint === DETECT && body.prompt === TAKE_FACE_NOUN) {
+        await new Promise((resolve) => setTimeout(resolve, 60));
+      }
+      return answer(endpoint, body);
     };
 
     await openSpotlight({
-      apiKey: KEY, frame: await picture(), size: SIZE, reader: reader(), engine: readingOf([{ name: "top" }]), about,
+      apiKey: KEY,
+      frame: await picture(),
+      size: SIZE,
+      reader: reader(),
+      engine: readingOf([{ name: "top" }, { name: "pants" }]),
+      about,
     });
 
-    expect(order.indexOf(`start:${DETECT}`)).toBeLessThan(order.indexOf(`end:${SAM3}`));
+    const faceDone = order.indexOf(`end:${DETECT}:${TAKE_FACE_NOUN}`);
+    const firstCut = order.findIndex((step) => step === `start:${SAM3}`);
+    expect(faceDone).toBeGreaterThanOrEqual(0);
+    expect(firstCut).toBeGreaterThanOrEqual(0);
+    expect(faceDone).toBeLessThan(firstCut);
+  });
+
+  it("overlaps the face's own mask with the pieces, because neither of those failures is fatal", async () => {
+    /* The other half of the same rule: a failed mask falls back to the
+       rectangle and a failed cut is one missing piece, so these two may contend
+       — and they must, or the fence costs a customer a whole extra wait. */
+    const FACE: Rect = { x: 16, y: 16, width: 16, height: 16 };
+    const slow = wire({
+      faces: [FACE],
+      boxes: { pants: PANTS },
+      cuts: [{ box: PANTS, on: (_x, y) => y >= 36 && y < 56 }],
+      faceCut: (x, y) => x >= 16 && x < 32 && y >= 16 && y < 32,
+    });
+    reply = async (endpoint, body) => {
+      const asked = Array.isArray(body.box_prompts) ? body.box_prompts[0] : undefined;
+      /*
+        THE FACE'S OWN MASK answers slowly, and the pieces road must get on with
+        its work while it does. ⚠ **It is this way round on purpose**: slowing
+        the PIECE instead would make the arm depend on which fake resolves
+        first, which is a clock rather than a fact about the code. Slowing the
+        mask cannot pass if the two are serialized — the pieces road's own
+        detect could not start until the mask came back.
+      */
+      if (endpoint === SAM3 && asked !== undefined && boxKey(asked) === rectKey(FACE)) {
+        await new Promise((resolve) => setTimeout(resolve, 40));
+      }
+      return slow(endpoint, body);
+    };
+
+    const opened = await openSpotlight({
+      apiKey: KEY,
+      frame: await picture(),
+      size: SIZE,
+      reader: reader(),
+      engine: readingOf([{ name: "pants" }], true),
+      about,
+    });
+
+    expect(opened.ok).toBe(true);
+    if (!opened.ok) return;
+    expect(opened.tally.faceMaskRead).toBe(true);
+    /* Two SAM 3 calls were in flight at once: the first `end:` in the trace
+       comes after BOTH `start:`s. */
+    /* The pieces road was asking the detector about its own name while the
+       face's mask was still in flight. Serialize the two and this inverts. */
+    const maskDone = order.indexOf(`end:${SAM3}`);
+    const nameAsked = order.indexOf(`start:${DETECT}:pants`);
+    expect(maskDone).toBeGreaterThanOrEqual(0);
+    expect(nameAsked).toBeGreaterThanOrEqual(0);
+    expect(nameAsked).toBeLessThan(maskDone);
   });
 
   it("does not light a picture it could not read, and buys no cut for it", async () => {

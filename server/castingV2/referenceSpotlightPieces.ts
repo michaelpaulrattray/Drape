@@ -24,12 +24,37 @@
  * to contain, cut whole by its own name** — which makes each of his four
  * complaints a property of the construction rather than a defect to tune out:
  *
- * | his complaint | why it cannot happen here |
+ * | his complaint | what this road does about it |
  * |---|---|
- * | the background is selectable | only things on or worn by the subject are named, so the background has no name and therefore no piece |
- * | half the pants light | the cut is asked for `pants` inside the pants' own rectangle, so the answer is the pair |
- * | one shoe lights | likewise for the shoes — one name, one cut, both of them |
- * | the hair cannot be selected | hair is a name like any other, and the face fence that used to eat it is now pixel-exact ({@link SPOTLIGHT_FACE_FENCE_NOTE}) |
+ * | half the pants light | ✅ the cut is asked for `pants` inside the pants' own rectangle, so the answer is the pair |
+ * | one shoe lights | ✅ likewise for the shoes — one name, one cut, both of them |
+ * | the hair cannot be selected | ✅ hair is a name like any other, and the face fence that used to eat it is now pixel-exact ({@link SPOTLIGHT_FACE_FENCE_NOTE}) |
+ * | the background is selectable | ⚠ **NOT FIXED BY THIS ROAD — MEASURED, NOT ASSUMED** |
+ *
+ * ⚠ **THE BACKGROUND ROW IS THE ONE TO READ, BECAUSE THIS HEADER CLAIMED THE
+ * OPPOSITE UNTIL IT WAS DRIVEN.** It said *"only things on or worn by the
+ * subject are named, so the background has no name and therefore no piece"* —
+ * which is what `REFERENCE_DISCOVERY_SYSTEM_PROMPT` ASKS FOR (*"if there is a
+ * person, what they are wearing and what is on them; if it is a standalone
+ * item, that item and its parts"*) and is **not what the reading returns.**
+ * Driven through the real providers on his own three fixtures, 2026-10-31: the
+ * worn photograph named `plant` and `chair`, and the hanger shot named `rail`
+ * and `hanger` — and `plant`, `rail` and `hanger` all survived to become
+ * pieces. So the structural claim was false and the honest statement is
+ * narrower: **the background is no longer selectable AS A SIDE EFFECT of a grid
+ * dot landing on it, and it is still selectable when the reading names it.**
+ * That is a prompt-adherence question with its own card and its own
+ * measurement; it is not fixed here and is not claimed to be.
+ *
+ * ⚠ **AND THE OTHER MEASURED COST, STATED OUT LOUD because the law's clause 3
+ * requires it**: this road is 30.3 s / 82.5 s / 85.1 s on those three fixtures
+ * at native size against the grid's 17.6 s / 20.3 s, and it buys 15–26 fal
+ * calls where the grid bought 2. The dominant term is FRAME SIZE — boxing and
+ * cutting a 1536x1024 photograph took 35 s and 28 s — and a bound on the long
+ * edge before the road is the repair the catalogue already calls owed. **It is
+ * a separate card on purpose**: it changes the size of the map a browser
+ * hit-tests against, so it wants a render in front of eyes and not a late-night
+ * guess.
  *
  * ## What it is made of, and all of it already existed
  *

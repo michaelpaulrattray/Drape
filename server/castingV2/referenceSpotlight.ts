@@ -244,11 +244,65 @@ export async function openSpotlight(input: {
     return { ok: false, why: "no-pointer" };
   }
 
-  let splitMs = 0;
-  let facesMs = 0;
-  const splitAt = Date.now();
+  /*
+    ⚠ THE FACE DETECT GOES FIRST AND ALONE, AND IT USED TO RACE THE PIECES —
+    MEASURED 2026-10-31 ON HIS OWN THREE FIXTURES, NOT REASONED (#2902).
+
+    The road this card replaced ran the split and the detect together, on the
+    stated ground that *"neither answer feeds the other"*, which was true and is
+    still true. **What changed is the other side of the race.** A grid split is
+    ONE provider call; the reading road's cuts are up to
+    `REFERENCE_MARKER_CAP` of them plus a gathered boxer request, so the detect
+    stopped sharing the wire with one request and started sharing it with
+    fifteen. On the hanger fixture it LOST: the detect fell over, and because a
+    picture whose faces are unknown may not light, **a photograph the grid road
+    lit went dark** — 18 fal calls and 10 text calls bought for nothing.
+
+    So the ordering rule here is about CONSEQUENCE rather than about dependency:
+    **the read whose failure is fatal runs alone; the reads whose failure is
+    tolerable may contend.** The detect is fatal (§6 cannot be kept without it).
+    The face's own mask and the pieces are both tolerable — a failed mask falls
+    back to the rectangle, and a failed cut is one missing piece — so those two
+    still overlap, below.
+
+    It costs the detect's own latency in series, which is the honest price:
+    3.5 s on the worn fixture, where the contention it removes was 41.3 s on the
+    product shot.
+  */
   const facesAt = Date.now();
-  const [read, faces] = await Promise.all([
+  const faces = await pointer
+    .call(input.reader, { image: input.frame, name: TAKE_FACE_NOUN, signal: input.signal })
+    .catch((cause: unknown) => {
+      log.warn({ ...input.about, cause: String(cause) }, "the faces could not be read — the picture will not light");
+      return null;
+    });
+  const facesMs = Date.now() - facesAt;
+  if (faces === null) return { ok: false, why: "no-faces-read" };
+
+  /*
+    THE PIECES AND THE FACE'S OWN PIXELS, TOGETHER — the two tolerable reads.
+
+    **The face's own mask, so hair can be a piece (#2902, his ruling).** His
+    words are quoted at `cleanSplit`'s subtraction and in
+    `referenceSpotlightPieces.ts`: the rectangle ate the hair that frames a
+    face, so what is subtracted off a KEPT piece is the face's own mask.
+
+    ⚠ **IT IS BOUGHT HERE AND NOT INSIDE `cleanSplit`, because that module takes
+    no network and must not start.** Its header's own promise is *"masks in,
+    masks out, no network, no provider, no clock"*.
+
+    These two overlap because NEITHER failure is fatal — a mask that cannot be
+    read leaves the rectangle standing in, and a cut that cannot be taken is one
+    missing piece. That is the other half of the rule above the detect: the
+    tolerable reads may contend, and they do.
+
+    A failed mask is not a refusal: `null` means the rectangle stands in, which
+    is exactly the fence that shipped. **Fail-closed, never fail-open.**
+  */
+  const { regionInBox } = input.reader;
+  const splitAt = Date.now();
+  let splitMs = 0;
+  const [read, faceMask] = await Promise.all([
     piecesFromTheReading({
       frame: { bytes: input.frame, width: input.size.width, height: input.size.height },
       reader: input.reader,
@@ -259,72 +313,37 @@ export async function openSpotlight(input: {
       splitMs = Date.now() - splitAt;
       return answer;
     }),
-    pointer
-      .call(input.reader, { image: input.frame, name: TAKE_FACE_NOUN, signal: input.signal })
-      .then((answer) => {
-        facesMs = Date.now() - facesAt;
-        return answer;
-      })
-      .catch((cause: unknown) => {
-        facesMs = Date.now() - facesAt;
-        log.warn({ ...input.about, cause: String(cause) }, "the faces could not be read — the picture will not light");
-        return null;
-      }),
+    (async (): Promise<Mask | null> => {
+      if (faces.length === 0 || regionInBox === undefined) return null;
+      const cut = await Promise.all(
+        faces.map(async (box) => {
+          try {
+            return await regionInBox.call(input.reader, {
+              image: input.frame,
+              name: TAKE_FACE_NOUN,
+              box,
+              signal: input.signal,
+            });
+          } catch (cause) {
+            log.warn(
+              { ...input.about, cause: String(cause) },
+              "a face's own pixels could not be read — its rectangle stands in",
+            );
+            return null;
+          }
+        }),
+      );
+      const answered = cut.filter((mask): mask is Mask => mask !== null);
+      /* EVERY face must have answered, or the rectangles stand in for ALL of
+         them. A union of two faces' masks and one face's rectangle would be a
+         fence with a hole in it exactly where a read failed, which is the one
+         shape worse than the coarse fence. */
+      if (answered.length !== faces.length || answered.length === 0) return null;
+      return unionMasks(...answered);
+    })(),
   ]);
 
-  if (faces === null) return { ok: false, why: "no-faces-read" };
   if (!read.ok) return { ok: false, why: read.why };
-
-  /*
-    THE FACE'S OWN PIXELS, SO HAIR CAN BE A PIECE — #2902, and the fence stays.
-
-    His ruling is quoted at `cleanSplit`'s subtraction and in
-    `referenceSpotlightPieces.ts`: the rectangle ate the hair that frames a
-    face, so what is subtracted off a KEPT piece is now the face's own mask.
-
-    ⚠ **IT IS BOUGHT HERE AND NOT INSIDE `cleanSplit`, because that module
-    takes no network and must not start.** Its header's own promise is *"masks
-    in, masks out, no network, no provider, no clock"*.
-
-    ⚠ **AND IT CANNOT RUN BESIDE THE DETECT, which is why it is a third read
-    rather than a third arm of the `Promise.all` above**: the rectangle to cut
-    inside is the detect's own answer, so it does not exist until that resolves.
-    One cut per detected face, all started in the same turn, through the same
-    `FAL_CONCURRENCY` pool — no new allowance.
-
-    A failure is not a refusal: `null` means the rectangle stands in, which is
-    exactly the fence that shipped. **Fail-closed, never fail-open.**
-  */
-  let faceMask: Mask | null = null;
-  const { regionInBox } = input.reader;
-  if (faces.length > 0 && regionInBox !== undefined) {
-    const cut = await Promise.all(
-      faces.map(async (box) => {
-        try {
-          return await regionInBox.call(input.reader, {
-            image: input.frame,
-            name: TAKE_FACE_NOUN,
-            box,
-            signal: input.signal,
-          });
-        } catch (cause) {
-          log.warn(
-            { ...input.about, cause: String(cause) },
-            "a face's own pixels could not be read — its rectangle stands in",
-          );
-          return null;
-        }
-      }),
-    );
-    const read_ = cut.filter((mask): mask is Mask => mask !== null);
-    /* EVERY face must have answered, or the rectangles stand in for ALL of
-       them. A union of two faces' masks and one face's rectangle would be a
-       fence with a hole in it exactly where a read failed, which is the one
-       shape worse than the coarse fence. */
-    if (read_.length === faces.length && read_.length > 0) {
-      faceMask = unionMasks(...read_);
-    }
-  }
 
   const cleaned = cleanSplit(read.pieces.map((piece) => piece.mask), faces, faceMask);
   if (cleaned.pieces.length === 0) return { ok: false, why: "nothing-left-to-light" };
