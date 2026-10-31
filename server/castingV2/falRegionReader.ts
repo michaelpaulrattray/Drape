@@ -1042,24 +1042,30 @@ export function keepPiecesWhere(
  * mask is resampled to the crop it answers about instead of throwing, because a
  * paid edit is not worth losing to a provider's scaling preference. Nearest
  * neighbour, so a binary mask stays binary.
+ *
+ * `top` and `height` are for a crop that is not full height — the head crop the
+ * face is asked again on (#2885). Absent, the crop is the frame's whole height,
+ * which is every half-frame caller's answer exactly as before.
  */
 async function placeInFrame(
   half: Mask,
-  crop: { left: number; width: number },
+  crop: { left: number; width: number; top?: number; height?: number },
   width: number,
   height: number,
 ): Promise<Mask> {
+  const top = crop.top ?? 0;
+  const cropHeight = crop.height ?? height;
   let source = half;
-  if (half.width !== crop.width || half.height !== height) {
+  if (half.width !== crop.width || half.height !== cropHeight) {
     log.warn(
-      { returned: `${half.width}x${half.height}`, expected: `${crop.width}x${height}` },
+      { returned: `${half.width}x${half.height}`, expected: `${crop.width}x${cropHeight}` },
       "[falRegionReader] the segmenter answered at a different size than it was asked — resampling to the crop",
     );
     const sharp = (await import("sharp")).default;
     const { data, info } = await sharp(half.data, {
       raw: { width: half.width, height: half.height, channels: 1 },
     })
-      .resize({ width: crop.width, height, kernel: "nearest", fit: "fill" })
+      .resize({ width: crop.width, height: cropHeight, kernel: "nearest", fit: "fill" })
       /* `toColourspace` is not decoration: a resize of a one-channel raw buffer
          comes back as THREE channels, and the guard below caught it on the first
          run. D-210, for the fourth time through the same door. */
@@ -1074,7 +1080,7 @@ async function placeInFrame(
   const data = Buffer.alloc(width * height, 0);
   for (let y = 0; y < source.height; y += 1) {
     const from = y * source.width;
-    source.data.copy(data, y * width + crop.left, from, from + source.width);
+    source.data.copy(data, (y + top) * width + crop.left, from, from + source.width);
   }
   return { data, width, height };
 }
@@ -1346,8 +1352,37 @@ export function createFalRegionReader(input: {
    * failed) each name is asked of today's detector exactly as it is today.
    */
   boxer?: PointerBoxer;
+  /**
+   * WHERE THE HEAD IS, AS THE CALLER ALREADY KNOWS IT — absent, today's face
+   * read exactly (#2885, the founder's eye, round 11).
+   *
+   * The segmenter's `face` read is the authority for every pair's midline, the
+   * face rule, the ear rules and the other-ear look, and on the founder's round-11 cast
+   * it answered **a face tattooed on the cast's arm**: a 67px box low on the frame,
+   * so the real eyes, brows and ears were all found and then dropped as "away
+   * from the face", and both earrings fell on one side of a midline at x81.
+   * Inside this reader there is no second opinion to refuse that read with —
+   * the read IS the head authority — so the reference has to arrive from
+   * outside it.
+   *
+   * The scan hands in the rectangle the discovery's head crop is cut from
+   * (`discoveryHeadBoxOf`), measured on the frame it reads. With it, a piece
+   * of the face read whose centre lies outside the box is not the cast's face; a read
+   * with no piece left is asked again of the head crop alone; and only if that
+   * finds nothing does the scan go on without a face, as a missing face does.
+   * See {@link judgedFace}.
+   *
+   * The CALLER decides, for `pairInOneRead`'s reason, and only the scan passes
+   * it: a refine builds its own reader and gets today's answer.
+   */
+  headBox?: {
+    /** The size of the picture the box was measured on. */
+    frame: { width: number; height: number };
+    /** The rectangle, in that picture's own pixels. */
+    box: { left: number; top: number; width: number; height: number };
+  };
 }): RegionReader {
-  const { apiKey, signal, pairInOneRead = false, boxer } = input;
+  const { apiKey, signal, pairInOneRead = false, boxer, headBox } = input;
 
   /**
    * WHICH SIGNAL ONE CALL RUNS UNDER — the reader's own, the caller's, or both
@@ -1721,13 +1756,155 @@ export function createFalRegionReader(input: {
   const faceOf = (image: Buffer, imageUrl?: string): Promise<FaceSpan | null> => {
     const held = faces.get(image);
     if (held) return held;
-    const asked = (async () => {
-      const face = await askRegion(image, SHARED_PROMPT, "all", imageUrl);
-      return face ? spanOf(face) : null;
-    })();
+    const asked = faceMaskOf(image, imageUrl).then((face) => (face ? spanOf(face) : null));
     faces.set(image, asked);
     asked.catch(() => faces.delete(image));
     return asked;
+  };
+
+  /**
+   * THE FACE READ ITSELF, once per picture — the mask {@link faceOf} measures
+   * and the build row's head is cut from (`region("face")`), so the midline and
+   * the head box cannot come from two different readings of one frame (#2885).
+   * One promise per buffer, for `faces`' reason.
+   */
+  const faceMasks = new Map<Buffer, Promise<Mask | null>>();
+  const faceMaskOf = (image: Buffer, imageUrl?: string): Promise<Mask | null> => {
+    const held = faceMasks.get(image);
+    if (held) return held;
+    const asked = (async () => judgedFace(image, await askRegion(image, SHARED_PROMPT, "all", imageUrl), undefined))();
+    faceMasks.set(image, asked);
+    asked.catch(() => faceMasks.delete(image));
+    return asked;
+  };
+
+  /**
+   * IS THIS FACE ON THE HEAD — the face read judged against the head box the
+   * caller handed in, and asked again of the head alone when it is not
+   * (#2885, the founder's eye, round 11: *"it also didnt pick up her eyes /brows etc"*).
+   *
+   * # What production logged
+   *
+   * On the founder's round-11 cast the scan's face was
+   * `{"left":50,"right":117,"top":955,"bottom":1132,"midline":81}` — a 67px box
+   * in the lower left of the frame, where the cast's arm carries a tattooed face. The
+   * segmenter FOUND the real eyes (centres y≈463), brows (y≈416) and ears
+   * (y≈469), and the face rule (#2844) dropped every one as away from that
+   * face. Both earrings sat on one side of a midline at x81, so they were kept
+   * as one side's piece and drawn as one ear-to-ear box.
+   *
+   * # The rule: a piece whose CENTRE is outside the head box is not the cast's face
+   *
+   * Judged per connected piece, and by the piece's centre rather than its
+   * extent, because the two defects and the healthy face separate there and
+   * nowhere else. Read off the face spans #2844's controls recorded on eleven
+   * frames the face read got RIGHT (the round-10 cast, 2796, 2800, 2801, 2810,
+   * 2833 and five turned faces), the face's middle row sits at **30–41% of the
+   * frame's height**, against a head box that ends at 50% — and on **six of
+   * the eleven** the face's own chin reaches PAST that line (2833: y810 of
+   * 1536), so a rule asking the whole extent to fit would have refused a
+   * correct face on most casts. The tattooed face on round 11 BEGAN at row
+   * 955, which is below the half line of any frame under 1,910px tall.
+   *
+   *   one wrong face      every piece is outside, nothing is left, and the
+   *                       head is asked again
+   *   real + tattoo       the union fear on #2885 (`keep: "all"` unions every
+   *                       answer): the tattoo's piece is dropped and the real
+   *                       face stands, with no second request
+   *   a real face         every piece is inside and the read is returned as
+   *                       it came — the same object, today's span
+   *
+   * # Asked again of the head alone, never of the frame again
+   *
+   * The same question of the same frame is the same answer (`SHARED_PROMPT`'s
+   * own measurement), so a re-ask of the frame would buy the tattoo twice. The
+   * head crop is the rectangle the discovery reads, and the arm is not in it.
+   * It costs ONE more segmenter read (≈0.5¢), on the refused frames only; a
+   * read the reader trusted costs nothing extra. It is one request and asks for
+   * one instance — the #2532 guard on several instances holds, because this is
+   * `askRegion` with `multiple` left `false`.
+   *
+   * # And when that finds nothing either
+   *
+   * `null`: the scan goes on without a face, which is exactly what a frame the
+   * segmenter finds no face on has always done — pairs cut at the frame's
+   * middle, and NO feature dropped for being away from a face, because there is
+   * no face to be away from. **A refused span never becomes "no eyes"**: the
+   * face rule only drops against a face it has.
+   *
+   * ⚠ **What it cannot judge, declared.** The box is the top half of the frame
+   * at full width, so a face-shaped mark whose centre is ALSO in the top half
+   * (a tattoo on a raised shoulder, a print high on the chest of a close crop)
+   * is inside it and is believed, as today. And a picture of a different size
+   * from the one the box was measured on is not judged at all — it is logged
+   * and read as today, because a box in the wrong pixel space is the
+   * wrong-frame class this file already warns about twice.
+   */
+  const judgedFace = async (
+    image: Buffer, face: Mask | null, callSignal: AbortSignal | undefined,
+  ): Promise<Mask | null> => {
+    if (headBox === undefined || face === null) return face;
+    const sharp = (await import("sharp")).default;
+    const meta = await sharp(image).metadata();
+    const width = meta.width ?? 0;
+    const height = meta.height ?? 0;
+    if (
+      width !== headBox.frame.width || height !== headBox.frame.height
+      || face.width !== width || face.height !== height
+    ) {
+      log.warn(
+        {
+          picture: `${width}x${height}`,
+          face: `${face.width}x${face.height}`,
+          measuredOn: `${headBox.frame.width}x${headBox.frame.height}`,
+        },
+        "[falRegionReader] the head box was measured on a different picture — the face read is not judged by it",
+      );
+      return face;
+    }
+    const box = headBox.box;
+    const { kept, dropped } = keepPiecesWhere(face, (piece) => (
+      piece.centreX >= box.left && piece.centreX < box.left + box.width
+      && piece.centreY >= box.top && piece.centreY < box.top + box.height
+    ));
+    if (dropped.length === 0) return face;
+    if (kept !== null) {
+      /* Numbers only — where the dropped pieces were and how big, and the box
+         they were judged against. Never a word of the reading. */
+      log.info(
+        { headBox: box, dropped },
+        "[falRegionReader] the face read held a piece away from the head — not the cast's face",
+      );
+      return kept;
+    }
+    log.info(
+      { headBox: box, dropped },
+      "[falRegionReader] the face read landed away from the head — asking the head alone",
+    );
+    const crop = await sharp(image)
+      .extract({ left: box.left, top: box.top, width: box.width, height: box.height })
+      .png()
+      .toBuffer();
+    const again = await askRegion(crop, SHARED_PROMPT, "all", undefined, callSignal);
+    if (again === null) {
+      log.warn(
+        { headBox: box },
+        "[falRegionReader] the head alone answered no face either — the scan reads on without one, as for a frame with no face",
+      );
+      return null;
+    }
+    const placed = await placeInFrame(again, box, width, height);
+    const span = spanOf(placed);
+    log.info(
+      {
+        headBox: box,
+        face: span === null
+          ? null
+          : { left: span.left, right: span.right, top: span.top, bottom: span.bottom, midline: Math.round(span.axis) },
+      },
+      "[falRegionReader] the head alone answered the cast's face",
+    );
+    return span === null ? null : placed;
   };
 
   const axes = new Map<Buffer, Promise<FaceSpan | null>>();
@@ -2320,6 +2497,27 @@ export function createFalRegionReader(input: {
         log.debug({ name }, "[falRegionReader] nothing there, and nothing there is the answer");
         return emptyLike(image, name);
       };
+
+      /*
+        THE BUILD ROW'S HEAD IS THE FACE THE MIDLINE CAME FROM (#2885).
+
+        `faceScan`'s composed plan cuts the cast's build below `region("face")`, and
+        that is the SAME request as the midline's (`SHARED_PROMPT`). Read
+        straight off it, the head box under the build row trusted the very
+        answer #2885 caught landing on the arm, so with a head box in hand it is
+        the judged face instead — one face per frame, refused and re-asked in
+        one place. Without one this is today's road, unchanged below.
+
+        ⚠ It unions every answer where the plain road takes the first. On a read
+        with one mask those are the same mask; with two, the first could be the
+        tattoo, and the judged union cannot be.
+      */
+      if (name === SHARED_PROMPT && headBox !== undefined) {
+        const face = callSignal === undefined
+          ? await faceMaskOf(image, imageUrl)
+          : await judgedFace(image, await askRegion(image, SHARED_PROMPT, "all", imageUrl, callSignal), callSignal);
+        return face ?? absent();
+      }
 
       if (BILATERAL.has(name)) {
         const both = await bilateral(image, name, imageUrl, axisKey, callSignal);

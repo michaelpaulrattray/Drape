@@ -221,6 +221,30 @@ export type FaceDiscovery =
 export type DiscoveryCrop = { kind: "head" | "full"; bytes: Buffer; contentType: string };
 
 /**
+ * WHERE THE HEAD CROP IS CUT FROM — the rectangle, in the frame's own pixels,
+ * or `null` when the frame is too small to cut one (#2885).
+ *
+ * Exported because the face reader now checks its face against it: on the
+ * founder's round-11 cast the segmenter's `face` read landed on a face tattooed on the
+ * arm, and this rectangle is a reference that read cannot move. **It is
+ * geometry, not a reading**: the top {@link HEAD_FRACTION} of the frame at full
+ * width, decided by the frame's size alone. Nothing about it comes from the
+ * segmenter, so judging the face read against it is not the read judging
+ * itself.
+ *
+ * {@link discoveryCropsOf} cuts its head crop from exactly this rectangle, so
+ * the crop the discovery reads and the box the face is judged by cannot drift
+ * apart (working law 4).
+ */
+export function discoveryHeadBoxOf(
+  frame: { width: number; height: number },
+): { left: number; top: number; width: number; height: number } | null {
+  const height = Math.round(frame.height * HEAD_FRACTION);
+  if (frame.width < 64 || height < 64) return null;
+  return { left: 0, top: 0, width: frame.width, height };
+}
+
+/**
  * Cut the two pictures a discovery asks about.
  *
  * ⚠ **BOTH OR NEITHER, and that changed with the relay's finding on PR #2570.**
@@ -257,8 +281,8 @@ export async function discoveryCropsOf(frame: {
 
   const crops: DiscoveryCrop[] = [];
   try {
-    const headHeight = Math.round(frame.height * HEAD_FRACTION);
-    if (frame.width < 64 || headHeight < 64) {
+    const head = discoveryHeadBoxOf(frame);
+    if (head === null) {
       log.warn(
         { width: frame.width, height: frame.height },
         "the frame is too small to cut a head crop — no discovery is asked",
@@ -267,7 +291,7 @@ export async function discoveryCropsOf(frame: {
     }
     crops.push(await bound(
       await sharp(frame.bytes)
-        .extract({ left: 0, top: 0, width: frame.width, height: headHeight })
+        .extract(head)
         .resize({ width: ASK_WIDTH })
         .png()
         .toBuffer(),
