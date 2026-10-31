@@ -1,7 +1,7 @@
 {
-  "edition": 796,
-  "updatedAt": "2026-10-31T06:05:00.000Z",
-  "shift": "One job is finished and in review, and it is the other half of the problem you found this morning.\n\nWhen the studio reads a face it finds the face itself first, and everything else hangs off that: which side is the left one, which is the right, and whether an eye it found belongs to this character at all. On your last two characters that first read landed on a face tattooed on an arm - so the real eyes, brows and ears were found and then thrown away as not being on the face, and both earrings were put on one ear.\n\nThat was fixed this morning for the panel's own scan. It was not fixed for the paid edit, and that is the half that costs you money: a paid edit of an eye, a brow or an ear could aim at the wrong part of the picture. All four paid roads now check that first read against where a head actually is - the top half of the picture in front of them - and ask again if it is somewhere else. Across every face the studio has ever read, all 86 of them, a correct face has never once been in the bottom half, and this check would have caught nine wrong eye boxes, the most recent from yesterday. A picture whose face is where a face should be costs nothing extra.\n\nTwo things came out of doing it rather than out of looking for them. The check I wrote so that no reader can be missed again found a fifth one the job description could not have named, because it was built three hours earlier the same morning. And a job another agent is building right now was being offered to every other agent as free work, for forty minutes, because of three extra words in the note that claims it - I re-wrote their note in the words the board reads, so nobody duplicates them.\n\nNothing was spent tonight: no credits, no picture bought, no setting moved.",
+  "edition": 798,
+  "updatedAt": "2026-10-31T10:11:06.454Z",
+  "shift": "You can drag a photograph straight onto the Refine box now and let go — it attaches, exactly as the + does. It is in review, not live yet.\n\nThat was your line this evening: \"also allow drag an drop of reference images into the refine box\". While the picture is in the air the box goes bright round the edge, everything inside it fades back, and one line sits over it — Drop your picture to attach it. Let go and you get the same small thumbnail you have always got. I checked it by eye in both themes, and I checked the thing a picture cannot show you: the record the studio writes when you drag a photograph in is identical, field for field, to the one it writes when you press the +. Same picture, same road, no second way of doing it hiding underneath.\n\nThe other half of that card — stopping the studio asking where your picture came from — is NOT done, and I want to be straight about why rather than let it look like it slipped. Right now the studio refuses to store a reference photograph without an answer to that question; it is built that way on purpose, so that nobody can quietly put words in your mouth about a photograph. Taking the question away means changing that rule in the live database FIRST, and only then changing the code. Done in the other order, every attach breaks the moment it ships — the + as well as the drag. The change is written up on the card with exactly what has to happen and in what order; it needs one hand-run against the live database, which is not a thing the nights do on their own.\n\nI also closed the picker work. You dropped that feature today, and its pull request was sitting open with a hold on it, which made your board say a repair was owed when nothing was wrong with the work and nothing could be repaired. The code is kept on its branch in case the face panel wants it later. Two of your problem notes went with it — the plant and the clothes rail, and the thirty-to-eighty-five seconds — because both were about that picker, and it is switched off.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-31T05:54:05.859Z",
+      "readAt": "2026-10-31T07:31:38.195Z",
       "items": [
         {
           "issueNumber": 30,
@@ -11272,6 +11272,13 @@
       "status": "in-review",
       "prNumber": 2896,
       "note": "Money path, so it waits for the relay's verdict and no shift merges it."
+    },
+    {
+      "id": "picker-pieces-from-reading-2902",
+      "title": "The picker picks whole things, and hair is one of them - pieces come from the picture's own reading instead of a grid of dots (#2902)",
+      "status": "in-review",
+      "prNumber": 2906,
+      "note": "Changes what you see on a live surface, so it waits for the relay's eye and no shift merges it."
     }
   ],
   "problems": [
@@ -11533,6 +11540,20 @@
       "state": "open",
       "title": "Three finished pieces of work still cannot be merged, and the thing blocking them is still not real (#2848, #2863, #14)",
       "detail": "This is the crew's own machinery, not the product — nothing a customer sees is affected.\n\nUnchanged from last night, and re-measured tonight against the newer main line, because\na measurement taken yesterday is not a fact about today: all three still clash on the\ngenerated map alone and nothing else. Three of three. We have a tool that merges that\nfile by itself, which GitHub does not use, so the clash reads as real on the page and is\na ghost. It is one command each.\n\nAll three are deliberately the relay's hand and not a shift's, and each says why on\nitself: one adds rate limits and is money work, one needs a key put on the service\nfirst, and one carries a review note that any push — even a harmless one — would make\nread as already dealt with. Seven shifts have now been sent at that third one and every\none of them was right to leave it alone.\n\nNothing is waiting on you here."
+    },
+    {
+      "id": "picker-background-still-pickable-2907",
+      "severity": "warning",
+      "state": "resolved",
+      "title": "Retired with the picker, not fixed — the plant and the clothes rail (#2907)",
+      "detail": "Off your page because it is no longer an actionable fault, and the distinction matters: nothing was repaired. You dropped the Pinterest-style picker on 2026-10-31 in favour of saying what to take in words, the setting is off on the live service, and its pull request is closed unmerged — so there is no surface left for a plant or a clothes rail to be picked on.\n\nThe measurement is kept rather than thrown away. If the reading-driven road is ever lifted into the face panel, the three photographs and their counts on card #2907 are the before arm, and the defect arrives with it."
+    },
+    {
+      "id": "picker-slow-to-light-2908",
+      "severity": "warning",
+      "state": "resolved",
+      "title": "Retired with the picker, not fixed — the thirty-to-eighty-five seconds (#2908)",
+      "detail": "Off your page for the same reason as its sibling above: it was never a fault on anything you can reach. The thirty to eighty-five seconds was measured on the picker's own branch, which never merged, and the picker is switched off on the live service after you dropped it.\n\nThe shrink-the-photograph-first repair it names is still owed to whatever road next needs to cut things out of a reference picture, and card #2908 carries the numbers so nobody pays to measure them twice."
     }
   ],
   "acknowledgedReplyIds": [
@@ -11841,7 +11862,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-31T05:54:05.859Z",
+    "readAt": "2026-10-31T07:31:38.194Z",
     "items": [
       {
         "issueNumber": 14,
@@ -12064,6 +12085,11 @@
       {
         "issueNumber": 2892,
         "title": "N3 face reader: a thing found on both sides gets a side in its row name and in its sentence, so an edit to one hits the right one (his ruling)",
+        "urgent": false
+      },
+      {
+        "issueNumber": 2902,
+        "title": "#14 picker, his eye on the live surface: pieces come from the reading (whole pants, both shoes, hair; never the background), it opens as an overlay, and attach stops asking where the picture came from",
         "urgent": false
       }
     ]

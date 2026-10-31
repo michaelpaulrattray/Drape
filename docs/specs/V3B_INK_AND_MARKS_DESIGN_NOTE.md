@@ -110,6 +110,10 @@ carefully rather than quickly:
   **quoted only with its caveat (fable-714 §1): possibly part instrument
   (cross-frame ΔE inside a moving mask manufactures fictional drift), and
   perceptually FINE to the founder on the sheet.**
+  ⚠ **The ruling quoted here still stands and its TRIGGER cannot fire** — the
+  studio was retired 2026-09-24 — so skin carries as words INDEFINITELY and
+  re-deciding it is his word. Stamped at this file's §5 note and in full at
+  `docs/specs/V4_SKIN_CARRIER_SHIP_REQUIREMENTS.md`'s header.
 - **The collision rule** (fable-561) — the founder's own follow-up: when tattoos
   arrive as flash-sheet references, two references claim the same patch of skin.
 - **`marks`**, whose court came back SHORT: the freckle scaffolding is standing
@@ -173,6 +177,19 @@ wrong, §3 and §4 both change shape.
 > carrier. The founder's ruling stands untouched — skin carries as words until
 > the tattoo studio launches — and what changed is that the words now actually
 > ride. Step 5's re-decision is still owed and still comes after §4's court.
+>
+> ⚠ **THE SECOND HALF OF THAT SENTENCE NAMES A TRIGGER THAT CANNOT FIRE, AND
+> THE RULING IT REPORTS IS STILL UNTOUCHED — stamped 2026-10-31
+> (`foreman-20261031-1825`, card #65).** He retired the tattoo studio on
+> 2026-09-24 (Crew reply #208, verbatim and entire: *"It retires with N2"*), so
+> *"until the tattoo studio launches"* is a condition on an event that is not
+> coming. **Skin still carries as words — that part is exactly as true as it
+> was — but it does so INDEFINITELY, and re-deciding it is HIS WORD rather than
+> an event.** The full reading, and the two other clauses that were bolted to
+> the same trigger, are in
+> `docs/specs/V4_SKIN_CARRIER_SHIP_REQUIREMENTS.md`'s header stamp. ⚠ **"Step
+> 5's re-decision is still owed" is UNCHANGED and is not discharged by the
+> retirement** — a closed road answers no design question.
 
 
 `marks` (freckles, moles, beauty spots) reads like ink's little sibling and is

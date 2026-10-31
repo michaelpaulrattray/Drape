@@ -761,6 +761,88 @@ function prefillFor(spoken: string): string {
 }
 
 /**
+ * THE PLACES ON A BODY THAT COME ONE EACH SIDE — so a found thing on one of
+ * them can say *"the tattoo on their left arm"* (the founder's ruling, #2892,
+ * 2026-10-31).
+ *
+ * ⚠ **This decides only whether the PLACE is said. It never decides the
+ * side**, which is measured from the picture (`castSideOf` inside
+ * {@link facePanel}). A sided thing whose place is not here is still named by
+ * its side — *Left tattoo*, *"their left tattoo — "* — so a word missing from
+ * this list costs the sentence a place and never costs it the truth. A word on
+ * it that has no sides would cost the grammar (*"on their left face"*), which is
+ * why it is narrow.
+ *
+ * Two sources, and only one of them is written here:
+ *
+ *   the catalogue   every bilateral slot on the body (eye, brow, ear, horn,
+ *                   cheekbone, lashes) — read off `catalogueSlots()` every
+ *                   time, never copied, so a pair the catalogue gains is a
+ *                   place the next day
+ *   this list       the body below the head and the cheek, which the
+ *                   catalogue has no slot for. Every word is a part a person
+ *                   has one of on each side.
+ *
+ * ⚠ **It is not `pointerCut`'s `PLAIN_ANATOMY_WORDS` and must not be derived
+ * from it**, although several words sit in both: that list answers *is this
+ * the ordinary body rather than a feature*, and it holds `neck`, `face` and
+ * `chest`, which have no left and right to say. Two questions, two lists.
+ *
+ * Keyed by the normalised word (`normalisedName`, which folds a plural), and
+ * the value is the word the sentence SAYS — the product's own singular, so a
+ * reading's `on: "arms"` is spoken *"on their left arm"* rather than composing a
+ * singular out of somebody's plural.
+ */
+const SIDED_BODY_WORDS: readonly (readonly [said: string, ...also: string[]])[] = [
+  ["arm"], ["upper arm"], ["forearm"], ["elbow"], ["wrist"], ["hand"],
+  ["shoulder"], ["collarbone", "collar bone"], ["hip"], ["thigh"], ["leg"],
+  ["knee"], ["calf"], ["shin"], ["ankle"], ["foot", "feet"], ["cheek"],
+  ["temple"],
+];
+
+let sidedPlaces: ReadonlyMap<string, string> | null = null;
+/** The place vocabulary, built once — see {@link SIDED_BODY_WORDS}. */
+function sidedPlaceWords(): ReadonlyMap<string, string> {
+  if (sidedPlaces !== null) return sidedPlaces;
+  const places = new Map<string, string>();
+  for (const [said, ...also] of SIDED_BODY_WORDS) {
+    for (const word of [said, ...also]) places.set(normalisedName(word), said);
+  }
+  for (const definition of catalogueSlots()) {
+    if (definition.instance === null) continue;
+    if (definition.group !== "face" && definition.group !== "hair" && definition.group !== "body") continue;
+    /* The catalogue's own singular for one side — "left ear" → "ear", "left
+       horn" → "horn" — and every word a reading might use for it. */
+    const said = definition.noun.replace(new RegExp(`^${definition.instance}\\s+`), "").trim();
+    if (said === "" || said === definition.noun) continue;
+    for (const word of [said, ...catalogueWordsOf(definition)]) {
+      const key = normalisedName(word);
+      if (key.split(" ").some((part) => (INSTANCES as readonly string[]).includes(part))) continue;
+      if (!places.has(key)) places.set(key, said);
+    }
+  }
+  sidedPlaces = places;
+  return places;
+}
+
+/**
+ * WHERE ON THE BODY A FOUND THING SITS, said with a side — or null when the
+ * reading's `on` is not a place that has one.
+ *
+ * Any side word already in it is dropped: the side is MEASURED from the box,
+ * and a reading's `on: "left arm"` on a box at the cast's right arm is the reader's
+ * word against the picture's. The picture decides.
+ */
+function placeWithASide(on: string): { key: string; said: string } | null {
+  const words = normalisedName(on).split(" ")
+    .filter((word) => word !== "" && !(INSTANCES as readonly string[]).includes(word));
+  if (words.length === 0) return null;
+  const key = words.join(" ");
+  const said = sidedPlaceWords().get(key);
+  return said === undefined ? null : { key, said };
+}
+
+/**
  * WHAT A PAIR SAYS WHEN ITS TWO SIDES DISAGREE (fable-444 condition 1).
  *
  * "left green, right brown" — each side's own words, attributed to the side
@@ -2127,13 +2209,150 @@ export function facePanel(input: {
     return onTheFace(centreX, centreY, face) ? "face" : "body";
   };
 
+  /*
+    ---- A THING FOUND ON BOTH SIDES SAYS WHICH SIDE EACH ONE IS (the founder's
+    ruling,
+    #2892, 2026-10-31) ----
+
+    The founder's question, verbatim: *"are the tatto rows specific eg she has a left and
+    right sleeve if i edit one it will edit the correct one?"* The answer read
+    at the code was *not reliably*, and the founder's word on the recommendation of side
+    names: *"yes this goes for anything of that sort not just tatttoos"*.
+
+    The two sleeves listed as `Tattoo` and `Tattoo`, and a tap on either wrote
+    the same opening into the ask box. A found rectangle is never scopable —
+    the scope door admits a catalogued instance and nothing else — so the edit
+    cannot be narrowed to one arm's pixels. **The words are the only thing that
+    aims it, and they did not say which arm.** So each row now says it the way
+    the catalogue's pairs and the sided ink rows already do: *Left arm tattoo*
+    / *Right arm tattoo*, and the tap opens *"the tattoo on their left arm — "*.
+    Shoulder armour, wrist wraps, gauntlets, boots, wings: anything found twice
+    across the body, read the same way and no list of which nouns qualify.
+
+    # WHOSE LEFT
+
+    THE CAST'S, which is the image's RIGHT — the catalogue pairs' own mapping
+    (`falRegionReader`'s `regionSides`: *"`left` is HER left, which is the
+    image's right"*). A box on the image's right half is the cast's left.
+
+    # WHERE THE MIDDLE IS
+
+    The face this scan drew ({@link faceExtentOn}): the centre of the face rows
+    it actually cut, which is the midline #2840's Body branch already measures
+    against. ⚠ **The reader's own midline (`axisOf` / `spanFor`) is NOT
+    available here, read before choosing**: it is taken inside the scan and is
+    never kept with the reading (`panelScanOf` carries the slots, the found
+    things and the words, and no axis), so a panel built from a kept reading
+    cannot see it. ⚠ **And when the scan drew no face row at all, the FRAME'S
+    CENTRE is the midline — declared, not hidden.** A cast's master is one
+    centred figure facing the camera, so the frame's middle is its middle to
+    within the pose; a figure stood well off-centre with no face row read
+    would be measured against the wrong line.
+
+    # WHAT IS ON A SIDE
+
+    A box WHOLLY on one side of the midline. A box that crosses it is on
+    neither, which is one refinement beyond the card's *"box centre against the
+    midline"* and it is named here so it can be challenged: two necklaces
+    layered at the throat both straddle the middle, and calling one of them
+    *left* because its centre sits three pixels over would aim a paid edit by a
+    coin toss. It fails toward today's panel — no side, the plain noun.
+
+    # WHICH ONES ARE NAMED
+
+    Grouped by the reading's own noun (normalised, so a plural folds), over
+    every instance the reading cut — the reading's count is the fact, whether or
+    not each instance draws a row of its own. An instance takes its side only
+    when it is the ONLY one of its noun on that side AND another of its noun is
+    on the other side, which is exactly *"where the side tells it apart"*:
+
+      one alone          its plain name, as today
+      two, one each side both named
+      two on one side    neither — a side would not tell them apart, and the
+                         card leaves them as today
+      three or more      only the one that is alone on its side; the others
+                         keep the plain noun, because *Right arm tattoo* twice
+                         tells nobody which
+
+    ⚠ **Nothing about the ROWS moves** — no row is added, merged or dropped,
+    their order is the reading's, and #2862 (one thing one row, trims no row),
+    #2840 (plain anatomy no row) and #2565 §6 (two of a thing are two rows) all
+    hold untouched. Only `name`, `spoken` and `prefill` change. ⚠ **And the
+    edit is still not narrowed to the pixels**: that is the scope door, a money
+    path, and its own card if the words prove not to be enough.
+  */
+  const castSideOf = (box: PanelBox): Instance | null => {
+    const midline = faceExtentOn(box.frame)?.midline ?? box.frame.width / 2;
+    if (box.x >= midline) return "left";
+    if (box.x + box.width <= midline) return "right";
+    return null;
+  };
+  const sideOfFound = new Map<(typeof foundRows)[number], Instance>();
+  {
+    const ofOneNoun = new Map<string, (typeof foundRows)[number][]>();
+    for (const found of foundRows) {
+      const key = normalisedName(found.noun);
+      ofOneNoun.set(key, [...(ofOneNoun.get(key) ?? []), found]);
+    }
+    for (const instances of Array.from(ofOneNoun.values())) {
+      if (instances.length < 2) continue;
+      const placed = instances.map((found) => ({ found, side: castSideOf(found.box) }));
+      for (const { found, side } of placed) {
+        if (side === null) continue;
+        const soleOnItsSide = placed.filter((other) => other.side === side).length === 1;
+        const oneAcross = placed.some((other) => other.side !== null && other.side !== side);
+        if (soleOnItsSide && oneAcross) sideOfFound.set(found, side);
+      }
+    }
+  }
+
+  /**
+   * HOW ONE FOUND THING IS NAMED AND SPOKEN — decided here, once, for every
+   * place it is drawn (its own row, a child, a child's rectangle), and never in
+   * the browser (working law 4).
+   *
+   *   no side                      *Tattoo*             "their tattoo"
+   *   a side, no place             *Left tattoo*        "their left tattoo"
+   *   a side and a place           *Left arm tattoo*    "the tattoo on their left arm"
+   *   …a WORN thing                *Left wristband*     "the wristband on their left arm"
+   *   …the noun already says it    *Left arm tattoo*    "their left arm tattoo"
+   *
+   * The SENTENCE always says the place when there is one, because the sentence
+   * is what aims the edit. The LABEL says it only for a mark or a body feature
+   * (the reading's own `kind`): *where* is the whole of what tells one tattoo or
+   * one scar from another, while a worn thing's noun already says where it goes
+   * — *Left arm wristband*, *Left ear hoop earring* and *Left foot boot* are
+   * the place said twice in a list that is labels. A decision, named so it can
+   * be challenged; the card's own example (*Left arm tattoo*) is a mark.
+   *
+   * The last line is the reading's `arm tattoo on arm`, measured on the founder's
+   * round-9 cast: *"the arm tattoo on their left arm"* says the arm twice. The name is
+   * the sided ink rows' own shape (*Left upper arm tattoo*), and the possessive
+   * is this cast's (`castPronouns`), never written here.
+   */
+  const foundSpeech = (found: (typeof foundRows)[number]): { name: string; spoken: string } => {
+    const noun = found.noun.trim();
+    const possessive = input.pronouns.possessive;
+    const side = sideOfFound.get(found);
+    if (side === undefined) return { name: capitalize(noun), spoken: `${possessive} ${noun}` };
+    const place = placeWithASide(found.on);
+    const nounSaysThePlace = place !== null && ` ${normalisedName(noun)} `.includes(` ${place.key} `);
+    if (place === null || nounSaysThePlace) {
+      return { name: capitalize(`${side} ${noun}`), spoken: `${possessive} ${side} ${noun}` };
+    }
+    const labelSaysThePlace = found.kind === "marking" || found.kind === "anatomy";
+    return {
+      name: capitalize(labelSaysThePlace ? `${side} ${place.said} ${noun}` : `${side} ${noun}`),
+      spoken: `the ${noun} on ${possessive} ${side} ${place.said}`,
+    };
+  };
+
   /** One found thing as a child of whatever it sits on. */
   const foundChild = (found: (typeof foundRows)[number]): PanelInstance => {
-    const noun = found.noun.trim();
-    const spokenName = `${input.pronouns.possessive} ${noun}`;
+    const { name, spoken: spokenName } = foundSpeech(found);
     return {
       slot: found.slot,
-      name: capitalize(noun),
+      name,
       spoken: spokenName,
       prefill: prefillFor(spokenName),
       /* What the reading SAID about it is prose for the current description,
@@ -2155,15 +2374,15 @@ export function facePanel(input: {
 
   /** Its rectangle on the photograph, named, the way a pair's sides are. */
   const foundChildRegion = (found: (typeof foundRows)[number]): PanelRegion => {
-    const noun = found.noun.trim();
-    const spokenName = `${input.pronouns.possessive} ${noun}`;
+    const { name, spoken: spokenName } = foundSpeech(found);
     return {
       box: found.box,
       /* NAMED, exactly as a pair's rectangles are and for the identical reason:
          the row above speaks the person's ontology ("their lips") while this
          rectangle is a promise about these pixels, so it says which thing it
-         is. Bare, because a tag is a label (founder, fable-451). */
-      name: capitalize(noun),
+         is. Bare, because a tag is a label (founder, fable-451) — and with its
+         side when the reading found one on each (#2892). */
+      name,
       spoken: spokenName,
       prefill: prefillFor(spokenName),
       slot: found.slot,
@@ -2585,7 +2804,10 @@ export function facePanel(input: {
     are two items (#2565 §6), the reading counted them, and composing a singular
     of somebody's word to label one of them is the invention the distributed-kind
     row above refuses by name. So each instance is its own row, and its label is
-    the noun it was found under.
+    the noun it was found under — ⚠ **and, since #2892, its SIDE when the
+    reading found one of that noun on each side of the cast** (*Left arm
+    tattoo* / *Right arm tattoo*; `foundSpeech` says how). That is a side put on
+    the reading's own noun, never a singular composed from it.
   */
   /*
     ---- AND SINCE SLICE 2'S GROUPING, NOT EVERY FOUND THING COMES HERE ----
@@ -2608,12 +2830,12 @@ export function facePanel(input: {
   const rowOfFound = new Map<(typeof foundRows)[number], PanelRow>();
   for (const found of ownRows) {
     const noun = found.noun.trim();
-    const spokenName = `${input.pronouns.possessive} ${noun}`;
+    const { name, spoken: spokenName } = foundSpeech(found);
     const row: PanelRow = {
       state: "settled",
       slots: [found.slot],
       group: ownSectionOf(found),
-      name: capitalize(noun),
+      name,
       spoken: spokenName,
       /*
         NO WORDS, and that is the honest answer rather than a gap. What the
@@ -2641,7 +2863,14 @@ export function facePanel(input: {
          attached by the pass below. */
       instances: [],
     };
-    push(row);
+    /* ⚠ THE HOST WORD STAYS THE READING'S NOUN, NOT THE LABEL (#2892). `push`
+       defaults a row's host words to its displayed name, which was the noun
+       until this card gave a sided row *Left arm tattoo*. The one reader of a
+       found row's host words that runs after the row exists is the words pass
+       below, and it must keep answering by the word the reading used: words
+       said `on: "left arm tattoo"` land on no row, exactly as before. Passed
+       explicitly, so a label can never move words onto a row. */
+    push(row, [noun]);
     rowOfFound.set(found, row);
   }
 
@@ -2662,12 +2891,12 @@ export function facePanel(input: {
     if (parent === undefined) {
       for (const child of children) {
         const noun = child.noun.trim();
-        const spokenName = `${input.pronouns.possessive} ${noun}`;
+        const { name, spoken: spokenName } = foundSpeech(child);
         push({
           state: "settled",
           slots: [child.slot],
           group: ownSectionOf(child),
-          name: capitalize(noun),
+          name,
           spoken: spokenName,
           words: [],
           absent: null,
@@ -2680,7 +2909,9 @@ export function facePanel(input: {
           }],
           regions: [openRegion(child.slot, child.box)],
           instances: [],
-        });
+        /* The reading's noun is the host word, never the label — see the
+           own-row loop above (#2892). */
+        }, [noun]);
       }
       continue;
     }

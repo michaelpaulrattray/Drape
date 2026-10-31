@@ -826,6 +826,18 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "register went to all on 2026-09-24 there is no off-that-road account left for a "
       + "casting-only check to admit. This row's POSITION does not move: all, on his reply #202",
   },
+  CASTING_CONCEPT_RICH_LOOK_SCOPE: {
+    position: "off",
+    why:
+      "built dark 2026-10-31 (#2911, his bench and his pick: the concept reader moves to "
+      + "Gemini 4 Argon and a rich look with the face and the hair left free), shipped at `off` "
+      + "and ABSENT from the service. Off is today's reader byte for byte, proven at the HTTP "
+      + "body by conceptReaderWire.test.ts against hashes taken on the tree before the flag "
+      + "existed. The relay sets users:1 after the merge for his eye on a real roll on his "
+      + "account; anything wider waits on his word. It is a child of "
+      + "CASTING_CONCEPT_UPLOAD_SCOPE in the boot chain, so it can never reach past the door "
+      + "whose upload it reads.",
+  },
   R7_EVIDENCE_COMPOSER_SCOPE: { position: "off", why: "the composer's runtime door, unopened" },
   R7_EVIDENCE_PACKAGE_SCOPE: {
     position: "off",

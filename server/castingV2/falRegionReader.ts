@@ -27,6 +27,7 @@ import { throughFalGate } from "./falConcurrency";
 import { classifyFalHttp, falHeaders } from "../providers/falTransport";
 import { REGION_CARDS, REGION_CARD_ENTRIES, type AskedAs, type RegionCard } from "./regionCards";
 import { FILL_MEASURED_NOT_REFUSED, judgeCut } from "./cutQuality";
+import { discoveryHeadBoxOf } from "./faceDiscovery";
 import { onTheFace } from "./faceExtent";
 import { MaskError, overlapWith, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
@@ -1381,8 +1382,8 @@ export function createFalRegionReader(input: {
    */
   boxer?: PointerBoxer;
   /**
-   * WHERE THE HEAD IS, AS THE CALLER ALREADY KNOWS IT — absent, today's face
-   * read exactly (#2885, the founder's eye, round 11).
+   * WHERE THE HEAD IS — absent, today's face read exactly (#2885, the
+   * founder's eye, round 11; every reader says it since #2888).
    *
    * The segmenter's `face` read is the authority for every pair's midline, the
    * face rule, the ear rules and the other-ear look, and on the founder's round-11 cast
@@ -1393,22 +1394,50 @@ export function createFalRegionReader(input: {
    * the read IS the head authority — so the reference has to arrive from
    * outside it.
    *
-   * The scan hands in the rectangle the discovery's head crop is cut from
-   * (`discoveryHeadBoxOf`), measured on the frame it reads. With it, a piece
-   * of the face read whose centre lies outside the box is not the cast's face; a read
-   * with no piece left is asked again of the head crop alone; and only if that
-   * finds nothing does the scan go on without a face, as a missing face does.
-   * See {@link judgedFace}.
+   * The rectangle is the one the discovery's head crop is cut from
+   * (`discoveryHeadBoxOf`, the top half of the frame at full width — geometry,
+   * never a reading). With it, a piece of the face read whose centre lies
+   * outside the box is not the cast's face; a read with no piece left is asked
+   * again of the head crop alone; and only if that finds nothing does the
+   * reader go on without a face, as a missing face does. See
+   * {@link judgedFace}.
    *
-   * The CALLER decides, for `pairInOneRead`'s reason, and only the scan passes
-   * it: a refine builds its own reader and gets today's answer.
+   * # Two ways to say it, and the difference is which picture is meant
+   *
+   * `"topHalfOfEachPicture"` is the answer for a caller that reads several
+   * pictures through one reader and does not measure them: the box is
+   * {@link discoveryHeadBoxOf} of whatever picture arrives, derived from the
+   * size this function already reads off the bytes. **Every reader but the
+   * scan's says this** (#2888) — the refine's, the take's, the ink mint's and
+   * the ink upload's are each built once, before any frame is in hand, and
+   * reach their pictures through ten call sites between them; a box threaded
+   * through all ten would be ten chances to disagree about one rectangle.
+   *
+   * `{ frame, box }` is the scan's, and it stays because its box is tied to
+   * something a picture's size alone does not settle: the discovery's head crop
+   * is cut from exactly that rectangle, measured on the frame the scan declares
+   * rather than on the bytes, so the crop that was READ and the box the face is
+   * judged by cannot drift apart (working law 4, and `discoveryCropsOf`'s own
+   * sentence). On today's frames the two answers are the same rectangle — the
+   * scan measures the frame with `sharp` before it builds its reader — and the
+   * suite drives that they are.
+   *
+   * ⚠ **Both go through ONE geometry function, which is the whole of why there
+   * are two of them rather than two rules.** Neither mode invents a rectangle
+   * here: a later change to `HEAD_FRACTION` moves every reader at once.
+   *
+   * The CALLER decides, for `pairInOneRead`'s reason — this module does not
+   * know whether its pictures were measured or declared.
    */
-  headBox?: {
-    /** The size of the picture the box was measured on. */
-    frame: { width: number; height: number };
-    /** The rectangle, in that picture's own pixels. */
-    box: { left: number; top: number; width: number; height: number };
-  };
+  headBox?:
+    | {
+      /** The size of the picture the box was measured on. */
+      frame: { width: number; height: number };
+      /** The rectangle, in that picture's own pixels. */
+      box: { left: number; top: number; width: number; height: number };
+    }
+    /** Derive it from each picture as it arrives — the top half of that one. */
+    | "topHalfOfEachPicture";
 }): RegionReader {
   const { apiKey, signal, pairInOneRead = false, boxer, headBox } = input;
 
@@ -1868,6 +1897,55 @@ export function createFalRegionReader(input: {
    * and read as today, because a box in the wrong pixel space is the
    * wrong-frame class this file already warns about twice.
    */
+  /**
+   * THE HEAD BOX FOR THIS PICTURE, or `null` for "do not judge this read".
+   *
+   * One function for both of {@link createFalRegionReader}'s `headBox` answers,
+   * and both of them end at `discoveryHeadBoxOf` — the scan's by having asked
+   * it already, every other reader's by asking it here. **No rectangle is
+   * invented in this file** (#2888): the only way the two could ever disagree
+   * about where a head is would be a second copy of that geometry, and there
+   * is not one.
+   *
+   * Three roads answer `null`, and each is "read as today" rather than a
+   * refusal — a box nobody can trust is worse than no box, and a paid edit is
+   * not worth losing to one:
+   *
+   *   the mask is not the      the face read's own pixels disagree with the
+   *   picture's size           bytes it was read from, so a centre measured in
+   *                            one space judged in the other is meaningless
+   *   a declared box, on       the wrong-frame class this file already warns
+   *   another picture          about twice — the scan's box is tied to its own
+   *                            frame and says so
+   *   too small to head-crop   `discoveryHeadBoxOf`'s own `null`, the same
+   *                            answer the discovery gives such a frame
+   */
+  const headBoxOn = (
+    picture: { width: number; height: number },
+    face: Mask,
+  ): { left: number; top: number; width: number; height: number } | null => {
+    if (headBox === undefined) return null;
+    if (face.width !== picture.width || face.height !== picture.height) {
+      log.warn(
+        { picture: `${picture.width}x${picture.height}`, face: `${face.width}x${face.height}` },
+        "[falRegionReader] the face read is not the size of the picture it was read from — it is not judged against the head",
+      );
+      return null;
+    }
+    if (headBox === "topHalfOfEachPicture") return discoveryHeadBoxOf(picture);
+    if (picture.width !== headBox.frame.width || picture.height !== headBox.frame.height) {
+      log.warn(
+        {
+          picture: `${picture.width}x${picture.height}`,
+          measuredOn: `${headBox.frame.width}x${headBox.frame.height}`,
+        },
+        "[falRegionReader] the head box was measured on a different picture — the face read is not judged by it",
+      );
+      return null;
+    }
+    return headBox.box;
+  };
+
   const judgedFace = async (
     image: Buffer, face: Mask | null, callSignal: AbortSignal | undefined,
   ): Promise<Mask | null> => {
@@ -1876,21 +1954,8 @@ export function createFalRegionReader(input: {
     const meta = await sharp(image).metadata();
     const width = meta.width ?? 0;
     const height = meta.height ?? 0;
-    if (
-      width !== headBox.frame.width || height !== headBox.frame.height
-      || face.width !== width || face.height !== height
-    ) {
-      log.warn(
-        {
-          picture: `${width}x${height}`,
-          face: `${face.width}x${face.height}`,
-          measuredOn: `${headBox.frame.width}x${headBox.frame.height}`,
-        },
-        "[falRegionReader] the head box was measured on a different picture — the face read is not judged by it",
-      );
-      return face;
-    }
-    const box = headBox.box;
+    const box = headBoxOn({ width, height }, face);
+    if (box === null) return face;
     const { kept, dropped } = keepPiecesWhere(face, (piece) => (
       piece.centreX >= box.left && piece.centreX < box.left + box.width
       && piece.centreY >= box.top && piece.centreY < box.top + box.height

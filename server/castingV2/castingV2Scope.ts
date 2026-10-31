@@ -2695,6 +2695,107 @@ export function validateCastingConceptUploadEnvironment(input: {
   return child;
 }
 
+/* ------------------------------- the concept reader's rich-look sub-flag */
+
+/**
+ * THE RICH LOOK, THE FACE AND HAIR LEFT FREE (#2911) —
+ * `CASTING_CONCEPT_RICH_LOOK_SCOPE`.
+ *
+ * Whether an uploaded concept is read as a RICH LOOK — signature pieces,
+ * markings and where they live, fitted hardware, the wardrobe's materials and
+ * silhouette, species facts first — with the face and the hair left for each
+ * render to choose, by the reader model his bench picked, instead of today's
+ * short TYPE note. His words, 2026-10-31 (chat, verbatim on the card): *"i think
+ * we need to loosen things up to get more detailed casts"*, *"we still need to
+ * let the image engine imagine its own version but still give it details to
+ * imagine"*, and on hair: *"IF we dont specify hair it will default to most
+ * likley from hertiage . i think we just settle on that."*
+ *
+ * Off, and absent means off, **the concept reader is today's byte for byte** —
+ * the same model, the same rules, the same bounds, proven at the HTTP body by
+ * `conceptReaderWire.test.ts` against hashes taken on the tree before this flag
+ * existed. On, the same door, the same picture handling, the same sweeps and the
+ * same refusals; what moves is the model, the instruction and the length bounds
+ * (`conceptDescribe.ts`, the `RICH_LOOK` reading beside today's `TYPE_NOTE`).
+ *
+ * # WHY THE PARENT IS THE CONCEPT-UPLOAD DOOR
+ *
+ * This flag chooses HOW an upload is read, so an account armed here and not at
+ * the upload door would hold a switch with nothing behind it. The casting
+ * parent rides in through the door's own check rather than being restated here
+ * — the reference take's shape, and a second copy of that refusal is a second
+ * list that can come to disagree.
+ *
+ * It spends house money and never a customer's credits, exactly as the door
+ * does: one text call, or two on a re-ask, with the picture inline and dropped
+ * when the call returns. It shares the interpreter's ONE OpenRouter allowance
+ * rather than buying a second (`interpreterTextQueue`), and no fal path is
+ * touched, so `assertFalBudget` is untouched too.
+ */
+export const CASTING_CONCEPT_RICH_LOOK_SCOPE_ENV = "CASTING_CONCEPT_RICH_LOOK_SCOPE";
+
+export class CastingConceptRichLookScopeConfigurationError extends Error {
+  constructor() {
+    super(
+      `${CASTING_CONCEPT_RICH_LOOK_SCOPE_ENV} must be "off", "all", or "users:" followed by unique positive integer user ids`,
+    );
+    this.name = "CastingConceptRichLookScopeConfigurationError";
+  }
+}
+
+export class CastingConceptRichLookCoverageError extends Error {
+  constructor(detail: string) {
+    super(`${CASTING_CONCEPT_RICH_LOOK_SCOPE_ENV} ${detail}`);
+    this.name = "CastingConceptRichLookCoverageError";
+  }
+}
+
+export function parseCastingConceptRichLookScope(raw: string | undefined): CastingV2Scope {
+  return parseScopeGrammar(raw, () => {
+    throw new CastingConceptRichLookScopeConfigurationError();
+  });
+}
+
+/**
+ * Whether this user's upload is read as a rich look. An AND of the whole chain
+ * at the point of use, like every sibling: the door's own capture carries the
+ * casting parent, so a narrowed casting scope still shuts this.
+ */
+export function captureCastingConceptRichLookEnabled(userId: number): boolean {
+  const child = parseCastingConceptRichLookScope(process.env[CASTING_CONCEPT_RICH_LOOK_SCOPE_ENV]);
+  if (!castingV2EnabledForUser(child, userId)) return false;
+  return captureCastingConceptUploadEnabled(userId);
+}
+
+export function validateCastingConceptRichLookEnvironment(input: {
+  scope: string | undefined;
+  conceptUploadScope: string | undefined;
+}): CastingV2Scope {
+  const child = parseCastingConceptRichLookScope(input.scope);
+  if (child.kind === "off") return child;
+
+  const parent = parseCastingConceptUploadScope(input.conceptUploadScope);
+  if (parent.kind === "off") {
+    throw new CastingConceptRichLookCoverageError(
+      `cannot be enabled while ${CASTING_CONCEPT_UPLOAD_SCOPE_ENV} is off — it chooses how an `
+      + "uploaded concept is read, and a user outside that door has no upload to read",
+    );
+  }
+  if (parent.kind === "all") return child;
+  if (child.kind === "all") {
+    throw new CastingConceptRichLookCoverageError(
+      `cannot be "all" while ${CASTING_CONCEPT_UPLOAD_SCOPE_ENV} is limited to specific users`,
+    );
+  }
+  const uncovered = child.userIds.filter((userId) => !parent.userIds.includes(userId));
+  if (uncovered.length > 0) {
+    throw new CastingConceptRichLookCoverageError(
+      `names users outside ${CASTING_CONCEPT_UPLOAD_SCOPE_ENV}: ${uncovered.join(",")}`,
+    );
+  }
+  return child;
+}
+
 /* --------------------------------------------------- the retry sub-flag */
 
 /**
