@@ -31,6 +31,7 @@ import { onTheFace } from "./faceExtent";
 import { MaskError, overlapWith, unionMasks } from "./maskGeometry";
 import type { Mask } from "./maskedComposite";
 import type { PointerBox, RegionReader, SideRegions } from "./maskedRefine";
+import type { PointerBoxer } from "./pointerBoxer";
 
 const log = createModuleLogger("castingV2/falRegionReader");
 
@@ -1334,8 +1335,19 @@ export function createFalRegionReader(input: {
    * default is today's answer and the flip is his, with his eye on the panel.
    */
   pairInOneRead?: boolean;
+  /**
+   * WHO DRAWS THE BOX ROUND A NAMED THING — absent, today's detector (#2863).
+   *
+   * The CALLER decides, for `pairInOneRead`'s reason: this module does not know
+   * whose picture it is reading, and `CASTING_POINTER_ENGINE_SCOPE` is a
+   * per-account switch (`pointerBoxerFor`). Present, every `pointer` question
+   * and the other-ear look ask it first, with one request per picture for all
+   * the names asked of it at once; when it answers `null` (every engine
+   * failed) each name is asked of today's detector exactly as it is today.
+   */
+  boxer?: PointerBoxer;
 }): RegionReader {
-  const { apiKey, signal, pairInOneRead = false } = input;
+  const { apiKey, signal, pairInOneRead = false, boxer } = input;
 
   /**
    * WHICH SIGNAL ONE CALL RUNS UNDER — the reader's own, the caller's, or both
@@ -2075,6 +2087,94 @@ export function createFalRegionReader(input: {
   };
 
   /**
+   * ONE REQUEST PER PICTURE — the boxer's batch (#2863).
+   *
+   * Callers ask name by name (`pointerCut` starts every found name's ask in
+   * the same turn, `markReferenceThings` too), and the boxer's whole measured
+   * shape is ONE request carrying every name. So the asks are gathered here:
+   * every `pointer` question about the same picture that arrives before the
+   * next turn of the event loop joins one batch, keyed on the very Buffer
+   * asked about, and the batch is sent once. A name asked twice in one batch
+   * is asked once and both askers get its boxes.
+   *
+   * ⚠ **A batch that every engine failed is asked of today's detector NAME BY
+   * NAME, with each asker's own signal** — the request that leaves is then
+   * byte-identical to the one this reader sent before the boxer existed, and a
+   * detector failure there THROWS to its asker exactly as it always has
+   * ("a transport failure is NOT an absence").
+   *
+   * ⚠ **Signals, declared rather than implied.** The batch is sent under the
+   * reader's own signal, plus the askers' signal when every asker passed the
+   * same one (the reference reading passes one to all its names); askers with
+   * different signals do not cancel one another's batch.
+   */
+  type BoxAsk = {
+    name: string;
+    imageUrl: string | undefined;
+    signal: AbortSignal | undefined;
+    resolve: (boxes: readonly PointerBox[]) => void;
+    reject: (error: unknown) => void;
+  };
+  const gathering = new Map<Buffer, BoxAsk[]>();
+  const sendBatch = async (image: Buffer, asks: readonly BoxAsk[]): Promise<void> => {
+    const names = Array.from(new Set(asks.map((ask) => ask.name)));
+    const signals = new Set(asks.map((ask) => ask.signal));
+    const shared = signals.size === 1 ? asks[0].signal : undefined;
+    let answer: ReadonlyMap<string, readonly PointerBox[]> | null = null;
+    try {
+      const sharp = (await import("sharp")).default;
+      const meta = await sharp(image).metadata();
+      if (meta.width && meta.height) {
+        answer = await boxer!.boxAll({
+          image, width: meta.width, height: meta.height, names, signal: signalFor(shared),
+        });
+      }
+    } catch (error) {
+      log.warn(
+        { names: names.length, why: error instanceof Error ? error.name : "unknown" },
+        "[falRegionReader] the boxer threw — today's detector answers",
+      );
+      answer = null;
+    }
+    if (answer !== null) {
+      for (const ask of asks) ask.resolve(answer.get(ask.name) ?? []);
+      return;
+    }
+    /* The last resort, untouched: one detector call per name, as today. */
+    const byName = new Map<string, Promise<readonly PointerBox[]>>();
+    for (const ask of asks) {
+      const call = byName.get(ask.name) ?? detectBoxes(image, ask.name, ask.imageUrl, ask.signal);
+      byName.set(ask.name, call);
+      call.then(ask.resolve, ask.reject);
+    }
+  };
+  const boxesFor = (
+    image: Buffer,
+    name: string,
+    imageUrl: string | undefined,
+    callSignal: AbortSignal | undefined,
+  ): Promise<readonly PointerBox[]> => {
+    if (boxer === undefined) return detectBoxes(image, name, imageUrl, callSignal);
+    /* Thrown HERE and never batched: a page that is not a picture is asked of
+       nobody, as on today's road. */
+    assertPicture(image, name);
+    return new Promise((resolve, reject) => {
+      const open = gathering.get(image);
+      const ask: BoxAsk = { name, imageUrl, signal: callSignal, resolve, reject };
+      if (open !== undefined) {
+        open.push(ask);
+        return;
+      }
+      gathering.set(image, [ask]);
+      setImmediate(() => {
+        const asks = gathering.get(image) ?? [];
+        gathering.delete(image);
+        void sendBatch(image, asks);
+      });
+    });
+  };
+
+  /**
    * THE REGION INSIDE ONE RECTANGLE — the pointer road's second half.
    *
    * The prompt goes out EMPTY on purpose: the rectangle is the question, and
@@ -2361,7 +2461,7 @@ export function createFalRegionReader(input: {
      * minute as a feature the cast has not got.
      */
     async pointer({ image, name, imageUrl, signal: callSignal }): Promise<readonly PointerBox[]> {
-      return detectBoxes(image, name, imageUrl, callSignal);
+      return boxesFor(image, name, imageUrl, callSignal);
     },
 
     /**
@@ -2417,7 +2517,7 @@ export function createFalRegionReader(input: {
          mapping, read the same way. */
       const imageSide = side === "left" ? "imageRight" : "imageLeft";
       const face = { midline: span.axis, left: span.left, right: span.right };
-      const boxes = await detectBoxes(image, singularOf(name), imageUrl, undefined);
+      const boxes = await boxesFor(image, singularOf(name), imageUrl, undefined);
       const here = boxes
         .filter((box) => atTheSide(box.x + box.width / 2, imageSide, face))
         /* A pair read may come back with this many instances; so may a side. */
