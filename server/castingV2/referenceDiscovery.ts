@@ -94,7 +94,7 @@
  */
 import { biggestOf, spreadOf } from "./referenceBoxes";
 import { boundForJudge } from "./judgeFrame";
-import { isBareNoun, mergeDiscoveries, parseDiscovery } from "./faceDiscovery";
+import { DISCOVERY_NAME_MAX_WORDS, isBareNoun, mergeDiscoveries, parseDiscovery } from "./faceDiscovery";
 import { createModuleLogger } from "../logging/logger";
 import type { BoxSpread } from "./referenceBoxes";
 import type { DiscoveredFeature, FeatureCoverage, FeatureKind, UnseenFeature } from "./faceDiscovery";
@@ -557,7 +557,7 @@ export async function markReferenceThings(input: {
 
   const askable: DiscoveredFeature[] = [];
   for (const feature of input.features) {
-    if (!isBareNoun(feature.name)) {
+    if (!isBareNoun(feature.name, DISCOVERY_NAME_MAX_WORDS)) {
       /* Named in words no detector can use. It stays takeable by WORDS, which
          is why it is reported rather than discarded (#2570's lesson on the cast
          road: a parse rule became a deletion). */
