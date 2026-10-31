@@ -48,6 +48,8 @@ import {
   validateCastingBriefFidelityEnvironment,
   CASTING_CONCEPT_UPLOAD_SCOPE_ENV,
   validateCastingConceptUploadEnvironment,
+  CASTING_CONCEPT_RICH_LOOK_SCOPE_ENV,
+  validateCastingConceptRichLookEnvironment,
   CASTING_CREATION_RECORD_SCOPE_ENV,
   validateCastingCreationRecordEnvironment,
   CASTING_VOICE_SCOPE_ENV,
@@ -766,6 +768,16 @@ export function validateEnv(): void {
   validateCastingConceptUploadEnvironment({
     scope: process.env[CASTING_CONCEPT_UPLOAD_SCOPE_ENV],
     castingScope: process.env[CASTING_V2_SCOPE_ENV],
+  });
+  /*
+    HOW AN UPLOADED CONCEPT IS READ (#2911). Its parent is the upload door and
+    nothing else: it chooses the reading, so armed without the door it is a
+    switch with nothing behind it. Casting rides in through the door's own check
+    above rather than being restated here.
+  */
+  validateCastingConceptRichLookEnvironment({
+    scope: process.env[CASTING_CONCEPT_RICH_LOOK_SCOPE_ENV],
+    conceptUploadScope: process.env[CASTING_CONCEPT_UPLOAD_SCOPE_ENV],
   });
 
   /*

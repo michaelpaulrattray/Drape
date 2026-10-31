@@ -12,21 +12,36 @@
  *
  * `TODAY` below was computed by running these exact scenarios against the tree
  * at `ac0fe5782` (origin/main the day the card was built), before any line of
- * `conceptDescribe.ts` moved. So "the flag off is byte-identical to today" is a
- * comparison against the old tree's own bytes, not against a value this change
- * also wrote. A hash that moves is a change to what a customer outside the flag
- * is read with, and it is refused here rather than discovered on a bill.
+ * `conceptDescribe.ts` moved, and committed alone on that tree (the first
+ * commit of the #2911 branch). So "the flag off is byte-identical to today" is
+ * a comparison against the old tree's own bytes, not against a value this
+ * change also wrote. A hash that moves is a change to what a customer outside
+ * the flag is read with, and it is refused here rather than discovered later.
+ *
+ * `RICH_LOOK` is the other reading's, taken the day it was written — the
+ * `refineOpenLaneClause.test.ts` precedent for a served pair: an edit to the
+ * rich look's words or bounds is then a deliberate act with a hash to move.
  *
  * The picture is replaced by a placeholder before hashing (its bytes are the
  * bounded fixture's, not the reader's words) and asserted separately to be an
  * inline data URI, which is the never-fetched promise.
+ *
+ * # AND THE DOOR, DRIVEN THROUGH THE REAL ROUTER
+ *
+ * The last block drives `castingV2.concept.describe` through `appRouter`, so
+ * the flag is proven where it is CAPTURED (the route) and not only where it is
+ * obeyed (`describeConcept`): a capture that was never passed, or passed for
+ * the wrong account, reads correctly from both sides and is invisible to every
+ * arm above it.
  */
 import { createHash } from "node:crypto";
 
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { describeConcept, resetConceptReaderForTests } from "./conceptDescribe";
+import { appRouter } from "../routers";
+import type { TrpcContext } from "../_core/context";
+import { CONCEPT_READER_MODEL, CONCEPT_RICH_LOOK_MODEL, describeConcept, resetConceptReaderForTests } from "./conceptDescribe";
 import { resetInterpreterForTests } from "./interpreter";
 
 type Body = {
@@ -69,6 +84,35 @@ const TODAY: Record<string, string> = {
   unparseable: "b1674b9e03c864f27f910bc03814c8587a010924837f79eb749d8b0adc757d22",
 };
 
+/**
+ * THE RICH LOOK's scenarios. "long" is a rich look over 700 on the way in;
+ * the other three faults share the scripts above, so the two readings are
+ * compared on the same replies wherever a reply means the same thing to both.
+ */
+const RICH_CLEAN =
+  "A young adult woman, a cyberpunk operative type. Dark graphic tattoos run down both arms and "
+  + "across the shoulders, and a mechanical core plate is fitted at the waist. Signature pieces are "
+  + "goggles worn up on the forehead, armoured forearm guards and a protective plate at one shoulder. "
+  + "The wardrobe is matte black synthetic, leather and mesh with metal hardware, cropped and strapped.";
+const RICH_SCENARIOS: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = [
+  ["clean", [said(RICH_CLEAN)]],
+  ["long", [said(`${RICH_CLEAN} ${RICH_CLEAN}`), said(RICH_CLEAN)]],
+  ["brief", [said("A woman."), said(RICH_CLEAN)]],
+  ["picture", [said(`${RICH_CLEAN} Shot against a grey background.`), said(RICH_CLEAN)]],
+  ["absence", [said(`${RICH_CLEAN} She wears no jewellery.`), said(RICH_CLEAN)]],
+  ["unparseable", ["not json at all", said(RICH_CLEAN)]],
+];
+
+/** The rich look's bytes, taken the day it was written (#2911). */
+const RICH_LOOK: Record<string, string> = {
+  clean: "d5110d2ac78c74ac456eb814a3bb7f112de390f79fa763fb86e46d77d2ceaff9",
+  long: "64717f087f22dab437d9242d4cf44618072fe11861ee720445ddd045b3d6d00a",
+  brief: "9f3a30a327c8091b68e9e4e71c37361e024f759f06911ea74782e14e6e0c5bca",
+  picture: "bcd585f09ba5506e7e76b269625b6bc64f3a79cab7a59cfeb5aa45b290696190",
+  absence: "894205d886b9abb03bc75e227ae6cf8dc3b1bd299ecefbc4d264f519db01ee2c",
+  unparseable: "231ab2faca83d3ee0200646521082a81f5a482b6f625e61e522c4c5f7a3f4d70",
+};
+
 let replies: string[] = [];
 let bodies: Body[] = [];
 
@@ -100,14 +144,30 @@ function withoutPicture(body: Body): Body {
 const digest = (sent: Body[]) =>
   createHash("sha256").update(JSON.stringify(sent.map(withoutPicture))).digest("hex");
 
+const systemOf = (body: Body) => body.messages[0]!.content as string;
+
+function expectPictureInline(sent: Body[]): void {
+  for (const body of sent) {
+    const user = body.messages[1]!.content as Array<{ type: string; image_url?: { url: string } }>;
+    expect(user.find((part) => part.type === "image_url")?.image_url?.url, "the picture rides inline")
+      .toMatch(/^data:image\/[a-z]+;base64,/);
+  }
+}
+
 let picture: Buffer;
-let previousKey: string | undefined;
+const savedEnv: Record<string, string | undefined> = {};
+const ENV_KEYS = [
+  "OPENROUTER_API_KEY",
+  "CASTING_V2_SCOPE",
+  "CASTING_CONCEPT_UPLOAD_SCOPE",
+  "CASTING_CONCEPT_RICH_LOOK_SCOPE",
+] as const;
 
 beforeEach(async () => {
   picture ??= await sharp({
     create: { width: 600, height: 800, channels: 3, background: { r: 120, g: 110, b: 100 } },
   }).png().toBuffer();
-  previousKey = process.env.OPENROUTER_API_KEY;
+  for (const key of ENV_KEYS) savedEnv[key] = process.env[key];
   process.env.OPENROUTER_API_KEY = "test-key-never-sent";
   resetInterpreterForTests();
   resetConceptReaderForTests();
@@ -122,8 +182,10 @@ beforeEach(async () => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  if (previousKey === undefined) delete process.env.OPENROUTER_API_KEY;
-  else process.env.OPENROUTER_API_KEY = previousKey;
+  for (const key of ENV_KEYS) {
+    if (savedEnv[key] === undefined) delete process.env[key];
+    else process.env[key] = savedEnv[key];
+  }
   resetInterpreterForTests();
   resetConceptReaderForTests();
 });
@@ -133,11 +195,159 @@ describe("today's reader at the wire, pinned to the tree before #2911", () => {
     replies = [...script];
     await describeConcept({ bytes: picture, contentType: "image/png" });
     expect(bodies.length, `${name}: the scenario must actually be driven`).toBe(script.length);
-    for (const body of bodies) {
-      const user = body.messages[1]!.content as Array<{ type: string; image_url?: { url: string } }>;
-      expect(user.find((part) => part.type === "image_url")?.image_url?.url, "the picture rides inline")
-        .toMatch(/^data:image\/[a-z]+;base64,/);
-    }
+    expectPictureInline(bodies);
     expect(digest(bodies), `${name}: the request today's reader sends`).toBe(TODAY[name]);
+  });
+
+  it("is today's model, today's ceiling and today's temperature — said in words beside the hash", async () => {
+    replies = [said(CLEAN)];
+    await describeConcept({ bytes: picture, contentType: "image/png", richLook: false });
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]!.model).toBe("anthropic/claude-sonnet-5");
+    expect(bodies[0]!.model).toBe(CONCEPT_READER_MODEL);
+    expect(bodies[0]!.max_tokens).toBe(900);
+    expect(bodies[0]!.temperature).toBe(0);
+    expect(bodies[0]!.response_format).toEqual({ type: "json_object" });
+    expect(bodies[0]!, "no reasoning switch was ever sent").not.toHaveProperty("reasoning");
+    /* `richLook: false` and absent are the same request — the hash says so too. */
+    expect(digest(bodies)).toBe(TODAY.clean);
+  });
+});
+
+describe("the rich look at the wire", () => {
+  it.each(RICH_SCENARIOS)("sends the rich look's bytes — %s", async (name, script) => {
+    replies = [...script];
+    await describeConcept({ bytes: picture, contentType: "image/png", richLook: true });
+    expect(bodies.length, `${name}: the scenario must actually be driven`).toBe(script.length);
+    expectPictureInline(bodies);
+    expect(digest(bodies), `${name}: the request the rich look sends`).toBe(RICH_LOOK[name]);
+  });
+
+  it("is Argon, its own ceiling, the same temperature and the same envelope", async () => {
+    replies = [said(RICH_CLEAN)];
+    await describeConcept({ bytes: picture, contentType: "image/png", richLook: true });
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]!.model).toBe("google/gemini-4-argon");
+    expect(bodies[0]!.model).toBe(CONCEPT_RICH_LOOK_MODEL);
+    expect(bodies[0]!.max_tokens).toBe(1400);
+    expect(bodies[0]!.temperature).toBe(0);
+    expect(bodies[0]!.response_format).toEqual({ type: "json_object" });
+    expect(bodies[0]!).not.toHaveProperty("reasoning");
+  });
+
+  it("sends a different instruction from today's, and the same ask", async () => {
+    replies = [said(RICH_CLEAN)];
+    await describeConcept({ bytes: picture, contentType: "image/png", richLook: true });
+    const rich = bodies[0]!;
+    bodies = [];
+    replies = [said(CLEAN)];
+    await describeConcept({ bytes: picture, contentType: "image/png" });
+    const today = bodies[0]!;
+    expect(systemOf(rich)).not.toBe(systemOf(today));
+    expect(systemOf(rich)).toContain("THE FACE STAYS FREE");
+    expect(systemOf(today)).not.toContain("THE FACE STAYS FREE");
+    /* The user turn's first ask is the same sentence on both readings. */
+    expect(JSON.stringify(rich.messages[1]!.content).replace(/data:[^"]+/, ""))
+      .toBe(JSON.stringify(today.messages[1]!.content).replace(/data:[^"]+/, ""));
+  });
+});
+
+/* ------------------------------------------------ the door, through the router */
+
+function ctxFor(userId: number): TrpcContext {
+  const user = {
+    id: userId,
+    openId: `concept-${userId}`,
+    email: "concept@example.com",
+    name: "Concept",
+    displayName: null,
+    avatarUrl: null,
+    avatarKey: null,
+    bannerUrl: null,
+    bannerKey: null,
+    bio: null,
+    loginMethod: "email",
+    approved: true,
+    role: "user",
+    storageUsed: 0,
+    storageLimit: 104857600,
+    suspendedAt: null,
+    suspendedReason: null,
+    suspendedBy: null,
+    frozenAt: null,
+    frozenReason: null,
+    frozenBy: null,
+    referralCode: null,
+    referredByUserId: null,
+    accessCode: null,
+    approvedAt: new Date(),
+    failedLoginAttempts: 0,
+    lockedUntil: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastSignedIn: new Date(),
+  } as unknown as NonNullable<TrpcContext["user"]>;
+  return {
+    user,
+    correlationId: `concept-${userId}`,
+    req: { protocol: "https", headers: {} } as TrpcContext["req"],
+    res: { clearCookie: () => undefined } as unknown as TrpcContext["res"],
+  };
+}
+
+/* Each arm its own account, so the door's hourly rate bucket never decides an arm. */
+let nextUser = 29_110_000;
+const describeAs = async (userId: number) =>
+  appRouter.createCaller(ctxFor(userId)).castingV2.concept.describe({
+    imageBase64: picture.toString("base64"),
+  });
+
+describe("the door captures the flag and hands it on — driven through the real router", () => {
+  beforeEach(() => {
+    process.env.CASTING_V2_SCOPE = "all";
+    process.env.CASTING_CONCEPT_UPLOAD_SCOPE = "all";
+  });
+
+  it("flag ABSENT: the door reads with today's reader, byte for byte", async () => {
+    delete process.env.CASTING_CONCEPT_RICH_LOOK_SCOPE;
+    replies = [said(CLEAN)];
+    await expect(describeAs(nextUser++)).resolves.toEqual({ description: CLEAN });
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]!.model).toBe("anthropic/claude-sonnet-5");
+    expect(digest(bodies)).toBe(TODAY.clean);
+  });
+
+  it("flag `off`: the same", async () => {
+    process.env.CASTING_CONCEPT_RICH_LOOK_SCOPE = "off";
+    replies = [said(CLEAN)];
+    await describeAs(nextUser++);
+    expect(digest(bodies)).toBe(TODAY.clean);
+  });
+
+  it("flag on for THIS account: the door reads with the rich look", async () => {
+    const user = nextUser++;
+    process.env.CASTING_CONCEPT_RICH_LOOK_SCOPE = `users:${user}`;
+    replies = [said(RICH_CLEAN)];
+    await expect(describeAs(user)).resolves.toEqual({ description: RICH_CLEAN });
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]!.model).toBe("google/gemini-4-argon");
+    expect(digest(bodies)).toBe(RICH_LOOK.clean);
+  });
+
+  it("flag on for SOMEBODY ELSE: this account keeps today's reader", async () => {
+    const user = nextUser++;
+    process.env.CASTING_CONCEPT_RICH_LOOK_SCOPE = `users:${user + 1}`;
+    replies = [said(CLEAN)];
+    await describeAs(user);
+    expect(bodies[0]!.model).toBe("anthropic/claude-sonnet-5");
+    expect(digest(bodies)).toBe(TODAY.clean);
+  });
+
+  it("flag on but the DOOR shut: nothing is read at all — NOT_FOUND before a byte", async () => {
+    const user = nextUser++;
+    process.env.CASTING_CONCEPT_RICH_LOOK_SCOPE = `users:${user}`;
+    process.env.CASTING_CONCEPT_UPLOAD_SCOPE = "off";
+    await expect(describeAs(user)).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(bodies).toHaveLength(0);
   });
 });
