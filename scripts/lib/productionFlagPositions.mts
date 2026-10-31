@@ -401,12 +401,14 @@ export const PRODUCTION_FLAG_POSITIONS: Readonly<Record<string, FlagPosition>> =
       + "can never reach past the door that keeps the picture it reads.",
   },
   CASTING_POINTER_ENGINE_SCOPE: {
-    position: "off",
+    position: "users:1",
     why:
-      "built dark 2026-10-30 (#2863, his 'yes' to Gemini 4 Argon as the boxer "
+      "set to users:1 on the service by the relay 2026-10-31, after #2864 merged "
+      + "(squash 7adedb7c), on his standing word that his own account is never "
+      + "asked; read back by name, parent CASTING_V2_SCOPE=all. Built dark 2026-10-30 (#2863, his 'yes' to Gemini 4 Argon as the boxer "
       + "with Qwen3-VL behind it, on #2846 part 5's blind marks: Argon 62 right "
-      + "of 65, today's detector 57 with 5 wrong). Shipped `off` and ABSENT from "
-      + "the service; while off every box is today's detector request, name by "
+      + "of 65, today's detector 57 with 5 wrong). Shipped `off` and absent from "
+      + "the service until then; while off every box is today's detector request, name by "
       + "name, and nothing reaches OpenRouter. The relay sets it to users:1 on "
       + "his account after merge on his standing word that his own account is "
       + "never asked; widening past him is his word after his own panel round. "
