@@ -308,12 +308,12 @@ _Called as:_ `castingV2.concept.describe`
 
 | door | kind | charge | where it lives | pinned | reached by |
 |---|---|---|---|---|---|
-| `concept.no_being` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1649<br>server/castingV2/conceptDescribeCopy.ts:113 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.no_being` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1647<br>server/castingV2/conceptDescribeCopy.ts:113 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.not_about_the_person` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:116 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.not_a_casting_note` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:121 | 3 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.ran_long` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:147 | 3 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1681<br>server/castingV2/conceptDescribeCopy.ts:153 | 2 test(s) | _documented-unreachable or gap — see findings_ |
-| `concept.no_transport` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1574<br>server/castingV2/conceptDescribeCopy.ts:194 | 4 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.unreadable` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1679<br>server/castingV2/conceptDescribeCopy.ts:153 | 2 test(s) | _documented-unreachable or gap — see findings_ |
+| `concept.no_transport` | concept-refusal |  | server/castingV2/conceptDescribe.ts:1572<br>server/castingV2/conceptDescribeCopy.ts:194 | 4 test(s) | _documented-unreachable or gap — see findings_ |
 | `concept.reader_outage` | concept-refusal |  | server/castingV2/conceptDescribeCopy.ts:195 | 2 test(s) | _documented-unreachable or gap — see findings_ |
 
 > ⚠ THIS ROAD'S DOORS REACHED THE MAP BEFORE THE ROAD DID — the six were declared with #192 and every one of them is documented-unreachable (the corpus sends sentences, not pictures), while the ENTRANCE they belong to had no road until #1203. That is the forward/backward asymmetry in one specimen: the map could prove every door it named was real and could not notice it had never named the road. The FLAG and the two byte doors above the six are still outside the declared set: `NOT_FOUND` off `captureCastingConceptUploadEnabled`, and the shared `referenceAttachBytesRefusal` / `BYTES_NOT_AN_IMAGE_MESSAGE` pair, which are the ink door's own sentences reused rather than restated. ⚠ A SEVENTH ARRIVED WITH #2686 AND THE SIX ABOVE ARE WHY IT COULD: `concept.reader_outage` splits the case where the text provider refuses OUR account (401/402/403) out of `concept.unreadable`, which had been telling a customer to try again in a moment while our key was disabled. The arm that holds this list equal to the copy table is what caught the omission the same minute the door was declared.

@@ -27,7 +27,19 @@
  * are now the point — *"give it details to imagine"*), the ~150–250 target and
  * the 300/400 ceilings (the rich look's own numbers replace them), and
  * {@link GOLDEN_NOTES} / {@link INVENTORY_NOTE} as specimens (both carry hair,
- * so neither may be shown to this reader; {@link RICH_LOOK_NOTES} stands in).
+ * so neither may be shown to this reader).
+ *
+ * # AND THE FOLLOW-UP: THE BENCH'S EXAMPLES, AND NO SPECIMEN
+ *
+ * The founder on the first shipping: *"okay nope quality bar dropped we need to
+ * bring it to the ruleset that gets us this type of result"*. The first
+ * shipping had dropped the concrete examples from the bench's ingredient
+ * bullets and shown the reader a specimen whose wardrobe was a
+ * materials-and-mood line, and the readings came back at that level. So two
+ * arms below hold the shape that fixed it: the ingredient bullets carry the
+ * bench's examples word for word, and the instruction shows no specimen.
+ * {@link RICH_NOTE} and {@link FACE_AND_HAIR_NOTE} were those specimens; they
+ * survive here only as replies for the fake transport.
  */
 import { describe, expect, it, vi } from "vitest";
 
@@ -39,7 +51,6 @@ import {
   CONCEPT_RICH_LOOK_TARGET,
   GOLDEN_NOTES,
   INVENTORY_NOTE,
-  RICH_LOOK_NOTES,
   absenceClaimIn,
   describeConcept,
   notAboutThePersonIn,
@@ -81,6 +92,49 @@ const HIS_PICK =
   + "matte-black top with tech-text, low-slung utility shorts with metal hardware, tactical thigh "
   + "straps, and fishnet mesh.";
 
+/**
+ * A clean rich look for the fake transport: rich in pieces, nothing about the
+ * face or the hair. It was the instruction's RIGHT specimen in #2915 and is a
+ * test reply only now (an arm below holds it out of the instruction).
+ */
+const RICH_NOTE =
+  "A woman in her twenties, dark-fashion / cyber-goth model type with pale skin. A fitted "
+  + "mechanical eye is set into the face as part of the being, not as a prop. Facial piercings "
+  + "and fine-line markings across the face, with script tattoos running down both arms. "
+  + "Signature pieces are a high structured collar at the throat and long lace gloves. The "
+  + "wardrobe is black lace, leather and metal accents in a fitted, layered silhouette that "
+  + "sweeps to the floor.";
+
+/** The same woman with the face and the hair fixed — #2915's WRONG specimen, a test reply only now. */
+const FACE_AND_HAIR_NOTE =
+  "A woman in her twenties, dark-fashion / cyber-goth model type with pale skin, pale green "
+  + "eyes, heavy winged eyeliner, dark plum lips and sharply arched brows, and long straight "
+  + "platinum hair with blunt bangs. A fitted mechanical eye is set into the face. Facial "
+  + "piercings and fine-line markings across the face, with script tattoos running down both "
+  + "arms. The wardrobe is black lace, leather and metal accents in a fitted, layered silhouette.";
+
+/**
+ * THE BENCH'S INGREDIENT BULLETS, word for word as he picked them
+ * (`_concept-bench-facefree-disposable.mts`, a local disposable, read
+ * 2026-10-31). A pinned DECISION, not a mirror of a tracked source: the bench
+ * file is not in the repository, and these lines are what his pick was read
+ * with. One declared repair: the hardware example said "an implant plate in
+ * the abdomen", two lines above the rule that bans naming the abdomen.
+ */
+const BENCH_BULLETS = [
+  "- SIGNATURE PIECES: name up to four defining pieces worn or carried (goggles pushed up on the "
+    + "forehead, armoured gauntlets, a utility harness), described by look and material, never by brand.",
+  "- MARKINGS AND MOTIFS: what they are and roughly where they live (fine-line tattoos tracing the "
+    + "cheekbones and jaw, script and floral pieces down the arms), and their style.",
+  "- HARDWARE AND ANATOMY: anything fitted into the body is a FEATURE and is described with where it "
+    + "sits (a sleek metal collar fused at the throat, an implant plate fitted at the waist); species facts",
+  "- WARDROBE: its materials, palette and silhouette (black leather, fishnet mesh, matte armour, "
+    + "cropped and strapped), as a look rather than a packing list.",
+] as const;
+
+/** Whitespace folded, so a re-wrapped line still reads as the same words. */
+const flat = (text: string) => text.replace(/\s+/g, " ");
+
 /** A rich look of `length` characters, clean through both sweeps. */
 function richOf(length: number): string {
   const sentence = "Dark graphic tattoos run down both arms and a mechanical core plate is fitted at the waist. ";
@@ -88,7 +142,7 @@ function richOf(length: number): string {
 }
 
 const systemOf = async () => {
-  const engine = engineSaying(said(RICH_LOOK_NOTES.right));
+  const engine = engineSaying(said(RICH_NOTE));
   await describeConcept({ ...PICTURE, engine, richLook: true });
   return engine.sent[0]!.system;
 };
@@ -133,7 +187,9 @@ describe("the flag chooses the instruction", () => {
 describe("no face and no hair — his line", () => {
   it("tells the reader the face stays free, naming each thing he named", async () => {
     const rule = sliceFrom((await systemOf()).toLowerCase(), "the face stays free", 420);
-    for (const part of ["no eye colour", "eyeliner or makeup", "no lips", "no brows", "face shape"]) {
+    /* The bench's own sentence: "Never describe eye colour, eyeliner or makeup, lips, brows, face shape or features". */
+    expect(rule, "the rule forbids, not invites").toContain("never describe eye colour");
+    for (const part of ["eyeliner or makeup", "lips", "brows", "face shape"]) {
       expect(rule, part).toContain(part);
     }
     /* Hardware and markings on the face are NOT the face — his reply 28 holds. */
@@ -152,8 +208,10 @@ describe("no face and no hair — his line", () => {
     for (const todays of [
       "hair world", "sculpted platinum", "hair going grey", "never the cut", "the fringe or the fade",
       "take it to a barber",
+      /* And the BENCH's own hair line, the one line of his pick his later ruling replaced. */
+      "give the hair only as a world", "long dark hair",
     ]) {
-      expect(system, todays).not.toContain(todays);
+      expect(flat(system), todays).not.toContain(todays);
     }
     /* Positive control: the same phrases ARE in today's instruction, so this arm can fail. */
     const today = (await todaySystemOf()).toLowerCase();
@@ -162,36 +220,32 @@ describe("no face and no hair — his line", () => {
     }
   });
 
-  it("its RIGHT specimen names nothing about the face or the hair", () => {
-    expect(RICH_LOOK_NOTES.right).not.toMatch(FACE_OR_HAIR);
+  it("its test replies are what they say: the rich one names no face or hair, the other does", () => {
+    expect(RICH_NOTE).not.toMatch(FACE_OR_HAIR);
     /* Control: the regex can see a face and a haircut. */
-    expect(RICH_LOOK_NOTES.faceAndHair).toMatch(FACE_OR_HAIR);
+    expect(FACE_AND_HAIR_NOTE).toMatch(FACE_OR_HAIR);
+  });
+});
+
+describe("the bench he picked — the regression he caught on the first shipping", () => {
+  it("keeps every ingredient bullet the bench carried, WITH its examples, word for word", async () => {
+    const system = flat(await systemOf());
+    for (const bullet of BENCH_BULLETS) expect(system, bullet.slice(0, 40)).toContain(bullet);
+    /* The one that set the level: the wardrobe's examples are garments and textures, not a mood. */
+    expect(system).toContain("(black leather, fishnet mesh, matte armour, cropped and strapped)");
   });
 
-  it("its WRONG specimen is wrong ONLY on the face and the hair — the pieces are the right note's", () => {
-    for (const shared of [
-      "dark-fashion / cyber-goth model type with pale skin",
-      "fitted mechanical eye is set into the face",
-      "Facial piercings and fine-line markings across the face",
-      "script tattoos running down both arms",
+  it("shows the reader NO specimen — the bench had none, and a specimen set the wardrobe's level", async () => {
+    const system = await systemOf();
+    for (const absent of [
+      "A note that is RIGHT", "written WRONG", RICH_NOTE, FACE_AND_HAIR_NOTE,
+      /* #2915's specimen wardrobe, the materials-and-mood line the readings came back at. */
       "black lace, leather and metal accents in a fitted, layered silhouette",
     ]) {
-      expect(RICH_LOOK_NOTES.right, shared).toContain(shared);
-      expect(RICH_LOOK_NOTES.faceAndHair, shared).toContain(shared);
+      expect(flat(system), absent.slice(0, 40)).not.toContain(absent);
     }
-    for (const fixed of ["green eyes", "eyeliner", "lips", "brows", "platinum hair", "bangs"]) {
-      expect(RICH_LOOK_NOTES.faceAndHair, fixed).toContain(fixed);
-    }
-  });
-
-  it("shows the reader both, the wrong one LABELLED and its reason after it", async () => {
-    const system = await systemOf();
-    expect(system).toContain(RICH_LOOK_NOTES.right);
-    const at = system.indexOf(RICH_LOOK_NOTES.faceAndHair);
-    expect(at).toBeGreaterThan(-1);
-    expect(system.slice(Math.max(0, at - 120), at)).toContain("WRONG");
-    expect(system.slice(at).toLowerCase()).toContain("only where it describes the face and the hair");
-    expect(system.indexOf(RICH_LOOK_NOTES.right)).toBeLessThan(at);
+    /* Positive control: that wardrobe line is a real string the arm can find, not a typo. */
+    expect(RICH_NOTE).toContain("black lace, leather and metal accents in a fitted, layered silhouette");
   });
 });
 
@@ -224,7 +278,7 @@ describe("never a bare body area — the request-stage refusal he measured", () 
   });
 
   it("is a rule and not a sweep — a robot's torso is its anatomy (declared)", async () => {
-    const note = `${RICH_LOOK_NOTES.right.slice(0, -1)}, over a chrome torso.`;
+    const note = `${RICH_NOTE.slice(0, -1)}, over a chrome torso.`;
     expect(notAboutThePersonIn(note)).toBeNull();
     expect(await describeConcept({ ...PICTURE, engine: engineSaying(said(note)), richLook: true }))
       .toEqual({ ok: true, description: note, attempts: 1 });
@@ -242,7 +296,7 @@ describe("kept from today's rules — each one re-asked of the rich look", () =>
   });
 
   it("carries the IP rule and the medium rule", async () => {
-    const system = (await systemOf()).toLowerCase();
+    const system = flat((await systemOf()).toLowerCase());
     expect(system).toContain("recognizable character");
     expect(system).toContain("never its name");
     expect(system).toContain("franchise");
@@ -251,7 +305,7 @@ describe("kept from today's rules — each one re-asked of the rich look", () =>
   });
 
   it("names fitted hardware as a FEATURE of the being — his reply 28", async () => {
-    const rule = sliceFrom((await systemOf()).toLowerCase(), "- hardware:", 300);
+    const rule = sliceFrom((await systemOf()).toLowerCase(), "- hardware and anatomy:", 300);
     expect(rule).toContain("fitted into the body is a feature");
     expect(rule).toContain("where it sits");
   });
@@ -280,7 +334,10 @@ describe("kept from today's rules — each one re-asked of the rich look", () =>
   });
 
   it("keeps the surface and creature rules — #231's 'never invent fur' and 'if it is in the frame'", async () => {
-    const rule = sliceFrom((await systemOf()).toLowerCase(), "- species facts first:", 520);
+    /* Folded into the bench's own hardware-and-anatomy bullet, which already said species facts come first. */
+    const rule = sliceFrom((await systemOf()).toLowerCase(), "- hardware and anatomy:", 720);
+    expect(rule).toContain("species facts");
+    expect(rule).toContain("always come first");
     expect(rule).toContain("if it is in the frame, write it");
     expect(rule).toContain("hairless");
     expect(rule).toContain("never invent fur");
@@ -348,9 +405,9 @@ describe("the rich look's bounds — 700 in, 800 on the re-ask, ~400–650 asked
   });
 
   it("names its own target on a too-short read, too", async () => {
-    const engine = engineSaying(said("A woman."), said(RICH_LOOK_NOTES.right));
+    const engine = engineSaying(said("A woman."), said(RICH_NOTE));
     expect(await describeConcept({ ...PICTURE, engine, richLook: true }))
-      .toEqual({ ok: true, description: RICH_LOOK_NOTES.right, attempts: 2 });
+      .toEqual({ ok: true, description: RICH_NOTE, attempts: 2 });
     expect(engine.sent[1]!.user).toContain("8 characters");
     expect(engine.sent[1]!.user).toContain(`${CONCEPT_RICH_LOOK_TARGET.low}–${CONCEPT_RICH_LOOK_TARGET.high}`);
   });
@@ -359,11 +416,11 @@ describe("the rich look's bounds — 700 in, 800 on the re-ask, ~400–650 asked
     const faults: ReadonlyArray<readonly [string, string]> = [
       ["long", said(richOf(760))],
       ["brief", said("too short")],
-      ["picture", said(`${RICH_LOOK_NOTES.right} Soft studio lighting.`)],
-      ["absence", said(`${RICH_LOOK_NOTES.right} No tattoos.`)],
+      ["picture", said(`${RICH_NOTE} Soft studio lighting.`)],
+      ["absence", said(`${RICH_NOTE} No tattoos.`)],
     ];
     for (const [name, first] of faults) {
-      const engine = engineSaying(first, said(RICH_LOOK_NOTES.right));
+      const engine = engineSaying(first, said(RICH_NOTE));
       await describeConcept({ ...PICTURE, engine, richLook: true });
       expect(engine.sent.length, `${name}: it was sent back`).toBe(2);
       expect(engine.sent[1]!.user, `${name}: the envelope`).toContain('{"description": "..."}');
@@ -373,28 +430,28 @@ describe("the rich look's bounds — 700 in, 800 on the re-ask, ~400–650 asked
 
 describe("the sweeps run on the rich look exactly as on today's", () => {
   it("refuses a rich look that keeps describing the picture", async () => {
-    const dirty = said(`${RICH_LOOK_NOTES.right} Soft studio lighting.`);
+    const dirty = said(`${RICH_NOTE} Soft studio lighting.`);
     expect(await describeConcept({ ...PICTURE, engine: engineSaying(dirty, dirty), richLook: true }))
       .toEqual({ ok: false, reason: "not_about_the_person", attempts: 2 });
   });
 
   it("refuses a rich look that keeps stating an absence", async () => {
-    const dirty = said(`${RICH_LOOK_NOTES.right} No tattoos on the hands.`);
+    const dirty = said(`${RICH_NOTE} No tattoos on the hands.`);
     expect(await describeConcept({ ...PICTURE, engine: engineSaying(dirty, dirty), richLook: true }))
       .toEqual({ ok: false, reason: "not_a_casting_note", attempts: 2 });
   });
 
   it("still tells 'no being here' apart from a read that failed, and never re-asks it", async () => {
-    const engine = engineSaying(said(null), said(RICH_LOOK_NOTES.right));
+    const engine = engineSaying(said(null), said(RICH_NOTE));
     expect(await describeConcept({ ...PICTURE, engine, richLook: true }))
       .toEqual({ ok: false, reason: "no_being", attempts: 1 });
     expect(engine.sent).toHaveLength(1);
   });
 
   it.each([
-    ["RIGHT", RICH_LOOK_NOTES.right],
-    ["WRONG", RICH_LOOK_NOTES.faceAndHair],
-  ] as const)("its %s specimen passes both sweeps and sits inside the bounds and the target", (_name, note) => {
+    ["rich", RICH_NOTE],
+    ["face-and-hair", FACE_AND_HAIR_NOTE],
+  ] as const)("its %s test reply passes both sweeps and sits inside the bounds and the target", (_name, note) => {
     expect(notAboutThePersonIn(note)).toBeNull();
     expect(absenceClaimIn(note)).toBeNull();
     expect(note.length).toBeGreaterThanOrEqual(CONCEPT_DESCRIPTION_MIN);
@@ -405,16 +462,17 @@ describe("the sweeps run on the rich look exactly as on today's", () => {
 
   /*
     ⚠ SAID OUT LOUD, as `conceptDescribe.test.ts` says it of the old failing
-    box: NOTHING ENFORCED AT RUNTIME CAN TELL THE WRONG SPECIMEN FROM THE RIGHT
-    ONE. A face and a haircut are not swept, on the same ground every word ban
-    in this file was refused on. The acceptance is the read and the renders,
-    and a green suite here is not evidence the model leaves the face alone.
+    box: NOTHING ENFORCED AT RUNTIME CAN TELL A READING THAT FIXES THE FACE AND
+    THE HAIR FROM ONE THAT LEAVES THEM FREE. A face and a haircut are not swept,
+    on the same ground every word ban in this file was refused on. The
+    acceptance is the read, and a green suite here is not evidence the model
+    leaves the face alone.
   */
-  it("CANNOT catch the face-and-hair specimen at runtime — the acceptance is the read, not a bound", async () => {
+  it("CANNOT catch a face-and-hair reading at runtime — the acceptance is the read, not a bound", async () => {
     expect(await describeConcept({
       ...PICTURE,
-      engine: engineSaying(said(RICH_LOOK_NOTES.faceAndHair)),
+      engine: engineSaying(said(FACE_AND_HAIR_NOTE)),
       richLook: true,
-    })).toEqual({ ok: true, description: RICH_LOOK_NOTES.faceAndHair, attempts: 1 });
+    })).toEqual({ ok: true, description: FACE_AND_HAIR_NOTE, attempts: 1 });
   });
 });
