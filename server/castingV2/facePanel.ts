@@ -2299,9 +2299,9 @@ export function facePanel(input: {
       const placed = instances.map((found) => ({ found, side: castSideOf(found.box) }));
       for (const { found, side } of placed) {
         if (side === null) continue;
-        const aloneOnItsSide = placed.filter((other) => other.side === side).length === 1;
+        const soleOnItsSide = placed.filter((other) => other.side === side).length === 1;
         const oneAcross = placed.some((other) => other.side !== null && other.side !== side);
-        if (aloneOnItsSide && oneAcross) sideOfFound.set(found, side);
+        if (soleOnItsSide && oneAcross) sideOfFound.set(found, side);
       }
     }
   }
