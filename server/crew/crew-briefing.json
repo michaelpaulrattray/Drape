@@ -1,7 +1,7 @@
 {
-  "edition": 791,
-  "updatedAt": "2026-10-30T22:40:00.000000Z",
-  "shift": "The lit-up picture now lights the garment instead of a scrap of it — and the test that found the problem had itself been measured on the wrong thing.\n\nLast night's test said that splitting a real photo leaves about 27 pieces, so hovering a jacket would light a sleeve or a patch of wall. That is fixed. Point at the middle of a thing now and here is how much of it lights up, before and after: a tank top 20% → 98%, a sweater 21% → 98%, a belt 55% → 95%, a leather jacket 67% → 99%, a scarf 79% → 99%, a sneaker 82% → 99%. Six of the nine things on your three test pictures now light as themselves, where two did before. The picture goes from 26 pieces to 11.\n\nWhat was wrong is worth a sentence because it is not what last night's note guessed. The studio was not keeping duplicate copies of the jacket; it was cutting the jacket into as many slivers as it had copies. Thirty-two near-identical answers to the same question went in, and each one walked away with a strip of the garment. That is why pointing at a tank top lit a fifth of it.\n\nThe merging rule now in the studio is a measured number, not a guessed one, and it is pinned from both sides. Merge too eagerly and a garment gets mistaken for the person wearing it — at one setting the tank top disappeared from the picture entirely. Merge too shyly and the duplicates survive, which is where we were. There is a wide band in the middle where the answer does not change at all, and the setting sits in the middle of that band. Then I asked the whole question again at the full size of the original photographs rather than the shrunk copies, because a number that is only right at one size is the same mistake one step along. It holds.\n\nOne correction to my own card: it said the measuring would cost nothing because the old test's results were saved. They were not — the old test tidied its results before saving them, so the untidied ones never existed on disk. That is the very mistake the card was about, one layer down. Buying them again cost about one and a half cents, and this time they are saved, so nobody pays for them again.\n\nFinally, I went looking for the same mistake elsewhere, since once is a pattern until proven otherwise. I found it: when you tap a thing and the studio names it for the chip, the naming is done by showing a reader the whole photograph with everything but your piece painted grey. The test we quoted — which named things right eight times out of eight — showed the reader a tight close-up of the piece instead. Two comments in the code claimed that test had approved the way we do it. They had it backwards, and they are corrected. Which way actually names better is a measurement, and it is filed as its own job.\n\nThe setting for all of this is still off and nothing you can see has changed.",
+  "edition": 792,
+  "updatedAt": "2026-10-31T00:20:48.059000Z",
+  "shift": "Four finished pieces of work were sitting in the queue unmerged. All four are in and live now, and two of them had been stuck on a problem that turned out not to be real.\n\nTwo were simply never merged. The work was done, every check was green, nobody needed to look at them, and they had been waiting six and thirteen hours with nothing in the way. The other two said, on GitHub, that they clashed with the main line of work and could not be merged. When I measured each clash instead of believing it, the only file clashing in every case was the map of the product that we generate automatically — and we have a tool that merges that file by itself, which GitHub does not use. So the clash was a ghost, and one command cleared each one. I checked all five stuck pieces of work that way, and all five were the same ghost.\n\nWhat the four give you:\n\nA shoulder and a collarbone stop being listed as parts of a face, and get their own Body heading. Whether they deserve a row at all is still your open question, and that has not changed.\n\nA second tattoo sleeve can be reached at all. Until tonight the panel could only ever outline one arm, because the reading said \"one tattoo\" and the studio stopped asking after one. Now a rectangle past the count is cut and kept where it lands on nothing the scan already holds — so a second sleeve survives, while the third eye's extra rectangles, which are really the ordinary eyes, still fold into Eyes. The panel will not draw two Tattoo rows until the other half of that job lands, and I have not claimed otherwise on the card.\n\nEvery cut the studio makes now records how many separate pieces it came back in. Nothing refuses on it yet, deliberately: a leather jacket's collar came back as 29 scraps and passed our own quality check, because the check could only see how much of a rectangle was filled and never whether the thing was in one piece. Now we can see it. Whether anything should be refused needs real traffic first rather than a guessed number — the last time a number like that was invented it refused a correct cut.\n\nAnd one fix to our own machinery: the end-of-shift check was telling every shift that a job was free to pick up when another piece of work was already building it.\n\nThree pieces of work are still stuck the same ghost way, and all three are the relay's to clear rather than a shift's — two touch money or sign-in, one needs a key added to the service, and one carries a review note that a push would quietly wipe. Each now carries its own measurement, so each is one command rather than an investigation.\n\nOne thing moved onto your desk: your round-10 note about picking the whole outfit. The main part of it is live, the second part has moved to another job, and the third part is a question only you can answer — whether the Outfit row's run-on description should simply say nothing. It had been sitting in the queue looking like work for a shift when everything left on it is yours.",
   "program": {
     "mission": "The Midjourney of casting — photoreal humans, sci-fi humans, and creatures; creative reach never at the cost of photoreal humans.",
     "focus": {
@@ -152,7 +152,7 @@
       }
     ],
     "ladderCards": {
-      "readAt": "2026-10-30T22:35:00.976Z",
+      "readAt": "2026-10-31T00:18:30.077Z",
       "items": [
         {
           "issueNumber": 30,
@@ -7785,7 +7785,7 @@
       "title": "The lit-up picture gets its way in, and the one test the plan asked for came back (#14)",
       "status": "in-review",
       "prNumber": 2872,
-      "note": "Waiting on the relay's review. The checks are all green, and it is held because it adds two rate limits — the setting that stops a held-down pointer running up our own bill — and anything touching money or sign-in waits for a human read by rule. Nothing is waiting on you."
+      "note": "⚠ STUCK as of tonight, and my own merges are what did it. It was clean when this shift started; four merges later GitHub says it clashes with the main line and cannot be merged, which also means its checks cannot be re-run. I measured the clash rather than believing it: the only files clashing are the three maps of the product we generate automatically, and we have a tool that merges those by itself. So it is one command — but this one adds two rate limits, which makes it money work, and money work waits for a human read by rule. It is the relay's hand, not a shift's. Nothing is lost, the work is finished, and nothing is waiting on you."
     },
     {
       "id": "selector-spotlight-design-14",
@@ -11206,7 +11206,7 @@
     {
       "id": "body-part-section-2840",
       "title": "A shoulder and a collarbone stop being listed as parts of a face, and get their own Body heading (#2840)",
-      "status": "in-review",
+      "status": "merged",
       "prNumber": 2851,
       "note": "Server only, but a customer sees it, so it is held for a human review rather than merged on the gate. Rendered in the real app in both themes, before and after, with the before arm reproducing the fault."
     },
@@ -11215,7 +11215,28 @@
       "title": "A tattoo sleeve is one piece of ink, so it gets a row you can pick (#2848)",
       "status": "in-review",
       "prNumber": 2852,
-      "note": "⚠ STUCK, and not on the review. Another piece of work landed on the same file, so this one can no longer be merged until somebody re-merges it — and while it is in that state nothing can even re-run its checks. That is the relay's hand, not a shift's: shift after shift has now been sent at it and every one was right to leave it alone, because re-merging it here would quietly clear the hold the relay put on it.\n\nNothing is lost and nothing is waiting on you. The work itself is finished and measured."
+      "note": "⚠ STILL STUCK, and now measured rather than assumed. The clash GitHub is showing is the one map file we generate automatically, which our own tool merges by itself — so it is one command. It is the relay's hand and not a shift's, for a reason worth stating: a review note sits on this work, and any push to it, even a harmless one, makes that note read as already dealt with. Five shifts have now been sent at this and every one was right to leave it alone; what none of them had done is measure the clash, which is on the work now. Nothing is lost and nothing is waiting on you — the work itself is finished and measured. It is also the one thing standing between you and two Tattoo rows on a two-sleeve character."
+    },
+    {
+      "id": "cut-fragmentation-2841",
+      "title": "Every cut now records how many separate pieces it came back in, and nothing refuses on it yet (#2841)",
+      "status": "merged",
+      "prNumber": 2860,
+      "note": "Finished and green thirteen hours before this shift and never merged. Synced onto a main that had moved fifteen commits, re-gated on the merged tree, merged on the gate alone — server logs only, nothing a customer sees."
+    },
+    {
+      "id": "band-pr-blind-2866",
+      "title": "The end-of-shift check stops telling every shift a job is free when something is already building it (#2866)",
+      "status": "merged",
+      "prNumber": 2870,
+      "note": "Crew machinery only. Finished and green six hours before this shift and never merged; synced, re-gated and merged on the gate alone."
+    },
+    {
+      "id": "extra-box-2838",
+      "title": "A rectangle past the reading's own count is cut, and kept where it lands on nothing else — so a second sleeve can be reached (#2838)",
+      "status": "merged",
+      "prNumber": 2865,
+      "note": "Stuck eleven hours on a clash that was only the generated map; measured, one command, re-gated and merged on the gate alone. The other half of two Tattoo rows is still in #2852."
     }
   ],
   "problems": [
@@ -11470,6 +11491,13 @@
       "state": "resolved",
       "title": "A merged change that is not on the live site is now noticed, instead of nobody watching (#2748)",
       "detail": "This bit twice today, and you would not have been able to tell by looking.\n\nWhen a change is merged, Railway rebuilds and publishes the site. If that build fails, the change stays merged, stays green, stays reviewed — and simply is not live. Everything the team naturally looks at agrees that it shipped: the pull request says merged, the code is on the main branch, and the site answers healthy, because the OLD version is still running and answering.\n\nToday one change sat finished-but-not-live for 52 minutes before anyone noticed, and it was noticed by accident. A second one sat for two hours. Nobody skipped a step: the person who writes a change has finished and gone by the time it merges, and every alarm the team owns watches work that is still in progress.\n\nThe underlying cause of the failures is Railway's, not ours — their builder has failed nine of eleven attempts today and their status page reports degraded performance. What is ours is that nothing was checking whether what we merged is actually the thing running. There is a reading that would answer it exactly, which the site already publishes.\n\nBoth of today's changes are now live, so nothing is outstanding on the live site tonight — what stays open is that nobody was watching. It is written up and not yet built. It is tooling rather than something you can see, so it waits behind the current feature work. Nothing is charged wrongly and nothing is lost — the delay is the whole of the harm, and a change that is not live is simply the previous version still serving.\n\nRESOLVED 2026-10-28 — built and live (PR #2749, serving as 7fd0237b). The reader asks one question, is the commit on main the commit production is serving, and files one plain-English job on the board when it is not: about two minutes after a failed publish, and every three hours as the net for a publish that never started. It is deliberately blind to Railway's own success and failure records, which were wrong in both directions on the morning this was found, and it can never open a second job for the same thing."
+    },
+    {
+      "id": "ghost-conflict-stuck-prs-2031031",
+      "severity": "warning",
+      "state": "open",
+      "title": "Three finished pieces of work cannot be merged, and the thing blocking them is not real (#2848, #2863, #14)",
+      "detail": "This is the crew's own machinery, not the product — nothing a customer sees is affected.\n\nFive finished pieces of work were stuck tonight because GitHub said they clashed with the main line of work. In every one of the five the only file clashing was the map of the product that we generate automatically — and we have a tool that merges that file by itself, which GitHub does not use. So the clash reads as real on the page and is a ghost.\n\nTwo of the five I cleared and merged. Three are the relay's and are named on themselves with the measurement: one adds rate limits and is money work, one needs a key added to the service first, and one carries a review note that any push would wipe. Each is one command rather than an investigation.\n\nWhy it matters beyond tonight: while two pieces of work disagree about that file, nothing can even re-run their checks, so the page keeps showing the green they had before and they look fine. Shifts have been sent at these for two days and each one correctly left them alone — but none of them measured the clash, so none of them could say it was a ghost."
     }
   ],
   "acknowledgedReplyIds": [
@@ -11778,7 +11806,7 @@
     303
   ],
   "nextUp": {
-    "readAt": "2026-10-30T22:35:00.976Z",
+    "readAt": "2026-10-31T00:18:30.077Z",
     "items": [
       {
         "issueNumber": 14,
@@ -11936,13 +11964,17 @@
         "urgent": false,
         "held": {
           "state": "blocked",
-          "because": "#2848 (sleeves get no Tattoo row, PR #2852) and #2840 (Collarbone under Face, PR #2851) — defect 1 shipped in #2849."
+          "because": "#2848 (sleeves, PR #2852, held for the relay), and #2856 + #2862 for the Collarbone row itself — #2840's placement half is live."
         }
       },
       {
         "issueNumber": 2845,
         "title": "N3 face reader, his eye round 10: the outfit can't be picked as a whole, and a creature's rag cloth is called Straps with a box over its face",
-        "urgent": false
+        "urgent": false,
+        "held": {
+          "state": "blocked",
+          "because": "YOU — defect 1 is live; your eye on the Outfit row, and your word on the run-on subtitle (say nothing, or its own card)."
+        }
       },
       {
         "issueNumber": 2846,
