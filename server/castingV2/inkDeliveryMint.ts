@@ -135,7 +135,15 @@ export type InkDeliveryMintInput = {
  */
 function defaultReader(): InkDeliveryReader {
   const apiKey = process.env.FAL_KEY;
-  return apiKey ? createFalRegionReader({ apiKey }) : refusingRegionReader;
+  /* `headBox` for the reason `refineService`'s own reader carries it (#2888):
+     this mint asks a SIDED question, so the midline it splits on is the
+     segmenter's face read — and on a cast whose arm wears a tattooed face that
+     read is not the cast's face. A wrong document rides a transform as the
+     SOURCE, which is the asymmetry `sidedMask` below exists for, so this is the
+     road where believing the wrong face is dearest. */
+  return apiKey
+    ? createFalRegionReader({ apiKey, headBox: "topHalfOfEachPicture" })
+    : refusingRegionReader;
 }
 
 /**

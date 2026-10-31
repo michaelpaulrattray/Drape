@@ -1003,9 +1003,33 @@ function defaultMaskedEditEngine() {
   });
 }
 
+/**
+ * ⚠ **A PAID EDIT IS NOT AIMED BY A FACE TATTOOED ON AN ARM — `headBox`
+ * (#2888, and #2885 is where the founder's eye found it).**
+ *
+ * The segmenter's `face` read decides every pair's midline, the face rule and
+ * the ear rules, and on his round-10 and round-11 casts it answered a face
+ * tattooed on the cast's arm. The scan has refused that since #2887; the
+ * refine had not, so a customer could pay to change an eye, a brow or an ear
+ * and have its territory cut from the wrong part of the picture.
+ *
+ * `"topHalfOfEachPicture"` rather than a measured rectangle because this
+ * factory is called at ten sites with no frame in hand, and every one of them
+ * reads a different picture: the box is derived from the bytes each read
+ * actually gets. Measured over all 86 face readings production has kept, a
+ * CORRECT face landmark has never once fallen below the top half (deepest
+ * 43.1%), and the box would have caught nine wrong eye cuts.
+ *
+ * Costs nothing on a frame whose face is where a face is. On one where it is
+ * not, one more segmenter read (≈0.5¢, house money) asks the head crop alone,
+ * and if that finds nothing the read goes on with no face — which is exactly
+ * what a frame the segmenter finds no face on has always done.
+ */
 function defaultRegionReader(): RegionReader {
   const apiKey = process.env.FAL_KEY;
-  return apiKey ? createFalRegionReader({ apiKey }) : refusingRegionReader;
+  return apiKey
+    ? createFalRegionReader({ apiKey, headBox: "topHalfOfEachPicture" })
+    : refusingRegionReader;
 }
 
 /**
@@ -1018,7 +1042,13 @@ function takeRegionReader(userId: number): RegionReader {
   const apiKey = process.env.FAL_KEY;
   if (!apiKey) return refusingRegionReader;
   const boxer = pointerBoxerFor(userId);
-  return boxer === undefined ? createFalRegionReader({ apiKey }) : createFalRegionReader({ apiKey, boxer });
+  /* The head box on both arms, for {@link defaultRegionReader}'s reason: the
+     take is a paid refine too, and whether this account draws its boxes with
+     today's detector or with the newer engine has nothing to do with whether
+     the face read is the cast's face. */
+  return boxer === undefined
+    ? createFalRegionReader({ apiKey, headBox: "topHalfOfEachPicture" })
+    : createFalRegionReader({ apiKey, boxer, headBox: "topHalfOfEachPicture" });
 }
 
 /**

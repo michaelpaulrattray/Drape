@@ -625,7 +625,7 @@ it off the list, with the reader's positive control beside it.
 - `ENABLE_STORAGE_CLEANUP_WORKER=true` — required before evidence ingest can be enabled
 - `R2_EVIDENCE_BUCKET`, `R2_EVIDENCE_ACCESS_KEY_ID`, `R2_EVIDENCE_SECRET_ACCESS_KEY` — dedicated private evidence bucket and least-privilege credential; uses `R2_ENDPOINT` but never `R2_PUBLIC_URL`
 
-⚠ **THE FORTY-THREE SCOPE FLAGS BELOW ARE INDEXED HERE AND GOVERNED IN
+⚠ **THE FORTY-FOUR SCOPE FLAGS BELOW ARE INDEXED HERE AND GOVERNED IN
 [`docs/architecture/FEATURE_FLAGS.md`](docs/architecture/FEATURE_FLAGS.md).**
 Their entries — 122,893 bytes, two thirds of this file as it stood — moved
 there on 2026-08-31 under the founder's own card (#330: *"why are simple code changes
@@ -668,6 +668,7 @@ the live service on every push.
 | `CASTING_BRIEF_FIDELITY_SCOPE` | whether a customer's own words are rationed on the way into her sheet |
 | `CASTING_CREATIVE_REGISTER_SCOPE` | whether a roll takes the author road — ✅ RETIRED with the old lane (#1443); every roll takes it |
 | `CASTING_CONCEPT_UPLOAD_SCOPE` | upload a concept — a picture in, a description of the being out |
+| `CASTING_CONCEPT_RICH_LOOK_SCOPE` | how an uploaded concept is read — a rich look with the face and hair left free, on its own reader model (#2911) |
 | `CASTING_REFINE_DISPATCH_SCOPE` | whether the paid half of a refine stops holding the request — ✅ RETIRED (#1577 slice D4); every refine answers with a receipt now |
 | `CASTING_RETRY_SCOPE` | the Retry button on a failed tile |
 | `CASTING_ROLL_ENGINE_SCOPE` | which accounts roll on an EXCEPTION to the default engine — `CASTING_ROLL_ENGINE_MODEL` (`flare` / `sunburst`) says which |

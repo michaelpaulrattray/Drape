@@ -57,7 +57,9 @@ vi.mock("../providers/openrouterText", async (importOriginal) => {
    one leaves `resetConceptReaderForTests` reading as an export nothing uses. */
 import {
   CONCEPT_READER_MODEL,
+  CONCEPT_RICH_LOOK_MODEL,
   conceptReaderEngine,
+  conceptRichLookReaderEngine,
   describeConcept,
   resetConceptReaderForTests,
 } from "./conceptDescribe";
@@ -159,6 +161,65 @@ describe("no transport", () => {
     delete process.env.OPENROUTER_API_KEY;
     resetConceptReaderForTests();
     expect(conceptReaderEngine()).toBeNull();
+    expect(conceptRichLookReaderEngine()).toBeNull();
     expect(built).toHaveLength(0);
+  });
+});
+
+/**
+ * #2911 — THE RICH LOOK'S OWN MODEL, AND THE SAME ONE ALLOWANCE.
+ *
+ * The limit this file's docblock declares — that no arm could tell "the reader
+ * reads its own constant" from "the reader reads the interpreter's" while the
+ * two were the same string — is LIFTED for the rich look: its slug is not the
+ * interpreter's, so a reading that reached the wrong engine is visible on the
+ * factory's config. It is still open for today's reader, and stays declared.
+ */
+describe("the rich-look reader's model (#2911)", () => {
+  it("is pinned to its OWN constant at the factory, and that constant is his bench's winner", () => {
+    conceptRichLookReaderEngine();
+    expect(built).toHaveLength(1);
+    expect(built[0]!.model).toBe(CONCEPT_RICH_LOOK_MODEL);
+    expect(CONCEPT_RICH_LOOK_MODEL).toBe("google/gemini-4-argon");
+    expect(CONCEPT_RICH_LOOK_MODEL).not.toBe(CONCEPT_READER_MODEL);
+  });
+
+  /*
+    THE END-TO-END PIN for the choice: `describeConcept` reaches for the rich
+    look's engine when — and only when — the door said so. The ABSENT case is
+    the control, and it is the shape every account outside the flag takes.
+  */
+  it("is what the describer reaches for on the rich look, and never otherwise", async () => {
+    await describeConcept({ bytes: Buffer.from("a-picture"), contentType: "image/png", richLook: true });
+    expect(built.map((config) => config.model)).toEqual([CONCEPT_RICH_LOOK_MODEL]);
+
+    built.length = 0;
+    resetConceptReaderForTests();
+    await describeConcept({ bytes: Buffer.from("a-picture"), contentType: "image/png" });
+    expect(built.map((config) => config.model)).toEqual([CONCEPT_READER_MODEL]);
+
+    built.length = 0;
+    resetConceptReaderForTests();
+    await describeConcept({ bytes: Buffer.from("a-picture"), contentType: "image/png", richLook: false });
+    expect(built.map((config) => config.model)).toEqual([CONCEPT_READER_MODEL]);
+  });
+
+  it("shares the ONE OpenRouter allowance — the interpreter's queue object, not a second", () => {
+    interpreterEngine();
+    conceptReaderEngine();
+    conceptRichLookReaderEngine();
+    expect(built).toHaveLength(3);
+    expect(built[2]!.queue).toBeDefined();
+    expect(built[2]!.queue).toBe(built[0]!.queue);
+    expect(built[2]!.queue).toBe(built[1]!.queue);
+    expect(built[2]!.queue).toBe(interpreterTextQueue());
+  });
+
+  it("is memoized, and a reset drops it along with today's reader", () => {
+    const first = conceptRichLookReaderEngine();
+    expect(conceptRichLookReaderEngine()).toBe(first);
+    resetConceptReaderForTests();
+    expect(conceptRichLookReaderEngine()).not.toBe(first);
+    expect(built).toHaveLength(2);
   });
 });
