@@ -3331,3 +3331,307 @@ describe("the ordinary body is not a feature — a collarbone or a shoulder draw
     expect(everyName(panel).filter((name) => /collar/i.test(name))).toEqual([]);
   });
 });
+
+/*
+  ---- A THING FOUND ON BOTH SIDES SAYS WHICH SIDE (the founder's ruling, #2892) ----
+
+  The founder's question: *"are the tatto rows specific eg she has a left and right sleeve
+  if i edit one it will edit the correct one?"* — and on the recommendation of
+  side names, *"yes this goes for anything of that sort not just tatttoos"*. A
+  found rectangle is never scopable, so the WORDS are the only thing that aims
+  the edit; these arms hold what the words now say.
+
+  The geometry is a real face's, not the older fixtures' boxes at x=10: two
+  eyes either side of x=500 on a 1000-wide frame, filed the way the reader files
+  them — `eye@left`, the CAST'S left, on the IMAGE'S RIGHT.
+*/
+describe("a thing found on both sides says which side each one is (#2892)", () => {
+  const frame = { width: 1000, height: 1500 };
+  const THEY: CastPronouns = { subject: "they", object: "them", possessive: "their", plural: true };
+  type Found = { noun: string; kind: FeatureKind; on?: string; instance?: number; x: number; width?: number };
+  /** A face centred on x=500: the left eye on the image's right, as `regionSides` files it. */
+  const CENTRED_FACE: ReadonlyMap<string, { x: number; width: number }> = new Map([
+    ["eye@left", { x: 540, width: 60 }],
+    ["eye@right", { x: 400, width: 60 }],
+    ["lips", { x: 450, width: 100 }],
+  ]);
+  const panelOf = (input: {
+    found: readonly Found[];
+    face?: ReadonlyMap<string, { x: number; width: number }>;
+    pronouns?: CastPronouns;
+    said?: readonly NamedNotCut[];
+  }) => facePanel({
+    rows: [],
+    pronouns: input.pronouns ?? SHE,
+    contentUrl: (key) => `https://bucket.example/${key}`,
+    maskUrl: (key) => `/api/image-proxy?url=${encodeURIComponent(`https://bucket.example/${key}`)}`,
+    discovering: true,
+    scan: {
+      frameUrl: "https://bucket.example/casting/master.jpg",
+      slots: new Map(Array.from((input.face ?? CENTRED_FACE).entries()).map(([slot, at]) => [slot as FeatureSlot, {
+        box: { x: at.x, y: 400, width: at.width, height: 40, frame },
+        maskUrl: `data:image/png;base64,${slot}`,
+      }])),
+      discovered: input.found.map((one) => ({
+        slot: `discovered:${one.noun.replace(/[^a-z0-9]+/g, "-")}#${one.instance ?? 1}` as FeatureSlot,
+        noun: one.noun,
+        instance: one.instance ?? 1,
+        kind: one.kind,
+        on: one.on ?? "",
+        box: { x: one.x, y: 900, width: one.width ?? 150, height: 600, frame },
+        maskUrl: `data:image/png;base64,${one.noun}`,
+      })),
+      namedNotCut: input.said ?? [],
+    },
+  });
+  const allRows = (panel: FacePanel) => panel.groups.flatMap((group) => group.rows);
+  /** Every found row, child and named rectangle, as `name` and `prefill`, by where it is and its slot. */
+  const spokenBySlot = (panel: FacePanel) => {
+    const said = new Map<string, { name: string; prefill: string }>();
+    for (const row of allRows(panel)) {
+      if (row.slots.length === 1 && row.slots[0]!.startsWith("discovered:")) {
+        said.set(`row ${row.slots[0]}`, { name: row.name, prefill: row.prefill });
+      }
+      for (const child of row.instances) said.set(`child ${child.slot}`, { name: child.name, prefill: child.prefill });
+      for (const region of row.regions) {
+        if (region.name !== null) said.set(`region ${region.slot}`, { name: region.name, prefill: region.prefill! });
+      }
+    }
+    return said;
+  };
+  /* The round-9 cast's two sleeves, as its reading cut them: one on the image's left
+     (the cast's RIGHT arm) and one on the image's right (the cast's LEFT arm). */
+  const SLEEVES: readonly Found[] = [
+    { noun: "tattoo", kind: "marking", on: "arm", instance: 1, x: 0 },
+    { noun: "tattoo", kind: "marking", on: "arm", instance: 2, x: 850 },
+  ];
+
+  it("names a pair of sleeves by the cast's side, and opens the sentence on that arm", () => {
+    const said = spokenBySlot(panelOf({ found: SLEEVES }));
+    expect(said.get("row discovered:tattoo#1")).toEqual({ name: "Right arm tattoo", prefill: "the tattoo on her right arm — " });
+    expect(said.get("row discovered:tattoo#2")).toEqual({ name: "Left arm tattoo", prefill: "the tattoo on her left arm — " });
+  });
+
+  it("CONTROL — a lone sleeve keeps its plain name and sentence", () => {
+    const said = spokenBySlot(panelOf({ found: [SLEEVES[1]!] }));
+    expect(said.get("row discovered:tattoo#2")).toEqual({ name: "Tattoo", prefill: "her tattoo — " });
+  });
+
+  it("gives no side to two on the SAME side — a side would not tell them apart", () => {
+    const said = spokenBySlot(panelOf({
+      found: [
+        { noun: "tattoo", kind: "marking", on: "arm", instance: 1, x: 0 },
+        { noun: "tattoo", kind: "marking", on: "arm", instance: 2, x: 200, width: 100 },
+      ],
+    }));
+    expect(said.get("row discovered:tattoo#1")).toEqual({ name: "Tattoo", prefill: "her tattoo — " });
+    expect(said.get("row discovered:tattoo#2")).toEqual({ name: "Tattoo", prefill: "her tattoo — " });
+  });
+
+  it("reads the cast's LEFT off the IMAGE'S right — the side the catalogue's own pair says for that half", () => {
+    const panel = panelOf({ found: SLEEVES });
+    /* The catalogue's own answer for the image's right half, as a second reader. */
+    const eyes = allRows(panel).find((row) => row.name === "Eyes")!;
+    const leftEye = eyes.regions.find((region) => region.name === "Left eye")!;
+    expect(leftEye.box.x).toBeGreaterThan(500);
+    const left = allRows(panel).find((row) => row.name === "Left arm tattoo")!;
+    const right = allRows(panel).find((row) => row.name === "Right arm tattoo")!;
+    expect(left.regions[0]!.box.x).toBeGreaterThan(500);
+    expect(right.regions[0]!.box.x + right.regions[0]!.box.width).toBeLessThanOrEqual(500);
+  });
+
+  it("names any found thing of that sort, not only tattoos — the round-8 rhino's shoulder armour, under the Outfit", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "cloak", kind: "clothing", on: "shoulders", x: 80, width: 840 },
+        { noun: "shoulder armor", kind: "clothing", on: "shoulder", instance: 1, x: 690, width: 260 },
+        { noun: "shoulder armor", kind: "clothing", on: "shoulder", instance: 2, x: 0, width: 115 },
+      ],
+    });
+    const said = spokenBySlot(panel);
+    /* The noun already says the place, so the sentence does not say it twice. */
+    for (const where of ["child", "region"]) {
+      expect(said.get(`${where} discovered:shoulder-armor#1`)).toEqual({ name: "Left shoulder armor", prefill: "her left shoulder armor — " });
+      expect(said.get(`${where} discovered:shoulder-armor#2`)).toEqual({ name: "Right shoulder armor", prefill: "her right shoulder armor — " });
+    }
+    /* The cloak there is one of is untouched, and the whole outline names nothing. */
+    expect(said.get("child discovered:cloak#1")).toEqual({ name: "Cloak", prefill: "her cloak — " });
+    const outfit = allRows(panel).find((row) => row.name === "Outfit")!;
+    expect(outfit.regions.filter((region) => region.whole).map((region) => region.name)).toEqual([null]);
+  });
+
+  it("says a worn thing's place in the sentence and not in its label", () => {
+    const said = spokenBySlot(panelOf({
+      found: [
+        { noun: "wristband", kind: "clothing", on: "arm", instance: 1, x: 0, width: 85 },
+        { noun: "wristband", kind: "clothing", on: "arm", instance: 2, x: 915, width: 85 },
+      ],
+    }));
+    expect(said.get("child discovered:wristband#1")).toEqual({ name: "Right wristband", prefill: "the wristband on her right arm — " });
+    expect(said.get("child discovered:wristband#2")).toEqual({ name: "Left wristband", prefill: "the wristband on her left arm — " });
+  });
+
+  it("invents no place when the reading gave none, and says none that has no side", () => {
+    const said = spokenBySlot(panelOf({
+      found: [
+        { noun: "tattoo", kind: "marking", on: "", instance: 1, x: 0 },
+        { noun: "tattoo", kind: "marking", on: "", instance: 2, x: 850 },
+        /* `face` has no left and right to say: the side is still measured. */
+        { noun: "star tattoo", kind: "marking", on: "face", instance: 1, x: 420, width: 20 },
+        { noun: "star tattoo", kind: "marking", on: "face", instance: 2, x: 560, width: 20 },
+      ],
+    }));
+    expect(said.get("row discovered:tattoo#1")).toEqual({ name: "Right tattoo", prefill: "her right tattoo — " });
+    expect(said.get("row discovered:tattoo#2")).toEqual({ name: "Left tattoo", prefill: "her left tattoo — " });
+    expect(said.get("row discovered:star-tattoo#1")).toEqual({ name: "Right star tattoo", prefill: "her right star tattoo — " });
+    expect(said.get("row discovered:star-tattoo#2")).toEqual({ name: "Left star tattoo", prefill: "her left star tattoo — " });
+  });
+
+  it("speaks with this cast's own possessive — a cast spoken of as they", () => {
+    const said = spokenBySlot(panelOf({ found: SLEEVES, pronouns: THEY }));
+    expect(said.get("row discovered:tattoo#2")).toEqual({ name: "Left arm tattoo", prefill: "the tattoo on their left arm — " });
+    expect(said.get("row discovered:tattoo#1")!.prefill).toBe("the tattoo on their right arm — ");
+    /* And the place-less shape, which carries the possessive in another spot. */
+    const bare = spokenBySlot(panelOf({
+      found: SLEEVES.map((one) => ({ ...one, on: "" })),
+      pronouns: THEY,
+    }));
+    expect(bare.get("row discovered:tattoo#2")!.prefill).toBe("their left tattoo — ");
+  });
+
+  it("does not say the place twice when the reading's noun already names it — the round-9 reading's `arm tattoo on arm`", () => {
+    const said = spokenBySlot(panelOf({
+      found: [
+        { noun: "arm tattoo", kind: "marking", on: "arm", instance: 1, x: 0, width: 191 },
+        { noun: "arm tattoo", kind: "marking", on: "arm", instance: 2, x: 870, width: 154 },
+      ],
+    }));
+    expect(said.get("row discovered:arm-tattoo#1")).toEqual({ name: "Right arm tattoo", prefill: "her right arm tattoo — " });
+    expect(said.get("row discovered:arm-tattoo#2")).toEqual({ name: "Left arm tattoo", prefill: "her left arm tattoo — " });
+  });
+
+  it("measures against the FACE's middle, not the frame's — a face read off-centre", () => {
+    /* The face drawn at x=650..800, so its middle is 725 and the frame's is 500.
+       Both tattoos are on the frame's right half; only the face can tell them. */
+    const said = spokenBySlot(panelOf({
+      face: new Map([["eye@left", { x: 750, width: 50 }], ["eye@right", { x: 650, width: 50 }]]),
+      found: [
+        { noun: "tattoo", kind: "marking", on: "arm", instance: 1, x: 560, width: 120 },
+        { noun: "tattoo", kind: "marking", on: "arm", instance: 2, x: 780, width: 120 },
+      ],
+    }));
+    expect(said.get("row discovered:tattoo#1")!.name).toBe("Right arm tattoo");
+    expect(said.get("row discovered:tattoo#2")!.name).toBe("Left arm tattoo");
+  });
+
+  it("falls back to the frame's middle when the scan drew no face row, as declared", () => {
+    const said = spokenBySlot(panelOf({ face: new Map(), found: SLEEVES }));
+    expect(said.get("row discovered:tattoo#1")!.name).toBe("Right arm tattoo");
+    expect(said.get("row discovered:tattoo#2")!.name).toBe("Left arm tattoo");
+  });
+
+  it("gives no side to a thing that crosses the middle — two necklaces at the throat", () => {
+    /* Both cross x=500, and their CENTRES fall either side of it (495 and 520):
+       a centre-only rule would call these two necklaces left and right. */
+    const said = spokenBySlot(panelOf({
+      found: [
+        { noun: "necklace", kind: "accessory", on: "neck", instance: 1, x: 440, width: 110 },
+        { noun: "necklace", kind: "accessory", on: "neck", instance: 2, x: 460, width: 120 },
+      ],
+    }));
+    expect(said.get("row discovered:necklace#1")!.name).toBe("Necklace");
+    expect(said.get("row discovered:necklace#2")!.name).toBe("Necklace");
+  });
+
+  it("CONTROL — one across the middle and one to a side: neither is named, there is no other side", () => {
+    const said = spokenBySlot(panelOf({
+      found: [
+        { noun: "necklace", kind: "accessory", on: "neck", instance: 1, x: 430, width: 140 },
+        { noun: "necklace", kind: "accessory", on: "neck", instance: 2, x: 600, width: 60 },
+      ],
+    }));
+    expect(said.get("row discovered:necklace#1")!.name).toBe("Necklace");
+    expect(said.get("row discovered:necklace#2")!.name).toBe("Necklace");
+  });
+
+  it("with three or more, names only the one that is alone on its side", () => {
+    const said = spokenBySlot(panelOf({
+      found: [
+        { noun: "tattoo", kind: "marking", on: "arm", instance: 1, x: 850 },
+        { noun: "tattoo", kind: "marking", on: "arm", instance: 2, x: 0 },
+        { noun: "tattoo", kind: "marking", on: "arm", instance: 3, x: 200, width: 100 },
+      ],
+    }));
+    expect(said.get("row discovered:tattoo#1")!.name).toBe("Left arm tattoo");
+    expect(said.get("row discovered:tattoo#2")!.name).toBe("Tattoo");
+    expect(said.get("row discovered:tattoo#3")!.name).toBe("Tattoo");
+  });
+
+  it("lets the picture decide the side over a side word in the reading's place", () => {
+    /* The reading wrote `left arm` for the sleeve on the image's left, which is
+       the cast's RIGHT arm. The box is what was measured. */
+    const said = spokenBySlot(panelOf({
+      found: [
+        { noun: "tattoo", kind: "marking", on: "left arm", instance: 1, x: 0 },
+        { noun: "tattoo", kind: "marking", on: "arms", instance: 2, x: 850 },
+      ],
+    }));
+    expect(said.get("row discovered:tattoo#1")).toEqual({ name: "Right arm tattoo", prefill: "the tattoo on her right arm — " });
+    /* And a plural place is said in the product's singular. */
+    expect(said.get("row discovered:tattoo#2")).toEqual({ name: "Left arm tattoo", prefill: "the tattoo on her left arm — " });
+  });
+
+  it("reads a place the catalogue holds a pair of, from the catalogue — a cuff on each ear", () => {
+    const said = spokenBySlot(panelOf({
+      found: [
+        { noun: "cuff", kind: "accessory", on: "ear", instance: 1, x: 300, width: 40 },
+        { noun: "cuff", kind: "accessory", on: "ears", instance: 2, x: 660, width: 40 },
+      ],
+    }));
+    expect(said.get("row discovered:cuff#1")).toEqual({ name: "Right cuff", prefill: "the cuff on her right ear — " });
+    expect(said.get("row discovered:cuff#2")).toEqual({ name: "Left cuff", prefill: "the cuff on her left ear — " });
+  });
+
+  it("moves only the words — the rows, their order, their outlines and their scope are what they were", () => {
+    const panel = panelOf({ found: SLEEVES });
+    const tattoos = allRows(panel).filter((row) => row.slots[0]!.startsWith("discovered:tattoo"));
+    /* Two rows, never a union (#2565 §6), in the reading's own order. */
+    expect(tattoos.map((row) => row.slots)).toEqual([["discovered:tattoo#1"], ["discovered:tattoo#2"]]);
+    expect(tattoos.map((row) => row.regions.map((region) => region.box.x))).toEqual([[0], [850]]);
+    expect(tattoos.every((row) => row.regions.every((region) => region.scopable === false && region.name === null))).toBe(true);
+    expect(tattoos.map((row) => row.spoken)).toEqual(["the tattoo on her right arm", "the tattoo on her left arm"]);
+  });
+
+  it("still draws no row for what #2862 and #2840 removed, whatever side it is on", () => {
+    const panel = panelOf({
+      found: [
+        { noun: "shoulders", kind: "anatomy", on: "", instance: 1, x: 0, width: 220 },
+        { noun: "shoulders", kind: "anatomy", on: "", instance: 2, x: 800, width: 200 },
+        { noun: "top", kind: "clothing", on: "", x: 200, width: 600 },
+        { noun: "drawstring", kind: "accessory", on: "top", instance: 1, x: 420, width: 20 },
+        { noun: "drawstring", kind: "accessory", on: "top", instance: 2, x: 560, width: 20 },
+      ],
+    });
+    const names = allRows(panel).flatMap((row) => [row.name, ...row.instances.map((one) => one.name)]);
+    expect(names.filter((name) => /shoulder|drawstring/i.test(name))).toEqual([]);
+    /* Positive control: the panel did draw the outfit the trims sit in. */
+    expect(names).toContain("Top");
+  });
+
+  it("keeps the reading's noun as the word a thing sits on — a label never moves words onto a row", () => {
+    /* The words pass is the one reader of a found row's host word that runs
+       AFTER the row exists. Words the reading says sit on `left arm tattoo` —
+       the LABEL, not the reading's noun — land on no row, exactly as words on
+       a found thing did before this card. */
+    const said: NamedNotCut[] = [{
+      noun: "freckles", on: "left arm tattoo", about: "freckles across the ink", kind: "marking", why: "scattered",
+    }];
+    const panel = panelOf({ found: SLEEVES, said });
+    const left = allRows(panel).find((row) => row.name === "Left arm tattoo")!;
+    expect(left.words).toEqual([]);
+    /* Positive control: the same words on a row the catalogue drew DO land, so
+       the pass was running and this arm is not green on silence. */
+    const onLips = panelOf({ found: SLEEVES, said: [{ ...said[0]!, on: "lips" }] });
+    expect(allRows(onLips).find((row) => row.name === "Lips")!.words).toEqual(["freckles across the ink"]);
+  });
+});
